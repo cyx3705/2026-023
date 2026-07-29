@@ -115,7 +115,7 @@ registry.Register(new CommandDescriptor
 
 | API | 常用成员 | 说明 |
 |---|---|---|
-| `ToolWindowDescriptor` | `Id`、`Title`、`ContentFactory`、`DefaultSide`、`DefaultRatio`、`DefaultVisible`、`DefaultTabTarget` | 注册窗口的稳定描述符 |
+| `ToolWindowDescriptor` | `Id`、`Title`、`ContentFactory`、`DefaultSide`、`DefaultRatio`、`DefaultVisible`、`DefaultTabTarget` | 注册窗口的稳定描述符；未设置 `DefaultSide` 时默认右置 |
 | `DockSide` | `Left`、`Right`、`Top`、`Bottom`、`Tab`、`Center` | `Center` 是中央主工作区；`Tab` 需要目标窗口 |
 | `IDockingService` | `RegisterWindow`、`UnregisterWindow`、`UnregisterOwner`、`Show`、`Hide`、`Float`、`Dock`、`SetRatio` | 操作窗口，不直接接触 AvalonDock 类型 |
 | `IDockingService` | `SaveLayout`、`LoadLayout`、`ListLayouts`、`ResetLayout` | 布局方案管理 |
@@ -127,8 +127,12 @@ registry.Register(new CommandDescriptor
 页面头和页面选择标签；多个 `Center` 窗口进入同一个文档标签组。`Show` 选中的业务中央页不会被命令集自愈
 逻辑抢回焦点；业务中央窗口隐藏、浮动或卸载后，命令集仍留在主区。普通四边工具页也允许由用户拖入中央
 页面选择区，并可再次拖回四边；其描述符、owner 和内容实例不变，布局保存/恢复会保留嵌入位置。
-运行期注册或停靠到同一侧的窗口复用该侧已有标签组；例如模块以 `DockSide.Right` 注册时直接成为右侧窗口
+模块注册窗口未设置 `DefaultSide` 时默认使用 `DockSide.Right`；模块可按业务需要显式改为
+`Left/Top/Bottom/Center/Tab`，AppShell 不覆盖模块的显式声明。运行期注册或停靠到同一侧的窗口复用该侧已有标签组；
+例如模块使用默认位置或显式以 `DockSide.Right` 注册时，直接成为右侧窗口
 标签，不会在右侧再切出独立子窗格。该侧不存在窗格时才创建新窗格。
+加载历史布局时，同侧的多个旧窗格也会合并为一个标签组；左右或上下侧栏合计不超过 50%，中央主工作区
+始终至少占对应轴的 50%。
 消费方仍只使用 `ToolWindowDescriptor` 和 `IDockingService`，不得直接依赖内部 AvalonDock 文档类型。枚举值
 固定为 `Tab=4`、`Center=5`，保证旧模块的 `Tab` 二进制值不会漂移。
 
