@@ -15,6 +15,14 @@
 
 ## 默认值
 
+| Shell 能力 | 默认值 | 启用方式 |
+|---|---:|---|
+| 模块命令宿主 | 关闭 | `ShellConfig.EnableModules=true` |
+| UI 模块宿主 | 关闭 | `ShellConfig.EnableUiModules=true`，或随 `EnableModules=true` 启用 |
+| MCP 网关与治理 | 关闭 | `ShellConfig.EnableMcp=true`；只装配不监听时另设 `mcp.autostart=false` |
+| 远程管理视图 | 关闭 | `ShellConfig.EnableRemoteManagementViews=true` |
+| 本地命令目录与中央命令集 | 开启 | Shell 核心能力，不创建网络监听 |
+
 | 设置键 | 默认值 | 说明 |
 |---|---:|---|
 | `mcp.port` | 未设置时 `8737 + stableHash(appName) % 200` | 显式值优先 |
