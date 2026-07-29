@@ -38,8 +38,6 @@ var config = new ShellConfig
     AppName = "MyProduct",
     AppVersion = AppIdentity.Current.Version,
     Workspace = workspace,
-    EnableModules = true,
-    EnableMcp = true,
 };
 
 config.ToolWindows.Add(new ToolWindowDescriptor
@@ -64,6 +62,11 @@ window.Show();
 ```
 
 应用退出时应正常关闭 `ShellWindow`，并释放自己持有的 `WorkspaceService`、`ShellLog`、网关和模块宿主。强杀进程不会保证布局与历史完成写入。
+
+`EnableModules`、`EnableUiModules`、`EnableMcp` 和 `EnableRemoteManagementViews` 均默认 `false`。上例只启动
+Shell 核心、显式提供的 Workspace、窗口和业务命令；仍保留中央命令集与 `command.*`。需要可选能力时由消费方
+明确设置，例如 `EnableModules = true` 或 `EnableMcp = true`。显式启用 MCP 后默认按 `mcp.autostart` 启动；若只
+需要装配命令和治理能力而不希望启动时监听，应预先设置 `mcp.autostart=false`，之后可执行 `mcp.start`。
 
 ## 3. 常用公开 API
 
@@ -124,6 +127,8 @@ registry.Register(new CommandDescriptor
 页面头和页面选择标签；多个 `Center` 窗口进入同一个文档标签组。`Show` 选中的业务中央页不会被命令集自愈
 逻辑抢回焦点；业务中央窗口隐藏、浮动或卸载后，命令集仍留在主区。普通四边工具页也允许由用户拖入中央
 页面选择区，并可再次拖回四边；其描述符、owner 和内容实例不变，布局保存/恢复会保留嵌入位置。
+运行期注册或停靠到同一侧的窗口复用该侧已有标签组；例如模块以 `DockSide.Right` 注册时直接成为右侧窗口
+标签，不会在右侧再切出独立子窗格。该侧不存在窗格时才创建新窗格。
 消费方仍只使用 `ToolWindowDescriptor` 和 `IDockingService`，不得直接依赖内部 AvalonDock 文档类型。枚举值
 固定为 `Tab=4`、`Center=5`，保证旧模块的 `Tab` 二进制值不会漂移。
 
@@ -234,7 +239,7 @@ registry.Register(new CommandDescriptor
 
 ### 5.5 命令目录与 MCP
 
-仅在 `ShellConfig.EnableMcp=true` 时注册。
+`command.*` 是 Shell 核心能力，始终注册；`mcp.*` 仅在消费方显式设置 `ShellConfig.EnableMcp=true` 时注册。
 
 | 命令 | 用途 / 关键参数 |
 |---|---|
