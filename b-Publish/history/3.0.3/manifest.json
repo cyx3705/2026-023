@@ -1,0 +1,60 @@
+{
+    "schemaVersion":  1,
+    "product":  "AppShell",
+    "version":  "3.0.3",
+    "channel":  "formal",
+    "generatedAtUtc":  "2026-07-29T14:37:07.9089097Z",
+    "sourceCommit":  "dcfc56f936e9836535fe33ca395d0425af1ea2f5",
+    "sourceDirty":  false,
+    "sourceContractVersion":  "3.0.3",
+    "compatibilityValidated":  true,
+    "packages":  [
+                     {
+                         "file":  "feed/OneHistory.AppShell.Core.3.0.3.nupkg",
+                         "bytes":  65185,
+                         "sha256":  "23780E24E671FDFD29038C342F958028B51D52E51B86BF4A50901B493A28DFB9"
+                     },
+                     {
+                         "file":  "feed/OneHistory.AppShell.ServiceHost.3.0.3.nupkg",
+                         "bytes":  16096,
+                         "sha256":  "8BC4A00609830DEF2CAECD8B3420B5159A2C4E73F7F27481A44B08D674E8E8FC"
+                     },
+                     {
+                         "file":  "feed/OneHistory.AppShell.Services.3.0.3.nupkg",
+                         "bytes":  100771,
+                         "sha256":  "AC918D99F0554196C3B83905D988B5951BDC691AFAA4F25366D8B06698510BFA"
+                     },
+                     {
+                         "file":  "feed/OneHistory.AppShell.Shell.3.0.3.nupkg",
+                         "bytes":  128960,
+                         "sha256":  "0B0C004C5EDBAE80FF2670DE70F4798FE60F0D01C4F33EFBB9D138DFA9EE76D4"
+                     }
+                 ],
+    "documents":  [
+                      {
+                          "file":  "docs/AppShell_API与指令手册.md",
+                          "bytes":  17242,
+                          "sha256":  "94CA867080D6890E168A08DD365B0ED325C161436CBE6C9BFB053D85C4E0DA60"
+                      },
+                      {
+                          "file":  "docs/AppShell_3.0_模块与MCP接入.md",
+                          "bytes":  7497,
+                          "sha256":  "C4837D4D8D9670B6E044E4FFD860730A5016673FD6DCDE6DAB950F23BF1AABC0"
+                      },
+                      {
+                          "file":  "docs/AppShell_3.0_运行时约束与已知限制.md",
+                          "bytes":  5637,
+                          "sha256":  "0B636B1917898202C75C3EEBFFBC0DD00FAF9475535E7F87DDC6D42E372DE815"
+                      },
+                      {
+                          "file":  "docs/AppShell_3.0_消费变更摘要.md",
+                          "bytes":  2710,
+                          "sha256":  "147FA0CED0D47DE892C235B937AFB652196960365E2BEB205D9978CEDA935C9D"
+                      }
+                  ],
+    "reuse":  {
+                  "file":  "AppShell.reuse.md",
+                  "bytes":  3669,
+                  "sha256":  "7A2B086CACA931D45D1F3FA5C507191464005BF407CD08F3FD288B8430E1D42F"
+              }
+}
