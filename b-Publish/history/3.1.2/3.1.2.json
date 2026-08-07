@@ -1,0 +1,89 @@
+{
+    "schemaVersion":  1,
+    "product":  "AppShell",
+    "version":  "3.1.2",
+    "channel":  "candidate",
+    "sourceCommit":  "202e081c35fe56b42a977af553103547b4fcb561",
+    "sourceDirty":  true,
+    "sdk":  "9.0.315",
+    "targetFrameworks":  [
+                             "net8.0",
+                             "net8.0-windows"
+                         ],
+    "demoRid":  "win-x64",
+    "selfContained":  false,
+    "artifacts":  [
+                      {
+                          "file":  "AppShell-Demo-3.1.2-win-x64-framework-dependent.zip",
+                          "bytes":  784866,
+                          "sha256":  "551B1DA3341DD5C686458B35EB30EE56865BC98B59F9E5F8ACE191805BD72C87"
+                      },
+                      {
+                          "file":  "OneHistory.AppShell.Core.3.1.2.nupkg",
+                          "bytes":  65265,
+                          "sha256":  "ABE73B7D70CD0DAEE277DBAC9630D3A487F62EB6B9CB55E9EAE72453DBE06CA3"
+                      },
+                      {
+                          "file":  "OneHistory.AppShell.Core.3.1.2.snupkg",
+                          "bytes":  24068,
+                          "sha256":  "82F04F5120256B525B3D97A86F8B67E5CE10EEA07852D94D65DCE6146F3A8B21"
+                      },
+                      {
+                          "file":  "OneHistory.AppShell.ServiceHost.3.1.2.nupkg",
+                          "bytes":  20142,
+                          "sha256":  "6B0103BB21D1EED45AD8B04545534BC8A1EAD93ECB1F2BB50F79385FD0379154"
+                      },
+                      {
+                          "file":  "OneHistory.AppShell.ServiceHost.3.1.2.snupkg",
+                          "bytes":  12228,
+                          "sha256":  "D149679A6472C62E8B8F1CC19642AEE3A9C670628DF2CE030772E0CA3BA32C95"
+                      },
+                      {
+                          "file":  "OneHistory.AppShell.Services.3.1.2.nupkg",
+                          "bytes":  106965,
+                          "sha256":  "4D6DC6C0DE0D9BB77C3C8F27ECA95C6E19E61862D77CF3F82BA008C539E8CDD1"
+                      },
+                      {
+                          "file":  "OneHistory.AppShell.Services.3.1.2.snupkg",
+                          "bytes":  29973,
+                          "sha256":  "2C35E2A69F71556D6A1C3B74CBBFAC57CACF3C2F1F82C374AED01BC0D12CE8AD"
+                      },
+                      {
+                          "file":  "OneHistory.AppShell.Shell.3.1.2.nupkg",
+                          "bytes":  151494,
+                          "sha256":  "338CBDA222600FD0FB9638B7E9867D744EB6C0B056E7E14F5CF435498A86EBDD"
+                      },
+                      {
+                          "file":  "OneHistory.AppShell.Shell.3.1.2.snupkg",
+                          "bytes":  46034,
+                          "sha256":  "5E996745578314964CA8E96F349224DBD4AC5544E535A39BD5C6284EF732C231"
+                      }
+                  ],
+    "documents":  [
+                      {
+                          "file":  "docs/AppShell_API与指令手册.md",
+                          "bytes":  19182,
+                          "sha256":  "7DBA4BB085AE38CED3F99D4157390AD3F93997D0456A9E585011185345490F29"
+                      },
+                      {
+                          "file":  "docs/AppShell_3.0_模块与MCP接入.md",
+                          "bytes":  7514,
+                          "sha256":  "A313A614FA2C67EF866455BF2C553A4B016152FA0F0D3CC304B2683972700A90"
+                      },
+                      {
+                          "file":  "docs/AppShell_3.0_运行时约束与已知限制.md",
+                          "bytes":  5340,
+                          "sha256":  "2B213C9272B0954810236F6E7A91875A2B2AE1C1ADA1A5EC51A1C7C81CF53222"
+                      },
+                      {
+                          "file":  "docs/AppShell_3.0_消费变更摘要.md",
+                          "bytes":  6537,
+                          "sha256":  "9CF84DD8DD3A435A1BDD1D95CDD2D27D160229963EC5472530B047203250F10B"
+                      },
+                      {
+                          "file":  "AppShell.reuse.md",
+                          "bytes":  4161,
+                          "sha256":  "622EC6D235235F7DA1FB9D33EEC5F09A3CD0D00159B39F8E0CA1FD4C57DA0ABB"
+                      }
+                  ]
+}

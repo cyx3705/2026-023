@@ -1,0 +1,563 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>AppShell.Shell</name>
+    </assembly>
+    <members>
+        <member name="T:AppShell.Shell.ShellCommandServices">
+            <summary>内置指令组的依赖集(注册时一次性提供)。</summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellCommandServices.Panels">
+            <summary>控制窗口群管理器(M4);null 时 panel.* 指令组不注册。</summary>
+        </member>
+        <member name="T:AppShell.Shell.BuiltinCommands">
+            <summary>
+            框架内置指令组(§5.3 / 附录 B):help / history / run /
+            app.* / log.* / win.* / layout.* 与 panel.*；cls 仅为 log.clear 的兼容别名。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.BuiltinCommands.DisplaySettingValue(System.String,System.String)">
+             <summary>
+             令牌类设置值一律以占位符回报(FZR-01)。
+            
+             脱敏必须落在指令结果本身,而不是总线的日志回显:`app.get` 声明了 Readonly,
+             因而对 scope=read 的远程设备放行,并在默认 readonly 策略下作为 MCP 工具可见。
+             结果对象会原样序列化进 HTTP 响应体与 tools/call 载荷,只脱敏日志挡不住这两条路径。
+            
+             判定谓词与 <c>CommandBus.IsSensitiveSettingKey</c> 同源。冻结期不为共享它新增
+             公开 API 或 InternalsVisibleTo,故此处保留一份副本;3.1 统一到单一真值(见整改清单 FZR-22)。
+             </summary>
+        </member>
+        <member name="M:AppShell.Shell.BuiltinCommands.ResolveWindow(AppShell.Shell.ShellCommandServices,AppShell.Core.Commands.CommandContext)">
+            <summary>窗口名存在性校验;返回 null 表示通过。</summary>
+        </member>
+        <member name="T:AppShell.Shell.Console.ConsoleRow">
+            <summary>控制台一行的显示模型:预先算好文本与颜色,渲染零逻辑。</summary>
+        </member>
+        <member name="P:AppShell.Shell.Console.ConsoleRow.SourceKey">
+            <summary>来源键(过滤用):UI / 手动 / 脚本 / layout / result / 或日志类别。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Console.ConsoleRow.From(AppShell.Core.Logging.ShellLogEntry)">
+            <summary>
+            一条日志记录 → 一到多个显示行:多行消息(如 proj.tree 的树形结果)逐行拆分。
+            单个超高项会让按项滚动永远看不到项的下半截,且拖累虚拟化,故在入口处拆平。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.Console.ConsoleRow.SourceKeyOf(System.String)">
+            <summary>脚本来源统一归入 “脚本” 键(具体文件名保留在显示文本中)。</summary>
+        </member>
+        <member name="T:AppShell.Shell.Console.ConsoleView">
+            <summary>
+            控制台窗口(§4.4):程序的“素颜”。
+            输出区 = 指令回显 + 执行结果 + 运行日志(共用 IShellLog 管道);
+            输入区 = 手动指令入口。仅靠本窗口即可驱动整个程序(架构不变量 2)。
+            承压设计(N-03):日志事件先进并发队列,UI 以 100ms 批量合并刷新;
+            列表虚拟化 + 环形缓冲上限(C-05)。
+            </summary>
+            <summary>
+            ConsoleView
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.Console.ConsoleView.MinLevel">
+            <summary>当前控制台显示级别(log.level,L-04;文件始终全量)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Console.ConsoleView.SetMinLevel(AppShell.Core.Logging.ShellLogLevel)">
+            <summary>log.level 指令入口:调整显示级别过滤。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Console.ConsoleView.Cls">
+            <summary>cls 指令入口:清空显示(不清日志文件,C-06)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Console.ConsoleView.FocusInput">
+            <summary>聚焦输入框(C-15 全局快捷键落点)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Console.ConsoleView.FilterErrorsOnly">
+            <summary>把仅 Error 级别可见设为当前过滤(状态栏错误计数跳转用,S-03)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Console.ConsoleView.ResetFilters">
+            <summary>错误自动跳转使用：清除过滤，保证输入回显与错误结果同时可见。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Console.ConsoleView.CycleCompletion">
+            <summary>C-13:Tab 补全指令名(输入首词)与参数名(后续词),重复 Tab 轮换候选。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Console.ConsoleView.InitializeComponent">
+            <summary>
+            InitializeComponent
+            </summary>
+        </member>
+        <member name="T:AppShell.Shell.Console.RingCollection`1">
+            <summary>
+            控制台滚动缓冲专用集合(C-05):
+            追加发单条 Add 通知(虚拟化列表增量更新);
+            超上限的头部裁剪以“偏移量 + 定期压实”摊销为 O(1),并发 Reset 通知。
+            仅供 UI 线程使用。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.Console.RingCollection`1.TrimTo(System.Int32)">
+            <summary>把总量裁剪到 capacity(丢弃最旧);发生裁剪时发 Reset。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Console.RingCollection`1.ToList">
+            <summary>当前内容快照(导出用)。</summary>
+        </member>
+        <member name="T:AppShell.Shell.Docking.DockingHost">
+            <summary>
+            AvalonDock 二次封装(§14.2)。Shell 对外只暴露 IDockingService,
+            派生应用与四类标准窗口不接触任何 AvalonDock 类型。
+            职责:窗口注册、默认布局构建、布局持久化(含损坏回退 N-06)、
+            布局手势 → 等价指令(W-10,含防再入抑制)。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.Docking.DockingHost.CurrentLayoutName">
+            <summary>当前布局方案名(状态栏显示用)。</summary>
+        </member>
+        <member name="F:AppShell.Shell.Docking.DockingHost._seedRatiosFromLayout">
+            <summary>true 表示下一次比例处理应从已恢复的布局反向采集比例,而非施加记录值。</summary>
+        </member>
+        <member name="P:AppShell.Shell.Docking.DockingHost.Descriptors">
+            <summary>已注册窗口(视图菜单构建用)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Docking.DockingHost.Initialize">
+            <summary>启动时调用:恢复上次布局,失败或不存在则构建默认布局(W-07 / N-06)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Docking.DockingHost.SaveCurrentLayout">
+            <summary>退出时调用:自动保存当前布局(W-07)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Docking.DockingHost.EnsureRegisteredWindows">
+            <summary>布局加载后补齐缺失的已注册窗口(旧布局文件兼容)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Docking.DockingHost.EnsureCenterColumn">
+            <summary>找到包含主文档区的中央列;若中央区不是垂直面板,则就地包一层。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Docking.DockingHost.EnsureCentralWorkspace">
+            <summary>
+            Keep the command catalog as the fixed main document. This repairs the early 3.0 candidate
+            topology that placed it in a narrow anchorable pane beside an empty document background.
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.Docking.DockingHost.DockLengthFor(System.Boolean,System.Double)">
+            <summary>
+            目标尺寸的表达:主窗体已量得实际尺寸时用像素(AvalonDock 对侧窗格
+            的原生语义),否则先用星值占位,待首次排布后由 ReapplyRatios 修正。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.Docking.DockingHost.ReapplyRatios">
+            <summary>
+            按记录的“占主程序窗体百分比”重设各停靠分区尺寸(W-05)。
+            恢复布局后的首次调用改为反向采集:以布局文件里的尺寸为准更新比例记录。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.Docking.DockingHost.RatioOfSubtree(AvalonDock.Layout.ILayoutPanelElement)">
+            <summary>分区内第一个已注册窗口的目标比例(分区尺寸由其代表)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Docking.DockingHost.Suppress">
+            <summary>防再入(§14.2 清单 4):指令/API 驱动的布局变更不回声成新指令。</summary>
+        </member>
+        <member name="T:AppShell.Shell.FrontendCommandCatalog">
+            <summary>
+            服务端前端代理的框架目录。描述符由真实 <see cref="M:AppShell.Shell.BuiltinCommands.Register(AppShell.Core.Commands.CommandRegistry,AppShell.Shell.ShellCommandServices)"/>
+            装配结果投影，名称分类只在此保留一份。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.FrontendCommandCatalog.SharedBuiltinSourceDescriptors">
+            <summary>Actual desktop registrations for metadata shared with a service host.</summary>
+        </member>
+        <member name="T:AppShell.Shell.Mcp.CommandCatalogCommands">
+            <summary>V2.1.3 全指令结构化目录，注册表是唯一上游。</summary>
+        </member>
+        <member name="T:AppShell.Shell.Mcp.McpCommands">
+            <summary>
+            mcp.* 指令域：Schema、网关生命周期与 V2.1.2 本地提示词审核入口。
+            </summary>
+        </member>
+        <member name="T:AppShell.Shell.Mcp.PromptGovernanceCommands">
+            <summary>V2.1.2 提示词修订、提案、勘误和事故指令。</summary>
+        </member>
+        <member name="T:AppShell.Shell.Mcp.RemoteConfirmDialog">
+            <summary>
+            宿主确认中继对话框(V2.2 CX-02):MCP 危险指令请求 → 宿主端弹框由人裁决,带倒计时。
+            独立于总线 Confirmation(即使 --yes 生效也弹真实框),满足 CX-03。
+            返回 true=允许 / false=拒绝 / null=超时(按拒绝处理)。
+            </summary>
+        </member>
+        <member name="T:AppShell.Shell.MessageBoxConfirmation">
+            <summary>
+            二次确认的模态对话框实现(§5.2 拦截器;手输指令路径的危险操作闸口)。
+            编组到 UI 线程弹窗,任意线程可调用。
+            </summary>
+        </member>
+        <member name="T:AppShell.Shell.Modules.ModuleCommands">
+            <summary>module.* 管理指令(MD-05):list / reload / dir / open。</summary>
+        </member>
+        <member name="T:AppShell.Shell.Modules.ShellUiRegistrar">
+            <summary>把模块界面注册请求编组到 Shell UI 线程。</summary>
+        </member>
+        <member name="T:AppShell.Shell.Panels.PanelManager">
+            <summary>
+            控制窗口群管理器(§4.5):
+            从 &lt;数据目录&gt;/panels/*.json 加载面板声明(P-01,JSON 为主),
+            与 C# 注册通道(ShellConfig.Panels)合并;每个面板注册为一个独立
+            可停靠工具窗口(P-05,窗口名 = 面板 id),随布局一起持久化。
+            panel.reload 重读 JSON 并原地重建既有面板内容(P-08;新增面板需重启)。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.Panels.PanelManager.#ctor">
+            <summary>仅供框架命令目录生成；不读取文件，也不得执行面板处理器。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Panels.PanelManager.RegisterWindows(System.Collections.Generic.List{AppShell.Core.Docking.ToolWindowDescriptor})">
+            <summary>把每个面板注册为工具窗口描述符(启动时调用,先于停靠系统初始化)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Panels.PanelManager.TrySetValue(System.String,System.String,System.String,System.String@)">
+            <summary>panel.set 落点(P-07)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Panels.PanelManager.Reload">
+            <summary>panel.reload(P-08):重读 JSON,重建既有面板内容;新增面板提示重启。</summary>
+        </member>
+        <member name="T:AppShell.Shell.Panels.PanelView">
+            <summary>
+            一个控制面板窗口的内容(§4.5):按声明构建控件栅格,
+            按钮点击 = 收集同面板输入控件当前值 → 以 {控件id} 填入指令模板 →
+            交指令总线执行 → 控制台回显(P-03,验收 6)。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.Panels.PanelView.Rebuild(AppShell.Core.Panels.PanelDefinition)">
+            <summary>panel.reload:按新声明原地重建内容(P-08)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Panels.PanelView.TrySetValue(System.String,System.String)">
+            <summary>panel.set 反向驱动(P-07):程序向面板控件回写值。</summary>
+        </member>
+        <member name="P:AppShell.Shell.Panels.PanelView.ControlIds">
+            <summary>可反向驱动的控件 id 清单(panel.set 报错提示用)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Panels.PanelView.PlaceholderPattern">
+            <remarks>
+            Pattern:<br/>
+            <code>\\{(\\w+)\\}</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match '{'.<br/>
+            ○ 1st capture group.<br/>
+                ○ Match a word character atomically at least once.<br/>
+            ○ Match '}'.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:AppShell.Shell.ShellConfig">
+            <summary>
+            派生应用向 Shell 提交的装配清单(§9 开发流程第 2/7 条的入口)。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.ToolWindows">
+            <summary>要注册的工具窗口清单。</summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.ToolMenuActions">
+            <summary>派生应用放入“工具”菜单的命令入口。</summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.ConfigureCommands">
+            <summary>
+            派生应用注册自定义指令的挂点(§5.3,§9 流程第 3 条):
+            在内置指令组注册完成后调用;指令名冲突会在此时抛出。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.Panels">
+            <summary>
+            C# 通道声明的控制面板(P-01;与数据目录 panels/*.json 合并,JSON 优先加载在后)。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.EnableModules">
+            <summary>
+            模块托管(MD-01~08,0.4.4 由 OneHistoryStudio 反哺):
+            &lt;数据目录&gt;\Modules 热重载,DLL 即指令域;module.* 指令组随之注册。
+            默认关闭；消费方明确需要模块扫描、热重载和 module.* 时置 true。
+            false 时完全不创建宿主、不扫描目录、不注册 module.*。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.EnableUiModules">
+            <summary>
+            在本进程加载声明了 ui=true 的模块界面。默认由 EnableModules 隐式启用;
+            前端/服务分离应用可在 EnableModules=false 时单独置 true。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.EnableMaximizeOnDoubleClick">
+            <summary>双击工具窗口标题条时切换窗口最大化。</summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.EnableMcp">
+            <summary>
+            MCP 服务(0.4.4 由 OneHistoryStudio 反哺):元数据自描述层、网关、提示词治理,
+            注册 mcp.* / prompt.* / correction.* / incident.* 指令组。
+            默认关闭；消费方置 true 后才创建网关、治理存储和 mcp.*，并按 mcp.autostart 决定是否监听。
+            本地 command.* 和命令集主窗口属于 Shell 核心能力，不依赖本开关。
+            提示词治理与留痕写入数据目录中的 JSON/JSONL 文件，不依赖数据服务。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.EnableRemoteManagementViews">
+            <summary>
+            客户端模式下只创建命令集、指令详情和模块管理视图，不在本进程创建 MCP 或 ModuleHost。
+            视图经 CommandBus.RemoteExecutor 读取服务端结构化结果。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.CloseBehavior">
+            <summary>Determines whether a user close hides the frontend or exits it.</summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.McpAuditLog">
+            <summary>
+            MCP 调用留痕接管点:null 时框架用内置 McpAuditRecorder 写 state/mcp-history.jsonl。
+            派生应用若已有自己的留痕器,实现 IMcpAuditLog 接进来即可。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.Identity">
+            <summary>
+            应用身份:null 时取 <c>AppIdentity.Current</c>(入口程序集)。
+            测试宿主等入口程序集不是应用本体的场景应显式提供。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.McpRemoteConfirm">
+            <summary>
+            MCP 危险调用的宿主确认中继(CX-02,host 档使用):
+            null 时框架用内置对话框 <c>RemoteConfirmDialog</c>。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellConfig.CommandSelection">
+            <summary>
+            命令集选中状态(0.4.4):框架的命令集窗口(McpToolsView)写入选中的指令名。
+            派生应用若有指令详情窗口需与之联动,应在此传入**同一个实例**,并把详情窗口也接到它;
+            null 时框架自建一个(此时派生侧无法与之联动)。
+            由派生应用创建并传入(而非框架创建后回取),是因为工具窗口内容工厂在 ShellWindow
+            构造期间(DockingHost 构建默认布局时)即被调用,那时派生应用尚拿不到 window 实例。
+            </summary>
+        </member>
+        <member name="T:AppShell.Shell.ShellTopBarCoordinator">
+            <summary>
+            Keeps main-window chrome and page chrome on one input and command path.
+            Only AvalonDock public model and window APIs are used here.
+            </summary>
+        </member>
+        <member name="T:AppShell.Shell.ShellWindow">
+            <summary>
+            主程序窗体(Main Frame,§2)。3.1 起为自绘顶栏 + 停靠系统容器两段结构:
+            菜单折叠进顶栏右上角的菜单按钮(UI-03),常驻菜单行与底部状态栏均已取消
+            (UI-05,原状态栏信息改由顶栏徽章、布局文本和瞬时回执承担)。
+            M2 起指令总线为一切操作的汇聚点:菜单项点击同样是发指令(S-02),
+            控制台手输、脚本、布局手势与派生应用共用同一张指令注册表。
+            </summary>
+            <summary>
+            ShellWindow
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.OnShellSourceInitialized(System.Object,System.EventArgs)">
+            <summary>
+            UI-02 / UI-09.1:非客户区接管必须推迟到窗体句柄就绪 —— 派生应用常在对象
+            初始化器里(即构造函数返回之后)设置 WindowStyle,构造期判定会误判成标准窗体。
+            用事件而非 override:protected 成员属于公开面,3.1 不新增公开 API。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellWindow.Docking">
+            <summary>停靠系统门面。</summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellWindow.Commands">
+            <summary>指令总线(派生应用 / 启动参数经此执行指令)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.AddTransientLog(AppShell.Core.Logging.ShellLogEntry)">
+            <summary>Adds a backend log entry to the in-memory console without writing a second log file.</summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellWindow.Modules">
+            <summary>模块托管宿主(0.4.4);EnableModules=false 时为 null。</summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellWindow.Mcp">
+            <summary>MCP 网关；仅在消费方显式启用 <see cref="P:AppShell.Shell.ShellConfig.EnableMcp"/> 时创建。</summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellWindow.Prompts">
+            <summary>提示词治理存储(0.4.4);与 <see cref="P:AppShell.Shell.ShellWindow.Mcp"/> 同生命周期。</summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellWindow.CommandSelection">
+            <summary>
+            命令集选中状态(0.4.4):框架的命令集窗口写入,派生应用的指令详情窗口读取。
+            派生应用应把自己的详情视图接到本实例,避免各建一个导致联动失效。
+            </summary>
+        </member>
+        <member name="P:AppShell.Shell.ShellWindow.AboutText">
+            <summary>关于对话框文本(app.about)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.TakeOverDescriptor(System.String,System.String,AppShell.Core.Docking.DockSide,System.Double,System.Func{System.Object},System.Boolean)">
+            <summary>
+            标准窗口内容接管:描述符的停靠位置仍由派生应用声明,内容工厂换成
+            Shell 实现;未声明时按缺省位置强制注册(控制台是架构不变量 2 的落点)。
+            窗口 ID 是框架与派生应用之间的对接约定：双方各自声明并按 Id 合并，
+            不得仅在一侧改名；新增窗口时须同步核对派生应用的 ToolWindows 表。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.UpdateErrorBadge">
+            <summary>UI-05.3:原状态栏错误计数,点击行为不变(聚焦控制台并只看错误)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.ShowToast(System.String,System.Boolean)">
+            <summary>UI-05.2:指令结果瞬时回执;失败停留更久,点击跳控制台看全文。</summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.ApplyWindowStateChrome">
+            <summary>窗体最大化图标切换 + WindowChrome 溢出补偿(UI-02.5)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.ApplyTheme(System.String,System.Boolean)">
+            <summary>
+            令牌字典整份替换:应用色与 AvalonDock 主题画刷键都在同一份令牌里,
+            因此不会出现「界面已深色、页签仍浅色」。三处都要换:
+            窗体(视图)、DockingManager(停靠区,压过 VS2013 主题)、应用级(浮动窗口是独立 Window)。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.ApplyThemeToFloatingWindows(System.Uri)">
+            <summary>
+            R4-3:浮动窗口是独立 Window,自带一份 AvalonDock 主题字典(里面是浅色令牌),
+            优先级高于应用级资源 —— 不单独换,拖出来的工具页外框就一直是白的。
+            新浮动窗口在 WindowsChanged 后补一次。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.SwapTokens(System.Windows.ResourceDictionary,System.Uri,System.Boolean)">
+            <summary>
+            令牌字典换位。必须幂等:这个方法会被布局回调反复调用,
+            每次都无脑换字典会让资源全量失效 → 触发布局 → 再回调,直接转成死循环。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.ApplyPaneStyles(System.Boolean)">
+            <summary>
+            窗格外观下发(W-04 标签条置顶 + UI-01 卡片化 + UI-04 专注形态)。
+            必须经 DockingManager.AnchorablePaneControlStyle / DocumentPaneControlStyle 属性下发:
+            主题字典里的隐式 Style 不会命中窗格控件,浮动窗口也走这两个属性。
+            以主题内置窗格样式为基底(继承 ItemContainerStyle 等),只覆盖标签位置与模板。
+            v5 迁移注意:基底样式的资源键随主题版本变化,需同步调整。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.ReserveSpaceForChromeBar">
+            <summary>
+            窗口按钮组与页签同处一行(3.1 修订),因此必须把最右上那一排页签的右边距撑开,
+            否则页签会滑到按钮底下点不到。专注态没有页签行,不需要占位。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.AttachChromeBarToMainDocumentPane">
+            <summary>
+            将窗口控制栏挂到主窗口的中央文档窗格。AvalonDock 的浮动窗格位于独立
+            Window，不会出现在 DockManager 的视觉树中，因此不会获得这组按钮。
+            </summary>
+        </member>
+        <member name="F:AppShell.Shell.ShellWindow.PaneHeaderTag">
+            <summary>窗格模板里页签行容器的标记(见 ShellDocking.xaml)。</summary>
+        </member>
+        <member name="F:AppShell.Shell.ShellWindow.BaseTabStripRight">
+            <summary>页签条模板里的右边距基线(Shell.Space.TabStrip 的右值)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.ApplyFocusChrome">
+            <summary>
+            页面最大化 = 专注态:窗格去标题条与页签并铺满,顶栏只保留主窗口控制组。
+            由 DockingHost.WindowsChanged 驱动 —— MaximizeWindow 与
+            RestoreLayoutFromMaximized 都从那里出口,不需要新增公开 API。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.ToggleFocusMode">
+            <summary>F11:在当前活动页的专注态与常规态之间切换。</summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.IsTextInputFocused">
+            <summary>Esc 退出专注不得抢走控制台等输入控件的 Esc(UI-04.4)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.Item(System.String,System.String)">
+            <summary>菜单项点击同样是发指令(S-02):统一经总线分发、回显、留痕。</summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.UpdateLayoutIndicator">
+            <summary>
+            UI-05.4:原状态栏右侧的布局名。3.1 取消独立标题栏后没有常驻文本位,
+            改挂菜单按钮提示 —— 需要时一悬停就能看到,不占任何常驻像素。
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.ShellWindow.InitializeComponent">
+            <summary>
+            InitializeComponent
+            </summary>
+        </member>
+        <member name="T:AppShell.Shell.Themes.AppShellTheme">
+            <summary>
+            Shell 统一主题(§14.2 清单 7 主题挂钩):
+            以 VS2013 浅色为基底,叠加标签条置顶等 Shell 侧改造。
+            深色主题(S-04,P2)将来在此处扩展切换。
+            通过 Theme 机制下发可确保浮动窗口同样套用改造样式。
+            </summary>
+        </member>
+        <member name="T:AppShell.Shell.Views.CommandDetailView">
+            <summary>所选指令的 Help、MCP 映射与提示词治理详情。</summary>
+            <summary>
+            CommandDetailView
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.Views.CommandDetailView.InitializeComponent">
+            <summary>
+            InitializeComponent
+            </summary>
+        </member>
+        <member name="T:AppShell.Shell.Views.McpToolsView">
+            <summary>全部注册指令及其 MCP 投影的可筛选列表。</summary>
+            <summary>
+            McpToolsView
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.Views.McpToolsView.InitializeComponent">
+            <summary>
+            InitializeComponent
+            </summary>
+        </member>
+        <member name="T:AppShell.Shell.Views.ModulesView">
+            <summary>
+            模块管理页(V2.1.1):已装载模块清单 + 选中模块的注册指令明细。
+            数据经 module.list 消费(Data = ModuleMeta 列表);动作按钮全部经总线
+            (module.reload / module.open);指令明细为注册表只读展示,双击行发 help。
+            </summary>
+            <summary>
+            ModulesView
+            </summary>
+        </member>
+        <member name="M:AppShell.Shell.Views.ModulesView.OnToolRemoveClick(System.Object,System.Windows.RoutedEventArgs)">
+            <summary>移除所选模块(tool.remove 自带确认闸口;非同步来源的模块不在溯源中会被指令拒绝)。</summary>
+        </member>
+        <member name="M:AppShell.Shell.Views.ModulesView.InitializeComponent">
+            <summary>
+            InitializeComponent
+            </summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.PlaceholderPattern_0">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the PlaceholderPattern method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.PlaceholderPattern_0.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PlaceholderPattern_0.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.PlaceholderPattern_0.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PlaceholderPattern_0.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.PlaceholderPattern_0.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PlaceholderPattern_0.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PlaceholderPattern_0.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.PlaceholderPattern_0.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.Utilities">
+            <summary>Helper methods used by generated <see cref="T:System.Text.RegularExpressions.Regex"/>-derived implementations.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout">
+            <summary>Default timeout value set in <see cref="T:System.AppContext"/>, or <see cref="F:System.Text.RegularExpressions.Regex.InfiniteMatchTimeout"/> if none was set.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_hasTimeout">
+            <summary>Whether <see cref="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout"/> is non-infinite.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.IsWordChar(System.Char)">
+            <summary>Determines whether the character is part of the [\w] set.</summary>
+        </member>
+    </members>
+</doc>

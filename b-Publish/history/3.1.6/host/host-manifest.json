@@ -1,0 +1,181 @@
+{
+    "schemaVersion":  1,
+    "product":  "AppShell",
+    "version":  "3.1.6",
+    "channel":  "candidate-host",
+    "runtime":  "win-x64-framework-dependent",
+    "executable":  "AppShell.exe",
+    "selfContained":  false,
+    "files":  [
+                  {
+                      "file":  "AppShell.Core.dll",
+                      "bytes":  108544,
+                      "sha256":  "B542152406BE522717367FA276AF24426C80ED25AECC5F24C88809B96EC6BA01"
+                  },
+                  {
+                      "file":  "AppShell.Core.pdb",
+                      "bytes":  39320,
+                      "sha256":  "A027E3E426B2DFD3948FD475B71AEF2F6D662CFCC8DAEEF5F8277F9788A6747E"
+                  },
+                  {
+                      "file":  "AppShell.Core.xml",
+                      "bytes":  81004,
+                      "sha256":  "20B74108DDEF8FF429F0CDB642A932B521D4DE3D859779118BD01B8497AFD23F"
+                  },
+                  {
+                      "file":  "AppShell.deps.json",
+                      "bytes":  7220,
+                      "sha256":  "E9E47F0A58143ABE945FBAEF95DF28F155FA5CBD1AB99A2560DB08CC442FE7FE"
+                  },
+                  {
+                      "file":  "AppShell.dll",
+                      "bytes":  35840,
+                      "sha256":  "441CD8A823A17DB53A428B63D3E155CAB3764D233AC148F4A449FCAA2E1C04AB"
+                  },
+                  {
+                      "file":  "AppShell.exe",
+                      "bytes":  152064,
+                      "sha256":  "4C0CEFED4C20E3A76B39312EF5CB14A2F2FBD8280104BA7A18E11B06F0459B7A"
+                  },
+                  {
+                      "file":  "AppShell.pdb",
+                      "bytes":  19608,
+                      "sha256":  "1A9EFD3A942AB9A2226550F82441941B6F4465B0C337B4CF0F9B6C8C890CD908"
+                  },
+                  {
+                      "file":  "AppShell.runtimeconfig.json",
+                      "bytes":  515,
+                      "sha256":  "89AD1EA5C9C20B6B266547EF27C0AE3840CAB5642D3C2AEDF06B7026245671DD"
+                  },
+                  {
+                      "file":  "AppShell.ServiceHost.dll",
+                      "bytes":  35840,
+                      "sha256":  "4805CCDA624A0E353B023D1587E184802E78C68AE3AE01D8DBAE237DFE3211A8"
+                  },
+                  {
+                      "file":  "AppShell.ServiceHost.pdb",
+                      "bytes":  17476,
+                      "sha256":  "B0553246671D5C37067632BFCD5F7D37057F899E673C2E0A0C0E2D033725C5CD"
+                  },
+                  {
+                      "file":  "AppShell.Services.dll",
+                      "bytes":  224768,
+                      "sha256":  "5D52B7C4B2026A1FBB13D7D72E84EC1D0F3B624C6E14FECF275D159866DCC0A4"
+                  },
+                  {
+                      "file":  "AppShell.Services.pdb",
+                      "bytes":  55088,
+                      "sha256":  "023A4D9ED0B6C20ECD550773BF838AF7927EB747E9D4C6D931204C987A09DE3A"
+                  },
+                  {
+                      "file":  "AppShell.Services.xml",
+                      "bytes":  45232,
+                      "sha256":  "0CECA57204A13B228A268B15B3F55EC354222E7715F7D118BAC8A306B992AE42"
+                  },
+                  {
+                      "file":  "AppShell.Shell.dll",
+                      "bytes":  367104,
+                      "sha256":  "892FC745BA941E4BEB8539FF07C8CC037A6F467C98A40DF8627DD58AB1DB4EBD"
+                  },
+                  {
+                      "file":  "AppShell.Shell.pdb",
+                      "bytes":  88864,
+                      "sha256":  "ED430BF8E8278A004F176C9636F7604D2606F17E70388CDEB1EE47FFB7AB5CB8"
+                  },
+                  {
+                      "file":  "AvalonDock.dll",
+                      "bytes":  500736,
+                      "sha256":  "B122C1B983DADC185D9E8B59E58C3B11DDAF5E1CFBA4E1BFCF2107BF83333D42"
+                  },
+                  {
+                      "file":  "AvalonDock.Themes.VS2013.dll",
+                      "bytes":  130048,
+                      "sha256":  "2BAB0CD6C345258E73E6142BD1B1B452D02F59284C94B53BBD18065B11230FFC"
+                  },
+                  {
+                      "file":  "ca-ES/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "8BE396EE58DC23190160733E77CDE12815AA6B64F51E5583F0283E75A5A73F14"
+                  },
+                  {
+                      "file":  "cs-CZ/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "3796254A4F2A9705ED99F3BAC5A012F52230A0E0183E59581F505C502764FEDD"
+                  },
+                  {
+                      "file":  "de/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "3677239A313FE140120BF194C5C1D226841EF418207040BFE74E4B4008460217"
+                  },
+                  {
+                      "file":  "es/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "BDDCFC7185416B3458BFF2C1091840216999C08BD86CC009596281FADD29F507"
+                  },
+                  {
+                      "file":  "fr/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "4E0162C5DF26FAE1624174EC57A4766B2918246E74912C746CFA255B7E92ECE7"
+                  },
+                  {
+                      "file":  "hu/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "72908DCF31AF35A26A7E82705AEE0065D2904B3523BE1C4DDDFFF9AFB3062E27"
+                  },
+                  {
+                      "file":  "it/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "9E590BBEE8A97D0EC0AB97CA2EC401DC8E7E9EFE6EB420E9E7017FB9E54A2C3A"
+                  },
+                  {
+                      "file":  "ja/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "CB9D56AFE46E023AF446EFB603EBB55CF24E56D0E3073A960EE911DFE9506C7D"
+                  },
+                  {
+                      "file":  "ko/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "63033D3FDF4A432BFAAB3F18F155C5B27BF0DDD293AC064BD38AF993718B052D"
+                  },
+                  {
+                      "file":  "nl-BE/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "9A469564A127C404DC2E23659582CD2FC2E4C05A3F0FB463A1626269C4D658A2"
+                  },
+                  {
+                      "file":  "pl/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "0FA10E5510D3C2E6D3F7E93E6F86C104B340A98BE9D989A2F7B16B1CD8F3E030"
+                  },
+                  {
+                      "file":  "pt/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "058F4B0983F3F8C61C29229D76B976CC33843ACEFEC28603A6BE8ADAA409F43F"
+                  },
+                  {
+                      "file":  "ro/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "D4D3D185009AD45964E8B0A576EF7A62A901D953514D8D28F6DE0D273DEB306B"
+                  },
+                  {
+                      "file":  "ru/AvalonDock.resources.dll",
+                      "bytes":  6656,
+                      "sha256":  "6560B0C49E8C59094170D877D2101497869461C5BD3FD52B975D8DE31ED1399D"
+                  },
+                  {
+                      "file":  "sv/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "B6969C5183CCA0D8D01E3B7F3CC7A4DB7D4C3E1D51540FF323B0D448E111B465"
+                  },
+                  {
+                      "file":  "zh-Hans/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "9ADA7F06AECAAA39A1E52F278F1072FE02B4EB9696632FD8662C2C87A8A4B343"
+                  },
+                  {
+                      "file":  "zh-Hant/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "E12491E16E77AF2130FE9B9D79AD12C64D5AEFAD62E8A181EEA7B0A23835A4EC"
+                  }
+              ]
+}

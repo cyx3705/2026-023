@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>OneHistory.AppShell.ServiceHost</id>
+    <version>3.1.2</version>
+    <title>OneHistory AppShell Service Host</title>
+    <authors>OneHistory</authors>
+    <readme>PACKAGE.md</readme>
+    <description>Headless WPF service host, lifecycle commands, and desktop confirmation for OneHistory AppShell.</description>
+    <tags>onehistory appshell service wpf</tags>
+    <repository type="git" url="https://github.com/cyx3705/OneHistory" commit="202e081c35fe56b42a977af553103547b4fcb561" />
+    <dependencies>
+      <group targetFramework="net8.0-windows7.0">
+        <dependency id="OneHistory.AppShell.Core" version="3.1.2" exclude="Build,Analyzers" />
+        <dependency id="OneHistory.AppShell.Services" version="3.1.2" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkReferences>
+      <group targetFramework="net8.0-windows7.0">
+        <frameworkReference name="Microsoft.WindowsDesktop.App.WPF" />
+      </group>
+    </frameworkReferences>
+  </metadata>
+</package>

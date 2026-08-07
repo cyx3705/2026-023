@@ -1,0 +1,237 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0/win-x64",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {},
+    ".NETCoreApp,Version=v8.0/win-x64": {
+      "AppShell/3.1.2": {
+        "dependencies": {
+          "OneHistory.AppShell.Core": "3.1.2",
+          "OneHistory.AppShell.ServiceHost": "3.1.2",
+          "OneHistory.AppShell.Services": "3.1.2",
+          "OneHistory.AppShell.Shell": "3.1.2",
+          "AppShell.Core": "3.1.2.0",
+          "AppShell.ServiceHost": "3.1.2.0",
+          "AppShell.Services": "3.1.2.0",
+          "AppShell.Shell": "3.1.2.0"
+        },
+        "runtime": {
+          "AppShell.dll": {}
+        }
+      },
+      "Dirkster.AvalonDock/4.72.1": {
+        "runtime": {
+          "lib/net5.0-windows7.0/AvalonDock.dll": {
+            "assemblyVersion": "4.72.1.0",
+            "fileVersion": "4.72.1.0"
+          }
+        },
+        "resources": {
+          "lib/net5.0-windows7.0/ca-ES/AvalonDock.resources.dll": {
+            "locale": "ca-ES"
+          },
+          "lib/net5.0-windows7.0/cs-CZ/AvalonDock.resources.dll": {
+            "locale": "cs-CZ"
+          },
+          "lib/net5.0-windows7.0/de/AvalonDock.resources.dll": {
+            "locale": "de"
+          },
+          "lib/net5.0-windows7.0/es/AvalonDock.resources.dll": {
+            "locale": "es"
+          },
+          "lib/net5.0-windows7.0/fr/AvalonDock.resources.dll": {
+            "locale": "fr"
+          },
+          "lib/net5.0-windows7.0/hu/AvalonDock.resources.dll": {
+            "locale": "hu"
+          },
+          "lib/net5.0-windows7.0/it/AvalonDock.resources.dll": {
+            "locale": "it"
+          },
+          "lib/net5.0-windows7.0/ja/AvalonDock.resources.dll": {
+            "locale": "ja"
+          },
+          "lib/net5.0-windows7.0/ko/AvalonDock.resources.dll": {
+            "locale": "ko"
+          },
+          "lib/net5.0-windows7.0/nl-BE/AvalonDock.resources.dll": {
+            "locale": "nl-BE"
+          },
+          "lib/net5.0-windows7.0/pl/AvalonDock.resources.dll": {
+            "locale": "pl"
+          },
+          "lib/net5.0-windows7.0/pt/AvalonDock.resources.dll": {
+            "locale": "pt"
+          },
+          "lib/net5.0-windows7.0/ro/AvalonDock.resources.dll": {
+            "locale": "ro"
+          },
+          "lib/net5.0-windows7.0/ru/AvalonDock.resources.dll": {
+            "locale": "ru"
+          },
+          "lib/net5.0-windows7.0/sv/AvalonDock.resources.dll": {
+            "locale": "sv"
+          },
+          "lib/net5.0-windows7.0/zh-Hans/AvalonDock.resources.dll": {
+            "locale": "zh-Hans"
+          },
+          "lib/net5.0-windows7.0/zh-Hant/AvalonDock.resources.dll": {
+            "locale": "zh-Hant"
+          }
+        }
+      },
+      "Dirkster.AvalonDock.Themes.VS2013/4.72.1": {
+        "dependencies": {
+          "Dirkster.AvalonDock": "4.72.1"
+        },
+        "runtime": {
+          "lib/net5.0-windows7.0/AvalonDock.Themes.VS2013.dll": {
+            "assemblyVersion": "4.72.1.0",
+            "fileVersion": "4.72.1.0"
+          }
+        }
+      },
+      "OneHistory.AppShell.Core/3.1.2": {
+        "runtime": {
+          "AppShell.Core.dll": {
+            "assemblyVersion": "3.1.2.0",
+            "fileVersion": "3.1.2.0"
+          }
+        }
+      },
+      "OneHistory.AppShell.ServiceHost/3.1.2": {
+        "dependencies": {
+          "OneHistory.AppShell.Core": "3.1.2",
+          "OneHistory.AppShell.Services": "3.1.2"
+        },
+        "runtime": {
+          "AppShell.ServiceHost.dll": {
+            "assemblyVersion": "3.1.2.0",
+            "fileVersion": "3.1.2.0"
+          }
+        }
+      },
+      "OneHistory.AppShell.Services/3.1.2": {
+        "dependencies": {
+          "OneHistory.AppShell.Core": "3.1.2"
+        },
+        "runtime": {
+          "AppShell.Services.dll": {
+            "assemblyVersion": "3.1.2.0",
+            "fileVersion": "3.1.2.0"
+          }
+        }
+      },
+      "OneHistory.AppShell.Shell/3.1.2": {
+        "dependencies": {
+          "Dirkster.AvalonDock": "4.72.1",
+          "Dirkster.AvalonDock.Themes.VS2013": "4.72.1",
+          "OneHistory.AppShell.Core": "3.1.2",
+          "OneHistory.AppShell.Services": "3.1.2"
+        },
+        "runtime": {
+          "AppShell.Shell.dll": {
+            "assemblyVersion": "3.1.2.0",
+            "fileVersion": "3.1.2.0"
+          }
+        }
+      },
+      "AppShell.Core/3.1.2.0": {
+        "runtime": {
+          "AppShell.Core.dll": {
+            "assemblyVersion": "3.1.2.0",
+            "fileVersion": "3.1.2.0"
+          }
+        }
+      },
+      "AppShell.ServiceHost/3.1.2.0": {
+        "runtime": {
+          "AppShell.ServiceHost.dll": {
+            "assemblyVersion": "3.1.2.0",
+            "fileVersion": "3.1.2.0"
+          }
+        }
+      },
+      "AppShell.Services/3.1.2.0": {
+        "runtime": {
+          "AppShell.Services.dll": {
+            "assemblyVersion": "3.1.2.0",
+            "fileVersion": "3.1.2.0"
+          }
+        }
+      },
+      "AppShell.Shell/3.1.2.0": {
+        "runtime": {
+          "AppShell.Shell.dll": {
+            "assemblyVersion": "3.1.2.0",
+            "fileVersion": "3.1.2.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "AppShell/3.1.2": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Dirkster.AvalonDock/4.72.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-m5J03HVntDM3eu7GyzLWlNdr2c2TTBAoD33Pq1yCID7vEtk13VVngtlmegp67WUvpL5JUC8G2xU8n+ThZKKz0Q==",
+      "path": "dirkster.avalondock/4.72.1",
+      "hashPath": "dirkster.avalondock.4.72.1.nupkg.sha512"
+    },
+    "Dirkster.AvalonDock.Themes.VS2013/4.72.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-g+hcHokgRFSvznqsVWxHxPCrUMxe18MTJjXMRVQJTVNo/Kwx8krdNiRnCSUDkuVtr2z29EtC4QofZhwUB7FS+w==",
+      "path": "dirkster.avalondock.themes.vs2013/4.72.1",
+      "hashPath": "dirkster.avalondock.themes.vs2013.4.72.1.nupkg.sha512"
+    },
+    "OneHistory.AppShell.Core/3.1.2": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "OneHistory.AppShell.ServiceHost/3.1.2": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "OneHistory.AppShell.Services/3.1.2": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "OneHistory.AppShell.Shell/3.1.2": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AppShell.Core/3.1.2.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AppShell.ServiceHost/3.1.2.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AppShell.Services/3.1.2.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "AppShell.Shell/3.1.2.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

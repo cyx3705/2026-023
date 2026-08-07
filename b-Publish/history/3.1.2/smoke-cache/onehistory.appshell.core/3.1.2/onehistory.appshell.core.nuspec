@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>OneHistory.AppShell.Core</id>
+    <version>3.1.2</version>
+    <title>OneHistory AppShell Core</title>
+    <authors>OneHistory</authors>
+    <readme>PACKAGE.md</readme>
+    <description>Core contracts, command infrastructure, and MCP metadata for OneHistory AppShell.</description>
+    <tags>onehistory appshell commands mcp</tags>
+    <repository type="git" url="https://github.com/cyx3705/OneHistory" commit="202e081c35fe56b42a977af553103547b4fcb561" />
+    <dependencies>
+      <group targetFramework="net8.0" />
+    </dependencies>
+  </metadata>
+</package>

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>AppShell.ServiceHost</name>
+    </assembly>
+    <members>
+        <member name="T:AppShell.ServiceHost.IAutostartManager">
+            <summary>用户级登录启动项；接口用于在测试中替换为内存实现。</summary>
+        </member>
+        <member name="T:AppShell.ServiceHost.ServiceComposition">
+            <summary>服务进程的通用组合根；框架不包含任何派生应用领域对象。</summary>
+        </member>
+        <member name="P:AppShell.ServiceHost.ServiceComposition.EndpointFile">
+            <summary>Optional loopback endpoint file used by a cooperating desktop frontend.</summary>
+        </member>
+        <member name="T:AppShell.ServiceHost.ServiceConfirmation">
+            <summary>由服务进程自己的 Dispatcher 显示的人工确认通道。</summary>
+        </member>
+        <member name="T:AppShell.ServiceHost.ServiceHost">
+            <summary>无主窗口的用户会话 WPF 服务宿主。</summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,239 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>AppShell.Services</name>
+    </assembly>
+    <members>
+        <member name="T:AppShell.Services.AppPaths">
+            <summary>
+            应用数据目录约定(F-02,Q9 已定):%AppData%/&lt;应用名&gt;/,
+            布局 / 设置 / 历史 / data / modules / panels / logs 均置于其下。
+            </summary>
+        </member>
+        <member name="M:AppShell.Services.AppPaths.#ctor(System.String,System.String,System.Boolean)">
+            <summary>Creates an isolated runtime root for a cooperating host process.</summary>
+        </member>
+        <member name="P:AppShell.Services.AppPaths.Root">
+            <summary>%AppData%/&lt;应用名&gt;/</summary>
+        </member>
+        <member name="P:AppShell.Services.AppPaths.LayoutDir">
+            <summary>布局文件目录(W-07 / W-08)。</summary>
+        </member>
+        <member name="P:AppShell.Services.AppPaths.DataDir">
+            <summary>应用自有业务数据目录。</summary>
+        </member>
+        <member name="P:AppShell.Services.AppPaths.LogsDir">
+            <summary>滚动日志目录(L-02,M2 正式接管)。</summary>
+        </member>
+        <member name="P:AppShell.Services.AppPaths.ModulesDir">
+            <summary>模块 DLL 与模块槽目录。</summary>
+        </member>
+        <member name="P:AppShell.Services.AppPaths.PanelsDir">
+            <summary>JSON 控制面板目录。</summary>
+        </member>
+        <member name="T:AppShell.Services.FileLayoutStore">
+            <summary>
+            布局文件存取实现:当前布局为 layout/current.layout.xml,
+            命名方案为 layout/&lt;名称&gt;.layout.xml(W-07 / W-08)。
+            </summary>
+        </member>
+        <member name="T:AppShell.Services.Input.GlobalShortcutService">
+            <summary>
+            User-session global shortcut host. The hook only queues key metadata; command
+            execution happens on a worker and no input data is persisted or forwarded.
+            </summary>
+        </member>
+        <member name="T:AppShell.Services.Mcp.McpAuditRecorder">
+            <summary>MCP 调用留痕的 JSONL 实现。单条追加失败只告警，不阻断调用。</summary>
+        </member>
+        <member name="T:AppShell.Services.Mcp.McpGateway">
+            <summary>
+            MCP 网关(V2.1 §4/§6):HttpListener + JSON-RPC 2.0(Streamable HTTP 无状态子集),
+            仅监听 127.0.0.1。铁律 1:唯一上游是指令总线——本类只认识
+            CommandSchemaExporter / CommandBus,不 import ModuleHost、不反射模块类型。
+            消费方显式装配网关后可调用 TryAutostart；mcp.autostart=false 可关闭自动监听，mcp.start 仍可手动恢复。
+            每次调用/拒绝均追加写入 state/mcp-history.jsonl(铁律 2 / MS-05)。
+            </summary>
+        </member>
+        <member name="F:AppShell.Services.Mcp.McpGateway._remoteConfirm">
+            <summary>宿主确认中继对话框(client, 完整提示, 超时秒) → true/false/null;host 档需要。</summary>
+        </member>
+        <member name="F:AppShell.Services.Mcp.McpGateway._confirmGate">
+            <summary>CX-02 §9-4:同一时刻只弹一个中继确认框,多个远程请求按序处理。</summary>
+        </member>
+        <member name="P:AppShell.Services.Mcp.McpGateway.ConfirmMode">
+            <summary>确认中继模式(CX-02):deny=危险指令一律拒绝(默认);host=宿主弹框人工裁决。</summary>
+        </member>
+        <member name="P:AppShell.Services.Mcp.McpGateway.AutostartEnabled">
+            <summary>缺省启用；仅显式配置 false 时关闭宿主启动自动监听。</summary>
+        </member>
+        <member name="M:AppShell.Services.Mcp.McpGateway.VisibleTools">
+            <summary>
+            当前策略下 tools/list 会暴露的工具(每次现算,与模块热重载天然同步)。
+            危险指令(带确认闸口)默认不暴露;仅当 mcp.confirm=host 且策略=standard 时暴露,
+            供 Codex 发现"可请求、由人把关"的操作(V2.2 CX-02)。
+            </summary>
+        </member>
+        <member name="M:AppShell.Services.Mcp.McpGateway.TryAutostart">
+            <summary>宿主完成全部指令和模块装配后调用；禁用时不监听但仍视为正常配置。</summary>
+        </member>
+        <member name="M:AppShell.Services.Mcp.McpGateway.ExecuteToolAsync(AppShell.Core.Mcp.ClientSession,System.Text.Json.Nodes.JsonNode,AppShell.Core.Commands.CommandBus,AppShell.Core.Mcp.McpToolInfo,System.String,System.String,System.Boolean,System.String,System.Action{System.String,System.String,System.String})">
+            <summary>组装指令经总线执行并映射为 MCP 结果;preApproved=true 时置确认预批准域(CX-03)。</summary>
+        </member>
+        <member name="M:AppShell.Services.Mcp.McpGateway.RelayConfirmAsync(AppShell.Core.Mcp.ClientSession,AppShell.Core.Commands.CommandBus,System.String,System.Nullable{System.Text.Json.JsonElement},System.String)">
+            <summary>
+            宿主确认中继(CX-02):复用描述符 ConfirmPrompt 文案,标注 MCP 客户端弹框由人裁决。
+            返回批准、拒绝、确认超时或排队超时。ConfirmPrompt 对本次输入返回 null
+            (如受保护分支)时直接放行,交由指令处理器按业务规则拒绝。
+            </summary>
+        </member>
+        <member name="T:AppShell.Services.Mcp.PromptGovernanceStore">
+            <summary>
+            MCP 提示词治理的文件存储。所有关联状态在同一份 JSON 文档内原子替换，
+            因而批准、应用、回滚仍保持单进程事务语义，但不再要求关系数据库。
+            </summary>
+        </member>
+        <member name="T:AppShell.Services.Modules.ModuleHost">
+            <summary>
+            模块宿主(MD-01~07):进程内移植自 b-Code-MyAPI-Lite 的 ModuleHost/Invoker 机制(D3)。
+            监听 Modules 目录,把含 BaseVariable.ModuleInfoBase 子类(鸭子类型,MD-02)的 DLL
+            的业务方法注册为总线指令「模块名.方法名」;XML 注释成为帮助文本(MD-03)。
+            DLL 从内存流加载不锁文件,覆盖/新增/删除触发整体热重载(800ms 防抖,MD-01);
+            与内置指令重名的方法拒绝注册并告警(MD-07);模块异常由总线兜底(MD-06)。
+            与 Lite 的差异:端点表 → CommandRegistry 注册/注销;Console → IShellLog;
+            注册表变更经 WPF Dispatcher 序列化到 UI 线程。
+            </summary>
+        </member>
+        <member name="P:AppShell.Services.Modules.ModuleHost.UiContext">
+            <summary>
+            UI 线程编组通道(0.4.4)。注册表是 UI 线程消费的普通字典,热重载换血必须编组过去。
+            原实现直接取 <c>System.Windows.Application.Current.Dispatcher</c>,使本类带上 WPF 依赖、
+            无法留在 net8.0 的 Services 层(违反 §14.2「只有 Shell 认识 WPF」)。
+            现与 <c>CommandBus.UiContext</c> 同一惯例,由装配点在 UI 线程赋值;
+            为 null 视为应用退出中,与原来 Dispatcher 为 null 的处置一致。
+            </summary>
+        </member>
+        <member name="P:AppShell.Services.Modules.ModuleHost.EnableCommands">
+            <summary>是否把模块方法注册到本进程指令表。无窗前端可关闭。</summary>
+        </member>
+        <member name="P:AppShell.Services.Modules.ModuleHost.EnableUiModules">
+            <summary>是否实例化模块 UI。无窗服务进程必须关闭。</summary>
+        </member>
+        <member name="P:AppShell.Services.Modules.ModuleHost.EnableFileWatching">
+            <summary>Whether this host owns filesystem change detection for the module directory.</summary>
+        </member>
+        <member name="P:AppShell.Services.Modules.ModuleHost.ShellUi">
+            <summary>模块内嵌界面的宿主注册器;无窗服务进程保持 null。</summary>
+        </member>
+        <member name="P:AppShell.Services.Modules.ModuleHost.GlobalShortcuts">
+            <summary>后台宿主提供的全局快捷键注册器；前端 UI 宿主保持 null。</summary>
+        </member>
+        <member name="E:AppShell.Services.Modules.ModuleHost.ReloadCompleted">
+            <summary>每次整体重载完成后触发(在重载线程上);MD-08 面板同步等旁路逻辑挂此处。</summary>
+        </member>
+        <member name="M:AppShell.Services.Modules.ModuleHost.Attach(AppShell.Core.Commands.CommandRegistry)">
+            <summary>接入指令注册表(ShellWindow 创建后调用,再 Start)。</summary>
+        </member>
+        <member name="M:AppShell.Services.Modules.ModuleHost.ChangeDirectory(System.String)">
+            <summary>module.dir path=:切换模块目录并整体重载。</summary>
+        </member>
+        <member name="M:AppShell.Services.Modules.ModuleHost.ScheduleReload(System.String)">
+            <summary>文件事件防抖:拷贝大 DLL 会触发多次 Changed,静默 800ms 后才真正重载。</summary>
+        </member>
+        <member name="M:AppShell.Services.Modules.ModuleHost.Reload">
+            <summary>整体重载:构建新快照 → 注册表换血(UI 线程) → 卸载旧 ALC。</summary>
+        </member>
+        <member name="M:AppShell.Services.Modules.ModuleHost.FindModuleDomainConflicts(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            返回候选模块命令中与宿主已有命令域冲突的一级域。
+            该纯函数同时供生产换血路径和 Smoke 回归使用。
+            </summary>
+        </member>
+        <member name="M:AppShell.Services.Modules.ModuleHost.CollectType(AppShell.Services.Modules.ModuleHost.Snapshot,System.String,System.Type,AppShell.Services.Modules.XmlDocs)">
+            <summary>把一个业务类的公共方法收集为待注册指令(MD-03/04)。</summary>
+        </member>
+        <member name="M:AppShell.Services.Modules.ModuleHost.IsModuleInfo(System.Type)">
+            <summary>按基类全名判断,模块编译时引用哪个版本的 BaseVariable.dll 都能识别。</summary>
+        </member>
+        <member name="M:AppShell.Services.Modules.ModuleHost.ReadFileWithRetry(System.String)">
+            <summary>文件可能正在拷贝中,重试读取。</summary>
+        </member>
+        <member name="T:AppShell.Services.Modules.ModuleHost.Snapshot">
+            <summary>一次加载的不可变快照:可卸载 ALC 组(根 + 每槽一个) + 指令表 + 单例缓存。热重载整体替换。</summary>
+        </member>
+        <member name="P:AppShell.Services.Modules.ModuleHost.Snapshot.Contexts">
+            <summary>本快照持有的全部加载上下文(MH-01:根平铺一个 + 每模块槽一个)。</summary>
+        </member>
+        <member name="P:AppShell.Services.Modules.ModuleHost.Snapshot.PendingCommands">
+            <summary>扫描出的待注册指令(注册在 UI 线程完成,冲突者被剔除)。</summary>
+        </member>
+        <member name="P:AppShell.Services.Modules.ModuleHost.Snapshot.RegisteredNames">
+            <summary>实际注册成功的指令名(热重载时按此注销)。</summary>
+        </member>
+        <member name="P:AppShell.Services.Modules.ModuleHost.Snapshot.Metas">
+            <summary>模块元信息(module.list);CommandCount 在注册完成后定稿。</summary>
+        </member>
+        <member name="T:AppShell.Services.Modules.ModuleHost.ModuleLoadContext">
+            <summary>可回收的加载上下文:模块及其依赖全部从内存流加载,不锁磁盘文件。</summary>
+        </member>
+        <member name="T:AppShell.Services.Modules.XmlDocs">
+            <summary>
+            读取编译器生成的 XML 文档文件(模块 DLL 同目录同名 .xml),
+            把方法的 &lt;summary&gt; / &lt;param&gt; 注释变成指令帮助文本(MD-03)。
+            </summary>
+        </member>
+        <member name="T:AppShell.Services.Modules.ModulePanelSync">
+            <summary>
+            MD-08 模块旁面板自动发现(MP-01/02):
+            Modules 目录中的 `&lt;模块名&gt;.panel.json` 自动并入 panels 目录
+            (副本名 module-&lt;模块名&gt;.json,前缀便于识别与回收),模块下线时副本移除。
+            语义遵循框架 P-08 约定:已有面板 panel.reload 原地刷新即时生效;
+            **全新面板窗口重启后出现**(窗口注册先于停靠系统初始化,框架文档明示)。
+            面板 id 冲突由 PanelManager 既有校验拒绝并告警(MP-01 后半)。
+            </summary>
+        </member>
+        <member name="M:AppShell.Services.Modules.ModulePanelSync.SyncFiles(System.String,System.String,AppShell.Core.Logging.IShellLog)">
+            <summary>
+            把模块旁 *.panel.json 同步到 panels 目录;返回是否有变化(调用方据此触发 panel.reload)。
+            纯文件级操作,不加载任何 DLL——启动期(窗口创建前)与热重载后均可调用。
+            </summary>
+        </member>
+        <member name="T:AppShell.Services.SettingsService">
+            <summary>
+            应用设置(F-01/F-03):%AppData%/&lt;应用名&gt;/settings.json,扁平键值对。
+            app.set / app.get 指令与派生应用共用;写入即落盘。
+            </summary>
+        </member>
+        <member name="M:AppShell.Services.SettingsService.All">
+            <summary>全部键(app.get 不带参数时列出)。</summary>
+        </member>
+        <member name="T:AppShell.Services.ShellLog">
+            <summary>
+            正式日志服务(§6.2,M2):
+            - L-01 多输出端:内存缓冲(控制台窗口补读)/ 滚动文件 / IDE 调试输出
+            - L-02 滚动:按天切分 + 单文件超 10MB 续号切分;保留天数可配(默认 30 天)
+            - L-03 指令回显与普通日志共用本管道、以类别区分(cmd:* 前缀)
+            - N-03 承压:文件写入走后台单线程 + 常开流,1000 条/秒不阻塞调用方
+            文件始终全量落盘;控制台显示级别过滤在窗口侧完成(L-04)。
+            </summary>
+        </member>
+        <member name="M:AppShell.Services.ShellLog.Dispose">
+            <summary>退出前冲刷文件队列(App 关闭时调用)。</summary>
+        </member>
+        <member name="T:AppShell.Services.Web.ShellEndpointProfile">
+            <summary>Shell HTTP/WS 共享的端点、设备凭据与证书固定配置。</summary>
+        </member>
+        <member name="M:AppShell.Services.Web.ShellEndpointProfile.#ctor(System.Uri,System.String,System.Func{System.String},System.String,System.Nullable{System.TimeSpan},System.String)">
+            <summary>Shell HTTP/WS 共享的端点、设备凭据与证书固定配置。</summary>
+        </member>
+        <member name="T:AppShell.Services.Web.ShellServiceClient">
+            <summary>WPF Shell 使用的命令 API 与 UI 命令中继客户端。</summary>
+        </member>
+        <member name="T:AppShell.Services.Web.WebCommands">
+            <summary>正式 Web 接入点的配置命令。</summary>
+        </member>
+        <member name="T:AppShell.Services.Web.WebGateway">
+            <summary>命令总线的 HTTP/WS 接入点，供本机 Shell 与受鉴权 Web 客户端共用。</summary>
+        </member>
+    </members>
+</doc>
