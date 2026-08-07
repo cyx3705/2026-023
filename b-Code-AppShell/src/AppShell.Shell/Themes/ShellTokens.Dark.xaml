@@ -1,0 +1,122 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                    xmlns:reskeys="clr-namespace:AvalonDock.Themes.VS2013.Themes;assembly=AvalonDock.Themes.VS2013">
+
+    <!--
+        UI-08 深色令牌(S-04 落地)。键名与 ShellTokens.xaml 逐一对应,主题切换
+        整份替换,不做逐键覆盖 —— 少一个键就会露出浅色底,所以两份必须同步维护。
+        主题色仍是暗黄,深色下提亮以保证对比度。
+    -->
+
+    <!-- ================================================================ 颜色 -->
+
+    <SolidColorBrush x:Key="Shell.Brush.Canvas" Color="#1A1D1C" />
+    <SolidColorBrush x:Key="Shell.Brush.Surface" Color="#1D201F" />
+    <SolidColorBrush x:Key="Shell.Brush.SurfaceAlt" Color="#242625" />
+    <SolidColorBrush x:Key="Shell.Brush.SurfaceHover" Color="#2A2D2C" />
+    <SolidColorBrush x:Key="Shell.Brush.SurfacePressed" Color="#343736" />
+
+    <SolidColorBrush x:Key="Shell.Brush.TextPrimary" Color="#E2DAC6" />
+    <SolidColorBrush x:Key="Shell.Brush.TextSecondary" Color="#ACA593" />
+    <SolidColorBrush x:Key="Shell.Brush.TextDisabled" Color="#77746A" />
+    <SolidColorBrush x:Key="Shell.Brush.TextOnAccent" Color="#171918" />
+
+    <!-- 主题色:暗黄(深色底上提亮) -->
+    <SolidColorBrush x:Key="Shell.Brush.Accent" Color="#D9A441" />
+    <SolidColorBrush x:Key="Shell.Brush.AccentHover" Color="#E8B65C" />
+    <SolidColorBrush x:Key="Shell.Brush.AccentSoft" Color="#33342A" />
+
+    <SolidColorBrush x:Key="Shell.Brush.Danger" Color="#E06C6C" />
+    <SolidColorBrush x:Key="Shell.Brush.DangerSoft" Color="#3A2320" />
+    <SolidColorBrush x:Key="Shell.Brush.Warning" Color="#E0A458" />
+    <SolidColorBrush x:Key="Shell.Brush.Success" Color="#5FBE8B" />
+
+    <SolidColorBrush x:Key="Shell.Brush.Hairline" Color="#2A2D2C" />
+    <SolidColorBrush x:Key="Shell.Brush.ControlBorder" Color="#343736" />
+
+    <SolidColorBrush x:Key="Shell.Brush.WindowButtonHover" Color="#2A2D2C" />
+    <SolidColorBrush x:Key="Shell.Brush.WindowButtonPressed" Color="#343736" />
+    <SolidColorBrush x:Key="Shell.Brush.CloseHover" Color="#C4453D" />
+    <SolidColorBrush x:Key="Shell.Brush.CloseHoverPressed" Color="#A83A33" />
+
+    <!-- ================================================================ 形状 -->
+
+    <CornerRadius x:Key="Shell.Radius.Window">0</CornerRadius>
+    <CornerRadius x:Key="Shell.Radius.Inner">8</CornerRadius>
+    <CornerRadius x:Key="Shell.Radius.TabTop">5,5,0,0</CornerRadius>
+    <CornerRadius x:Key="Shell.Radius.TabInner">5</CornerRadius>
+
+    <!-- ================================================================ 间距与尺寸 -->
+
+    <Thickness x:Key="Shell.Space.Gap">1</Thickness>
+    <Thickness x:Key="Shell.Space.Pad">12</Thickness>
+    <Thickness x:Key="Shell.Space.PadTight">8</Thickness>
+    <Thickness x:Key="Shell.Space.ControlPad">10,4</Thickness>
+    <Thickness x:Key="Shell.Space.TabStrip">3,3,3,0</Thickness>
+
+    <sys:Double x:Key="Shell.Size.Control">28</sys:Double>
+    <sys:Double x:Key="Shell.Size.WindowButton">44</sys:Double>
+    <sys:Double x:Key="Shell.Size.Tab">32</sys:Double>
+
+    <sys:Double x:Key="Shell.Font.Body">13</sys:Double>
+    <sys:Double x:Key="Shell.Font.Small">11</sys:Double>
+    <sys:Double x:Key="Shell.Font.Mono">12</sys:Double>
+
+    <FontFamily x:Key="Shell.Font.Family">Microsoft YaHei UI, Segoe UI</FontFamily>
+    <FontFamily x:Key="Shell.Font.MonoFamily">Consolas</FontFamily>
+
+    <!-- ================================================================ 投影 -->
+
+    <!-- 窗格只保留轻微层次，不形成悬浮卡片感。 -->
+    <DropShadowEffect x:Key="Shell.Shadow.Card"
+                      Color="#000000" BlurRadius="10" ShadowDepth="1"
+                      Direction="270" Opacity="0.18" RenderingBias="Performance" />
+    <DropShadowEffect x:Key="Shell.Shadow.CardActive"
+                      Color="#000000" BlurRadius="14" ShadowDepth="1"
+                      Direction="270" Opacity="0.24" RenderingBias="Performance" />
+    <DropShadowEffect x:Key="Shell.Shadow.Flyout"
+                      Color="#000000" BlurRadius="28" ShadowDepth="4"
+                      Direction="270" Opacity="0.65" RenderingBias="Performance" />
+
+    <!-- ================================================================ 文本 -->
+
+    <Style x:Key="Shell.Text.Body" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{DynamicResource Shell.Font.Family}" />
+        <Setter Property="FontSize" Value="{DynamicResource Shell.Font.Body}" />
+        <Setter Property="Foreground" Value="{DynamicResource Shell.Brush.TextPrimary}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="Shell.Text.Secondary" TargetType="TextBlock" BasedOn="{StaticResource Shell.Text.Body}">
+        <Setter Property="Foreground" Value="{DynamicResource Shell.Brush.TextSecondary}" />
+    </Style>
+
+    <Style x:Key="Shell.Text.Caption" TargetType="TextBlock" BasedOn="{StaticResource Shell.Text.Secondary}">
+        <Setter Property="FontSize" Value="{DynamicResource Shell.Font.Small}" />
+    </Style>
+
+    <!-- ================================================================ AvalonDock 主题画刷键 -->
+
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.TabBackground}" Color="#1D201F" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.PanelBorderBrush}" Color="Transparent" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DocumentWellTabSelectedActiveBackground}" Color="#33342A" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DocumentWellTabSelectedInactiveBackground}" Color="#262A28" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DocumentWellTabUnselectedBackground}" Color="Transparent" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DocumentWellTabUnselectedHoveredBackground}" Color="#2A2D2C" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.ToolWindowTabSelectedActiveBackground}" Color="#33342A" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.ToolWindowTabSelectedInactiveBackground}" Color="#262A28" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.ToolWindowTabUnselectedBackground}" Color="Transparent" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.ToolWindowTabUnselectedHoveredBackground}" Color="#2A2D2C" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.ToolWindowCaptionActiveBackground}" Color="#1D201F" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.ToolWindowCaptionInactiveBackground}" Color="#1D201F" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabDefaultBackground}" Color="#171918" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabDefaultBorder}" Color="Transparent" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabHoveredBackground}" Color="#33342A" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabHoveredBorder}" Color="Transparent" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingToolWindowBackground}" Color="#1D201F" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingToolWindowBorder}" Color="#2A2D2C" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingDocumentWindowBackground}" Color="#1D201F" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingDocumentWindowBorder}" Color="#2A2D2C" />
+
+</ResourceDictionary>

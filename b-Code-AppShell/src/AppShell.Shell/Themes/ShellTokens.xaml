@@ -1,0 +1,134 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                    xmlns:reskeys="clr-namespace:AvalonDock.Themes.VS2013.Themes;assembly=AvalonDock.Themes.VS2013">
+
+    <!--
+        UI-08:3.1 设计令牌(浅色)。Shell 层唯一允许出现颜色与圆角字面量的地方之一
+        (另一处是 ShellTokens.Dark.xaml),其余 XAML 一律经 DynamicResource 引用。
+
+        AvalonDock 主题画刷键(reskeys)也在这里定义:主题切换时整份字典被替换,
+        应用色与停靠色因此始终同步,不会出现「界面已深色、页签仍浅色」。
+        主题色(Accent)按 3.1 决议统一为暗黄,浅色深色只差明度。
+    -->
+
+    <!-- ================================================================ 颜色 -->
+
+    <SolidColorBrush x:Key="Shell.Brush.Canvas" Color="#F5F6F7" />
+    <SolidColorBrush x:Key="Shell.Brush.Surface" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Shell.Brush.SurfaceAlt" Color="#F5F6F8" />
+    <SolidColorBrush x:Key="Shell.Brush.SurfaceHover" Color="#ECEEF1" />
+    <SolidColorBrush x:Key="Shell.Brush.SurfacePressed" Color="#E0E3E8" />
+
+    <SolidColorBrush x:Key="Shell.Brush.TextPrimary" Color="#1F2328" />
+    <SolidColorBrush x:Key="Shell.Brush.TextSecondary" Color="#6B7280" />
+    <SolidColorBrush x:Key="Shell.Brush.TextDisabled" Color="#A1A7B0" />
+    <SolidColorBrush x:Key="Shell.Brush.TextOnAccent" Color="#FFFFFF" />
+
+    <!-- 主题色:暗黄 -->
+    <SolidColorBrush x:Key="Shell.Brush.Accent" Color="#A87A12" />
+    <SolidColorBrush x:Key="Shell.Brush.AccentHover" Color="#8C650E" />
+    <SolidColorBrush x:Key="Shell.Brush.AccentSoft" Color="#FAF0D8" />
+
+    <SolidColorBrush x:Key="Shell.Brush.Danger" Color="#C42525" />
+    <SolidColorBrush x:Key="Shell.Brush.DangerSoft" Color="#FBE9E9" />
+    <SolidColorBrush x:Key="Shell.Brush.Warning" Color="#B26A00" />
+    <SolidColorBrush x:Key="Shell.Brush.Success" Color="#1E7F4B" />
+
+    <!-- UI-01.3:Hairline 只用于卡片内部必要分隔(含分段工具条的切分线),不用于卡片之间 -->
+    <SolidColorBrush x:Key="Shell.Brush.Hairline" Color="#E4E7EB" />
+    <SolidColorBrush x:Key="Shell.Brush.ControlBorder" Color="#D8DCE2" />
+
+    <!-- 顶部控件条与窗口按钮(UI-02) -->
+    <SolidColorBrush x:Key="Shell.Brush.WindowButtonHover" Color="#DDE1E6" />
+    <SolidColorBrush x:Key="Shell.Brush.WindowButtonPressed" Color="#CBD1D8" />
+    <SolidColorBrush x:Key="Shell.Brush.CloseHover" Color="#C42525" />
+    <SolidColorBrush x:Key="Shell.Brush.CloseHoverPressed" Color="#A81E1E" />
+
+    <!-- ================================================================ 形状 -->
+
+    <!-- UI-02.1 / Q-4:Win10 IoT 无系统窗口圆角,窗体外缘恒为直角 -->
+    <CornerRadius x:Key="Shell.Radius.Window">0</CornerRadius>
+    <!-- Q-4:窗体内部唯一圆角值 -->
+    <CornerRadius x:Key="Shell.Radius.Inner">8</CornerRadius>
+    <!--
+        页签与卡片同心:卡片外圆角 8、页签相对卡片内缩 3(Shell.Space.TabInset),
+        故页签上圆角 = 8 - 3 = 5,两者的圆心重合,不会出现「方页签套圆卡片」。
+    -->
+    <CornerRadius x:Key="Shell.Radius.TabTop">5,5,0,0</CornerRadius>
+    <CornerRadius x:Key="Shell.Radius.TabInner">5</CornerRadius>
+
+    <!-- ================================================================ 间距与尺寸 -->
+
+    <Thickness x:Key="Shell.Space.Gap">1</Thickness>
+    <Thickness x:Key="Shell.Space.Pad">12</Thickness>
+    <Thickness x:Key="Shell.Space.PadTight">8</Thickness>
+    <Thickness x:Key="Shell.Space.ControlPad">10,4</Thickness>
+    <Thickness x:Key="Shell.Space.TabStrip">3,3,3,0</Thickness>
+
+    <sys:Double x:Key="Shell.Size.Control">28</sys:Double>
+    <sys:Double x:Key="Shell.Size.WindowButton">44</sys:Double>
+    <!-- 页签行高 = 顶部控件条高:窗口按钮与页签必须同处一行(3.1 修订) -->
+    <sys:Double x:Key="Shell.Size.Tab">32</sys:Double>
+
+    <sys:Double x:Key="Shell.Font.Body">13</sys:Double>
+    <sys:Double x:Key="Shell.Font.Small">11</sys:Double>
+    <sys:Double x:Key="Shell.Font.Mono">12</sys:Double>
+
+    <FontFamily x:Key="Shell.Font.Family">Microsoft YaHei UI, Segoe UI</FontFamily>
+    <FontFamily x:Key="Shell.Font.MonoFamily">Consolas</FontFamily>
+
+    <!-- ================================================================ 投影(UI-01) -->
+
+    <!-- UI-09.4:投影只挂窗格级 Border,不用于列表项等高频元素 -->
+    <DropShadowEffect x:Key="Shell.Shadow.Card"
+                      Color="#000000" BlurRadius="10" ShadowDepth="1"
+                      Direction="270" Opacity="0.05" RenderingBias="Performance" />
+    <DropShadowEffect x:Key="Shell.Shadow.CardActive"
+                      Color="#000000" BlurRadius="14" ShadowDepth="1"
+                      Direction="270" Opacity="0.08" RenderingBias="Performance" />
+    <DropShadowEffect x:Key="Shell.Shadow.Flyout"
+                      Color="#000000" BlurRadius="28" ShadowDepth="4"
+                      Direction="270" Opacity="0.18" RenderingBias="Performance" />
+
+    <!-- ================================================================ 文本 -->
+
+    <Style x:Key="Shell.Text.Body" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{DynamicResource Shell.Font.Family}" />
+        <Setter Property="FontSize" Value="{DynamicResource Shell.Font.Body}" />
+        <Setter Property="Foreground" Value="{DynamicResource Shell.Brush.TextPrimary}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="Shell.Text.Secondary" TargetType="TextBlock" BasedOn="{StaticResource Shell.Text.Body}">
+        <Setter Property="Foreground" Value="{DynamicResource Shell.Brush.TextSecondary}" />
+    </Style>
+
+    <Style x:Key="Shell.Text.Caption" TargetType="TextBlock" BasedOn="{StaticResource Shell.Text.Secondary}">
+        <Setter Property="FontSize" Value="{DynamicResource Shell.Font.Small}" />
+    </Style>
+
+    <!-- ================================================================ AvalonDock 主题画刷键 -->
+
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.TabBackground}" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.PanelBorderBrush}" Color="Transparent" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DocumentWellTabSelectedActiveBackground}" Color="#FAF0D8" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DocumentWellTabSelectedInactiveBackground}" Color="#F1F2F5" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DocumentWellTabUnselectedBackground}" Color="Transparent" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.DocumentWellTabUnselectedHoveredBackground}" Color="#ECEEF1" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.ToolWindowTabSelectedActiveBackground}" Color="#FAF0D8" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.ToolWindowTabSelectedInactiveBackground}" Color="#F1F2F5" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.ToolWindowTabUnselectedBackground}" Color="Transparent" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.ToolWindowTabUnselectedHoveredBackground}" Color="#ECEEF1" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.ToolWindowCaptionActiveBackground}" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.ToolWindowCaptionInactiveBackground}" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabDefaultBackground}" Color="#EDEFF2" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabDefaultBorder}" Color="Transparent" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabHoveredBackground}" Color="#FAF0D8" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.AutoHideTabHoveredBorder}" Color="Transparent" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingToolWindowBackground}" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingToolWindowBorder}" Color="#E4E7EB" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingDocumentWindowBackground}" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="{x:Static reskeys:ResourceKeys.FloatingDocumentWindowBorder}" Color="#E4E7EB" />
+
+</ResourceDictionary>

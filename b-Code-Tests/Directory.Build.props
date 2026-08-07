@@ -1,0 +1,10 @@
+<Project>
+
+  <!-- Tests inherit only the repository quality rules, not product package metadata. -->
+  <Import Project="..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
+</Project>
