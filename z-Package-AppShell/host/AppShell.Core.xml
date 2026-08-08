@@ -991,6 +991,33 @@
         <member name="M:AppShell.Core.Mcp.PromptTextIntegrity.LooksCorrupted(System.String)">
             <summary>Provides this AppShell public contract member.</summary>
         </member>
+        <member name="T:AppShell.Core.Modules.IModuleContext">
+            <summary>Host-owned runtime services made available to an AppShell module.</summary>
+        </member>
+        <member name="P:AppShell.Core.Modules.IModuleContext.Bus">
+            <summary>The single command bus owned by the current host process.</summary>
+        </member>
+        <member name="P:AppShell.Core.Modules.IModuleContext.Settings">
+            <summary>The settings store owned by the current host process.</summary>
+        </member>
+        <member name="P:AppShell.Core.Modules.IModuleContext.Log">
+            <summary>The log owned by the current host process.</summary>
+        </member>
+        <member name="P:AppShell.Core.Modules.IModuleContext.DataDirectory">
+            <summary>The data root owned by the current host process.</summary>
+        </member>
+        <member name="M:AppShell.Core.Modules.IModuleContext.RegisterCommands(System.Action{AppShell.Core.Commands.CommandRegistry})">
+            <summary>
+            Stages module commands for the current module snapshot. The supplied registry is isolated
+            from the live host registry; the host commits and removes its contents with the module.
+            </summary>
+        </member>
+        <member name="T:AppShell.Core.Modules.IModuleContextAware">
+            <summary>Implemented by modules that consume host-owned runtime services.</summary>
+        </member>
+        <member name="M:AppShell.Core.Modules.IModuleContextAware.Attach(AppShell.Core.Modules.IModuleContext)">
+            <summary>Attaches the current host context before commands and UI are activated.</summary>
+        </member>
         <member name="T:AppShell.Core.Modules.IShellUiRegistrar">
             <summary>模块向宿主注册内嵌界面的唯一门面。</summary>
         </member>

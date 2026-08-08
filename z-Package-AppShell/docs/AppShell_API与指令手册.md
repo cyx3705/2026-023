@@ -1,18 +1,24 @@
 # AppShell API 与指令手册
 
-> 适用版本：AppShell 3.0.x
+> 适用版本：AppShell 3.1.9 候选（当前稳定消费版本 3.1.7；3.1.8 不受支持）
 
-本手册给出稳定公开 API 的常用入口和 3.0.x 框架基础命令。完整签名以包内 `lib/<TFM>/AppShell.*.xml` 为准；源码仓中的四份 `PublicAPI.Shipped.txt` 是冻结门禁，不随运行包发布。最终命令集合以应用运行时的 `command.list`、`command.show` 和 `command.manual` 为准。
+本手册给出 3.1.9 候选公开 API 的常用入口和框架基础命令。正式宿主运行入口为
+`host/AppShell.exe`，程序集 XML 文档位于同一 `host/` 目录；兼容框架包的完整签名位于
+`lib/<TFM>/AppShell.*.xml`。源码仓中的四份 `PublicAPI.Shipped.txt` 是冻结门禁，不随运行宿主发布。
+最终命令集合以应用运行时的 `command.list`、`command.show` 和 `command.manual` 为准。
 
-模块命令、消费方业务命令以及按 Workspace、面板、MCP、Web 能力启用的命令不会在每个宿主中同时出现。
+当前正式部署的稳定版本仍是 3.1.7。3.1.9 尚未发布，3.1.8 不作为稳定支持版本。以下包表和最小宿主代码
+用于评审 3.1.9 候选合同，不代表 `z-Package-AppShell` 已提供 3.1.9 feed。
+
+模块命令、消费方业务命令以及按面板、MCP、Web 能力启用的命令不会在每个宿主中同时出现。
 
 ## 1. 包与命名空间
 
 | 包 | 目标框架 | 主要命名空间 | 用途 |
 |---|---|---|---|
-| `OneHistory.AppShell.Core` | `net8.0` | `AppShell.Core.*` | 命令、停靠、日志、Workspace、面板、模块 UI、MCP 元数据契约 |
-| `OneHistory.AppShell.Services` | `net8.0` | `AppShell.Services.*` | 文件状态、日志、Workspace、模块、MCP/Web 服务 |
-| `OneHistory.AppShell.Shell` | `net8.0-windows` | `AppShell.Shell.*` | WPF Shell、AvalonDock 封装、控制台、资源、面板和管理视图 |
+| `OneHistory.AppShell.Core` | `net8.0` | `AppShell.Core.*` | 命令、停靠、日志、面板、模块 UI、MCP 元数据契约 |
+| `OneHistory.AppShell.Services` | `net8.0` | `AppShell.Services.*` | 文件状态、日志、模块、MCP/Web 服务 |
+| `OneHistory.AppShell.Shell` | `net8.0-windows` | `AppShell.Shell.*` | WPF Shell、AvalonDock 封装、控制台、面板和管理视图 |
 | `OneHistory.AppShell.ServiceHost` | `net8.0-windows` | `AppShell.ServiceHost.*` | 无窗口 WPF 服务循环、生命周期和登录自启 |
 
 桌面应用通常只直接引用 Shell；它会传递引入 Core 和 Services。需要独立服务入口时再直接引用 ServiceHost。
@@ -30,20 +36,18 @@ using System.Windows.Controls;
 var paths = new AppPaths("MyProduct");
 var settings = new SettingsService(paths);
 var layouts = new FileLayoutStore(paths);
-var workspace = new WorkspaceService(paths.WorkspaceDir);
 var log = new ShellLog(paths);
 
 var config = new ShellConfig
 {
     AppName = "MyProduct",
     AppVersion = AppIdentity.Current.Version,
-    Workspace = workspace,
 };
 
 config.ToolWindows.Add(new ToolWindowDescriptor
 {
-    Id = "workspace",
-    Title = "工作区",
+    Id = "main",
+    Title = "主工作区",
     DefaultSide = DockSide.Center,
     DefaultRatio = 1,
     ContentFactory = () => new TextBlock { Text = "MyProduct 工作区" },
@@ -61,10 +65,10 @@ var window = new ShellWindow(config, layouts, log, settings, paths.Root);
 window.Show();
 ```
 
-应用退出时应正常关闭 `ShellWindow`，并释放自己持有的 `WorkspaceService`、`ShellLog`、网关和模块宿主。强杀进程不会保证布局与历史完成写入。
+应用退出时应正常关闭 `ShellWindow`，并释放自己持有的 `ShellLog`、网关和模块宿主。强杀进程不会保证布局与历史完成写入。
 
 `EnableModules`、`EnableUiModules`、`EnableMcp` 和 `EnableRemoteManagementViews` 均默认 `false`。上例只启动
-Shell 核心、显式提供的 Workspace、窗口和业务命令；仍保留中央命令集与 `command.*`。需要可选能力时由消费方
+Shell 核心、窗口和业务命令；仍保留中央命令集与 `command.*`。需要可选能力时由消费方
 明确设置，例如 `EnableModules = true` 或 `EnableMcp = true`。显式启用 MCP 后默认按 `mcp.autostart` 启动；若只
 需要装配命令和治理能力而不希望启动时监听，应预先设置 `mcp.autostart=false`，之后可执行 `mcp.start`。
 
@@ -75,7 +79,7 @@ Shell 核心、显式提供的 Workspace、窗口和业务命令；仍保留中�
 | API | 常用成员 | 说明 |
 |---|---|---|
 | `AppIdentity` | `Current`、`From(Assembly)`、`Use(Assembly)` | 统一应用名和版本；应在创建网关前确定 |
-| `AppPaths` | `Root`、`LogsDir`、`ModulesDir`、`PanelsDir`、`WorkspaceDir` | 建立 `%AppData%/<应用名>` 下的标准路径 |
+| `AppPaths` | `Root`、`LogsDir`、`ModulesDir`、`PanelsDir` | 建立 `%AppData%/<应用名>` 下的标准路径 |
 | `SettingsService` | `Get`、`GetInt`、`Set`、`All` | JSON 设置持久化 |
 | `FileLayoutStore` | `ReadCurrent`、`WriteCurrent`、`ReadNamed`、`WriteNamed` | 当前布局与命名布局存储 |
 | `ShellLog` | `Log`、`Snapshot`、`EntryAdded` | 文件与内存日志；使用后 `Dispose` |
@@ -91,6 +95,15 @@ Shell 核心、显式提供的 Workspace、窗口和业务命令；仍保留中�
 | `CommandResult` | `Ok`、`Fail`、`Success`、`Message`、`Data` | 统一执行结果 |
 | `CommandSchemaExporter` | `ExportTools`、`Find`、`BuildCommandText` | 从最终注册表生成 MCP schema 和反向命令文本 |
 | `CommandManualGenerator` | `Render`、`Sha256` | 从运行时注册表生成命令手册 |
+
+模块宿主的 3.1.9 增量公开面如下：
+
+| API | 常用成员 | 说明 |
+|---|---|---|
+| `IModuleContext` | `Bus`、`Log`、`Settings`、`DataDirectory`、`RegisterCommands` | 模块取得宿主权威服务和宿主数据根目录；模块自行在根目录下选择专属子目录 |
+| `IModuleContextAware` | `Attach(IModuleContext)` | 模块声明需要宿主上下文；由 `ModuleHost` 在装载阶段调用 |
+| `ModuleHost` | `Attach(registry, bus, settings, dataDirectory)` | 为模块生命周期接入完整宿主上下文 |
+| `ShellConfig` | `ModuleDirectory` | 可选的部署模块目录；未设置时沿用应用数据目录 |
 
 注册命令时至少提供名称、摘要和 handler；公开给用户或 MCP 的命令还应提供参数说明与示例。
 
@@ -133,14 +146,22 @@ registry.Register(new CommandDescriptor
 标签，不会在右侧再切出独立子窗格。该侧不存在窗格时才创建新窗格。
 加载历史布局时，同侧的多个旧窗格也会合并为一个标签组；左右或上下侧栏合计不超过 50%，中央主工作区
 始终至少占对应轴的 50%。
+
+顶栏移动按宿主归属区分：普通嵌入页和专注页的空白顶栏只移动整个 AppShell，独立浮窗的空白顶栏只移动该浮窗。
+主 AppShell 处于普通状态时，空白顶栏越过系统拖动阈值即开始移动，不增加按住延时。主窗口最大化状态及独立浮窗仍需按住满 120ms；最大化宿主使用两倍阈值，开始移动时按鼠标横向比例恢复。
+一次按下只要越过移动阈值，就不再作为双击的第一次点击；下一次点击必须重新开始双击序列。
+只有真实页签能够把页面拖出：普通页签沿用 AvalonDock 原生流程，专注页签执行 `win.restore` → `win.float`。
+浮窗使用恢复后嵌入窗格的实际宽高并保持鼠标在原页签抓取点，跨显示器时按目标显示器 DPI 和工作区定位；重新停靠仍须
+拖动真实页签。工具页动作区不提供浮窗最大化/还原按钮；文档浮窗保留自身状态按钮，该按钮不等同于 `win.max`，
+也不会改变 AppShell 专注布局。
+
 消费方仍只使用 `ToolWindowDescriptor` 和 `IDockingService`，不得直接依赖内部 AvalonDock 文档类型。枚举值
 固定为 `Tab=4`、`Center=5`，保证旧模块的 `Tab` 二进制值不会漂移。
 
-### 3.4 Workspace、面板与模块
+### 3.4 面板与模块
 
 | API | 常用成员 | 说明 |
 |---|---|---|
-| `IWorkspaceService` / `WorkspaceService` | `Root`、`SetRoot`、`List`、`ResolveFull`、`CreateDirectory`、`Rename`、`DeleteToRecycleBin` | 所有相对路径必须受根目录边界约束 |
 | `PanelDefinition` | `Id`、`Title`、`Side`、`Ratio`、`Visible`、`Controls` | JSON 面板模型 |
 | `PanelManager` | `Definitions`、`Reload`、`TrySetValue` | 面板发现和运行时值更新 |
 | `ModuleHost` | `Attach`、`Start`、`Reload`、`ChangeDirectory`、`Modules` | 隔离装载命令/UI 模块；使用后 `Dispose` |
@@ -179,58 +200,79 @@ registry.Register(new CommandDescriptor
 - 所有 UI、脚本、Web 和 MCP 调用最终都进入 `CommandBus.ExecuteAsync`。
 - `ExecutionSite=Local` 在当前宿主执行；`Frontend` 由服务转发给在线 Shell。
 - `Readonly`、`Dangerous` 和 `AllowMcpExecution` 是安全合同。前端/UI 命令默认不进入 MCP。
+- 命令集页面只显示一个“域”筛选器和一个“域”列：命令名取第一个 `.` 前缀，无点命令归 `core`。
+  `CommandCatalogRow.Source/SourceDetail`、`CommandRegistry.GetSource` 与 `FrontendCommandCatalog.Source`
+  仍表示注册来源，供结构化目录、模块管理和外部消费者使用，不再作为命令集页面筛选。
+- 控制台与命令集都通过 `command.domains` 读取同一份运行期已注册域集合。普通日志类别的第一个 `:` 或 `.`
+  前缀只有命中已注册域时才用于过滤，否则归入 `core`，不会产生控制台私有域。命令结果/进度类别在
+  `CommandBus.ResultCategory` / `ProgressCategory` 兼容前缀后附加命令域。长文本按当前窗格宽度软换行，复制和导出保留原始逻辑文本。
+- 3.1.9 承接的控制台候选能力在 `win.max name=console` 聚焦态时，于输入框上方弹出当前命令、参数名或允许值候选；
+  候选始终来自运行期 `CommandRegistry`。`Shift+W` 上移、`Shift+S` 下移，`Tab` 仅把选中候选写入当前 token，
+  `Enter` 才执行命令，`Shift+Tab` 不参与候选逻辑。普通布局首次非空输入通过 `win.show name=mcp` 显示中央命令集；
+  命令集没有独立搜索框，控制台文本实时过滤命令名、说明和示例，`Shift+W/S` 选择列表结果，`Tab` 把命令名写回
+  控制台但不执行。该能力是 Shell 内部输入辅助，不新增命令或公开 API。
 
 ## 5. 基础命令目录
 
-以下是 3.0.x 框架命令快照。宿主只注册已启用能力对应的组。
+以下是 3.1.9 候选框架命令快照。宿主只注册已启用能力对应的组；运行时 `command.list` 是最终权威目录。
 
 ### 5.1 基础、应用与日志
 
 | 命令 | 用途 / 关键参数 |
 |---|---|
 | `help [command]` | 列出命令或显示详情 |
-| `cls` | 清空控制台显示 |
+| `cls` | `log.clear` 的兼容别名；新代码使用 `log.clear` |
 | `history [count]` | 查看命令历史 |
 | `run file= [continue=false]` | 执行命令脚本；失败时默认停止 |
 | `app.exit` | 正常关闭桌面应用 |
+| `app.frontend.show`、`app.frontend.hide` | 显示/隐藏前端窗口并保持后台服务连接 |
+| `app.frontend.focus-console` | 唤出前端、将主窗口提升到 Windows 前台、切换控制台聚焦布局并聚焦命令框；控制台已显示时仍重复上浮和聚焦；无前端时由后台启动 |
+| `app.frontend.exit` | 只退出前端进程；`app.exit` 才协调前后台一起退出 |
 | `app.about` | 显示应用身份与版本 |
 | `app.get [key]` | 读取一个或全部设置；`code`、token、password/passwd、secret、private key 与 connection string 类设置只返回 `(已配置)`，不返回明文 |
 | `app.set key= value=` | 写设置；上述敏感键的结果同样只返回 `(已配置)` |
 | `app.opendata` | 打开应用数据目录 |
+| `app.window [state=normal|minimized|maximized|toggle]` | 查询或设置主窗口状态 |
 | `log.level [level=trace|debug|info|warn|error|fatal]` | 无参数时查看当前控制台日志级别；带参数时修改显示级别 |
+| `log.source [source=<已注册域>|全部]` | 查询或设置控制台域过滤；命令名和参数名为兼容入口，候选由 `command.domains` 运行期生成，不存在的域会被拒绝并返回可用域 |
+| `log.keyword [text=...]` | 查询或设置关键字过滤 |
+| `log.mute [layout=true|false]` | 查询或设置 layout 来源屏蔽 |
+| `log.autoscroll [enabled=true|false]` | 查询或设置自动滚动（默认开启） |
+| `log.clear`、`log.export [path=]`、`log.copy` | 清屏、导出或复制当前控制台内容 |
+| `log.focus [errors=true|false]` | 聚焦控制台，可选切换错误过滤 |
 
 ### 5.2 窗口与布局
 
 | 命令 | 用途 / 关键参数 |
 |---|---|
 | `win.list` | 列出窗口状态、位置与比例 |
-| `win.show name=`、`win.hide name=`、`win.float name=`、`win.reset name=` | 显示、隐藏、浮动或复位窗口；固定命令集主文档拒绝隐藏/浮动 |
+| `win.show name=`、`win.hide name=`、`win.float name=`、`win.autohide name=`、`win.reset name=` | 显示、隐藏、浮动、切换自动隐藏或复位窗口；固定命令集主文档拒绝隐藏/浮动 |
 | `win.max name=`、`win.restore` | 最大化单窗或恢复整体布局 |
+| `win.float-state name= [state=maximized|normal|toggle]` | 设置独立浮窗宿主状态；页面按钮与浮窗标题双击使用同一命令 |
 | `win.dock name= pos=left|right|top|bottom|center|tab [target=] [ratio=]` | 停靠窗口；Center 进入主文档区，tab 需要目标；命令集只允许 Center；提供 ratio 时须满足 `0 < ratio < 1` |
 | `win.ratio name= value=` | 设置四边窗口占主窗体比例，须满足 `0 < value < 1`；中央页不支持比例调整 |
 | `layout.save name=`、`layout.load name=` | 保存或载入命名布局 |
 | `layout.list`、`layout.reset` | 列出方案或恢复默认布局 |
 
-### 5.3 Workspace 与面板
+### 5.3 面板
 
-仅在设置 `ShellConfig.Workspace` 时注册 `res.*`；面板能力存在时注册 `panel.*`。
+面板能力存在时注册 `panel.*`。文件/目录选择也通过命令总线执行，视图按钮不得直接调用对话框服务。
 
 | 命令 | 用途 / 关键参数 |
 |---|---|
-| `res.root [path]` | 查看或切换 Workspace 根目录 |
-| `res.list [path]` | 列出目录 |
-| `res.open path=`、`res.reveal path=` | 打开文件或在资源管理器中显示 |
-| `res.mkdir path=` | 在根目录内新建文件夹 |
-| `res.rename path= to=` | 重命名文件或目录 |
-| `res.delete path=` | 经确认移到回收站 |
 | `panel.list` | 列出面板 |
 | `panel.show id=` | 显示面板窗口 |
 | `panel.set panel= control= value=` | 更新面板控件值 |
 | `panel.reload` | 重载已有面板定义 |
+| `panel.select-file` | 打开文件选择器并返回选中的路径 |
+| `panel.select-directory` | 打开目录选择器并返回选中的路径 |
 
 ### 5.4 模块
 
-仅在 `ShellConfig.EnableModules=true` 时注册。
+仅在 `ShellConfig.EnableModules=true` 时注册。AppShell 独立可执行宿主显式启用此项并显示唯一的“模块管理”页；
+普通包消费方仍按最小能力原则选择是否启用。消费方不得复制 `ModuleHost` 或 `ModulesView`，只声明停靠位置和业务模块。
+3.1.9 起模块管理页只读取 `module.list`，用单一“刷新模块”按钮执行 `module.reload` 后重新取清单；模块指令
+详情统一在命令集页面查看，模块页不再读取 `command.list` 或显示第二个指令表。
 
 | 命令 | 用途 / 关键参数 |
 |---|---|
@@ -280,6 +322,7 @@ Web 组合注册 `web.*`；`ServiceHost.Run` 注册 `svc.*`。
 | `svc.status` | 查看服务、MCP、Web 和模块状态 |
 | `svc.stop`、`svc.restart` | 请求停止或重启服务 |
 | `svc.autostart [mode=on|off]` | 无参数时查看状态；`on` / `off` 修改登录自启 |
+| `shortcut.list` | 查看 owner、手势和目标命令；不返回原始键盘事件 |
 
 ## 6. MCP 暴露规则
 
@@ -293,6 +336,10 @@ Web 组合注册 `web.*`；`ServiceHost.Run` 注册 `svc.*`。
 
 ## 7. 已删除的旧接口
 
-3.0.x 没有 `IDataService`、`SqliteDataService`、`RemoteDataService`、`TableView`、`ShellConfig.DataService` 或 `db.*`。这些名称若仍出现在消费应用中，说明迁移尚未完成，不应通过添加兼容空壳解决。
+3.1.2（延续 3.1.1 收口）不再提供 `IWorkspaceService`、`WorkspaceService`、`RemoteWorkspaceService`、`ShellConfig.Workspace`、
+`ResourceView`、`StandardWindowIds.Resource` 或 `res.*`。资源浏览和文件操作应由独立模块提供。
+演示宿主也不再注册 `motor.*` 或生成电机面板。旧数据接口 `IDataService`、`SqliteDataService`、
+`RemoteDataService`、`TableView`、`ShellConfig.DataService` 和 `db.*` 同样不提供。这些名称若仍出现在消费应用中，
+说明迁移尚未完成，不应通过添加兼容空壳解决。
 
 3.0.0 的消费变更、删除接口和迁移注意事项见 [AppShell 3.0 消费变更摘要](AppShell_3.0_消费变更摘要.md)。

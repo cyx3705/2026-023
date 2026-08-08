@@ -1,14 +1,14 @@
-# AppShell 3.0 模块与 MCP 接入
+# AppShell 模块与 MCP 接入
 
-> 适用版本：AppShell 3.0.x
+> 适用版本：AppShell 3.1.9 候选；当前稳定消费版本为 3.1.7，3.1.8 不受支持
 > 边界：本文只描述框架能力。项目库、外部账号、工具同步等消费产品业务不属于 AppShell。
 > 常用公开方法和基础命令见 [AppShell API 与指令手册](AppShell_API与指令手册.md)。
 
 ## 组件边界
 
 - `OneHistory.AppShell.Core`：命令、停靠、模块 UI、MCP 元数据与存储契约。
-- `OneHistory.AppShell.Services`：日志、设置、工作区、布局、模块宿主、MCP 网关与 Web 网关。
-- `OneHistory.AppShell.Shell`：WPF Shell、控制台、资源、面板、模块管理与 MCP 管理视图。
+- `OneHistory.AppShell.Services`：日志、设置、布局、模块宿主、MCP 网关与 Web 网关。
+- `OneHistory.AppShell.Shell`：WPF Shell、控制台、面板、模块管理与 MCP 管理视图。
 - `OneHistory.AppShell.ServiceHost`：无窗口服务组合、`svc.*` 与登录启动管理。
 
 桌面单进程应用可直接创建 `ShellWindow`。前后端分离应用在服务端建立自己的 `CommandRegistry`，前端使用
@@ -27,6 +27,14 @@
 访问器方法映射为 `<模块名>.<方法名>`；相邻 XML 文件为 Help、命令目录和 MCP schema 提供摘要。命令重名
 时拒绝新项，不覆盖框架、应用或其他模块命令。
 
+3.1.9 起，需要宿主服务的外置模块实现 `IModuleContextAware`。装载后宿主调用 `Attach(IModuleContext)`，
+上下文提供权威 `CommandBus`、`IShellLog`、`ISettingsService` 和宿主数据根目录；模块应在该根目录下使用
+自身专属子目录。模块通过
+`RegisterCommands` 注册的命令仍由模块 owner 在卸载时统一回收。独立宿主可设置
+`ShellConfig.ModuleDirectory` 可显式指向其他部署目录；未设置时继续使用应用数据目录下的默认模块目录。
+禁用模块不会收到上下文；`Attach`、`RegisterShortcuts`、`CreateUi` 和 `DestroyUi` 等生命周期方法不会进入
+反射命令目录。模块不得保存上下文供卸载后使用，也不得自行创建第二个命令总线或设置服务。
+
 UI 模块实现 `IUiModule`；需要注册宿主窗口时实现 UI 感知接口并使用 `IShellUiRegistrar`。窗口使用
 `ToolWindowDescriptor` 注册，中央业务窗口显式指定 `DockSide.Center`。模块卸载时先销毁 UI、注销 owner
 命令和窗口，再释放加载上下文。文件监听器对 `.dll`、`.xml`、`.panel.json` 去抖后整体重载；坏模块只下线
@@ -37,7 +45,7 @@ AppShell 不覆盖该声明。3.0.2 起，模块运行期注册的右侧窗口�
 窗格。模块无需填写 `DefaultTabTarget`；执行窗口复位或 `win.dock ... pos=right` 也沿用同一合并规则。只有
 当前布局完全没有右侧窗格时，框架才创建新的右侧窗格。
 
-3.0.3 起，历史布局中已经存在的同侧独立窗格也会在加载时合并成一个标签组；同一轴的侧栏合计最多占 50%，
+3.1.1 起，历史布局中已经存在的同侧独立窗格也会在加载时合并成一个标签组；同一轴的侧栏合计最多占 50%，
 中央主工作区至少保留 50%。模块不应通过额外侧栏规避该主区保护规则。
 
 命令集是固定中央主文档。模块中央窗口通过 `DockSide.Center` 进入同一个文档标签组；中央自己的页面头和
@@ -91,7 +99,8 @@ WebSocket 支持分片文本消息，总消息上限 1 MiB。
 2. UI、Help、Web、MCP 与命令手册都从最终 `CommandRegistry` 投影，不复制名单。
 3. 危险操作必须由宿主确认；`--yes`、HTTP 参数或 MCP 参数都不能绕过远程确认。
 4. token、密码、私钥和连接串不得写入命令结果、日志或审计文件。
-5. 3.0.x 是冻结线；公共契约破坏、协议语义变更和新框架依赖进入 4.0。
+5. 3.1.9 是当前源码候选；3.1.8 不作为稳定支持版本。全局 z 级模块扫描仍不在本版本范围。
+   双进程服务历史设计不随消费包发布。
 
 ## 最小验收
 

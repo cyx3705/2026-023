@@ -359,6 +359,9 @@
         <member name="M:AppShell.Services.Modules.ModuleHost.Attach(AppShell.Core.Commands.CommandRegistry)">
             <summary>接入指令注册表(ShellWindow 创建后调用,再 Start)。</summary>
         </member>
+        <member name="M:AppShell.Services.Modules.ModuleHost.Attach(AppShell.Core.Commands.CommandRegistry,AppShell.Core.Commands.CommandBus,AppShell.Core.Storage.ISettingsService,System.String)">
+            <summary>接入模块业务运行所需的完整宿主上下文。</summary>
+        </member>
         <member name="M:AppShell.Services.Modules.ModuleHost.Start">
             <summary>Provides this AppShell public contract member.</summary>
         </member>
