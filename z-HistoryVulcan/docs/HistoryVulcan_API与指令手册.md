@@ -1,14 +1,14 @@
-# AppShell API 与指令手册
+# HistoryVulcan API 与指令手册
 
-> 适用版本：AppShell 3.1.9 候选（当前稳定消费版本 3.1.7；3.1.8 不受支持）
+> 适用版本：HistoryVulcan 3.2.0（当前稳定消费版本；3.1.9 为旧名 AppShell 的最后快照；3.1.8 不受支持）
 
-本手册给出 3.1.9 候选公开 API 的常用入口和框架基础命令。正式宿主运行入口为
-`host/AppShell.exe`，程序集 XML 文档位于同一 `host/` 目录；兼容框架包的完整签名位于
-`lib/<TFM>/AppShell.*.xml`。源码仓中的四份 `PublicAPI.Shipped.txt` 是冻结门禁，不随运行宿主发布。
+本手册给出 3.2.0 候选公开 API 的常用入口和框架基础命令。正式宿主运行入口为
+`host/HistoryVulcan.exe`，程序集 XML 文档位于同一 `host/` 目录；兼容框架包的完整签名位于
+`lib/<TFM>/HistoryVulcan.*.xml`。源码仓中的四份 `PublicAPI.Shipped.txt` 是冻结门禁，不随运行宿主发布。
 最终命令集合以应用运行时的 `command.list`、`command.show` 和 `command.manual` 为准。
 
-当前正式部署的稳定版本仍是 3.1.7。3.1.9 尚未发布，3.1.8 不作为稳定支持版本。以下包表和最小宿主代码
-用于评审 3.1.9 候选合同，不代表 `z-Package-AppShell` 已提供 3.1.9 feed。
+当前正式部署的稳定版本是 3.2.0（位于 `z-HistoryVulcan`）。3.1.9 是旧名 AppShell 的最后快照，已随 3.2.0 发布退役；
+3.1.8 不作为稳定支持版本。以下包表和最小宿主代码描述当前正式合同，但正式部署不提供 NuGet feed。
 
 模块命令、消费方业务命令以及按面板、MCP、Web 能力启用的命令不会在每个宿主中同时出现。
 
@@ -16,21 +16,21 @@
 
 | 包 | 目标框架 | 主要命名空间 | 用途 |
 |---|---|---|---|
-| `OneHistory.AppShell.Core` | `net8.0` | `AppShell.Core.*` | 命令、停靠、日志、面板、模块 UI、MCP 元数据契约 |
-| `OneHistory.AppShell.Services` | `net8.0` | `AppShell.Services.*` | 文件状态、日志、模块、MCP/Web 服务 |
-| `OneHistory.AppShell.Shell` | `net8.0-windows` | `AppShell.Shell.*` | WPF Shell、AvalonDock 封装、控制台、面板和管理视图 |
-| `OneHistory.AppShell.ServiceHost` | `net8.0-windows` | `AppShell.ServiceHost.*` | 无窗口 WPF 服务循环、生命周期和登录自启 |
+| `OneHistory.HistoryVulcan.Core` | `net8.0` | `HistoryVulcan.Core.*` | 命令、停靠、日志、面板、模块 UI、MCP 元数据契约 |
+| `OneHistory.HistoryVulcan.Services` | `net8.0` | `HistoryVulcan.Services.*` | 文件状态、日志、模块、MCP/Web 服务 |
+| `OneHistory.HistoryVulcan.Shell` | `net8.0-windows` | `HistoryVulcan.Shell.*` | WPF Shell、AvalonDock 封装、控制台、面板和管理视图 |
+| `OneHistory.HistoryVulcan.ServiceHost` | `net8.0-windows` | `HistoryVulcan.ServiceHost.*` | 无窗口 WPF 服务循环、生命周期和登录自启 |
 
 桌面应用通常只直接引用 Shell；它会传递引入 Core 和 Services。需要独立服务入口时再直接引用 ServiceHost。
 
 ## 2. 最小桌面宿主
 
 ```csharp
-using AppShell.Core;
-using AppShell.Core.Commands;
-using AppShell.Core.Docking;
-using AppShell.Services;
-using AppShell.Shell;
+using HistoryVulcan.Core;
+using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Core.Docking;
+using HistoryVulcan.Services;
+using HistoryVulcan.Shell;
 using System.Windows.Controls;
 
 var paths = new AppPaths("MyProduct");
@@ -134,26 +134,26 @@ registry.Register(new CommandDescriptor
 | `IDockingService` | `SaveLayout`、`LoadLayout`、`ListLayouts`、`ResetLayout` | 布局方案管理 |
 | `ShellUiRegistrar` / `IShellUiRegistrar` | `RegisterToolWindow`、`UnregisterOwner`、`Invoke` | 模块安全注册 UI，并在卸载时按 owner 回收 |
 
-`AppShell.Shell` 是唯一允许直接依赖 AvalonDock 的层。消费应用和模块只使用上述 AppShell 契约。
+`HistoryVulcan.Shell` 是唯一允许直接依赖 AvalonDock 的层。消费应用和模块只使用上述 HistoryVulcan 契约。
 
 命令集默认注册为 `DockSide.Center`，并作为固定主文档：不能隐藏、浮动或停靠到四边。中央始终显示自己的
 页面头和页面选择标签；多个 `Center` 窗口进入同一个文档标签组。`Show` 选中的业务中央页不会被命令集自愈
 逻辑抢回焦点；业务中央窗口隐藏、浮动或卸载后，命令集仍留在主区。普通四边工具页也允许由用户拖入中央
 页面选择区，并可再次拖回四边；其描述符、owner 和内容实例不变，布局保存/恢复会保留嵌入位置。
 模块注册窗口未设置 `DefaultSide` 时默认使用 `DockSide.Right`；模块可按业务需要显式改为
-`Left/Top/Bottom/Center/Tab`，AppShell 不覆盖模块的显式声明。运行期注册或停靠到同一侧的窗口复用该侧已有标签组；
+`Left/Top/Bottom/Center/Tab`，HistoryVulcan 不覆盖模块的显式声明。运行期注册或停靠到同一侧的窗口复用该侧已有标签组；
 例如模块使用默认位置或显式以 `DockSide.Right` 注册时，直接成为右侧窗口
 标签，不会在右侧再切出独立子窗格。该侧不存在窗格时才创建新窗格。
 加载历史布局时，同侧的多个旧窗格也会合并为一个标签组；左右或上下侧栏合计不超过 50%，中央主工作区
 始终至少占对应轴的 50%。
 
-顶栏移动按宿主归属区分：普通嵌入页和专注页的空白顶栏只移动整个 AppShell，独立浮窗的空白顶栏只移动该浮窗。
-主 AppShell 处于普通状态时，空白顶栏越过系统拖动阈值即开始移动，不增加按住延时。主窗口最大化状态及独立浮窗仍需按住满 120ms；最大化宿主使用两倍阈值，开始移动时按鼠标横向比例恢复。
+顶栏移动按宿主归属区分：普通嵌入页和专注页的空白顶栏只移动整个 HistoryVulcan，独立浮窗的空白顶栏只移动该浮窗。
+主 HistoryVulcan 处于普通状态时，空白顶栏越过系统拖动阈值即开始移动，不增加按住延时。主窗口最大化状态及独立浮窗仍需按住满 120ms；最大化宿主使用两倍阈值，开始移动时按鼠标横向比例恢复。
 一次按下只要越过移动阈值，就不再作为双击的第一次点击；下一次点击必须重新开始双击序列。
 只有真实页签能够把页面拖出：普通页签沿用 AvalonDock 原生流程，专注页签执行 `win.restore` → `win.float`。
 浮窗使用恢复后嵌入窗格的实际宽高并保持鼠标在原页签抓取点，跨显示器时按目标显示器 DPI 和工作区定位；重新停靠仍须
 拖动真实页签。工具页动作区不提供浮窗最大化/还原按钮；文档浮窗保留自身状态按钮，该按钮不等同于 `win.max`，
-也不会改变 AppShell 专注布局。
+也不会改变 HistoryVulcan 专注布局。
 
 消费方仍只使用 `ToolWindowDescriptor` 和 `IDockingService`，不得直接依赖内部 AvalonDock 文档类型。枚举值
 固定为 `Tab=4`、`Center=5`，保证旧模块的 `Tab` 二进制值不会漂移。
@@ -195,7 +195,7 @@ registry.Register(new CommandDescriptor
   并用标准引号规则重新转义。因此回显用于表达实际执行语义，不保证保留用户输入的原始大小写、空白或参数排列；
   敏感参数值会替换为 `[REDACTED]`；敏感命令返回的非字符串结构化 `Data` 不对外透传。
 - `CommandHistory.Add` 是低层公开入口，只能接收已经脱敏的命令回显；框架控制台只把总线生成的
-  `cmd:手动` 脱敏回显写入历史。3.0 历史文件带 `# AppShell.CommandHistory.v2:redacted` 头，首次启动时会清空
+  `cmd:手动` 脱敏回显写入历史。3.0 历史文件带 `# HistoryVulcan.CommandHistory.v2:redacted` 头，首次启动时会清空
   没有该头的旧格式历史，避免 3.0 以前可能保存的明文再由 `history` 返回。
 - 所有 UI、脚本、Web 和 MCP 调用最终都进入 `CommandBus.ExecuteAsync`。
 - `ExecutionSite=Local` 在当前宿主执行；`Frontend` 由服务转发给在线 Shell。
@@ -206,15 +206,16 @@ registry.Register(new CommandDescriptor
 - 控制台与命令集都通过 `command.domains` 读取同一份运行期已注册域集合。普通日志类别的第一个 `:` 或 `.`
   前缀只有命中已注册域时才用于过滤，否则归入 `core`，不会产生控制台私有域。命令结果/进度类别在
   `CommandBus.ResultCategory` / `ProgressCategory` 兼容前缀后附加命令域。长文本按当前窗格宽度软换行，复制和导出保留原始逻辑文本。
-- 3.1.9 承接的控制台候选能力在 `win.max name=console` 聚焦态时，于输入框上方弹出当前命令、参数名或允许值候选；
-  候选始终来自运行期 `CommandRegistry`。`Shift+W` 上移、`Shift+S` 下移，`Tab` 仅把选中候选写入当前 token，
+- 3.1.10 内部将控制台候选、命令集检索和指令详情统一到一个目录会话：目录来自 `command.list` / `command.domains`，
+  参数详情由 `command.show` 延迟加载并缓存，本地最小宿主才回退到 `CommandRegistry`。控制台候选能力在
+  `win.max name=console` 聚焦态时，于输入框上方弹出当前命令、参数名或允许值候选；`Shift+W` 上移、`Shift+S` 下移，`Tab` 仅把选中候选写入当前 token，
   `Enter` 才执行命令，`Shift+Tab` 不参与候选逻辑。普通布局首次非空输入通过 `win.show name=mcp` 显示中央命令集；
   命令集没有独立搜索框，控制台文本实时过滤命令名、说明和示例，`Shift+W/S` 选择列表结果，`Tab` 把命令名写回
   控制台但不执行。该能力是 Shell 内部输入辅助，不新增命令或公开 API。
 
 ## 5. 基础命令目录
 
-以下是 3.1.9 候选框架命令快照。宿主只注册已启用能力对应的组；运行时 `command.list` 是最终权威目录。
+以下是 3.1.10 候选框架命令快照。宿主只注册已启用能力对应的组；运行时 `command.list` 是最终权威目录。
 
 ### 5.1 基础、应用与日志
 
@@ -269,7 +270,7 @@ registry.Register(new CommandDescriptor
 
 ### 5.4 模块
 
-仅在 `ShellConfig.EnableModules=true` 时注册。AppShell 独立可执行宿主显式启用此项并显示唯一的“模块管理”页；
+仅在 `ShellConfig.EnableModules=true` 时注册。HistoryVulcan 独立可执行宿主显式启用此项并显示唯一的“模块管理”页；
 普通包消费方仍按最小能力原则选择是否启用。消费方不得复制 `ModuleHost` 或 `ModulesView`，只声明停靠位置和业务模块。
 3.1.9 起模块管理页只读取 `module.list`，用单一“刷新模块”按钮执行 `module.reload` 后重新取清单；模块指令
 详情统一在命令集页面查看，模块页不再读取 `command.list` 或显示第二个指令表。
@@ -342,4 +343,4 @@ Web 组合注册 `web.*`；`ServiceHost.Run` 注册 `svc.*`。
 `RemoteDataService`、`TableView`、`ShellConfig.DataService` 和 `db.*` 同样不提供。这些名称若仍出现在消费应用中，
 说明迁移尚未完成，不应通过添加兼容空壳解决。
 
-3.0.0 的消费变更、删除接口和迁移注意事项见 [AppShell 3.0 消费变更摘要](AppShell_3.0_消费变更摘要.md)。
+3.0.0 的消费变更、删除接口和迁移注意事项见 [HistoryVulcan 3.0 消费变更摘要](HistoryVulcan_3.0_消费变更摘要.md)。

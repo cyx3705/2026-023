@@ -1,0 +1,225 @@
+{
+    "schemaVersion":  1,
+    "product":  "HistoryVulcan",
+    "version":  "3.2.0",
+    "channel":  "current-host",
+    "runtime":  "win-x64-framework-dependent",
+    "executable":  "host/HistoryVulcan.exe",
+    "selfContained":  false,
+    "sourceCommit":  "c70706d1be5c51f664a05609cd495d4f6bd1941a",
+    "sourceDirty":  false,
+    "documents":  [
+                      "docs/HistoryVulcan_API与指令手册.md",
+                      "docs/HistoryVulcan_3.0_模块与MCP接入.md",
+                      "docs/HistoryVulcan_3.0_运行时约束与已知限制.md",
+                      "docs/HistoryVulcan_3.0_消费变更摘要.md",
+                      "docs/HistoryVulcan_UI风格与嵌入页面规范.md"
+                  ],
+    "files":  [
+                  {
+                      "file":  "docs/HistoryVulcan_3.0_模块与MCP接入.md",
+                      "bytes":  8539,
+                      "sha256":  "D37A72FC8390AF7C16F0E4B6F08D12FE3CD5D5A01B5F79BB64DD0B4E3CF93504"
+                  },
+                  {
+                      "file":  "docs/HistoryVulcan_3.0_消费变更摘要.md",
+                      "bytes":  10648,
+                      "sha256":  "810FE00C6BA39D29AB5BE5F98D7E64A49586A6398E127C94FA94B0C4D3B24CEC"
+                  },
+                  {
+                      "file":  "docs/HistoryVulcan_3.0_运行时约束与已知限制.md",
+                      "bytes":  6870,
+                      "sha256":  "94A83595F50F390460E07CFA3064D91ABFE17EF8020E24A7B3F3871C26A89F5C"
+                  },
+                  {
+                      "file":  "docs/HistoryVulcan_API与指令手册.md",
+                      "bytes":  22988,
+                      "sha256":  "BEBAED6718592EE83CD58E71B5B5E27BD81AB17308E581C2A793AD624B2E974F"
+                  },
+                  {
+                      "file":  "docs/HistoryVulcan_UI风格与嵌入页面规范.md",
+                      "bytes":  8725,
+                      "sha256":  "C8AB9CED136D6ADE21DBCB3A491A7CC8BF3BC4FFD309694A0E5F6F1B76F0D21C"
+                  },
+                  {
+                      "file":  "HistoryVulcan.reuse.md",
+                      "bytes":  4826,
+                      "sha256":  "244B11E5AE27811E704CBA9AF8C84AF2D4C9B2F9A81DCD8C353CC983B6488C9F"
+                  },
+                  {
+                      "file":  "host/AvalonDock.dll",
+                      "bytes":  500736,
+                      "sha256":  "B122C1B983DADC185D9E8B59E58C3B11DDAF5E1CFBA4E1BFCF2107BF83333D42"
+                  },
+                  {
+                      "file":  "host/AvalonDock.Themes.VS2013.dll",
+                      "bytes":  130048,
+                      "sha256":  "2BAB0CD6C345258E73E6142BD1B1B452D02F59284C94B53BBD18065B11230FFC"
+                  },
+                  {
+                      "file":  "host/ca-ES/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "8BE396EE58DC23190160733E77CDE12815AA6B64F51E5583F0283E75A5A73F14"
+                  },
+                  {
+                      "file":  "host/cs-CZ/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "3796254A4F2A9705ED99F3BAC5A012F52230A0E0183E59581F505C502764FEDD"
+                  },
+                  {
+                      "file":  "host/de/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "3677239A313FE140120BF194C5C1D226841EF418207040BFE74E4B4008460217"
+                  },
+                  {
+                      "file":  "host/es/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "BDDCFC7185416B3458BFF2C1091840216999C08BD86CC009596281FADD29F507"
+                  },
+                  {
+                      "file":  "host/fr/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "4E0162C5DF26FAE1624174EC57A4766B2918246E74912C746CFA255B7E92ECE7"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.Core.dll",
+                      "bytes":  109568,
+                      "sha256":  "05AE6B1C26F354B72A2C44B4AA4593BD242A1532ECDA6F151D3C0ED18FD02455"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.Core.pdb",
+                      "bytes":  39456,
+                      "sha256":  "B59734E59364F93384341E76D820AB332CC9E3698B8BFDC3C3C65E232D1A18BF"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.Core.xml",
+                      "bytes":  85090,
+                      "sha256":  "9B233E4644560E7A1BDBBFDC8D3B9261B93685A041C9289B549428452B1ACDC6"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.deps.json",
+                      "bytes":  7420,
+                      "sha256":  "B0F6236633DE5110363F2BE6A0EBB226E8E08134B52B4263EA465D6A21FED073"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.dll",
+                      "bytes":  36352,
+                      "sha256":  "A5F717E2DF2FDB496F33BFA1657F983EE67F7DC24F8038EA86D0036C4894AC69"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.exe",
+                      "bytes":  152064,
+                      "sha256":  "8DE2E3B61832DB21F8DC88D032BFB122507E690CD25208EA1BA9E2AEE7967253"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.pdb",
+                      "bytes":  19740,
+                      "sha256":  "3D9EA7AFA38619DD9FB8FF72C1BF99F1FD1C35E90B858F5F32F09CB811A58B65"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.runtimeconfig.json",
+                      "bytes":  515,
+                      "sha256":  "89AD1EA5C9C20B6B266547EF27C0AE3840CAB5642D3C2AEDF06B7026245671DD"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.ServiceHost.dll",
+                      "bytes":  35840,
+                      "sha256":  "ACCC426808293F1E8E8C978922770BCC6A2AA8551695D24A0FF4C5FF3F2A6AEF"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.ServiceHost.pdb",
+                      "bytes":  17548,
+                      "sha256":  "C63FC9384B5EF448AF12AB868F9DA921C395DD73A0ED872F87DA611175DCF49C"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.Services.dll",
+                      "bytes":  229376,
+                      "sha256":  "5B1BB671082715358D845ECF838F48FE76C690D19EEADAB8CD92D268A4996316"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.Services.pdb",
+                      "bytes":  56236,
+                      "sha256":  "70F68E0D063D85DDBD98D9473C8CB0A23A50F3984EA612F32025FB9823579E0F"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.Services.xml",
+                      "bytes":  47865,
+                      "sha256":  "A1391E81B092DBBFA7FB77A93CC17CD1C7144C4A70791A8C6038CE7DCF2DDA79"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.Shell.dll",
+                      "bytes":  395264,
+                      "sha256":  "66B8FBE7C583C2DD7A896C1FC0C01C9816F75E4E2F639D38E3CE7AECA0D4AFAD"
+                  },
+                  {
+                      "file":  "host/HistoryVulcan.Shell.pdb",
+                      "bytes":  96360,
+                      "sha256":  "744C67D05BBDEC4A3414EA0C27CC3EFC1CF942199F0EAF1A93565859C0B02E2E"
+                  },
+                  {
+                      "file":  "host/hu/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "72908DCF31AF35A26A7E82705AEE0065D2904B3523BE1C4DDDFFF9AFB3062E27"
+                  },
+                  {
+                      "file":  "host/it/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "9E590BBEE8A97D0EC0AB97CA2EC401DC8E7E9EFE6EB420E9E7017FB9E54A2C3A"
+                  },
+                  {
+                      "file":  "host/ja/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "CB9D56AFE46E023AF446EFB603EBB55CF24E56D0E3073A960EE911DFE9506C7D"
+                  },
+                  {
+                      "file":  "host/ko/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "63033D3FDF4A432BFAAB3F18F155C5B27BF0DDD293AC064BD38AF993718B052D"
+                  },
+                  {
+                      "file":  "host/nl-BE/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "9A469564A127C404DC2E23659582CD2FC2E4C05A3F0FB463A1626269C4D658A2"
+                  },
+                  {
+                      "file":  "host/pl/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "0FA10E5510D3C2E6D3F7E93E6F86C104B340A98BE9D989A2F7B16B1CD8F3E030"
+                  },
+                  {
+                      "file":  "host/pt/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "058F4B0983F3F8C61C29229D76B976CC33843ACEFEC28603A6BE8ADAA409F43F"
+                  },
+                  {
+                      "file":  "host/ro/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "D4D3D185009AD45964E8B0A576EF7A62A901D953514D8D28F6DE0D273DEB306B"
+                  },
+                  {
+                      "file":  "host/ru/AvalonDock.resources.dll",
+                      "bytes":  6656,
+                      "sha256":  "6560B0C49E8C59094170D877D2101497869461C5BD3FD52B975D8DE31ED1399D"
+                  },
+                  {
+                      "file":  "host/sv/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "B6969C5183CCA0D8D01E3B7F3CC7A4DB7D4C3E1D51540FF323B0D448E111B465"
+                  },
+                  {
+                      "file":  "host/zh-Hans/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "9ADA7F06AECAAA39A1E52F278F1072FE02B4EB9696632FD8662C2C87A8A4B343"
+                  },
+                  {
+                      "file":  "host/zh-Hant/AvalonDock.resources.dll",
+                      "bytes":  6144,
+                      "sha256":  "E12491E16E77AF2130FE9B9D79AD12C64D5AEFAD62E8A181EEA7B0A23835A4EC"
+                  },
+                  {
+                      "file":  "README.md",
+                      "bytes":  446,
+                      "sha256":  "7E188833C9E4F761F351E2C6FC67C1B659717D9CB0401B5FED71E4DF3A5EC065"
+                  }
+              ]
+}

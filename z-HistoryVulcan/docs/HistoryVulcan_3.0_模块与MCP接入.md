@@ -1,15 +1,15 @@
-# AppShell 模块与 MCP 接入
+# HistoryVulcan 模块与 MCP 接入
 
-> 适用版本：AppShell 3.1.9 候选；当前稳定消费版本为 3.1.7，3.1.8 不受支持
-> 边界：本文只描述框架能力。项目库、外部账号、工具同步等消费产品业务不属于 AppShell。
-> 常用公开方法和基础命令见 [AppShell API 与指令手册](AppShell_API与指令手册.md)。
+> 适用版本：HistoryVulcan 3.2.0（当前稳定消费版本；3.1.9 为旧名 AppShell 的最后快照），3.1.8 不受支持
+> 边界：本文只描述框架能力。项目库、外部账号、工具同步等消费产品业务不属于 HistoryVulcan。
+> 常用公开方法和基础命令见 [HistoryVulcan API 与指令手册](HistoryVulcan_API与指令手册.md)。
 
 ## 组件边界
 
-- `OneHistory.AppShell.Core`：命令、停靠、模块 UI、MCP 元数据与存储契约。
-- `OneHistory.AppShell.Services`：日志、设置、布局、模块宿主、MCP 网关与 Web 网关。
-- `OneHistory.AppShell.Shell`：WPF Shell、控制台、面板、模块管理与 MCP 管理视图。
-- `OneHistory.AppShell.ServiceHost`：无窗口服务组合、`svc.*` 与登录启动管理。
+- `OneHistory.HistoryVulcan.Core`：命令、停靠、模块 UI、MCP 元数据与存储契约。
+- `OneHistory.HistoryVulcan.Services`：日志、设置、布局、模块宿主、MCP 网关与 Web 网关。
+- `OneHistory.HistoryVulcan.Shell`：WPF Shell、控制台、面板、模块管理与 MCP 管理视图。
+- `OneHistory.HistoryVulcan.ServiceHost`：无窗口服务组合、`svc.*` 与登录启动管理。
 
 桌面单进程应用可直接创建 `ShellWindow`。前后端分离应用在服务端建立自己的 `CommandRegistry`，前端使用
 `ShellServiceClient.RunEventLoopAsync(localBus)`；WebSocket 建立后，客户端会自动发布完整本地命令目录，
@@ -41,7 +41,7 @@ UI 模块实现 `IUiModule`；需要注册宿主窗口时实现 UI 感知接口�
 自身，不拖垮宿主。
 
 模块的 `ToolWindowDescriptor.DefaultSide` 未设置时默认为 `DockSide.Right`；模块仍可显式指定其他方位，
-AppShell 不覆盖该声明。3.0.2 起，模块运行期注册的右侧窗口直接加入现有右侧标签组，不再为每个模块另建一块右侧
+HistoryVulcan 不覆盖该声明。3.0.2 起，模块运行期注册的右侧窗口直接加入现有右侧标签组，不再为每个模块另建一块右侧
 窗格。模块无需填写 `DefaultTabTarget`；执行窗口复位或 `win.dock ... pos=right` 也沿用同一合并规则。只有
 当前布局完全没有右侧窗格时，框架才创建新的右侧窗格。
 
@@ -99,7 +99,7 @@ WebSocket 支持分片文本消息，总消息上限 1 MiB。
 2. UI、Help、Web、MCP 与命令手册都从最终 `CommandRegistry` 投影，不复制名单。
 3. 危险操作必须由宿主确认；`--yes`、HTTP 参数或 MCP 参数都不能绕过远程确认。
 4. token、密码、私钥和连接串不得写入命令结果、日志或审计文件。
-5. 3.1.9 是当前源码候选；3.1.8 不作为稳定支持版本。全局 z 级模块扫描仍不在本版本范围。
+5. 3.2.0 是当前正式稳定快照；3.1.9 是旧名 AppShell 的最后快照；3.1.8 不作为稳定支持版本。全局 z 级模块扫描仍不在本版本范围。
    双进程服务历史设计不随消费包发布。
 
 ## 最小验收

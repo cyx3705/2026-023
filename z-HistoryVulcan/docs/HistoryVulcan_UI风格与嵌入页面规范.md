@@ -1,16 +1,16 @@
-# AppShell UI 风格与嵌入页面规范
+# HistoryVulcan UI 风格与嵌入页面规范
 
-> 适用版本：AppShell 3.1.9 候选；当前稳定消费版本为 3.1.7，3.1.8 不受支持
+> 适用版本：HistoryVulcan 3.2.0（当前稳定消费版本；3.1.9 为旧名 AppShell 的最后快照），3.1.8 不受支持
 
-本文是 AppShell 宿主、内置页面和外置 UI 模块的视觉合同。嵌入页面必须复用 AppShell 动态资源，
+本文是 HistoryVulcan 宿主、内置页面和外置 UI 模块的视觉合同。嵌入页面必须复用 HistoryVulcan 动态资源，
 不得复制固定色板或在页面内维护第二套浅色/深色主题。运行时真值位于
-`AppShell.Shell/Themes/ShellTokens.xaml`、`ShellTokens.Dark.xaml` 和 `ShellControls.xaml`。
+`HistoryVulcan.Shell/Themes/ShellTokens.xaml`、`ShellTokens.Dark.xaml` 和 `ShellControls.xaml`。
 
 ## 1. 使用原则
 
 - 页面根容器使用透明背景或 `Shell.Brush.Surface`，让宿主窗格决定外层背景、圆角和投影。
 - 颜色、字体、字号、圆角、间距和控件高度统一使用 `{DynamicResource ...}`；主题切换后必须即时更新。
-- 页面不绘制第二层标题栏、窗口边框、窗格卡片或关闭/最大化按钮。页签、拖动和窗口动作由 AppShell 承载。
+- 页面不绘制第二层标题栏、窗口边框、窗格卡片或关闭/最大化按钮。页签、拖动和窗口动作由 HistoryVulcan 承载。
 - 页面区保持工作型界面密度：工具栏紧凑、信息可扫描，不使用营销式大标题、装饰卡片或渐变背景。
 - 业务动作进入 `CommandBus`；纯选择、焦点和键盘导航可留在视图层。
 
@@ -18,7 +18,7 @@
 
 | 资源键 | 浅色 | 深色 | 用途 |
 | --- | --- | --- | --- |
-| `Shell.Brush.Canvas` | `#F5F6F7` | `#1A1D1C` | AppShell 工作区背景 |
+| `Shell.Brush.Canvas` | `#F5F6F7` | `#1A1D1C` | HistoryVulcan 工作区背景 |
 | `Shell.Brush.Surface` | `#FFFFFF` | `#1D201F` | 页面、窗格和弹层主表面 |
 | `Shell.Brush.SurfaceAlt` | `#F5F6F8` | `#242625` | 次级区域、禁用控件背景 |
 | `Shell.Brush.SurfaceHover` | `#ECEEF1` | `#2A2D2C` | 悬停背景 |
@@ -91,7 +91,7 @@
 
 - 普通按钮：表面底色 + `ControlBorder`，高度至少 28px，圆角 8px；悬停/按下使用对应 Surface 令牌。
 - 主要按钮：`Accent` 背景、`TextOnAccent` 前景；页面中同一操作组通常只有一个主要按钮。
-- 图标按钮：优先使用现有 AppShell/Lucide 图标，稳定为方形命中区，并提供 ToolTip。
+- 图标按钮：优先使用现有 HistoryVulcan/Lucide 图标，稳定为方形命中区，并提供 ToolTip。
 - 输入框、组合框：使用隐式 Shell 样式；焦点边框使用 `Accent`，禁用状态使用 `TextDisabled`。
 - 表格：表头使用 `Shell.GridHeader`；行选中使用 `AccentSoft`，不要恢复系统默认浅灰模板。
 - 菜单、Popup、ToolTip：表面使用 `Surface`，边框使用 `Hairline`，圆角 8px，使用 `Shell.Shadow.Flyout`。
@@ -132,10 +132,10 @@
 
 ### 顶栏归属
 
-- 主页面顶栏控制整个 AppShell；工具页顶栏控制工具页或独立浮窗。
+- 主页面顶栏控制整个 HistoryVulcan；工具页顶栏控制工具页或独立浮窗。
 - 嵌入页不创建自己的窗口最小化、最大化、关闭或拖动区。
-- 页面拖出、停靠、专注和恢复由真实页签及 AppShell 命令管线负责。
-- 独立浮窗仍只保留一层 AppShell 页面顶栏，模块内容不得根据浮动状态再套标题栏。
+- 页面拖出、停靠、专注和恢复由真实页签及 HistoryVulcan 命令管线负责。
+- 独立浮窗仍只保留一层 HistoryVulcan 页面顶栏，模块内容不得根据浮动状态再套标题栏。
 
 ### 响应式与可访问性
 
