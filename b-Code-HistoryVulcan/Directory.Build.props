@@ -1,0 +1,35 @@
+<Project>
+
+  <!-- Preserve the repository-wide quality rules when introducing a component-level props file. -->
+  <Import Project="..\Directory.Build.props" />
+  <Import Project="VulcanVersion.props" Condition="'$(VulcanVersion)' == ''" />
+
+  <PropertyGroup>
+    <VersionPrefix>$(VulcanVersion)</VersionPrefix>
+    <Version>$(VulcanVersion)</Version>
+    <AssemblyVersion>$(VulcanVersion).0</AssemblyVersion>
+    <FileVersion>$(VulcanVersion).0</FileVersion>
+    <InformationalVersion>$(VulcanVersion)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+    <Authors>OneHistory</Authors>
+    <Company>OneHistory</Company>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/cyx3705/OneHistory</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <Deterministic>true</Deterministic>
+
+    <PackageReadmeFile>PACKAGE.md</PackageReadmeFile>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <DebugType>portable</DebugType>
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)PACKAGE.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+</Project>

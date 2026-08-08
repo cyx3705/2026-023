@@ -1,0 +1,6 @@
+<Project>
+
+  <!-- Keep test dependency versions aligned with the HistoryVulcan product graph. -->
+  <Import Project="..\b-Code-HistoryVulcan\Directory.Packages.props" />
+
+</Project>

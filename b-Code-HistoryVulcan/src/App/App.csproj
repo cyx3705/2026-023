@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>HistoryVulcan.App</RootNamespace>
+    <AssemblyName>HistoryVulcan</AssemblyName>
+    <Product>HistoryVulcan</Product>
+    <Title>HistoryVulcan</Title>
+    <IsPackable>false</IsPackable>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <!-- N-01:每显示器 DPI 感知(Per-Monitor V2) -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HistoryVulcan.Core\HistoryVulcan.Core.csproj" />
+    <ProjectReference Include="..\HistoryVulcan.Services\HistoryVulcan.Services.csproj" />
+    <ProjectReference Include="..\HistoryVulcan.ServiceHost\HistoryVulcan.ServiceHost.csproj" />
+    <ProjectReference Include="..\HistoryVulcan.Shell\HistoryVulcan.Shell.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <StartupObject>HistoryVulcan.App.Program</StartupObject>
+  </PropertyGroup>
+
+</Project>

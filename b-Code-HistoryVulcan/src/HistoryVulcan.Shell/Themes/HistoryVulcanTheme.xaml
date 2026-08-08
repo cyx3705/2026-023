@@ -1,0 +1,23 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Shell 统一主题(§14.2 清单 7 主题挂钩;3.1 起按 UI-08 令牌化)。
+
+        合并顺序即优先级,后者覆盖前者:
+          1 VS2013 浅色  —— AvalonDock 结构性样式的基底(S-04:浅色为默认)
+          2 ShellTokens  —— 颜色、圆角、投影、字号的唯一定义处
+          3 ShellDocking —— 主题画刷键覆盖 + 窗格卡片/专注模板
+
+        本字典经 DockingManager.Theme 下发,浮动窗口(独立 Window,拿不到
+        ShellWindow.Resources)因此同样能取到令牌,不可依赖主窗体资源。
+        窗格控件样式仍必须经 DockingManager.AnchorablePaneControlStyle /
+        DocumentPaneControlStyle 属性下发,主题字典里的隐式 Style 不会命中。
+    -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/AvalonDock.Themes.VS2013;component/LightTheme.xaml" />
+        <ResourceDictionary Source="/HistoryVulcan.Shell;component/Themes/ShellTokens.xaml" />
+        <ResourceDictionary Source="/HistoryVulcan.Shell;component/Themes/ShellDocking.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+
+</ResourceDictionary>

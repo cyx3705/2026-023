@@ -1,0 +1,21 @@
+<Project>
+
+  <Import Project="VulcanVersion.props" Condition="'$(VulcanVersion)' == ''" />
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Dirkster.AvalonDock" Version="4.72.1" />
+    <PackageVersion Include="Dirkster.AvalonDock.Themes.VS2013" Version="4.72.1" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="OneHistory.HistoryVulcan.Shell" Version="$(VulcanVersion)" />
+    <PackageVersion Include="OneHistory.HistoryVulcan.ServiceHost" Version="$(VulcanVersion)" />
+    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+</Project>
