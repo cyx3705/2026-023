@@ -1,0 +1,12 @@
+const HistoryVulcan.Shell.Modules.ModuleCommands.KeyModuleRoots = "module.roots" -> string!
+HistoryVulcan.Shell.Console.ConsoleView.ActivateContent() -> void
+HistoryVulcan.Shell.Mcp.CommandCatalogRow.CommandClass.get -> string!
+HistoryVulcan.Shell.Mcp.CommandCatalogRow.CommandClass.init -> void
+HistoryVulcan.Shell.Mcp.CommandCatalogRow.Method.get -> string!
+HistoryVulcan.Shell.Mcp.CommandCatalogRow.Method.init -> void
+HistoryVulcan.Shell.ShellConfig.ModuleDiscoveryRoots.get -> System.Collections.Generic.List<string!>!
+HistoryVulcan.Shell.ShellConfig.RequireConfirmedModuleSources.get -> bool
+HistoryVulcan.Shell.ShellConfig.RequireConfirmedModuleSources.set -> void
+HistoryVulcan.Shell.ShellWindow.AttachCommandCatalogSession(HistoryVulcan.Core.CommandSurface.ICommandCatalogSession! session) -> void
+HistoryVulcan.Shell.ShellWindow.ConfigureCommandCompletionRouting(System.Func<bool>! isConsoleFocused, System.Action! showCommandCatalog) -> void
+HistoryVulcan.Shell.ShellWindow.RefreshCommandCompletionFocus() -> void
