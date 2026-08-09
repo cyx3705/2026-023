@@ -1,0 +1,54 @@
+# HistoryJanus baseline begin
+*.bak
+*.buildwithskipanalyzers
+*.cache
+*.dwl
+*.dwl2
+*.elk
+*.eod
+*.eox
+*.flk
+*.idb
+*.ilk
+*.lck
+*.log
+*.lref
+*.obj
+*.pdb
+*.slk
+*.suo
+*.tlog
+*.tmp
+*.up2date
+*.user
+*.vsidx
+*.xlk
+# HistoryJanus baseline end
+
+# IDE state
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# .NET build and test outputs
+**/bin/
+**/obj/
+TestResults/
+/artifacts/
+
+# Local package and deployment scratch
+*.tmp
+*.log
+b-Publish/current/
+b-Publish/virtual/
+
+# Deployment databases and rollback archives are machine-local recovery assets.
+b-Office/evidence/**/*.db
+b-Office/evidence/**/*.zip
+
+# b-Publish archives formal release evidence; rebuildable candidate and virtual workspaces are ignored.
+
+# Local Inno Setup bootstrap download (not a release artifact)
+b-Code-HistoryVulcan/eng/tools/
