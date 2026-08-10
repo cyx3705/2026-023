@@ -1,0 +1,59 @@
+const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ManifestFileName = "module.manifest.json" -> string!
+const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ManifestType = "HistoryVulcan.Module" -> string!
+HistoryVulcan.Services.Modules.IModuleDiscoverySource
+HistoryVulcan.Services.Modules.IModuleDiscoverySource.Discover() -> HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot!
+HistoryVulcan.Services.Modules.IModuleDiscoverySource.Roots.get -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic
+HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic.Code.get -> string!
+HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic.Code.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic.Message.get -> string!
+HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic.Message.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic.ModuleDiscoveryDiagnostic(string! Path, string! Code, string! Message) -> void
+HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic.Path.get -> string!
+HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic.Path.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.ArtifactPath.get -> string!
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.ArtifactPath.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.DependencyPaths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.DependencyPaths.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.DocsPath.get -> string?
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.DocsPath.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.ManifestPath.get -> string!
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.ManifestPath.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.McpExposure.get -> string?
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.McpExposure.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.ModuleDiscoveryEntry(string! Name, string! Version, string! PackagePath, string! ManifestPath, string! ArtifactPath, bool Ui, string? DocsPath, System.Collections.Generic.IReadOnlyList<string!>! DependencyPaths, string? McpExposure) -> void
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.Name.get -> string!
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.Name.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.PackagePath.get -> string!
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.PackagePath.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.Ui.get -> bool
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.Ui.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.Version.get -> string!
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.Version.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot
+HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot.Diagnostics.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic!>!
+HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot.Diagnostics.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot.ModuleDiscoverySnapshot(System.Collections.Generic.IReadOnlyList<string!>! Roots, System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Modules.ModuleDiscoveryEntry!>! Modules, System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic!>! Diagnostics) -> void
+HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot.Modules.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Modules.ModuleDiscoveryEntry!>!
+HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot.Modules.init -> void
+HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot.Roots.get -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot.Roots.init -> void
+HistoryVulcan.Services.Modules.ModuleHost.ChangeDiscoveryRoots(System.Collections.Generic.IEnumerable<string!>! roots) -> void
+HistoryVulcan.Services.Modules.ModuleHost.DiscoveryDiagnostics.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic!>!
+HistoryVulcan.Services.Modules.ModuleHost.DiscoveryRoots.get -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Services.Modules.ModuleHost.ModuleHost(HistoryVulcan.Services.Modules.IModuleDiscoverySource! discoverySource, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+HistoryVulcan.Services.Modules.ModuleHost.ReloadConfirmedSources(System.Collections.Generic.IEnumerable<string!>! manifestPaths) -> void
+HistoryVulcan.Services.Modules.ModuleHost.RequireConfirmedSources.get -> bool
+HistoryVulcan.Services.Modules.ModuleHost.RequireConfirmedSources.set -> void
+HistoryVulcan.Services.Modules.ModuleHost.CommandWorkbench.get -> HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost?
+HistoryVulcan.Services.Modules.ModuleHost.CommandWorkbench.set -> void
+HistoryVulcan.Services.Modules.ModuleMeta.ManifestPath.get -> string?
+HistoryVulcan.Services.Modules.ModuleMeta.ManifestPath.init -> void
+HistoryVulcan.Services.Modules.ModuleMeta.SourcePath.get -> string?
+HistoryVulcan.Services.Modules.ModuleMeta.SourcePath.init -> void
+HistoryVulcan.Services.Modules.ZModuleDiscoverySource
+HistoryVulcan.Services.Modules.ZModuleDiscoverySource.Discover() -> HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot!
+HistoryVulcan.Services.Modules.ZModuleDiscoverySource.Roots.get -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ZModuleDiscoverySource(System.Collections.Generic.IEnumerable<string!>! roots) -> void
+static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.FindAutomaticRoot(string! startPath) -> string?
