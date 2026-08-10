@@ -70,39 +70,6 @@
         <member name="M:HistoryVulcan.Services.FileLayoutStore.ListNamed">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="T:HistoryVulcan.Services.Input.GlobalShortcutService">
-            <summary>
-            User-session global shortcut host. The hook only queues key metadata; command
-            execution happens on a worker and no input data is persisted or forwarded.
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Input.GlobalShortcutService.#ctor(HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Core.Logging.IShellLog)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Input.GlobalShortcutService.IsEnabled">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Input.GlobalShortcutService.Registrations">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Input.GlobalShortcutService.Start">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Input.GlobalShortcutService.Stop">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Input.GlobalShortcutService.Register(HistoryVulcan.Core.Input.GlobalShortcutDescriptor,System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Input.GlobalShortcutService.CreateOwnerRegistrar(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Input.GlobalShortcutService.UnregisterOwner(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Input.GlobalShortcutService.Dispose">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
         <member name="T:HistoryVulcan.Services.Mcp.McpAuditRecorder">
             <summary>MCP 调用留痕的 JSONL 实现。单条追加失败只告警，不阻断调用。</summary>
         </member>
@@ -117,7 +84,7 @@
             MCP 网关(V2.1 §4/§6):HttpListener + JSON-RPC 2.0(Streamable HTTP 无状态子集),
             仅监听 127.0.0.1。铁律 1:唯一上游是指令总线——本类只认识
             CommandSchemaExporter / CommandBus,不 import ModuleHost、不反射模块类型。
-            消费方显式装配网关后可调用 TryAutostart；mcp.autostart=false 可关闭自动监听，mcp.start 仍可手动恢复。
+            消费方显式装配网关后可调用 TryAutostart；mcp.autostart=false 可关闭自动监听，vulcan.mcp.start 仍可手动恢复。
             每次调用/拒绝均追加写入 state/mcp-history.jsonl(铁律 2 / MS-05)。
             </summary>
         </member>
@@ -168,6 +135,11 @@
         </member>
         <member name="P:HistoryVulcan.Services.Mcp.McpGateway.AutostartEnabled">
             <summary>缺省启用；仅显式配置 false 时关闭宿主启动自动监听。</summary>
+            <summary>
+            是否随宿主启动自动监听。**缺省为 false**：网关会对外开一个回环端口，
+            开不开必须由人显式决定，不能因为装配了就默默监听。
+            用 <c>vulcan.mcp.autostart enabled=true</c> 打开持久自启动。
+            </summary>
         </member>
         <member name="P:HistoryVulcan.Services.Mcp.McpGateway.IsRunning">
             <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -309,6 +281,12 @@
         <member name="M:HistoryVulcan.Services.Modules.ModuleMeta.#ctor(System.String,System.String,System.String,System.String,System.Boolean,System.String,System.Int32,System.String,System.Boolean)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.SourcePath">
+            <summary>Absolute Z package path when the module came from manifest discovery.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.ManifestPath">
+            <summary>Absolute manifest path when the module came from manifest discovery.</summary>
+        </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleHost">
             <summary>
             模块宿主(MD-01~07):进程内移植自 b-Code-MyAPI-Lite 的 ModuleHost/Invoker 机制(D3)。
@@ -322,6 +300,9 @@
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.#ctor(System.String,HistoryVulcan.Core.Logging.IShellLog)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.#ctor(HistoryVulcan.Services.Modules.IModuleDiscoverySource,HistoryVulcan.Core.Logging.IShellLog)">
+            <summary>Creates a module host backed by explicit Z-level manifest discovery.</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.UiContext">
             <summary>
@@ -341,14 +322,28 @@
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.EnableFileWatching">
             <summary>Whether this host owns filesystem change detection for the module directory.</summary>
         </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.RequireConfirmedSources">
+            <summary>
+            When true, discovery-backed hosts remain empty until a backend-confirmed manifest set is supplied.
+            </summary>
+        </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.ShellUi">
             <summary>模块内嵌界面的宿主注册器;无窗服务进程保持 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.CommandWorkbench">
+            <summary>命令工作台挂载点；无窗服务进程或未装配 Shell 时保持 null。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.GlobalShortcuts">
             <summary>后台宿主提供的全局快捷键注册器；前端 UI 宿主保持 null。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.ModulesDirectory">
             <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.DiscoveryRoots">
+            <summary>Configured Z-level discovery roots; empty for the legacy directory host.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.DiscoveryDiagnostics">
+            <summary>Diagnostics from the most recent discovery scan.</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Modules">
             <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -368,6 +363,14 @@
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ChangeDirectory(System.String)">
             <summary>module.dir path=:切换模块目录并整体重载。</summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ChangeDiscoveryRoots(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>Replaces the configured Z discovery roots and immediately reloads modules.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ReloadConfirmedSources(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Reloads UI modules from a backend-confirmed manifest set without performing an independent scan.
+            </summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ScheduleReload(System.String)">
             <summary>文件事件防抖:拷贝大 DLL 会触发多次 Changed,静默 800ms 后才真正重载。</summary>
         </member>
@@ -376,8 +379,8 @@
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.FindModuleDomainConflicts(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String})">
             <summary>
-            返回候选模块命令中与宿主已有命令域冲突的一级域。
-            该纯函数同时供生产换血路径和 Smoke 回归使用。
+            返回按旧命令名前缀计算的冲突集合。仅保留给旧消费方诊断；
+            3.2.1 起模块实际域由 module owner 决定，装载路径不再调用本方法。
             </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.IsModuleArtifactDirectory(System.String)">
@@ -386,7 +389,7 @@
             DLL 和 manifest，但不是活动模块，不能被扫描成第二个同名模块。
             </summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.CollectType(HistoryVulcan.Services.Modules.ModuleHost.Snapshot,System.String,System.Type,HistoryVulcan.Services.Modules.XmlDocs)">
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.CollectType(HistoryVulcan.Services.Modules.ModuleHost.Snapshot,System.String,System.String,System.Type,HistoryVulcan.Services.Modules.XmlDocs)">
             <summary>把一个业务类的公共方法收集为待注册指令(MD-03/04)。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.IsModuleInfo(System.Type)">
@@ -411,7 +414,7 @@
             <summary>实际注册成功的指令名(热重载时按此注销)。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Metas">
-            <summary>模块元信息(module.list);CommandCount 在注册完成后定稿。</summary>
+            <summary>模块元信息(vulcan.module.list);CommandCount 在注册完成后定稿。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleHost.ModuleLoadContext">
             <summary>可回收的加载上下文:模块及其依赖全部从内存流加载,不锁磁盘文件。</summary>
@@ -427,21 +430,72 @@
             MD-08 模块旁面板自动发现(MP-01/02):
             Modules 目录中的 `&lt;模块名&gt;.panel.json` 自动并入 panels 目录
             (副本名 module-&lt;模块名&gt;.json,前缀便于识别与回收),模块下线时副本移除。
-            语义遵循框架 P-08 约定:已有面板 panel.reload 原地刷新即时生效;
+            语义遵循框架 P-08 约定:已有面板 vulcan.ui.panelreload 原地刷新即时生效;
             **全新面板窗口重启后出现**(窗口注册先于停靠系统初始化,框架文档明示)。
             面板 id 冲突由 PanelManager 既有校验拒绝并告警(MP-01 后半)。
             </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModulePanelSync.SyncFiles(System.String,System.String,HistoryVulcan.Core.Logging.IShellLog)">
             <summary>
-            把模块旁 *.panel.json 同步到 panels 目录;返回是否有变化(调用方据此触发 panel.reload)。
+            把模块旁 *.panel.json 同步到 panels 目录;返回是否有变化(调用方据此触发 vulcan.ui.panelreload)。
             纯文件级操作,不加载任何 DLL——启动期(窗口创建前)与热重载后均可调用。
             </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry">
+            <summary>A validated module artifact discovered from an explicit Z-level manifest.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.#ctor(System.String,System.String,System.String,System.String,System.String,System.Boolean,System.String,System.Collections.Generic.IReadOnlyList{System.String},System.String)">
+            <summary>A validated module artifact discovered from an explicit Z-level manifest.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic">
+            <summary>A non-fatal diagnostic produced while discovering Z-level module manifests.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic.#ctor(System.String,System.String,System.String)">
+            <summary>A non-fatal diagnostic produced while discovering Z-level module manifests.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot">
+            <summary>The immutable result of one module discovery scan.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot.#ctor(System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Modules.ModuleDiscoveryEntry},System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic})">
+            <summary>The immutable result of one module discovery scan.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.IModuleDiscoverySource">
+            <summary>Discovers module artifacts without loading their assemblies.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.IModuleDiscoverySource.Roots">
+            <summary>Configured absolute discovery roots.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.IModuleDiscoverySource.Discover">
+            <summary>Scans the configured roots and validates explicit module manifests.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ZModuleDiscoverySource">
+            <summary>
+            Discovers <c>HistoryVulcan.Module</c> manifests from direct <c>z-*</c> children of projects.
+            Folder names locate candidates only; the manifest is the authority for module identity.
+            </summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ManifestType">
+            <summary>The only manifest type accepted as a HistoryVulcan module.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ManifestFileName">
+            <summary>The root-level manifest file name used by Z module packages.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.#ctor(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>Creates a scanner for one or more absolute HistoryVesta roots.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.Roots">
+            <inheritdoc />
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.FindAutomaticRoot(System.String)">
+            <summary>Walks upward until a directory containing <c>HistoryVesta.git</c> is found.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.Discover">
+            <inheritdoc />
         </member>
         <member name="T:HistoryVulcan.Services.SettingsService">
             <summary>
             应用设置(F-01/F-03):%AppData%/&lt;应用名&gt;/settings.json,扁平键值对。
-            app.set / app.get 指令与派生应用共用;写入即落盘。
+            vulcan.app.set / vulcan.app.get 指令与派生应用共用;写入即落盘。
             </summary>
         </member>
         <member name="M:HistoryVulcan.Services.SettingsService.#ctor(HistoryVulcan.Services.AppPaths)">
@@ -457,7 +511,7 @@
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="M:HistoryVulcan.Services.SettingsService.All">
-            <summary>全部键(app.get 不带参数时列出)。</summary>
+            <summary>全部键(vulcan.app.get 不带参数时列出)。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.ShellLog">
             <summary>
