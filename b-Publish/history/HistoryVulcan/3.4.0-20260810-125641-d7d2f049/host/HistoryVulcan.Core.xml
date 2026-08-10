@@ -1,0 +1,1618 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>HistoryVulcan.Core</name>
+    </assembly>
+    <members>
+        <member name="T:HistoryVulcan.Core.ApplicationIdentity">
+            <summary>应用名称与版本的运行时单一真值，由入口程序集的元数据生成。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.ApplicationIdentity.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>应用名称与版本的运行时单一真值，由入口程序集的元数据生成。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.AppIdentity">
+            <summary>
+            从程序集元数据读取应用身份（0.4.4 由 HistoryJanus 反哺）。
+            派生应用无需自建身份类：Shell 装配时默认取入口程序集，
+            也可用 <see cref="M:HistoryVulcan.Core.AppIdentity.From(System.Reflection.Assembly)"/> 指定程序集。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.AppIdentity.Current">
+            <summary>默认取入口程序集；首次访问后缓存。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.AppIdentity.Use(System.Reflection.Assembly)">
+            <summary>显式指定身份来源程序集（测试宿主或多程序集场景）。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.AppIdentity.From(System.Reflection.Assembly)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind">
+            <summary>控制台补全候选种类。</summary>
+            <remarks>
+            3.4.0（DEC-025）起命令名补全按域 → 类 → 方法分段推进，每段有自己的种类供界面分组；
+            <see cref="F:HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Command"/> 保留给整名候选。
+            </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Command">
+            <summary>命令名。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Parameter">
+            <summary>参数名。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Value">
+            <summary>参数值。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Domain">
+            <summary>指令域，补全后落点是 <c>域.</c>。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Class">
+            <summary>指令类，补全后落点是 <c>类.</c>。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Method">
+            <summary>指令方法，补全后落点是 <c>方法 </c>（含尾随空格，直接进入参数段）。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate">
+            <summary>单条控制台补全候选。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate.InsertText">
+            <summary>写入输入框的文本。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate.DisplayText">
+            <summary>列表显示文本。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate.Description">
+            <summary>候选说明。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate.Kind">
+            <summary>候选种类。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult">
+            <summary>一次补全计算结果。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.Empty">
+            <summary>无候选结果。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.Candidates">
+            <summary>候选列表。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.ReplaceStart">
+            <summary>替换起点。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.ReplaceLength">
+            <summary>替换长度。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.HasCandidates">
+            <summary>是否有候选。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.CommandSurface.CommandCatalogFilter">
+            <summary>命令目录会话筛选状态（控制台与命令集共用）。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.CommandSurface.CommandCatalogFilter.#ctor(System.String,System.String,System.String,System.Int32)">
+            <summary>命令目录会话筛选状态（控制台与命令集共用）。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind">
+            <summary>目录会话变更种类。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind.Snapshot">
+            <summary>快照重载。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind.Filter">
+            <summary>筛选变更。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind.Selection">
+            <summary>选择变更。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind.Invalidated">
+            <summary>注册表失效，需刷新。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.CommandSurface.CommandCatalogChangedEventArgs">
+            <summary>目录会话变更参数。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.CommandSurface.CommandCatalogChangedEventArgs.#ctor(HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind)">
+            <summary>目录会话变更参数。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.CommandCatalogChangedEventArgs.Kind">
+            <summary>变更种类。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession">
+            <summary>
+            控制台补全与命令集/详情共享的最小目录会话面。
+            具体实现由命令工作台模块（Mercury）提供；Shell 仅持有延迟代理。
+            </summary>
+        </member>
+        <member name="E:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.Changed">
+            <summary>目录或筛选变化。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.Domains">
+            <summary>当前可见域列表（不含「全部」）。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.Classes">
+            <summary>当前域下的类列表（不含「全部」）；域为全部时为空。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.SelectedCommandName">
+            <summary>当前选中的命令名。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.CurrentFilter">
+            <summary>当前筛选。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.RefreshAsync(System.Boolean,System.Threading.CancellationToken)">
+            <summary>刷新目录快照。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.SetFilter(HistoryVulcan.Core.CommandSurface.CommandCatalogFilter)">
+            <summary>设置完整筛选。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.TrySetDomain(System.String,System.Collections.Generic.IReadOnlyList{System.String}@)">
+            <summary>尝试设置域筛选。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.TrySetCommandClass(System.String,System.Collections.Generic.IReadOnlyList{System.String}@)">
+            <summary>尝试设置类筛选。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.SetConsoleQuery(System.String)">
+            <summary>设置控制台检索词（同步命令集列表）。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.MoveSelection(System.Int32)">
+            <summary>在可见行中移动选择。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.Select(System.String)">
+            <summary>选中指定命令。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.CompleteAsync(System.String,System.Int32,System.Threading.CancellationToken)">
+            <summary>为控制台输入计算补全。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.BuiltinCommandDefinitions">
+            <summary>
+            Shared metadata for commands that execute locally in both the desktop shell and a service host.
+            Hosts bind only their execution handler and UI-thread capability.
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.BuiltinCommandDefinitions.Names">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.BuiltinCommandDefinitions.Contains(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.BuiltinCommandDefinitions.Bind(System.String,System.Func{HistoryVulcan.Core.Commands.CommandContext,System.Threading.Tasks.Task{HistoryVulcan.Core.Commands.CommandResult}},System.Boolean)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandBus">
+            <summary>
+            指令总线(§5.2 生命周期):
+            解析 → 查注册表 → 参数校验 → 拦截(二次确认) → 执行(可 UI 线程编组) → 结果回显。
+            任何指令抛出的异常都被捕获:程序不崩溃,错误进控制台与日志文件(P0)。
+            指令回显与普通日志共用 IShellLog 管道、不同类别(L-03):
+              回显 = "cmd:来源",结果 = "cmd:result:域",进度 = "cmd:progress:域"。
+            </summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.CommandBus.EchoCategoryPrefix">
+            <summary>回显类别前缀;控制台按此前缀识别指令行。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.CommandBus.ResultCategory">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.CommandBus.ProgressCategory">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.#ctor(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Core.Logging.IShellLog)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandBus.Registry">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.Validate(System.String)">
+            <summary>
+            Validates a command text against the current registry without routing, logging, confirmation, or execution.
+            UI surfaces use this to reject stale menu references at construction time.
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandBus.Confirmation">
+            <summary>二次确认通道;未注入时带确认位的指令一律拒绝执行(安全缺省)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandBus.ConfirmationRouter">
+            <summary>需要按客户端来源选择确认通道时使用；设置后优先于 Confirmation。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandBus.UiContext">
+            <summary>UI 线程上下文;RequiresUiThread 的指令经此编组。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandBus.FrontendExecutor">
+            <summary>
+            前端命令中继。服务宿主为其注入传输实现；未连接前端时保持 null，
+            总线返回明确失败结果，不等待网络超时。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor">
+            <summary>
+            客户端模式下的远程总线。ShouldUseRemote 返回 true 时整条命令交给服务，
+            服务经前端中继发回的 UI 命令可用来源标签绕过此路由并在本地执行。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemote">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemoteCommand">
+            <summary>按命令文本和来源决定是否走远端；设置后优先于仅按来源的兼容委托。</summary>
+        </member>
+        <member name="E:HistoryVulcan.Core.Commands.CommandBus.Executed">
+            <summary>每条指令执行完毕后触发(状态栏摘要,S-03);在执行线程上引发。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.ExecuteAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            执行一行指令文本。source 为来源标签(C-01):UI / 手动 / 脚本:文件名 / layout。
+            返回值在指令(含异步长任务)完成后才落定;方法自身不抛异常。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.FormatUsage(HistoryVulcan.Core.Commands.CommandDescriptor)">
+            <summary>用法行,如 "用法: vulcan.ui.dock name= pos=left/right/top/bottom/tab [target=] [ratio=]"。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandClassLabels">
+            <summary>
+            「无类」显示标签的唯一真源（DEC-025）。两段名 <c>&lt;域&gt;.&lt;方法&gt;</c> 是该域的
+            无类直接方法，其类为空串；目录、控制台与命令集都用这里的标签显示与筛选。
+            </summary>
+            <remarks>
+            这里**只做显示层翻译**，不承担任何类推导。类推导的唯一入口是
+            <see cref="M:HistoryVulcan.Core.Commands.CommandRegistry.LegacyClass(System.String)"/>；3.3.2 曾有一个同时管显示和推导的
+            <c>CommandClassNames</c>，两职合一导致筛选值与注册值互相污染，故拆开。
+            </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.CommandClassLabels.None">
+            <summary>无类直接方法在界面上的类名。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandClassLabels.Display(System.String)">
+            <summary>把类键翻译成显示标签：空串 → <see cref="F:HistoryVulcan.Core.Commands.CommandClassLabels.None"/>。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandClassLabels.ToKey(System.String)">
+            <summary>把显示标签翻译回类键：<see cref="F:HistoryVulcan.Core.Commands.CommandClassLabels.None"/> → 空串。筛选比较前调用。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandClassLabels.IsNone(System.String)">
+            <summary>该类键是否代表无类直接方法。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandContext">
+            <summary>
+            指令执行上下文:总线校验后的参数取值 + 来源 + 进度上报通道。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandContext.#ctor(HistoryVulcan.Core.Commands.CommandDescriptor,System.Collections.Generic.IReadOnlyDictionary{System.String,System.String},System.String,System.IProgress{System.String},System.Threading.CancellationToken)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandContext.Descriptor">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandContext.Source">
+            <summary>来源标签:UI / 手动 / 脚本:文件名 / layout / 派生应用自定义。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandContext.Progress">
+            <summary>长任务进度上报(§5.2 约束:全程不阻塞 UI);行文本直接进控制台。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandContext.Cancellation">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandContext.Has(System.String)">
+            <summary>参数是否被显式提供(区分默认值)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandContext.GetString(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandContext.RequireString(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandContext.GetInt(System.String,System.Int32)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandContext.GetDouble(System.String,System.Double)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandContext.GetBool(System.String,System.Boolean)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandDescriptor">
+            <summary>
+            一条指令的注册模型(§5.3):名称、参数定义、执行体、帮助文本、
+            二次确认与撤销能力位(撤销为 Q6 预留,首版不实现)。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Name">
+            <summary>完整指令名,小写,如 "vulcan.ui.dock"、"vulcan.command.help"。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Domain">
+            <summary>
+            指令所属宿主或模块域。模块命令的有效域由模块宿主强制设置；
+            未声明的旧指令由注册表按旧命令前缀兼容推导。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.CommandClass">
+            <summary>
+            域内功能类，如 app、log、win。未声明的模块命令归入 core，
+            未声明的旧非模块指令由注册表按旧命令前缀兼容推导。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Summary">
+            <summary>一句话说明(help 列表用)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Example">
+            <summary>示例行(help 详情用),如 "vulcan.ui.dock name=console pos=bottom ratio=0.25"。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Parameters">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.ConfirmPrompt">
+            <summary>执行前需二次确认时,返回确认提示文本;null 表示无需确认(§5.2 拦截器)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.SupportsUndo">
+            <summary>撤销能力位(§5.4,Q6:首版只预留)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Dangerous">
+            <summary>
+            代理描述符无法序列化原始确认函数时保留危险性元数据。
+            本地执行仍只由 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.ConfirmPrompt"/> 触发确认；目录、MCP 与文档读取本合成属性。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.IsDangerous">
+            <summary>命令是否具有危险性元数据或本地确认闸口。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Readonly">
+            <summary>
+            只读声明：命令不改变持久状态（不写库、文件或 Git 状态）。
+            MCP 暴露策略优先读取此字段；外部名称白名单仅保留为兼容层。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.RequiresUiThread">
+            <summary>true 时总线把执行体编组到 UI 线程(win.*/layout.* 等操作窗口的指令)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.ExecutionSite">
+            <summary>命令的执行位置；默认在当前宿主执行。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.AllowMcpExecution">
+            <summary>
+            Frontend 命令是否显式允许 MCP 执行。默认 false；仅查阅与治理不需要开启。
+            Backend/Local 命令仍由既有只读、危险确认与策略规则决定是否暴露。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.AllowUnspecifiedParameters">
+            <summary>代理描述符可接受任意参数并原样转发；本地业务命令不应开启。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Handler">
+            <summary>执行体。长任务应内部 await 后台工作并经 Progress 上报(§5.2 约束)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandDescriptor.Sync(System.Func{HistoryVulcan.Core.Commands.CommandContext,HistoryVulcan.Core.Commands.CommandResult})">
+            <summary>同步执行体的便捷包装。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandExecutionSite">
+            <summary>命令执行位置。服务化宿主可把窗口命令中继给已连接的前端。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.CommandExecutionSite.Local">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.CommandExecutionSite.Frontend">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandHistory">
+            <summary>
+            手输指令历史(C-11):↑/↓ 翻阅 + 持久化(默认 500 条,可配)。
+            线程安全;文件一行一条,追加式加载、整体重写保存。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandHistory.#ctor(System.String,System.Int32)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandHistory.Add(System.String)">
+            <summary>
+            追加一条已经过 CommandBus 回显脱敏的文本(与上一条重复时不重复入表)。
+            原始用户输入不得直接传入；Shell 使用 <c>cmd:手动</c> 回显作为唯一写入源。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandHistory.Snapshot">
+            <summary>最新在末尾的快照。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandHistory.Save">
+            <summary>持久化到文件(退出时调用)。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandParser">
+            <summary>
+            指令语法解析(§5.1,Q12 已定稿):
+            <code>域.动作[.子动作 ...] [位置参数 ...] [键=值 ...]</code>
+            - 指令名大小写不敏感;参数值保留原始大小写
+            - 含空格的值用双引号包裹,内部引号以 \" 转义(\\ 表示反斜杠本身)
+            - # 开头整行为注释;空行忽略
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandParser.NamePattern">
+            <remarks>
+            Pattern:<br/>
+            <code>^[A-Za-z_][\\w-]*(\\.[A-Za-z_][\\w-]*)*$</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at the beginning of the string.<br/>
+            ○ Match a character in the set [A-Z_a-z].<br/>
+            ○ Match a character in the set [-\w] greedily any number of times.<br/>
+            ○ Loop greedily any number of times.<br/>
+                ○ 1st capture group.<br/>
+                    ○ Match '.'.<br/>
+                    ○ Match a character in the set [A-Z_a-z].<br/>
+                    ○ Match a character in the set [-\w] atomically any number of times.<br/>
+            ○ Match if at the end of the string or if before an ending newline.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandParser.KeyPattern">
+            <remarks>
+            Pattern:<br/>
+            <code>^[A-Za-z_][\\w-]*$</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at the beginning of the string.<br/>
+            ○ Match a character in the set [A-Z_a-z].<br/>
+            ○ Match a character in the set [-\w] atomically any number of times.<br/>
+            ○ Match if at the end of the string or if before an ending newline.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandParser.IsBlankOrComment(System.String)">
+            <summary>该行是否为注释/空行(脚本场景直接跳过)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandParser.QuoteArg(System.String)">
+            <summary>
+            把参数值编码为可回读的指令文本片段(UI 生成等价指令用):
+            含空白/引号/等号时用双引号包裹并转义,否则原样返回。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandParser.Parse(System.String)">
+            <summary>解析一行指令;语法错误时抛 <see cref="T:HistoryVulcan.Core.Commands.CommandSyntaxException"/>。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandParser.Tokenize(System.String)">
+            <summary>
+            按空白切词;双引号内的空白不切分,引号在结果中剥除。
+            WasKeyQuoted 标记“=”之前部分是否曾被引号包裹(避免 "a=b" 被当作键值)。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandSyntaxException">
+            <summary>指令文本语法错误。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandSyntaxException.#ctor(System.String)">
+            <summary>指令文本语法错误。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandRegistry">
+            <summary>
+            指令注册表(§5.3):框架内置组与派生应用自定义指令并入同一张表,
+            help 自动收录;名称冲突在注册时立即报错,禁止静默覆盖(P0)。
+            </summary>
+        </member>
+        <member name="E:HistoryVulcan.Core.Commands.CommandRegistry.Changed">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.Register(HistoryVulcan.Core.Commands.CommandDescriptor,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.Unregister(System.String)">
+            <summary>
+            注销指令(模块热重载场景:模块 DLL 下线时其指令域随之移除)。
+            调用方须只注销自己注册过的名称;存在则移除并返回 true。
+            [基线 0.4.2 新增,由派生应用 HistoryJanus V2-M3 反哺]
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.TryGet(System.String,HistoryVulcan.Core.Commands.CommandDescriptor@)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.GetSource(System.String)">
+            <summary>返回注册来源：framework / app / module:&lt;name&gt;。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.GetDomain(System.String)">
+            <summary>返回指令的有效域；模块来源始终由模块 owner 决定。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.GetCommandClass(System.String)">
+            <summary>返回指令在有效域内的功能类。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.All">
+            <summary>全部指令,按名称排序(help 列表)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.Domains">
+            <summary>
+            当前已注册的全部指令域，按序返回。这是域聚焦做绝对名脱固时的**唯一权威源**
+            （DEC-025）：域清单随模块装载/卸载变化，任何组件都不得硬编码域名字面量。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.IsRegisteredDomain(System.String)">
+            <summary>是否为已注册域；域聚焦据此判断输入首段该按绝对名还是拼前缀解析。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.DomainsOf(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            从完整命令名提取一级域。无点号命令本身也是保留域，避免模块以
+            <c>help.foo</c> 或 <c>future.list</c> 的形式绕过根命令/现有域冲突检查。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.LegacyDomain(System.String)">
+            <summary>从命令名推导域：首段；无点则 <c>core</c>。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.LegacyClass(System.String)">
+            <summary>
+            从命令名推导功能类，纯结构判定不做语义猜测（DEC-025）：
+            三段及以上取第二段；两段 <c>域.方法</c> 是该域的无类直接方法，返回空串；
+            单段回退 <c>core</c>。
+            </summary>
+            <remarks>
+            3.4.0 起两段名不再回退首段作为类。两段名的首段是**域**而不是类，
+            把它当类会让 <c>arena.cell</c> 这类指令既占一个域又凭空多出一个同名类。
+            空串即「无类」，由显示层翻译成标签，不参与任何类推导。
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.LegacyMethod(System.String)">
+            <summary>从命令名推导方法段：末段；无点则整名。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.GetMethod(System.String)">
+            <summary>同 <see cref="M:HistoryVulcan.Core.Commands.CommandRegistry.LegacyMethod(System.String)"/>。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.Suggest(System.String)">
+            <summary>
+            未知指令时给出最接近的候选(§5.2 P1:“你是不是想输入…”)。
+            规则:编辑距离 ≤ 2,或同域(点号前缀相同)的全部动作。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandResult">
+            <summary>指令执行结果(§5.2 生命周期终点)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandResult.Success">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandResult.Message">
+            <summary>结果摘要/错误信息;可多行(控制台逐行缩进显示)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandResult.Data">
+            <summary>可选的结构化载荷(供 UI 同步显示,如查询结果;M3 起使用)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandResult.Ok(System.String,System.Object)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandResult.Fail(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandSelectionState">
+            <summary>进程内共享的命令集选择，只传递稳定的指令名。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandSelectionState.CurrentCommandName">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="E:HistoryVulcan.Core.Commands.CommandSelectionState.Changed">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.DomainFocus">
+            <summary>
+            域聚焦下的输入解析（DEC-025 / REQ-CMD-012）。纯函数，不持有注册表也不碰界面，
+            控制台与 Mercury 补全引擎共用同一份判定，避免两侧各写一套导致行为漂移。
+            </summary>
+            <remarks>
+            只有两条规则：输入首段命中**已注册域**时按绝对名解析；否则补上当前聚焦域前缀。
+            「退出聚焦」因此不需要任何域提供指令——<c>mercury.go</c>、<c>vulcan.*</c>
+            的首段本身就是已注册域，在任何聚焦状态下都能直接输入。
+            </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.DomainFocus.All">
+            <summary>域筛选下拉里代表「不聚焦」的值。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.DomainFocus.IsUnfocused(System.String)">
+            <summary>该值是否表示未聚焦到任何域。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.DomainFocus.Resolve(System.String,System.String,System.Func{System.String,System.Boolean})">
+            <summary>
+            把用户输入解析成实际要执行的指令文本。
+            </summary>
+            <param name="input">用户在控制台输入的原文。</param>
+            <param name="focusedDomain">当前聚焦域；<see cref="F:HistoryVulcan.Core.Commands.DomainFocus.All"/> 或空表示未聚焦。</param>
+            <param name="isRegisteredDomain">
+            判断一个首段是否是已注册域。权威源必须是运行期注册表
+            （<see cref="M:HistoryVulcan.Core.Commands.CommandRegistry.IsRegisteredDomain(System.String)"/>），不得传入硬编码域清单。
+            </param>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.DomainFocus.WouldPrefix(System.String,System.String,System.Func{System.String,System.Boolean})">
+            <summary>
+            输入是否会被拼上聚焦域前缀。界面据此提示「当前输入将解析为 &lt;域&gt;.…」。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.DomainFocus.HeadSegment(System.String)">
+            <summary>
+            取第一个 token 的首段（第一个点之前的部分）。没有点时整个 token 就是首段。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandParameterCapability">
+            <summary>可跨进程同步的命令参数元数据。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandParameterCapability.#ctor(System.String,System.String,HistoryVulcan.Core.Commands.ParamType,System.Boolean,System.String,System.Nullable{System.Int32},System.String[])">
+            <summary>可跨进程同步的命令参数元数据。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandParameterCapability.From(HistoryVulcan.Core.Commands.ParameterSpec)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandParameterCapability.ToParameter">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.FrontendCommandCapability">
+            <summary>
+            前端向服务端权威目录发布的执行能力。只携带稳定元数据，不序列化 handler。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.FrontendCommandCapability.#ctor(System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{HistoryVulcan.Core.Commands.CommandParameterCapability},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.String)">
+            <summary>
+            前端向服务端权威目录发布的执行能力。只携带稳定元数据，不序列化 handler。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.FrontendCommandCapability.Domain">
+            <summary>命令所属宿主或模块域；附加属性保持旧位置构造函数兼容。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.FrontendCommandCapability.CommandClass">
+            <summary>命令在域内的功能类；附加属性保持旧位置构造函数兼容。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.FrontendCommandCapability.From(HistoryVulcan.Core.Commands.CommandDescriptor,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.FrontendCommandCapability.CreateProxy">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.FrontendCapabilityCatalog">
+            <summary>一个前端应用在单次连接中发布的完整命令能力目录。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.FrontendCapabilityCatalog.#ctor(System.String,System.Collections.Generic.IReadOnlyList{HistoryVulcan.Core.Commands.FrontendCommandCapability})">
+            <summary>一个前端应用在单次连接中发布的完整命令能力目录。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.IConfirmationService">
+            <summary>
+            二次确认通道(§5.2 拦截器链的首个内置拦截器;T-08 / R-06 等危险操作依赖)。
+            Shell 层以模态对话框实现;无 UI 场景(脚本/测试)可注入自动拒绝或自动通过的实现。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.IConfirmationService.Confirm(System.String)">
+            <summary>返回 true 表示用户确认继续。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.ModuleDomainNaming">
+            <summary>
+            模块名 → 指令域的唯一归一化真值（DEC-023）。
+            模块名保留 <c>History</c> 品牌前缀，指令域去掉它：<c>HistoryJanus</c> → <c>janus</c>。
+            品牌前缀标识产品族归属，在域段里对所有模块都相同，不携带区分信息。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.ModuleDomainNaming.ToDomain(System.String)">
+            <summary>
+            把模块名归一化为指令域：大小写不敏感地剥离开头的 <c>History</c> 并转小写；
+            剥离后为空时退回原名小写；不以 <c>History</c> 开头的原样转小写。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.ParamType">
+            <summary>参数类型(校验用,§5.2 参数校验)。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.ParamType.String">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.ParamType.Int">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.ParamType.Double">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.ParamType.Bool">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.ParameterSpec">
+            <summary>
+            一个指令参数的定义(§5.3:名 / 类型 / 是否必填 / 默认值 / 说明)。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Name">
+            <summary>参数名(键=值 的键),小写。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Description">
+            <summary>帮助文本里的一句话说明。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Type">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Required">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Default">
+            <summary>缺省值的文本表达(帮助显示 + 取值兜底);null 表示无默认。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Position">
+            <summary>
+            允许按位置传入时的位置序号(0 起);null 表示只能 键=值。
+            例:help 的 command 参数 Position=0,支持 “help vulcan.ui.dock”。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.AllowedValues">
+            <summary>枚举型取值约束(如 pos=left/right/top/bottom/tab);null 不限。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.ParsedCommand">
+            <summary>一行指令文本的解析结果(§5.1 语法 v0)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParsedCommand.Name">
+            <summary>指令名(域.动作 或 单词指令),已转小写。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParsedCommand.Positionals">
+            <summary>位置参数,按出现顺序。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParsedCommand.Named">
+            <summary>键=值参数;键不敏感大小写,值保留原始大小写。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParsedCommand.RawText">
+            <summary>原始输入文本(回显用)。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Data.SqlText">
+            <summary>
+            SQL 文本片段助手(V2.1.6 R1):单引号转义/引用/截断的唯一实现,
+            HistoryRecorder 与 PromptGovernanceStore 共同取用。
+            时间戳格式不在此统一——各表既有格式属对外行为,由调用方自持。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Data.SqlText.Escape(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Data.SqlText.Quote(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Data.SqlText.QuoteNullable(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Data.SqlText.Truncate(System.String,System.Int32)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Docking.DockSide">
+            <summary>
+            工具窗口相对主程序窗体的停靠方位(§4.1 W-03 五种落点)。
+            </summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.DockSide.Left">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.DockSide.Right">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.DockSide.Top">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.DockSide.Bottom">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.DockSide.Tab">
+            <summary>并入目标标签组(vulcan.ui.dock pos=tab target=...)。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.DockSide.Center">
+            <summary>占据中央工作区；多个中央窗口组成标签组。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Docking.ToolWindowInfo">
+            <summary>某个工具窗口的当前状态快照(vulcan.ui.windows 的数据源)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.ToolWindowInfo.#ctor(System.String,System.String,System.Boolean,System.Boolean,System.Nullable{HistoryVulcan.Core.Docking.DockSide},System.Nullable{System.Double},System.String)">
+            <summary>某个工具窗口的当前状态快照(vulcan.ui.windows 的数据源)。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Docking.IDockingService">
+            <summary>
+            停靠系统对外唯一门面(§14.2 封装原则):
+            四类标准窗口与派生应用只通过本接口操作窗口与布局,
+            未来 win.* / layout.* 指令(M2)也落在本接口上。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Docking.IDockingService.MaximizedId">
+            <summary>当前最大化的工具窗口 Id;未最大化时为 null。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.ListWindows">
+            <summary>列出全部已注册窗口及状态(vulcan.ui.windows)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.Show(System.String)">
+            <summary>显示窗口(vulcan.ui.show);若已隐藏则唤出,已显示则激活。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.Hide(System.String)">
+            <summary>隐藏窗口(vulcan.ui.hide);状态保留,不销毁(§4.1 关闭=隐藏)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.Float(System.String)">
+            <summary>浮动为独立顶层窗口(vulcan.ui.float)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.Dock(System.String,HistoryVulcan.Core.Docking.DockSide,System.Nullable{System.Double},System.String)">
+            <summary>停靠到指定方位(vulcan.ui.dock);Center 占中央工作区，Tab 并入 targetId 标签组。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.SetRatio(System.String,System.Double)">
+            <summary>调整窗口占主程序窗体的比例(vulcan.ui.ratio)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.ResetWindow(System.String)">
+            <summary>把单个窗口复位到注册时声明的默认位置(视图菜单「复位」,W-02)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.ResetLayout">
+            <summary>整体重置为默认布局(vulcan.ui.layoutreset,W-07)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.SaveLayout(System.String)">
+            <summary>保存当前布局为命名方案(vulcan.ui.layoutsave,W-08)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.LoadLayout(System.String)">
+            <summary>加载命名布局方案(vulcan.ui.layoutload);失败返回 false。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.ListLayouts">
+            <summary>列出全部命名布局方案(vulcan.ui.layouts)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.RegisterWindow(HistoryVulcan.Core.Docking.ToolWindowDescriptor,System.String)">
+            <summary>运行期注册工具窗口。owner 是模块热重载时的回收键。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.UnregisterWindow(System.String)">
+            <summary>运行期注销工具窗口;未注册时静默忽略。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.UnregisterOwner(System.String)">
+            <summary>回收 owner 名下全部工具窗口。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.MaximizeWindow(System.String)">
+            <summary>最大化指定工具窗口。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Docking.IDockingService.RestoreLayoutFromMaximized">
+            <summary>退出临时最大化状态并恢复进入前的完整布局。</summary>
+        </member>
+        <member name="E:HistoryVulcan.Core.Docking.IDockingService.CommandGenerated">
+            <summary>
+            布局侧产生的等价指令(W-10):用户拖拽等手势结束后,
+            封装层生成 win.* / layout.* 指令文本并经此事件上报。
+            M2 指令总线接入后订阅本事件完成回显与落日志;
+            由指令/API 引发的布局变更不会再回声成新事件(§14.2 防再入)。
+            </summary>
+        </member>
+        <member name="E:HistoryVulcan.Core.Docking.IDockingService.WindowsChanged">
+            <summary>窗口集合或最大化状态变化时触发。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Docking.ShellCommandEventArgs">
+            <summary>
+            一条等价指令的文本表达(§5.1 语法),及其来源类别(C-01 来源标签)。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Docking.ShellCommandEventArgs.CommandText">
+            <summary>指令文本,如 "vulcan.ui.dock name=console pos=bottom ratio=0.28"。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Docking.ShellCommandEventArgs.Source">
+            <summary>来源类别:"layout"(拖拽手势)、"UI"(菜单/按钮)等。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Docking.StandardWindowIds">
+            <summary>Window identities owned by HistoryVulcan and available to derived hosts.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.StandardWindowIds.Console">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.StandardWindowIds.Mcp">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.StandardWindowIds.CommandDetail">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.StandardWindowIds.Modules">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Docking.ToolWindowDescriptor">
+            <summary>
+            工具窗口注册模型(§14.2 封装工作清单第 1 条)。
+            派生应用只面对本模型,禁止直接引用停靠库类型。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Docking.ToolWindowDescriptor.Id">
+            <summary>指令可寻址的窗口名(vulcan.ui.show name=...),要求小写、无空格、进程内唯一。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Docking.ToolWindowDescriptor.Title">
+            <summary>标题栏与「视图」菜单显示的标题。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Docking.ToolWindowDescriptor.DefaultSide">
+            <summary>
+            默认停靠方位。未指定时为右侧；模块仍可显式指定 Left/Top/Bottom/Center/Tab
+            覆盖该默认值。Center 占据中央工作区；Tab 时须同时指定 <see cref="P:HistoryVulcan.Core.Docking.ToolWindowDescriptor.DefaultTabTarget"/>。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Docking.ToolWindowDescriptor.DefaultRatio">
+            <summary>四边停靠时默认占主窗体的比例，须严格位于 (0,1)；Center/Tab 布局不使用该值。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Docking.ToolWindowDescriptor.DefaultTabTarget">
+            <summary>DefaultSide 为 Tab 时,并入哪个窗口所在的标签组(填对方 Id)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Docking.ToolWindowDescriptor.DefaultVisible">
+            <summary>是否默认可见;false 表示注册后先隐藏,由指令或菜单唤出。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Docking.ToolWindowDescriptor.IsSingleton">
+            <summary>是否单例(W-11;首版仅单例生效,多实例开关预留)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Docking.ToolWindowDescriptor.ContentFactory">
+            <summary>
+            窗口内容工厂。返回值在 WPF 宿主中应为 FrameworkElement;
+            声明为 object 以保持 Core 层不依赖 WPF。
+            例外:Id 为 "console" 的窗口内容由 Shell 提供(§4.4 标准控制台),
+            可不设工厂;其余窗口必须提供。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Input.GlobalShortcutModifiers">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Input.GlobalShortcutModifiers.None">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Input.GlobalShortcutModifiers.Alt">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Input.GlobalShortcutModifiers.Control">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Input.GlobalShortcutModifiers.Shift">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Input.GlobalShortcutModifiers.Windows">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Input.GlobalShortcutStroke">
+            <summary>A physical virtual-key stroke used by a global shortcut.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Input.GlobalShortcutStroke.#ctor(System.Int32,HistoryVulcan.Core.Input.GlobalShortcutModifiers)">
+            <summary>A physical virtual-key stroke used by a global shortcut.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Input.GlobalShortcutDescriptor">
+            <summary>
+            A non-suppressing global shortcut. Strokes are evaluated in order; the host
+            rejects duplicate and prefix-conflicting registrations.
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Input.GlobalShortcutDescriptor.#ctor(System.String,System.Collections.Generic.IReadOnlyList{HistoryVulcan.Core.Input.GlobalShortcutStroke},System.String,System.Int32)">
+            <summary>
+            A non-suppressing global shortcut. Strokes are evaluated in order; the host
+            rejects duplicate and prefix-conflicting registrations.
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.#ctor(System.String,System.String,System.Collections.Generic.IReadOnlyList{HistoryVulcan.Core.Input.GlobalShortcutStroke},System.String,System.Int32)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Input.IGlobalShortcutRegistrar">
+            <summary>Owner-scoped registration surface injected into shortcut modules.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutRegistrar.Register(HistoryVulcan.Core.Input.GlobalShortcutDescriptor)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Input.IGlobalShortcutModule">
+            <summary>
+            Optional module capability. Implementing this interface authorizes the module
+            to register command-backed global shortcuts for its lifetime.
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutModule.RegisterShortcuts(HistoryVulcan.Core.Input.IGlobalShortcutRegistrar)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Input.IGlobalShortcutHost">
+            <summary>
+            Process-wide global shortcut host. Implementations live in modules (e.g. HistoryMercury);
+            the Vulcan host only holds this Core contract.
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Input.IGlobalShortcutHost.IsEnabled">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Input.IGlobalShortcutHost.Registrations">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutHost.Start">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutHost.Stop">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutHost.Register(HistoryVulcan.Core.Input.GlobalShortcutDescriptor,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutHost.CreateOwnerRegistrar(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutHost.UnregisterOwner(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Logging.ShellLogLevel">
+            <summary>日志级别(C-03 六级)。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Logging.ShellLogLevel.Trace">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Logging.ShellLogLevel.Debug">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Logging.ShellLogLevel.Info">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Logging.ShellLogLevel.Warn">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Logging.ShellLogLevel.Error">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Logging.ShellLogLevel.Fatal">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Logging.ShellLogEntry">
+            <summary>一条日志/指令回显记录。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Logging.ShellLogEntry.#ctor(System.DateTime,HistoryVulcan.Core.Logging.ShellLogLevel,System.String,System.String)">
+            <summary>一条日志/指令回显记录。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Logging.IShellLog">
+            <summary>
+            M1 阶段的最小日志汇聚点:内存环形缓冲 + 事件推送 + 文件落盘。
+            M2 的正式日志服务(§6.2)将实现/替换本接口,控制台窗口从这里补读历史。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Logging.IShellLog.Log(HistoryVulcan.Core.Logging.ShellLogLevel,System.String,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="E:HistoryVulcan.Core.Logging.IShellLog.EntryAdded">
+            <summary>新纪录到达事件(控制台窗口 / 占位页订阅)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Logging.IShellLog.Snapshot">
+            <summary>当前缓冲内容快照。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Logging.ShellLogExtensions">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Logging.ShellLogExtensions.Info(HistoryVulcan.Core.Logging.IShellLog,System.String,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Logging.ShellLogExtensions.Warn(HistoryVulcan.Core.Logging.IShellLog,System.String,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Logging.ShellLogExtensions.Error(HistoryVulcan.Core.Logging.IShellLog,System.String,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.ClientKind">
+            <summary>接入命令总线的客户端种类。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.ClientKind.Mcp">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.ClientKind.Shell">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.ClientKind.Web">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.ClientSession">
+            <summary>一次客户端会话的稳定身份。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.ClientSession.#ctor(System.String,HistoryVulcan.Core.Mcp.ClientKind,System.String,System.String,System.DateTimeOffset)">
+            <summary>一次客户端会话的稳定身份。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.ClientSession.RemoteAddress">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.ClientSession.DeviceId">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.ClientSession.AuthSubject">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.ClientSession.Scopes">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.ClientSession.IsLoopback">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.ClientSession.Create(HistoryVulcan.Core.Mcp.ClientKind,System.String,System.String,System.String,System.String,System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.CommandManualPreview">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.CommandManualPreview.#ctor(System.String,System.Int32,System.String,System.String,System.Boolean)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.CommandManualGenerator">
+            <summary>从运行时注册表和 MCP 投影生成确定性命令手册。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.CommandManualGenerator.Render(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Core.Mcp.CommandSchemaExporter,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.CommandManualGenerator.Sha256(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.McpToolInfo">
+            <summary>
+            一条指令的 MCP 工具形态(MC-01):tools/list 条目与本地 vulcan.mcp.schema 共用。
+            Dangerous = 带 ConfirmPrompt(总线确认闸口),网关侧按 MS-04 对 MCP 一律拒绝执行。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpToolInfo.#ctor(System.String,System.String,System.String,System.Text.Json.Nodes.JsonObject,System.Boolean,System.String,System.Boolean)">
+            <summary>
+            一条指令的 MCP 工具形态(MC-01):tools/list 条目与本地 vulcan.mcp.schema 共用。
+            Dangerous = 带 ConfirmPrompt(总线确认闸口),网关侧按 MS-04 对 MCP 一律拒绝执行。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.CommandSchemaExporter">
+            <summary>
+            指令元数据自描述层(V2.1 §3,MC-01~06):
+            CommandRegistry 的指令元数据 ↔ MCP 工具描述(JSON Schema)双向映射。
+            铁律 1:本层与网关的唯一上游是指令注册表/总线,不认识 ModuleHost 与任何 DLL 类型。
+            每次调用现算不缓存(MC-04),模块热重载后的指令增删即刻反映。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.CommandSchemaExporter.#ctor(HistoryVulcan.Core.Commands.CommandRegistry)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.CommandSchemaExporter.DescriptionsProvider">
+            <summary>
+            生效提示词提供者(V2.1.2,装配点接 PromptGovernanceStore.AllEffectiveDescriptions):
+            修订在导出读取侧合成，应用后客户端下次 tools/list 即见新描述，无需重启。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.CommandSchemaExporter.IsHardExcluded(System.String)">
+            <summary>
+            硬排除清单(MS-03,任何策略下都不暴露):
+            vulcan.app.quit(远端不得杀宿主)、debug.*(承压/注水等自测工具)、
+            mcp.*(防远端自锁与递归启停)。代码内常量,不走配置。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.CommandSchemaExporter.HardExclusionReason(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.CommandSchemaExporter.ExportTools">
+            <summary>全量导出(MC-01):注册表指令 − 硬排除,含危险标记与提示词覆盖;调用即现算。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.CommandSchemaExporter.Find(System.String)">
+            <summary>按工具名或指令名找一条(vulcan.mcp.schema name= 与 tools/call 共用)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.CommandSchemaExporter.MakeToolName(System.String,System.Collections.Generic.HashSet{System.String})">
+            <summary>指令名 → MCP 合法工具名(^[a-zA-Z0-9_-]{1,64}$):点等非法字符换下划线,冲突追加序号。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.CommandSchemaExporter.IllegalChars">
+            <remarks>
+            Pattern:<br/>
+            <code>[^a-zA-Z0-9_-]</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match a character in the set [^-0-9A-Z_a-z].<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.CommandSchemaExporter.DefaultNode(HistoryVulcan.Core.Commands.ParamType,System.String)">
+            <summary>Default 是字符串表达,按声明类型转成 JSON 原生类型(转不动回落字符串)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.CommandSchemaExporter.BuildCommandText(System.String,System.Nullable{System.Text.Json.JsonElement})">
+            <summary>
+            tools/call 的 arguments(JSON 对象) → 总线指令文本。
+            值编码复用 CommandParser.QuoteArg(§5.1 官方转义),与手输语法完全同轨;
+            嵌套对象/数组序列化为紧凑 JSON 字符串传入(由指令自己解释)。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.IMcpAuditLog">
+             <summary>
+             MCP 调用留痕（铁律 2 / MS-05：每次调用与拒绝都必须留痕）。
+            
+             0.4.4 抽出：网关此前直接依赖派生应用的 HistoryRecorder，而后者同时承载
+             应用专有的业务留痕表；把网关真正需要的那一面抽成接口，框架层不再认识应用侧类型。
+             派生应用若已有自己的留痕器，实现本接口接进来即可复用同一张表。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(System.String,System.String,System.String,System.String,System.Int64)">
+            <summary>记录一次 MCP 调用结果。</summary>
+            <param name="client">客户端标识。</param>
+            <param name="tool">工具名；鉴权阶段的拒绝用 "(auth)"。</param>
+            <param name="arguments">已脱敏的调用参数文本；持久化实现可进一步截断。</param>
+            <param name="result">结果：成功 / 拒绝 / 远程拒绝 / 确认超时 等。</param>
+            <param name="elapsedMs">耗时毫秒；未执行记 0。</param>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(HistoryVulcan.Core.Mcp.ClientSession,System.String,System.String,System.String,System.Int64)">
+            <summary>记录带稳定会话身份的 MCP 调用；旧实现自动转发到兼容签名。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.McpConfirmationScope">
+            <summary>
+            MCP 确认中继的执行域(V2.2 CX-02/03)。
+            网关在宿主端弹框获得人工批准后,用本域标记"这次总线执行的二次确认已由人工完成",
+            使总线不再重复弹框;AsyncLocal 只沿网关发起的异步流前向传播,UI/手动/脚本指令的
+            确认路径不受影响(其 AsyncLocal 恒为 false)。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.McpConfirmationScope.PreApproved">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpConfirmationScope.RunPreApprovedAsync``1(System.Func{System.Threading.Tasks.Task{``0}})">
+            <summary>在预批准标记下执行网关发起的总线调用;结束后复位。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.GatewayAwareConfirmation">
+            <summary>
+            包装 Shell 交互确认(或 --yes 的自动确认)的确认服务(V2.2 CX-03):
+            MCP 中继已由人工预批准的执行直接放行(不二次弹框);其余一律走内层——
+            即 UI/手动的真实弹框,或 --yes 的自动确认。
+            关键:MCP 危险调用的确认由网关独立完成,从不经过 --yes 的自动确认,
+            因此 --yes 对 MCP 来源危险指令不生效(CX-03)。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.GatewayAwareConfirmation.#ctor(HistoryVulcan.Core.Commands.IConfirmationService)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.GatewayAwareConfirmation.Confirm(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.McpExposurePolicy">
+             <summary>
+             MCP 暴露规则的解释器，供网关、command.* 和管理页共同使用。
+            
+             **只读性的单一真值在 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.Readonly"/>**（命令自己声明）；
+             模块命令的暴露档来自模块清单的 <c>mcpExposure</c>（经 <see cref="P:HistoryVulcan.Core.Mcp.McpExposurePolicy.ModuleExposure"/> 查得）。
+             本类只负责把这两个来源解释成最终档位，不再持有任何指令名清单（V2.4.4）。
+             </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.McpExposurePolicy.ModuleOfCommand">
+            <summary>V2.2 CX-01:命令名 → 所属模块名(注册来源 "module:&lt;name&gt;");装配点接 Registry.GetSource。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.McpExposurePolicy.ModuleExposure">
+            <summary>V2.2 CX-01:模块名 → 清单声明的 mcpExposure;无清单(根平铺)返回 null = standard 现状。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.McpExposurePolicy.ReadonlyCommands">
+             <summary>
+             按名字补登记的只读指令集合。
+            
+             **V2.4.4 起默认为空**:只读性的单一真值是 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.Readonly"/>——
+             由命令在注册处自己声明,与 ConfirmPrompt / SupportsUndo 同级。
+             0.4.4 时代的 18 条框架基线与派生应用登记的 14 条已全部迁至各自描述符,
+             保留双份会让「一件事实两处声明」以新形态复活,故本集合清空。
+            
+             本集合与 <see cref="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.RegisterReadonly(System.String[])"/> 继续保留,仅用于**无法修改注册点**的场景
+             (例如第三方程序集提供的命令描述符)。正常开发一律用 Readonly = true,不要走这里。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.RegisterReadonly(System.String[])">
+             <summary>
+             按名字补登记只读指令(0.4.4 引入,V2.4.4 起退为兜底通道)。幂等、可重复调用。
+            
+             **优先用 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.Readonly"/> 自描述**;只有在拿不到注册点、
+             无法给描述符加字段时才用本方法。
+             </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.McpExposurePolicy.ReadonlyCommandNames">
+            <summary>当前生效的只读指令全集(框架基线 + 派生登记),供管理页与自检使用。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.IsReadonlyAllowed(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.McpExposurePolicy.DiagnosticCommands">
+            <summary>
+            收编进正式域但仍属诊断性质的指令:永不对 MCP/Web 暴露。
+            影子域 <c>debug</c> 退役后,这类指令不再能靠名称前缀识别(DEC-023)。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.McpExposurePolicy.DiagnosticCommandNames">
+            <summary>诊断指令名单,供自检与文档核对。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.HardExclusionReason(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.State(HistoryVulcan.Core.Commands.CommandDescriptor)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.IsVisible(HistoryVulcan.Core.Commands.CommandDescriptor,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.PromptTextIntegrity">
+            <summary>拒绝已在上游丢失、无法由 UTF-8 解码恢复的提示词文本。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.PromptTextIntegrity.ValidateDescription(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.PromptTextIntegrity.LooksCorrupted(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Modules.IModuleContext">
+            <summary>Host-owned runtime services made available to an HistoryVulcan module.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IModuleContext.Bus">
+            <summary>The single command bus owned by the current host process.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IModuleContext.Settings">
+            <summary>The settings store owned by the current host process.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IModuleContext.Log">
+            <summary>The log owned by the current host process.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IModuleContext.DataDirectory">
+            <summary>The data root owned by the current host process.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IModuleContext.RegisterCommands(System.Action{HistoryVulcan.Core.Commands.CommandRegistry})">
+            <summary>
+            Stages module commands for the current module snapshot. The supplied registry is isolated
+            from the live host registry; the host commits and removes its contents with the module.
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Modules.IModuleContextAware">
+            <summary>Implemented by modules that consume host-owned runtime services.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IModuleContextAware.Attach(HistoryVulcan.Core.Modules.IModuleContext)">
+            <summary>Attaches the current host context before commands and UI are activated.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost">
+            <summary>
+            Shell 暴露给命令工作台模块的挂载点：共享选择态、目录会话接到控制台，以及补全路由。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.Bus">
+            <summary>宿主指令总线。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.CommandSelection">
+            <summary>命令集与详情联动选中态。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.Settings">
+            <summary>设置存储。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.Log">
+            <summary>宿主日志。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.DataDirectory">
+            <summary>数据根目录。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.AttachCommandCatalogSession(HistoryVulcan.Core.CommandSurface.ICommandCatalogSession)">
+            <summary>把真实目录会话挂到控制台延迟代理上。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.ConfigureCommandCompletionRouting(System.Func{System.Boolean},System.Action)">
+            <summary>配置控制台补全聚焦判定与非聚焦时唤起命令集。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.RefreshCommandCompletionFocus">
+            <summary>布局变化后刷新补全聚焦态。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Modules.IShellCommandWorkbenchAware">
+            <summary>模块实现本接口后，宿主在 CreateUi 前注入命令工作台挂载点。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IShellCommandWorkbenchAware.CommandWorkbench">
+            <summary>命令工作台宿主；服务宿主或未装配时可为 null。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Modules.IShellUiRegistrar">
+            <summary>模块向宿主注册内嵌界面的唯一门面。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IShellUiRegistrar.IsUiThread">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IShellUiRegistrar.Invoke(System.Action)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IShellUiRegistrar.RegisterToolWindow(HistoryVulcan.Core.Docking.ToolWindowDescriptor,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IShellUiRegistrar.UnregisterToolWindow(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IShellUiRegistrar.UnregisterOwner(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Modules.IUiModule">
+            <summary>由服务宿主 UI 线程创建和销毁的模块能力。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IUiModule.CreateUi">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IUiModule.DestroyUi">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Modules.IShellUiAware">
+            <summary>模块实现本接口后，宿主会在 CreateUi 前注入界面注册器。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IShellUiAware.ShellUi">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Modules.ModuleCommandAttribute">
+            <summary>为反射模块方法补充命令元数据。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.ModuleCommandAttribute.Readonly">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.ModuleCommandAttribute.CommandClass">
+            <summary>命令在当前模块域内的功能类；未声明时归入 core。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Modules.IActivatableToolContent">
+            <summary>Optional content contract used when a tool window is shown and should receive input focus.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IActivatableToolContent.ActivateContent">
+            <summary>Activates the content's primary interaction target.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Modules.IDeferredStartupWork">
+            <summary>网关就绪后执行的非关键启动工作；失败不得阻断宿主。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IDeferredStartupWork.ExecuteAsync(System.Threading.CancellationToken)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Panels.PanelDefinition">
+            <summary>
+            控制面板声明(§4.5,P-01):JSON 配置文件与 C# 注册 API 共用的信息模型。
+            面板 = 一个可停靠工具窗口,内容为若干输入控件 + 指令触发按钮。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelDefinition.Id">
+            <summary>面板 id,同时是窗口名(vulcan.ui.show name=&lt;id&gt;);小写、进程内唯一。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelDefinition.Title">
+            <summary>标题栏显示名。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelDefinition.Visible">
+            <summary>默认是否可见。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelDefinition.Side">
+            <summary>默认停靠方位:left / right / top / bottom。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelDefinition.Ratio">
+            <summary>默认占主窗体比例。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelDefinition.Controls">
+            <summary>控件清单,按声明顺序纵向排布(P-06 简单行列栅格)。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Panels.PanelControl">
+            <summary>
+            面板内一个控件(P-02 八类):
+            button / text / number / combo / check / slider / file / dir / label。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelControl.Type">
+            <summary>控件类型(见类注释)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelControl.Id">
+            <summary>控件 id:指令模板以 {id} 引用其当前值;button/label 可省略。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelControl.Label">
+            <summary>左侧标签文本;button 的按钮文字。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelControl.Command">
+            <summary>button 专用:指令模板,{控件id} 占位引用同面板输入控件当前值(P-03)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelControl.Items">
+            <summary>combo 专用:候选项。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelControl.Min">
+            <summary>number / slider:范围与步进(P-02)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelControl.Max">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelControl.Step">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelControl.Default">
+            <summary>默认值(文本表达)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelControl.Style">
+            <summary>button 可选样式:"danger" 红色强调。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Panels.PanelControl.Required">
+            <summary>校验(P-04):必填。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Storage.ILayoutStore">
+            <summary>
+            布局文件存取抽象(F-01:布局采用停靠库序列化格式单独成文件)。
+            Shell 只负责序列化/反序列化,文件位置与读写由 Services 层实现。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ILayoutStore.ReadCurrent">
+            <summary>读取“当前布局”(启动恢复用);不存在返回 null。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ILayoutStore.WriteCurrent(System.String)">
+            <summary>写入“当前布局”(退出自动保存用)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ILayoutStore.DeleteCurrent">
+            <summary>删除“当前布局”(损坏回退时清理,N-06)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ILayoutStore.ReadNamed(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ILayoutStore.WriteNamed(System.String,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ILayoutStore.ListNamed">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Storage.ISettingsService">
+            <summary>
+            应用设置读写(F-01/F-03):扁平键值对,vulcan.app.set / vulcan.app.get 指令与派生应用共用。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ISettingsService.Get(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ISettingsService.GetInt(System.String,System.Int32)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ISettingsService.Set(System.String,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ISettingsService.All">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.NamePattern_0">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the NamePattern method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.NamePattern_0.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_0.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.NamePattern_0.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_0.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.NamePattern_0.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_0.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_0.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_0.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.KeyPattern_1">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the KeyPattern method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.KeyPattern_1.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_1.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.KeyPattern_1.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_1.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.KeyPattern_1.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_1.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_1.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_1.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.IllegalChars_2">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the IllegalChars method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.IllegalChars_2.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.IllegalChars_2.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.IllegalChars_2.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.IllegalChars_2.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.IllegalChars_2.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.IllegalChars_2.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.IllegalChars_2.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.Utilities">
+            <summary>Helper methods used by generated <see cref="T:System.Text.RegularExpressions.Regex"/>-derived implementations.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout">
+            <summary>Default timeout value set in <see cref="T:System.AppContext"/>, or <see cref="F:System.Text.RegularExpressions.Regex.InfiniteMatchTimeout"/> if none was set.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_hasTimeout">
+            <summary>Whether <see cref="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout"/> is non-infinite.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.StackPush(System.Int32[]@,System.Int32@,System.Int32,System.Int32)">
+            <summary>Pushes 2 values onto the backtracking stack.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_ascii_20FF03FEFFFF87FEFFFF07">
+            <summary>Supports searching for characters in or not in "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".</summary>
+        </member>
+    </members>
+</doc>
