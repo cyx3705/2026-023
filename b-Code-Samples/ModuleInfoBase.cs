@@ -1,9 +1,18 @@
 namespace BaseVariable;
 
 /// <summary>
-/// 模块契约副本(与 b-Code-MyAPI-Lite\BaseVariable 同源,MD-02):
-/// 宿主按基类全名 "BaseVariable.ModuleInfoBase" 做鸭子类型识别,
-/// 契约类编译进模块自身或独立 BaseVariable.dll 均可被装载。
+/// 模块契约的本地副本 —— 这是全体系中刻意保留的唯一一份副本。
+///
+/// 权威定义在 HistoryVulcan.Core 的 Modules/ModuleInfoBase.cs。引用 Core 的模块
+/// (Janus / Mercury / Minerva / Diana)一律直接使用那一份:同时保留自带副本会造成
+/// CS0433 类型二义性。
+///
+/// 本示例模块存在的意义正是证明另一条路径依然成立:宿主的识别逻辑
+/// (<c>ModuleHost.IsModuleInfo</c>)按基类全名 "BaseVariable.ModuleInfoBase" 比对,
+/// 与程序集无关,因此一个**不引用任何宿主程序集**的 DLL(见 DemoModule.csproj:
+/// 无任何 PackageReference / ProjectReference)把契约类编译进自身,同样能被装载。
+///
+/// 修改本文件时必须与 Core 中的权威定义保持一致。
 /// </summary>
 public abstract class ModuleInfoBase
 {
