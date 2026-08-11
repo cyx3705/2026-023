@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>HistoryVulcan.ServiceHost</RootNamespace>
+    <PackageId>OneHistory.HistoryVulcan.ServiceHost</PackageId>
+    <Title>OneHistory HistoryVulcan Service Host</Title>
+    <Description>Headless WPF service host, lifecycle commands, and desktop confirmation for OneHistory HistoryVulcan.</Description>
+    <PackageTags>onehistory;HistoryVulcan;service;wpf</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HistoryVulcan.Core\HistoryVulcan.Core.csproj" />
+    <ProjectReference Include="..\HistoryVulcan.Services\HistoryVulcan.Services.csproj" />
+    <ProjectReference Include="..\HistoryVulcan.Extensibility\HistoryVulcan.Extensibility.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="All" />
+  </ItemGroup>
+</Project>
