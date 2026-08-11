@@ -89,11 +89,6 @@ function Assert-Snapshot {
             throw "Snapshot is missing $required"
         }
     }
-    foreach ($documentName in $documentNames) {
-        if (-not (Test-Path -LiteralPath (Join-Path $Path "docs\$documentName") -PathType Leaf)) {
-            throw "Snapshot is missing docs/$documentName"
-        }
-    }
 
     $manifest = Get-Content -LiteralPath (Join-Path $Path 'manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json
     if ([string]$manifest.version -ne $Version -or [string]$manifest.product -ne 'HistoryVulcan') {
@@ -126,8 +121,7 @@ $candidateBackup = Join-Path $publishRoot ('.current-previous-' + [Guid]::NewGui
 $buildOutputRoot = Join-Path $publishRoot ('.build-' + [Guid]::NewGuid().ToString('N'))
 try {
     $temporaryHost = Join-Path $temporary 'host'
-    $temporaryDocs = Join-Path $temporary 'docs'
-    New-Item -ItemType Directory -Force -Path $temporaryHost, $temporaryDocs | Out-Null
+    New-Item -ItemType Directory -Force -Path $temporaryHost | Out-Null
 
     Invoke-Dotnet @(
         'restore', $solution, '--locked-mode', '--nologo',
@@ -141,14 +135,6 @@ try {
         ('-p:BaseOutputPath=' + (Join-Path $buildOutputRoot '')),
         '-p:NuGetAudit=false')
     Assert-HostDirectory $temporaryHost
-
-    foreach ($documentName in $documentNames) {
-        $source = Join-Path $documentRoot $documentName
-        if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
-            throw "Consumer document is missing: $source"
-        }
-        Copy-Item -LiteralPath $source -Destination (Join-Path $temporaryDocs $documentName)
-    }
 
     $reuseTemplate = Get-Content -LiteralPath $reuseTemplatePath -Raw -Encoding UTF8
     if ($reuseTemplate.IndexOf('{{VERSION}}', [StringComparison]::Ordinal) -lt 0) {
@@ -165,7 +151,6 @@ try {
 This is the current HistoryVulcan host snapshot.
 
 - `host/HistoryVulcan.exe`: win-x64, framework-dependent HistoryVulcan host.
-- `docs/`: current API, module, runtime, change, and UI style contracts.
 - `HistoryVulcan.reuse.md`: minimal entry point for projects and AI consumers.
 - `manifest.json` and `SHA256SUMS`: snapshot identity and integrity.
 
@@ -191,7 +176,9 @@ Run `host/HistoryVulcan.exe`. Historical releases are stored under `b-Publish/hi
         selfContained = $false
         sourceCommit = $sourceCommit
         sourceDirty = $sourceDirty
-        documents = @($documentNames | ForEach-Object { "docs/$_" })
+        # 消费文档不再随快照分发：单一真值由 HistoryDiana 的 b-Office-OneHistory 托管，
+        # 发布管线在每次部署后同步镜像。快照内再放一份只会产生第二处会漂移的副本。
+        documents = @($documentNames)
         files = @($payloadFiles | ForEach-Object {
             $relative = $_.FullName.Substring($temporary.Length).TrimStart('\', '/').Replace('\', '/')
             [ordered]@{

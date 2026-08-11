@@ -3,7 +3,6 @@
 This is the current HistoryVulcan host snapshot.
 
 - host/HistoryVulcan.exe: win-x64, framework-dependent HistoryVulcan host.
-- docs/: current API, module, runtime, change, and UI style contracts.
 - HistoryVulcan.reuse.md: minimal entry point for projects and AI consumers.
 - manifest.json and SHA256SUMS: snapshot identity and integrity.
 

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 using System.Windows;
 using HistoryVulcan.Core;
@@ -190,6 +191,61 @@ public partial class App : Application
     {
         foreach (var command in commands)
             await window.Commands.ExecuteAsync(command, "脚本:startup");
+    }
+
+    /// <summary>
+    /// 无头导出命令手册（<c>--export-command-manual &lt;路径&gt;</c>）。
+    ///
+    /// 复用后台装配：手册的价值在于它是**运行时注册表的忠实投影**，因此必须走宿主真正
+    /// 使用的那条装载路径——同一套模块发现、同一套命令注册、同一套 MCP 暴露策略。
+    /// 另起一套轻量装配会得到一份"看起来对"但与实际不符的手册，那比没有手册更糟。
+    ///
+    /// 与 <c>vulcan.command.manual</c> 的分工：那条命令带本地二次确认，供人在控制台按需
+    /// 生成；本入口无人值守，供发布管线在每次模块部署后刷新。两者调用同一个生成器。
+    /// </summary>
+    internal static int ExportCommandManual(string outputPath)
+    {
+        ServiceComposition? composition = null;
+        try
+        {
+            var executable = Environment.ProcessPath ?? typeof(App).Assembly.Location;
+            composition = BuildServiceComposition(executable);
+
+            // 只装载模块，不启动 Web / MCP 监听：导出不需要对外服务，
+            // 顺带避免与正在运行的后台服务抢端口。
+            composition.Modules?.Start();
+
+            var markdown = HistoryVulcan.Extensibility.Mcp.CommandManualGenerator.Render(
+                composition.Registry!,
+                new HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter(composition.Registry!),
+                composition.Mcp?.Policy ?? "readonly");
+
+            var target = Path.GetFullPath(outputPath);
+            var directory = Path.GetDirectoryName(target);
+            if (!string.IsNullOrEmpty(directory))
+                Directory.CreateDirectory(directory);
+
+            // 原子写入：先写临时文件再替换，避免管线中断留下半份手册。
+            var temporary = target + ".tmp";
+            File.WriteAllText(temporary, markdown, new UTF8Encoding(false));
+            File.Move(temporary, target, overwrite: true);
+
+            var count = composition.Registry!.All().Count;
+            Console.WriteLine(
+                $"命令手册已导出: {count} 条命令，SHA-256 " +
+                $"{HistoryVulcan.Extensibility.Mcp.CommandManualGenerator.Sha256(markdown)}");
+            Console.WriteLine(target);
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"导出命令手册失败: {ex.Message}");
+            return 1;
+        }
+        finally
+        {
+            composition?.Dispose();
+        }
     }
 
     internal static ServiceComposition BuildServiceComposition(string executablePath)
