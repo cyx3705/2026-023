@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -18,6 +18,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App", "b-Code-HistoryVulcan\src\App\App.csproj", "{DAC78FF9-E7FA-4C13-8361-AEECCC44F1C2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoryVulcan.Tests", "b-Code-Tests\HistoryVulcan.Tests\HistoryVulcan.Tests.csproj", "{635B097E-7F87-43E7-AA5D-F6D106A1E9B0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoryVulcan.Extensibility", "b-Code-HistoryVulcan\src\HistoryVulcan.Extensibility\HistoryVulcan.Extensibility.csproj", "{8A76C859-84B3-42FA-ADB5-3B1062480D42}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -101,6 +103,18 @@ Global
 		{635B097E-7F87-43E7-AA5D-F6D106A1E9B0}.Release|x64.Build.0 = Release|Any CPU
 		{635B097E-7F87-43E7-AA5D-F6D106A1E9B0}.Release|x86.ActiveCfg = Release|Any CPU
 		{635B097E-7F87-43E7-AA5D-F6D106A1E9B0}.Release|x86.Build.0 = Release|Any CPU
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42}.Debug|x64.Build.0 = Debug|Any CPU
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42}.Debug|x86.Build.0 = Debug|Any CPU
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42}.Release|x64.ActiveCfg = Release|Any CPU
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42}.Release|x64.Build.0 = Release|Any CPU
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42}.Release|x86.ActiveCfg = Release|Any CPU
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -113,5 +127,6 @@ Global
 		{961226E3-8C7F-4F6F-930D-6520FC5EBF68} = {5C8B4F3E-43FD-DAB6-8FA6-006392BA9734}
 		{DAC78FF9-E7FA-4C13-8361-AEECCC44F1C2} = {5C8B4F3E-43FD-DAB6-8FA6-006392BA9734}
 		{635B097E-7F87-43E7-AA5D-F6D106A1E9B0} = {5C8B4F3E-43FD-DAB6-8FA6-006392BA9734}
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42} = {5C8B4F3E-43FD-DAB6-8FA6-006392BA9734}
 	EndGlobalSection
 EndGlobal

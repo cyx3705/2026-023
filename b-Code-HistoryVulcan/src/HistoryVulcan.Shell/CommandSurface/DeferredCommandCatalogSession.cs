@@ -1,4 +1,4 @@
-using HistoryVulcan.Core.CommandSurface;
+﻿using HistoryVulcan.Extensibility.CommandSurface;
 using HistoryVulcan.Core.Commands;
 
 namespace HistoryVulcan.Shell.CommandSurface;

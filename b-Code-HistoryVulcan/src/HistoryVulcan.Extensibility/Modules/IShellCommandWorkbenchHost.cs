@@ -1,9 +1,9 @@
-using HistoryVulcan.Core.CommandSurface;
+﻿using HistoryVulcan.Extensibility.CommandSurface;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Storage;
 
-namespace HistoryVulcan.Core.Modules;
+namespace HistoryVulcan.Extensibility.Modules;
 
 /// <summary>
 /// Shell 暴露给命令工作台模块的挂载点：共享选择态、目录会话接到控制台，以及补全路由。

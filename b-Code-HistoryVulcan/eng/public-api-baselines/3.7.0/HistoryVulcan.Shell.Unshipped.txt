@@ -1,0 +1,14 @@
+﻿const HistoryVulcan.Shell.Modules.ModuleCommands.KeyModuleRoots = "module.roots" -> string!
+HistoryVulcan.Shell.Console.ConsoleView.ActivateContent() -> void
+HistoryVulcan.Shell.Mcp.CommandCatalogRow.CommandClass.get -> string!
+HistoryVulcan.Shell.Mcp.CommandCatalogRow.CommandClass.init -> void
+HistoryVulcan.Shell.Mcp.CommandCatalogRow.Method.get -> string!
+HistoryVulcan.Shell.Mcp.CommandCatalogRow.Method.init -> void
+HistoryVulcan.Shell.ShellConfig.ModuleDiscoveryRoots.get -> System.Collections.Generic.List<string!>!
+HistoryVulcan.Shell.ShellConfig.RequireConfirmedModuleSources.get -> bool
+HistoryVulcan.Shell.ShellConfig.RequireConfirmedModuleSources.set -> void
+HistoryVulcan.Shell.ShellWindow.AttachCommandCatalogSession(HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession! session) -> void
+HistoryVulcan.Shell.ShellWindow.ConfigureCommandCompletionRouting(System.Func<bool>! isConsoleFocused, System.Action! showCommandCatalog) -> void
+HistoryVulcan.Shell.ShellWindow.RefreshCommandCompletionFocus() -> void
+HistoryVulcan.Shell.Console.ConsoleView.ConsoleView(HistoryVulcan.Core.Logging.IShellLog! log, HistoryVulcan.Core.Commands.CommandBus! bus, HistoryVulcan.Core.Commands.CommandHistory! history, HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession! catalogSession, int bufferLimit = 50000) -> void
+*REMOVED*HistoryVulcan.Shell.Console.ConsoleView.ConsoleView(HistoryVulcan.Core.Logging.IShellLog! log, HistoryVulcan.Core.Commands.CommandBus! bus, HistoryVulcan.Core.Commands.CommandHistory! history, HistoryVulcan.Core.CommandSurface.ICommandCatalogSession! catalogSession, int bufferLimit = 50000) -> void

@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -8,7 +8,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
-using HistoryVulcan.Core.CommandSurface;
+using HistoryVulcan.Extensibility.CommandSurface;
 using HistoryVulcan.Core.Logging;
 
 namespace HistoryVulcan.Shell.Console;

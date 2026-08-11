@@ -1,4 +1,4 @@
-namespace HistoryVulcan.Core.CommandSurface;
+﻿namespace HistoryVulcan.Extensibility.CommandSurface;
 
 /// <summary>控制台补全候选种类。</summary>
 /// <remarks>

@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 HistoryVulcan.Shell.Console.ConsoleView.InitializeComponent() -> void
 HistoryVulcan.Shell.ShellWindow.InitializeComponent() -> void
 HistoryVulcan.Shell.Views.ModulesView.InitializeComponent() -> void
@@ -15,7 +15,6 @@ HistoryVulcan.Shell.Console.ConsoleRow.Text.get -> string!
 HistoryVulcan.Shell.Console.ConsoleRow.Text.init -> void
 HistoryVulcan.Shell.Console.ConsoleView
 HistoryVulcan.Shell.Console.ConsoleView.Cls() -> void
-HistoryVulcan.Shell.Console.ConsoleView.ConsoleView(HistoryVulcan.Core.Logging.IShellLog! log, HistoryVulcan.Core.Commands.CommandBus! bus, HistoryVulcan.Core.Commands.CommandHistory! history, HistoryVulcan.Core.CommandSurface.ICommandCatalogSession! catalogSession, int bufferLimit = 50000) -> void
 HistoryVulcan.Shell.Console.ConsoleView.FilterErrorsOnly() -> void
 HistoryVulcan.Shell.Console.ConsoleView.FocusInput() -> void
 HistoryVulcan.Shell.Console.ConsoleView.MinLevel.get -> HistoryVulcan.Core.Logging.ShellLogLevel

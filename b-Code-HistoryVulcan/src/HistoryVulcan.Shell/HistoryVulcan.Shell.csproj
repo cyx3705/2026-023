@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\HistoryVulcan.Core\HistoryVulcan.Core.csproj" />
     <ProjectReference Include="..\HistoryVulcan.Services\HistoryVulcan.Services.csproj" />
+    <ProjectReference Include="..\HistoryVulcan.Extensibility\HistoryVulcan.Extensibility.csproj" />
   </ItemGroup>
 
 </Project>

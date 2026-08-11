@@ -1,4 +1,4 @@
-namespace HistoryVulcan.Core.CommandSurface;
+﻿namespace HistoryVulcan.Extensibility.CommandSurface;
 
 /// <summary>命令目录会话筛选状态（控制台与命令集共用）。</summary>
 public sealed record CommandCatalogFilter(

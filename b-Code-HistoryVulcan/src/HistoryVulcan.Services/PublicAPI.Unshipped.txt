@@ -47,7 +47,7 @@ HistoryVulcan.Services.Modules.ModuleHost.ModuleHost(HistoryVulcan.Services.Modu
 HistoryVulcan.Services.Modules.ModuleHost.ReloadConfirmedSources(System.Collections.Generic.IEnumerable<string!>! manifestPaths) -> void
 HistoryVulcan.Services.Modules.ModuleHost.RequireConfirmedSources.get -> bool
 HistoryVulcan.Services.Modules.ModuleHost.RequireConfirmedSources.set -> void
-HistoryVulcan.Services.Modules.ModuleHost.CommandWorkbench.get -> HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost?
+HistoryVulcan.Services.Modules.ModuleHost.CommandWorkbench.get -> HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchHost?
 HistoryVulcan.Services.Modules.ModuleHost.CommandWorkbench.set -> void
 HistoryVulcan.Services.Modules.ModuleMeta.ManifestPath.get -> string?
 HistoryVulcan.Services.Modules.ModuleMeta.ManifestPath.init -> void

@@ -8,6 +8,7 @@ using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Core.Modules;
+using HistoryVulcan.Extensibility.Modules;
 using HistoryVulcan.Core.Storage;
 
 namespace HistoryVulcan.Services.Modules;
