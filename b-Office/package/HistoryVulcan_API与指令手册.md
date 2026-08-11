@@ -10,9 +10,9 @@
 3.3.0（DEC-022）将内置命令一次硬切为 `vulcan.<类>.<方法>`（全小写、无连字符、不留别名），Domain=`vulcan`；
 命令集表格列为域|类|方法|MCP|参数|说明。全局快捷键与命令工作台（目录会话、补全、命令集/详情）由 HistoryMercury 4.1.0 拥有；
 无 Mercury 时双 `/` 与命令集/详情不可用。
-**3.3.2（DEC-023）在此基础上把类收敛为九类、废止「无类」与影子域 `debug`，并确立
-模块注册名与指令域的去品牌前缀规则（见 §3.3.1）。** 3.3.1 → 3.3.2 的逐条改名映射见
-§3.3.4 与 `HistoryVulcan_消费变更摘要.md`。当前正式部署版本为 **3.3.2**（位于 `z-HistoryVulcan`）。
+**3.3.2（DEC-023）在此基础上把类收敛为九类、退役影子域 `debug`，并确立
+模块注册名与指令域的去品牌前缀规则（见 §3.3.1）；3.4.0（DEC-025）恢复受控的两段直接方法与域聚焦。** 3.3.1 → 3.3.2 的逐条改名映射见
+§3.3.4 与 `HistoryVulcan_消费变更摘要.md`。当前正式部署版本为 **3.3.2**（位于 `z-HistoryVulcan`）；当前源码候选为 **3.5.0**，新增稳定语义命令 `vulcan.app.focusconsole`。
 3.1.9 是旧名 AppShell 的最后快照，已随 3.2.0 发布退役；3.1.8 不作为稳定支持版本。以下包表和最小宿主代码
 描述当前正式合同，但正式部署不提供 NuGet feed。
 
@@ -158,13 +158,15 @@ registry.Register(new CommandDescriptor
 但在命令集与控制台里的归类显示会从具体类改为「无类」，
 且其首段会成为一个**已注册域**，参与域聚焦的绝对名解析。
 
-### 3.3 命名规则（3.3.2）
+### 3.3 命名规则（3.4.0 起）
 
-指令名恒为三段：`<域>.<类>.<方法>`，全小写、**无连字符**、**不留别名**。
-三段都必填——3.3.2 起不存在两段式「无类」指令，也不存在没有所有者的影子域。
+指令名全小写、**无连字符**、**不留别名**，合法形态只有两种：业务指令使用
+`<域>.<类>.<方法>`，域的直接方法使用 `<域>.<方法>`。两段直接方法只用于少量快捷入口，
+例如 `mercury.go`；它们在目录和控制台中显示为「无类」，但不参与类推导。
 
 - 框架内置命令：`vulcan.<类>.<方法>`，`Domain` 恒为 `vulcan`，类取 §3.3.2 九类之一。
-- 模块命令：`<模块域>.<类>.<方法>`，模块域由 owner 强制（见 §3.3.1），模块不能冒用其他域。
+- 模块命令默认使用 `<模块域>.<类>.<方法>`；确需直接方法时可使用 `<模块域>.<方法>`。
+  模块域由 owner 强制（见 §3.3.1），模块不能冒用其他域。
 - 旧别名 `cls` 已删除；清屏仅 `vulcan.log.clear`。
 - 方法段不使用连字符：例如 `floatstate`、`copyexample`、`selectfile`、`layoutsave`。
 
@@ -208,7 +210,7 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 
 #### 3.3.2 九个类
 
-3.3.2 将 13 个类收敛为 9 个，并消灭「无类」与影子域 `debug`：
+3.3.2 将 13 个类收敛为 9 个，并退役影子域 `debug`；3.4.0 起「无类」作为两段直接方法的受控显示类别回归：
 
 | 类 | 条数 | 职责 |
 |---|---|---|
@@ -223,19 +225,17 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 | `web` | 5 | Web 网关与设备确认 |
 
 合计 83 条。模块自定义类不受这九类约束——九类是 `vulcan` 域内的划分。模块应在自己的域内
-用同样的方式收敛，避免每个功能点单开一类。
+用同样的方式收敛，避免每个功能点单开一类；若同一域的直接方法超过 5 条，应重新评估是否建类。
 
-#### 3.3.3 单条指令也必须有类
+#### 3.3.3 直接方法是例外而非常态
 
-不允许为了「就一条指令」而省略类段。孤立指令应并入语义最接近的既有类，
-而不是退化成两段式：
+业务指令仍应并入语义最接近的既有类，不能为了「就一条指令」随意省略类段：
 
 - 查阅全局快捷键 → `vulcan.app.shortcuts`（不是 `vulcan.listshortcuts`）
 - 日志承压注入 → `vulcan.log.flood`（不是 `debug.logflood`）
 
-理由是目录的「类」列必须永远可筛选。只要存在一条无类指令，类筛选就需要一个
-「无类」特例项，控制台补全、命令集筛选和 MCP schema 三处都要为这个特例分支。
-3.3.2 删除了该特例（`CommandClassNames` 整体退役）。
+`mercury.go` 这类两段直接方法用于切换域聚焦等少量横切快捷入口，不承载普通业务分支。
+「无类」只是显示标签；类推导仍只看结构，段数为 2 即无类，段数 ≥ 3 取第二段。
 
 #### 3.3.4 3.3.1 → 3.3.2 改名速查
 
@@ -271,10 +271,10 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 
 命令集表格列为：**域 | 类 | 方法 | MCP | 参数 | 说明**。
 
-双 `/` 由 Mercury 注册为 `mercury.shortcut.wakeconsole`，内部组合调用 `vulcan.app.show`、
-`vulcan.ui.max name=console`、`vulcan.log.focus`（前两条在 3.3.2 改名，Mercury 需同步升级）。
+双 `/` 由 Mercury 注册，目标直接绑定 `vulcan.app.focusconsole`。该语义命令统一负责服务端冷启动/中继、
+前端显示、控制台输入聚焦与控制台最大化；`mercury.shortcut.wakeconsole` 仅保留为兼容入口。
 无 Mercury 时：双 `/`、中央命令集与详情不可用；`vulcan.command.*` 等总线命令仍可执行。
-3.3.2 起不存在两段式无类指令，类筛选没有「无类」选项。
+3.4.0 起两段直接方法显示为「无类」；`mercury.go` 是首个正式用例。
 
 ### 3.6 安全与执行位点（简要）
 
@@ -417,8 +417,8 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 3.3.1→3.3.2 的 32 条改名映射见 `../history/3.3.2-vulcan-class-realign.md`；
 更早的 3.3.0 硬切见 `../history/3.3.0-vulcan-command-rename.md`。
 
-HistoryVulcan 自身只有一个域 `vulcan`，内置命令分为九类；新增内置命令必须归入其一，
-名称恒为 `vulcan.<类>.<方法>`——不存在无类指令，也不存在第二个内置域：
+HistoryVulcan 自身只有一个域 `vulcan`，内置业务命令分为九类；新增内置业务命令必须归入其一，
+名称恒为 `vulcan.<类>.<方法>`。两段直接方法是受控例外，不得引入第二个内置域：
 
 | 域 | 类 | 条数 | 方法（命令范围） |
 |---|---|---|---|
@@ -448,6 +448,7 @@ HistoryVulcan 自身只有一个域 `vulcan`，内置命令分为九类；新增
 | `vulcan.command.run file= [continue=false]` | 执行命令脚本；失败时默认停止 |
 | `vulcan.app.quit` | 正常关闭桌面应用（协调前后台一起退出） |
 | `vulcan.app.show`、`vulcan.app.hide` | 显示/隐藏前端**进程窗口**并保持后台服务连接；与 `vulcan.ui.show`/`hide`（停靠窗口）不同 |
+| `vulcan.app.focusconsole` | 显示前端、打开并聚焦控制台且最大化；服务端无前端时以 `--focus-console` 冷启动 |
 | `vulcan.app.close` | 只关闭前端进程，后台服务继续运行 |
 | `vulcan.app.shortcuts` | 查看已注册全局快捷键的 owner、手势和目标命令；不返回原始键盘事件 |
 | `vulcan.app.about` | 显示应用身份与版本 |
@@ -551,7 +552,7 @@ HistoryVulcan 自身只有一个域 `vulcan`，内置命令分为九类；新增
 ### 6.7 Web、服务生命周期与快捷键
 
 Web 组合注册 `vulcan.web.*`；`ServiceHost.Run` 注册 `vulcan.svc.*`。全局快捷键由 HistoryMercury 拥有；
-双 `/` 触发 `mercury.shortcut.wakeconsole`，再组合 Vulcan 窗口指令。
+双 `/` 直接触发 `vulcan.app.focusconsole`。
 查阅快捷键用 `vulcan.app.shortcuts`（3.3.1 的无类 `vulcan.listshortcuts`）。
 
 | 命令 | 用途 / 关键参数 |
@@ -563,7 +564,8 @@ Web 组合注册 `vulcan.web.*`；`ServiceHost.Run` 注册 `vulcan.svc.*`。全�
 | `vulcan.svc.stop`、`vulcan.svc.restart` | 请求停止或重启服务 |
 | `vulcan.svc.autostart [mode=on|off]` | 无参数时查看状态；`on` / `off` 修改登录自启 |
 | `vulcan.app.shortcuts` | 查看 owner、手势和目标命令；不返回原始键盘事件（属 `app` 类，见 §6.1） |
-| `mercury.shortcut.wakeconsole` | Mercury 编排：组合 `vulcan.app.show` + `vulcan.ui.max` + `vulcan.log.focus`（Mercury 侧需随 3.3.2 同步升级） |
+| `vulcan.app.focusconsole` | Mercury 双 `/` 的稳定目标；服务端中继或冷启动，前端聚焦并最大化控制台 |
+| `mercury.shortcut.wakeconsole` | Mercury 兼容包装；单步调用 `vulcan.app.focusconsole` |
 
 ## 7. MCP 暴露规则
 

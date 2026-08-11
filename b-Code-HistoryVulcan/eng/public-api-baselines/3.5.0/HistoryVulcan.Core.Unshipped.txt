@@ -1,0 +1,111 @@
+HistoryVulcan.Core.Input.IGlobalShortcutHost
+HistoryVulcan.Core.Input.IGlobalShortcutHost.CreateOwnerRegistrar(string! owner) -> HistoryVulcan.Core.Input.IGlobalShortcutRegistrar!
+HistoryVulcan.Core.Input.IGlobalShortcutHost.IsEnabled.get -> bool
+HistoryVulcan.Core.Input.IGlobalShortcutHost.Register(HistoryVulcan.Core.Input.GlobalShortcutDescriptor! descriptor, string! owner) -> System.IDisposable!
+HistoryVulcan.Core.Input.IGlobalShortcutHost.Registrations.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo!>!
+HistoryVulcan.Core.Input.IGlobalShortcutHost.Start() -> void
+HistoryVulcan.Core.Input.IGlobalShortcutHost.Stop() -> void
+HistoryVulcan.Core.Input.IGlobalShortcutHost.UnregisterOwner(string! owner) -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.CommandClass.get -> string?
+HistoryVulcan.Core.Commands.CommandDescriptor.CommandClass.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Domain.get -> string?
+HistoryVulcan.Core.Commands.CommandDescriptor.Domain.init -> void
+HistoryVulcan.Core.Commands.CommandRegistry.GetCommandClass(string! name) -> string!
+HistoryVulcan.Core.Commands.CommandRegistry.GetDomain(string! name) -> string!
+static HistoryVulcan.Core.Commands.CommandRegistry.GetMethod(string! name) -> string!
+static HistoryVulcan.Core.Commands.CommandRegistry.LegacyClass(string! name) -> string!
+static HistoryVulcan.Core.Commands.CommandRegistry.LegacyDomain(string! name) -> string!
+static HistoryVulcan.Core.Commands.CommandRegistry.LegacyMethod(string! name) -> string!
+HistoryVulcan.Core.Commands.FrontendCommandCapability.CommandClass.get -> string?
+HistoryVulcan.Core.Commands.FrontendCommandCapability.CommandClass.init -> void
+HistoryVulcan.Core.Commands.FrontendCommandCapability.Domain.get -> string?
+HistoryVulcan.Core.Commands.FrontendCommandCapability.Domain.init -> void
+HistoryVulcan.Core.Modules.IActivatableToolContent
+HistoryVulcan.Core.Modules.IActivatableToolContent.ActivateContent() -> void
+HistoryVulcan.Core.Modules.ModuleCommandAttribute.CommandClass.get -> string?
+HistoryVulcan.Core.Modules.ModuleCommandAttribute.CommandClass.init -> void
+HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind
+HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind.Filter = 1 -> HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind
+HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind.Invalidated = 3 -> HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind
+HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind.Selection = 2 -> HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind
+HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind.Snapshot = 0 -> HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind
+HistoryVulcan.Core.CommandSurface.CommandCatalogChangedEventArgs
+HistoryVulcan.Core.CommandSurface.CommandCatalogChangedEventArgs.CommandCatalogChangedEventArgs(HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind kind) -> void
+HistoryVulcan.Core.CommandSurface.CommandCatalogChangedEventArgs.Kind.get -> HistoryVulcan.Core.CommandSurface.CommandCatalogChangeKind
+HistoryVulcan.Core.CommandSurface.CommandCatalogFilter
+HistoryVulcan.Core.CommandSurface.CommandCatalogFilter.CommandCatalogFilter(string! Query = "", string! Domain = "全部", string! CommandClass = "全部", int McpFilter = 0) -> void
+HistoryVulcan.Core.CommandSurface.CommandCatalogFilter.CommandClass.get -> string!
+HistoryVulcan.Core.CommandSurface.CommandCatalogFilter.CommandClass.init -> void
+HistoryVulcan.Core.CommandSurface.CommandCatalogFilter.Domain.get -> string!
+HistoryVulcan.Core.CommandSurface.CommandCatalogFilter.Domain.init -> void
+HistoryVulcan.Core.CommandSurface.CommandCatalogFilter.McpFilter.get -> int
+HistoryVulcan.Core.CommandSurface.CommandCatalogFilter.McpFilter.init -> void
+HistoryVulcan.Core.CommandSurface.CommandCatalogFilter.Query.get -> string!
+HistoryVulcan.Core.CommandSurface.CommandCatalogFilter.Query.init -> void
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate.ConsoleCompletionCandidate() -> void
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate.Description.get -> string!
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate.Description.init -> void
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate.DisplayText.get -> string!
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate.DisplayText.init -> void
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate.InsertText.get -> string!
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate.InsertText.init -> void
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate.Kind.get -> HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate.Kind.init -> void
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Command = 0 -> HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Parameter = 1 -> HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Value = 2 -> HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.Candidates.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.CommandSurface.ConsoleCompletionCandidate!>!
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.Candidates.init -> void
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.ConsoleCompletionResult() -> void
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.HasCandidates.get -> bool
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.ReplaceLength.get -> int
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.ReplaceLength.init -> void
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.ReplaceStart.get -> int
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.ReplaceStart.init -> void
+static HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult.Empty.get -> HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult!
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.Changed -> System.EventHandler<HistoryVulcan.Core.CommandSurface.CommandCatalogChangedEventArgs!>?
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.Classes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.CompleteAsync(string! text, int caretIndex, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<HistoryVulcan.Core.CommandSurface.ConsoleCompletionResult!>!
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.CurrentFilter.get -> HistoryVulcan.Core.CommandSurface.CommandCatalogFilter!
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.Domains.get -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.MoveSelection(int direction) -> bool
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.RefreshAsync(bool force = false, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.Select(string? commandName) -> void
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.SelectedCommandName.get -> string?
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.SetConsoleQuery(string! query) -> void
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.SetFilter(HistoryVulcan.Core.CommandSurface.CommandCatalogFilter! filter) -> void
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.TrySetCommandClass(string! commandClass, out System.Collections.Generic.IReadOnlyList<string!>! availableClasses) -> bool
+HistoryVulcan.Core.CommandSurface.ICommandCatalogSession.TrySetDomain(string! domain, out System.Collections.Generic.IReadOnlyList<string!>! availableDomains) -> bool
+HistoryVulcan.Core.Modules.IShellCommandWorkbenchAware
+HistoryVulcan.Core.Modules.IShellCommandWorkbenchAware.CommandWorkbench.set -> void
+HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost
+HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.AttachCommandCatalogSession(HistoryVulcan.Core.CommandSurface.ICommandCatalogSession! session) -> void
+HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.Bus.get -> HistoryVulcan.Core.Commands.CommandBus!
+HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.CommandSelection.get -> HistoryVulcan.Core.Commands.CommandSelectionState!
+HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.ConfigureCommandCompletionRouting(System.Func<bool>! isConsoleFocused, System.Action! showCommandCatalog) -> void
+HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.DataDirectory.get -> string!
+HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.Log.get -> HistoryVulcan.Core.Logging.IShellLog!
+HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.RefreshCommandCompletionFocus() -> void
+HistoryVulcan.Core.Modules.IShellCommandWorkbenchHost.Settings.get -> HistoryVulcan.Core.Storage.ISettingsService!
+HistoryVulcan.Core.Commands.ModuleDomainNaming
+static HistoryVulcan.Core.Commands.ModuleDomainNaming.ToDomain(string! moduleName) -> string!
+static HistoryVulcan.Core.Mcp.McpExposurePolicy.DiagnosticCommandNames.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+HistoryVulcan.Core.Commands.CommandRegistry.Domains() -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Core.Commands.CommandRegistry.IsRegisteredDomain(string? candidate) -> bool
+HistoryVulcan.Core.Commands.CommandClassLabels
+const HistoryVulcan.Core.Commands.CommandClassLabels.None = "无类" -> string!
+static HistoryVulcan.Core.Commands.CommandClassLabels.Display(string? commandClass) -> string!
+static HistoryVulcan.Core.Commands.CommandClassLabels.IsNone(string? commandClass) -> bool
+static HistoryVulcan.Core.Commands.CommandClassLabels.ToKey(string? label) -> string!
+HistoryVulcan.Core.Commands.DomainFocus
+const HistoryVulcan.Core.Commands.DomainFocus.All = "全部" -> string!
+static HistoryVulcan.Core.Commands.DomainFocus.IsUnfocused(string? domain) -> bool
+static HistoryVulcan.Core.Commands.DomainFocus.Resolve(string? input, string? focusedDomain, System.Func<string!, bool>! isRegisteredDomain) -> string!
+static HistoryVulcan.Core.Commands.DomainFocus.WouldPrefix(string? input, string? focusedDomain, System.Func<string!, bool>! isRegisteredDomain) -> bool
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Domain = 3 -> HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Class = 4 -> HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind
+HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Method = 5 -> HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind
