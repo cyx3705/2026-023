@@ -378,6 +378,9 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 | `ServiceHost` | `Run(ServiceComposition, ...)` | 启动服务循环，注册生命周期并统一释放 |
 | `IAutostartManager` | `IsEnabled`、`SetEnabled` | 登录自启抽象；Windows 实现为 `WindowsRunAutostartManager` |
 
+独立双进程宿主由后台持有 MCP、非 UI 模块和命令权威表，前端只保留远程管理视图。嵌入式消费方仍由
+`ShellConfig.EnableMcp` 决定是否在自己的 Shell 组合中装配 MCP。
+
 ## 5. 命令语法与执行位置
 
 语法为：
@@ -523,7 +526,8 @@ HistoryVulcan 自身只有一个域 `vulcan`，内置业务命令分为九类；
 
 ### 6.5 命令目录与 MCP
 
-`vulcan.command.*` 是 Shell 核心能力，始终注册；`vulcan.mcp.*` 仅在消费方显式设置 `ShellConfig.EnableMcp=true` 时注册。
+`vulcan.command.*` 是 Shell 核心能力，始终注册；嵌入式消费方的 `vulcan.mcp.*` 仅在显式设置
+`ShellConfig.EnableMcp=true` 时注册。HistoryVulcan 独立双进程宿主改由后台完整注册，前端不创建第二套网关。
 
 | 命令 | 用途 / 关键参数 |
 |---|---|
@@ -576,6 +580,8 @@ Web 组合注册 `vulcan.web.*`；`ServiceHost.Run` 注册 `vulcan.svc.*`。全�
 - 危险命令不是第三种策略；仅在 `standard` 且 `mcp.confirm=host` 时进入工具列表，并仍须由宿主确认，远端参数不能绕过。
 - `ExecutionSite=Frontend` 的命令必须同时 `AllowMcpExecution=true`，并且目标前端在线。
 - 多个前端在线而未指定 `_frontend` 时返回歧义错误，不随机选择。
+- 独立宿主的 `tools/list` / `tools/call` 与非 UI 模块共用后台权威注册表；模块热重载动态更新工具面，
+  不需要重启 MCP 端口。
 
 ## 8. 已删除的旧接口
 
