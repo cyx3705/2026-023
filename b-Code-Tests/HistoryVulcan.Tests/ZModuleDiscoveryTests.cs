@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using HistoryVulcan.Services.Modules;
 using Xunit;
 
@@ -10,7 +10,7 @@ public sealed class ZModuleDiscoveryTests
     public void DiscoversOnlyExplicitTypedManifestsAndKeepsPathsInsideZPackage()
     {
         using var temp = new TemporaryDirectory();
-        var project = Directory.CreateDirectory(Path.Combine(temp.Path, "2026-100-Fixture")).FullName;
+        var project = Directory.CreateDirectory(Path.Combine(temp.Path, "2026-100-HistoryFixture")).FullName;
         var valid = Directory.CreateDirectory(Path.Combine(project, "z-Valid")).FullName;
         File.WriteAllText(Path.Combine(valid, "Fixture.dll"), "fixture");
         WriteManifest(valid, "Fixture", "1.0.0", "Fixture.dll");
@@ -37,12 +37,30 @@ public sealed class ZModuleDiscoveryTests
     }
 
     [Fact]
+    public void OnlyProjectsMatchingTheNamingConventionParticipateInDiscovery()
+    {
+        // 发现根通常就是整个项目库，里面绝大多数编号项目与本体系无关（课程设计、
+        // 实验、自带工具链的项目等）。它们不该被当作模块来源：3.5.0 的一段无界扫描
+        // 曾把某个项目自带 JDK 的原生 DLL 喂给 Assembly.LoadFrom，直接崩掉后台服务。
+        // 用命名模式而不是白名单收窄——新模块建目录即纳入，不需要有人回来改配置。
+        using var temp = new TemporaryDirectory();
+        CreateModule(temp.Path, "2026-200-HistoryInScope", "z-InScope", "InScope");
+        CreateModule(temp.Path, "2026-201-课程设计", "z-OutOfScope", "OutOfScope");
+        CreateModule(temp.Path, "tools", "z-Toolchain", "Toolchain");
+
+        var snapshot = new ZModuleDiscoverySource([temp.Path]).Discover();
+
+        var module = Assert.Single(snapshot.Modules);
+        Assert.Equal("InScope", module.Name);
+    }
+
+    [Fact]
     public void DuplicateNamesAcrossRootsRejectEveryCandidate()
     {
         using var first = new TemporaryDirectory();
         using var second = new TemporaryDirectory();
-        CreateModule(first.Path, "2026-101-A", "z-One", "Duplicate");
-        CreateModule(second.Path, "2026-102-B", "z-Two", "Duplicate");
+        CreateModule(first.Path, "2026-101-HistoryA", "z-One", "Duplicate");
+        CreateModule(second.Path, "2026-102-HistoryB", "z-Two", "Duplicate");
 
         var snapshot = new ZModuleDiscoverySource([first.Path, second.Path]).Discover();
 
@@ -71,7 +89,7 @@ public sealed class ZModuleDiscoveryTests
     {
         using var first = new TemporaryDirectory();
         using var second = new TemporaryDirectory();
-        var project = Directory.CreateDirectory(Path.Combine(first.Path, "2026-103-Broken")).FullName;
+        var project = Directory.CreateDirectory(Path.Combine(first.Path, "2026-103-HistoryBroken")).FullName;
 
         var malformed = Directory.CreateDirectory(Path.Combine(project, "z-Malformed")).FullName;
         File.WriteAllText(Path.Combine(malformed, ZModuleDiscoverySource.ManifestFileName), "{");
@@ -104,7 +122,7 @@ public sealed class ZModuleDiscoveryTests
                 deps = new[] { "Missing.dll" },
             }));
 
-        CreateModule(second.Path, "2026-104-Valid", "z-Valid", "Valid");
+        CreateModule(second.Path, "2026-104-HistoryValid", "z-Valid", "Valid");
         var snapshot = new ZModuleDiscoverySource([first.Path, second.Path]).Discover();
 
         Assert.Equal("Valid", Assert.Single(snapshot.Modules).Name);

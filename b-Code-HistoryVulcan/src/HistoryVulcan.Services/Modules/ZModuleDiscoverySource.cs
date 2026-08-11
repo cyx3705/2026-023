@@ -45,6 +45,18 @@ public sealed class ZModuleDiscoverySource : IModuleDiscoverySource
     /// <summary>The root-level manifest file name used by Z module packages.</summary>
     public const string ManifestFileName = "module.manifest.json";
 
+    /// <summary>
+    /// 参与模块发现的项目目录名模式。
+    ///
+    /// 发现根通常就是整个项目库，而库里绝大多数编号项目（课程设计、实验、工具链等）
+    /// 与本体系无关。用模式而不是白名单收窄：新模块只要按命名规范建目录就自动纳入，
+    /// 不需要有人记得回来改配置——白名单迟早会漏更新，模式不会。
+    ///
+    /// 匹配 &lt;编号&gt;-History&lt;名字&gt; 形态；命名规范由 OneHistory 的
+    /// 「目录与命名规范」定义，宿主的 <c>ModuleDomainNaming.ToDomain</c> 也依赖同一约定。
+    /// </summary>
+    public const string ProjectDirectoryPattern = "*-History*";
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -131,7 +143,7 @@ public sealed class ZModuleDiscoverySource : IModuleDiscoverySource
         }
 
         IEnumerable<string> projects;
-        try { projects = Directory.EnumerateDirectories(root).ToList(); }
+        try { projects = Directory.EnumerateDirectories(root, ProjectDirectoryPattern).ToList(); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             diagnostics.Add(new ModuleDiscoveryDiagnostic(root, "root-unreadable", ex.Message));

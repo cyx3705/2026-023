@@ -60,3 +60,4 @@ HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ZModuleDiscoverySource(Sys
 static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.FindAutomaticRoot(string! startPath) -> string?
 *REMOVED*HistoryVulcan.Services.Modules.ModuleHost.GlobalShortcuts.get -> HistoryVulcan.Core.Input.IGlobalShortcutHost?
 *REMOVED*HistoryVulcan.Services.Modules.ModuleHost.GlobalShortcuts.set -> void
+const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ProjectDirectoryPattern = "*-History*" -> string!

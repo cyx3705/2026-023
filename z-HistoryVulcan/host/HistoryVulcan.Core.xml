@@ -234,6 +234,22 @@
         <member name="E:HistoryVulcan.Core.Commands.CommandBus.Executed">
             <summary>每条指令执行完毕后触发(状态栏摘要,S-03);在执行线程上引发。</summary>
         </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.InvokeAsync(System.String,System.String,System.Threading.CancellationToken)">
+             <summary>
+             安静调用通道:执行指令但不回显、不入历史、不触发 <see cref="E:HistoryVulcan.Core.Commands.CommandBus.Executed"/>。
+            
+             <see cref="M:HistoryVulcan.Core.Commands.CommandBus.ExecuteAsync(System.String,System.String,System.Threading.CancellationToken)"/> 是**操作者通道**——每次调用都会把指令与结果写进日志,
+             供人和 AI 追溯。宿主自身的高频内部调用(逐键补全、状态轮询一类)若走那条路,
+             会把控制台灌满,问题不在延迟而在语义:那些调用不是"操作"。
+            
+             本方法让宿主与模块之间可以按**命令名**而不是按**类型**集成:调用方只依赖一个
+             字符串和本总线,不依赖被调方的 CLR 契约,因此被调方可以自由演进而不触动宿主公开面。
+             面向用户的动作仍应走 <see cref="M:HistoryVulcan.Core.Commands.CommandBus.ExecuteAsync(System.String,System.String,System.Threading.CancellationToken)"/>,不要用本方法绕过审计。
+             </summary>
+             <param name="text">指令文本,语法与 <see cref="M:HistoryVulcan.Core.Commands.CommandBus.ExecuteAsync(System.String,System.String,System.Threading.CancellationToken)"/> 一致。</param>
+             <param name="source">来源标签;仅用于确认路由与远端判定,不会被回显。</param>
+             <param name="cancellation">取消令牌。</param>
+        </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandBus.ExecuteAsync(System.String,System.String,System.Threading.CancellationToken)">
             <summary>
             执行一行指令文本。source 为来源标签(C-01):UI / 手动 / 脚本:文件名 / layout。
@@ -912,90 +928,6 @@
             例外:Id 为 "console" 的窗口内容由 Shell 提供(§4.4 标准控制台),
             可不设工厂;其余窗口必须提供。
             </summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Input.GlobalShortcutModifiers">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Input.GlobalShortcutModifiers.None">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Input.GlobalShortcutModifiers.Alt">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Input.GlobalShortcutModifiers.Control">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Input.GlobalShortcutModifiers.Shift">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Input.GlobalShortcutModifiers.Windows">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Input.GlobalShortcutStroke">
-            <summary>A physical virtual-key stroke used by a global shortcut.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Input.GlobalShortcutStroke.#ctor(System.Int32,HistoryVulcan.Core.Input.GlobalShortcutModifiers)">
-            <summary>A physical virtual-key stroke used by a global shortcut.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Input.GlobalShortcutDescriptor">
-            <summary>
-            A non-suppressing global shortcut. Strokes are evaluated in order; the host
-            rejects duplicate and prefix-conflicting registrations.
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Input.GlobalShortcutDescriptor.#ctor(System.String,System.Collections.Generic.IReadOnlyList{HistoryVulcan.Core.Input.GlobalShortcutStroke},System.String,System.Int32)">
-            <summary>
-            A non-suppressing global shortcut. Strokes are evaluated in order; the host
-            rejects duplicate and prefix-conflicting registrations.
-            </summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.#ctor(System.String,System.String,System.Collections.Generic.IReadOnlyList{HistoryVulcan.Core.Input.GlobalShortcutStroke},System.String,System.Int32)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Input.IGlobalShortcutRegistrar">
-            <summary>Owner-scoped registration surface injected into shortcut modules.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutRegistrar.Register(HistoryVulcan.Core.Input.GlobalShortcutDescriptor)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Input.IGlobalShortcutModule">
-            <summary>
-            Optional module capability. Implementing this interface authorizes the module
-            to register command-backed global shortcuts for its lifetime.
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutModule.RegisterShortcuts(HistoryVulcan.Core.Input.IGlobalShortcutRegistrar)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Input.IGlobalShortcutHost">
-            <summary>
-            Process-wide global shortcut host. Implementations live in modules (e.g. HistoryMercury);
-            the Vulcan host only holds this Core contract.
-            </summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Input.IGlobalShortcutHost.IsEnabled">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Input.IGlobalShortcutHost.Registrations">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutHost.Start">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutHost.Stop">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutHost.Register(HistoryVulcan.Core.Input.GlobalShortcutDescriptor,System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutHost.CreateOwnerRegistrar(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Input.IGlobalShortcutHost.UnregisterOwner(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Logging.ShellLogLevel">
             <summary>日志级别(C-03 六级)。</summary>

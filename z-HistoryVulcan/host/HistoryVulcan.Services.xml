@@ -336,9 +336,6 @@
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.CommandWorkbench">
             <summary>命令工作台挂载点；无窗服务进程或未装配 Shell 时保持 null。</summary>
         </member>
-        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.GlobalShortcuts">
-            <summary>后台宿主提供的全局快捷键注册器；前端 UI 宿主保持 null。</summary>
-        </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.ModulesDirectory">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
