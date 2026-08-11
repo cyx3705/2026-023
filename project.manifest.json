@@ -59,6 +59,7 @@
     "technicalContract": "b-Office/current/技术合同.md",
     "decisions": "b-Office/current/有效决策.md",
     "verification": "b-Office/current/验证合同.md",
+    "freeze": "b-Office/current/冻结合同.md",
     "upgradeAndRelease": "b-Office/current/升级与发布.md",
     "uiPlan31": "b-Office/history/V3.1界面现代化方案.md",
     "commandPipelineAudit": "b-Office/current/断头指令审计表.md",
