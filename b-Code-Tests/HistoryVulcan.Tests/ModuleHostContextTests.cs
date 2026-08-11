@@ -302,22 +302,6 @@ namespace HistoryVulcan.Tests
 
 }
 
-namespace BaseVariable
-{
-    public abstract class ModuleInfoBase
-    {
-        public virtual string ModuleName => "fixture";
-
-        public virtual string Description => "ModuleHost context fixture";
-
-        public virtual string Author => "HistoryVulcan.Tests";
-
-        public virtual string Version => "3.1.10";
-
-        public virtual bool Open => false;
-
-        public virtual Type? MainClassType => null;
-
-        public virtual bool Enabled => true;
-    }
-}
+// 夹具此前在此内联定义 BaseVariable.ModuleInfoBase 的第六份副本。
+// 契约的权威定义已进入 HistoryVulcan.Core(Modules/ModuleInfoBase.cs),
+// 本测试直接消费它 —— 夹具与宿主装载逻辑校验的因此是同一个类型。

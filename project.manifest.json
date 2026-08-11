@@ -62,6 +62,7 @@
     "upgradeAndRelease": "b-Office/current/升级与发布.md",
     "uiPlan31": "b-Office/history/V3.1界面现代化方案.md",
     "commandPipelineAudit": "b-Office/current/断头指令审计表.md",
+    "commandBusHealth": "b-Office/current/命令总线健康检查.md",
     "classRealign332": "b-Office/history/3.3.2-vulcan-class-realign.md",
     "historyBoundary": "b-Office/history/历史资料说明.md",
     "servicePlan32": "b-Office/history/V3.2后台服务化方案.md",
@@ -70,6 +71,45 @@
     "runtimeLimits": "b-Office/package/HistoryVulcan_运行时约束与已知限制.md",
     "consumerChanges": "b-Office/package/HistoryVulcan_消费变更摘要.md",
     "uiStyle": "b-Office/package/HistoryVulcan_UI风格与嵌入页面规范.md"
+  },
+  "contract": {
+    "requiredFiles": [
+      "AGENTS.md",
+      "README.md",
+      ".ignore",
+      "project.manifest.json",
+      "b-Code-HistoryVulcan/README.md",
+      "b-Code-HistoryVulcan/eng/Test-ProjectContract.ps1",
+      "b-Code-HistoryVulcan/eng/Assert-PublicApiBaseline.ps1",
+      ".github/workflows/historyvulcan-freeze-gate.yml"
+    ],
+    "requiredProjectFields": [
+      "id",
+      "name",
+      "title",
+      "kind",
+      "status",
+      "version",
+      "branch",
+      "freezeTag"
+    ],
+    "linkCheckMode": "declared",
+    "host": {
+      "identity": {
+        "id": "2026-023",
+        "name": "HistoryVulcan"
+      },
+      "versionProps": "b-Code-HistoryVulcan/VulcanVersion.props",
+      "versionProperty": "VulcanVersion",
+      "uiStyle": {
+        "document": "b-Office/package/HistoryVulcan_UI风格与嵌入页面规范.md",
+        "themeDirectory": "b-Code-HistoryVulcan/src/HistoryVulcan.Shell/Themes",
+        "tokenFiles": [
+          "ShellTokens.xaml",
+          "ShellTokens.Dark.xaml"
+        ]
+      }
+    }
   },
   "commands": {
     "setup": "dotnet restore .\\HistoryVulcan.sln --locked-mode",

@@ -3,263 +3,33 @@ param(
     [switch]$Instantiation
 )
 
-Set-StrictMode -Version Latest
+# HistoryVulcan (host) contract validation entry point.
+#
+# The rules themselves are not here. HistoryVulcan is the host, so it consumes the
+# host entry owned by HistoryDiana (b-Code/OneHistory.HostContract.ps1): common
+# project rules plus the host-only gates (freeze tag, version source, UI tokens).
+#
+# This file used to be a forked copy of the shared checker. The fork was legitimate
+# (it carried real host rules) but it could no longer be kept aligned with the other
+# copies. Those host rules now live in the host entry and are driven by the
+# contract.host section of project.manifest.json; the freeze tag expectation is held
+# by HistoryDiana's publish registry, deliberately outside the file it guards.
+#
+# Keep this file ASCII only: it has no BOM, so Windows PowerShell would decode
+# non-ASCII bytes with the system code page and fail to parse.
+
 $ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
 
-$componentRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$repoRoot = [IO.Path]::GetFullPath((Join-Path $componentRoot '..'))
-$errors = [Collections.Generic.List[string]]::new()
+$repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
+$dianaEntry = [IO.Path]::GetFullPath(
+    (Join-Path $repoRoot '..\2026-019-HistoryDiana\b-Code\OneHistory.HostContract.ps1'))
 
-function Add-ContractError {
-    param([string]$Message)
-    $script:errors.Add($Message)
+if (-not (Test-Path -LiteralPath $dianaEntry -PathType Leaf)) {
+    Write-Host "Shared host contract is missing: $dianaEntry" -ForegroundColor Red
+    Write-Host 'Expected HistoryDiana to be checked out alongside this project.' -ForegroundColor Red
+    exit 2
 }
 
-function Resolve-ContractPath {
-    param(
-        [string]$RelativePath,
-        [string]$Context
-    )
-
-    if ([string]::IsNullOrWhiteSpace($RelativePath) -or [IO.Path]::IsPathRooted($RelativePath)) {
-        Add-ContractError "$Context must be a non-empty repository-relative path: $RelativePath"
-        return $null
-    }
-
-    $fullPath = [IO.Path]::GetFullPath((Join-Path $repoRoot $RelativePath))
-    $rootPrefix = $repoRoot.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
-    if (-not $fullPath.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
-        Add-ContractError "$Context points outside the repository: $RelativePath"
-        return $null
-    }
-    return $fullPath
-}
-
-function Test-RequiredProperty {
-    param(
-        [object]$Object,
-        [string]$Name,
-        [string]$Context
-    )
-
-    if ($null -eq $Object -or $null -eq $Object.PSObject.Properties[$Name]) {
-        Add-ContractError "$Context is missing property '$Name'."
-        return $false
-    }
-    return $true
-}
-
-$requiredFiles = @(
-    'AGENTS.md'
-    'README.md'
-    '.ignore'
-    'project.manifest.json'
-    'b-Code-HistoryVulcan/README.md'
-    'b-Code-HistoryVulcan/eng/Test-ProjectContract.ps1'
-    'b-Code-HistoryVulcan/eng/Assert-PublicApiBaseline.ps1'
-    '.github/workflows/historyvulcan-freeze-gate.yml'
-)
-foreach ($relativePath in $requiredFiles) {
-    $fullPath = Resolve-ContractPath -RelativePath $relativePath -Context 'Required file'
-    if ($null -ne $fullPath -and -not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
-        Add-ContractError "Missing required file: $relativePath"
-    }
-}
-
-$manifestPath = Join-Path $repoRoot 'project.manifest.json'
-$manifest = $null
-try {
-    $manifest = Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-}
-catch {
-    Add-ContractError "project.manifest.json is invalid: $($_.Exception.Message)"
-}
-
-$markdownFiles = [Collections.Generic.List[string]]::new()
-$markdownFiles.Add((Join-Path $repoRoot 'README.md'))
-$markdownFiles.Add((Join-Path $repoRoot 'b-Office\README.md'))
-$markdownFiles.Add((Join-Path $repoRoot 'b-Office\文档中心.md'))
-$markdownFiles.Add((Join-Path $repoRoot 'b-Office\OneHistoryHistoryVulcan\README.md'))
-
-if ($null -ne $manifest) {
-    if ((Test-RequiredProperty $manifest 'schemaVersion' 'manifest') -and $manifest.schemaVersion -ne 1) {
-        Add-ContractError "Unsupported schemaVersion: $($manifest.schemaVersion)"
-    }
-    foreach ($name in @('template', 'project', 'paths', 'documents', 'commands', 'contextExclusions')) {
-        $null = Test-RequiredProperty $manifest $name 'manifest'
-    }
-
-    if ($null -ne $manifest.template) {
-        if ((Test-RequiredProperty $manifest.template 'isTemplate' 'template') -and
-            $manifest.template.isTemplate -isnot [bool]) {
-            Add-ContractError 'template.isTemplate must be a Boolean.'
-        }
-        elseif ($Instantiation -and $manifest.template.isTemplate) {
-            Add-ContractError 'Instantiation validation requires template.isTemplate=false.'
-        }
-    }
-
-    if ($null -ne $manifest.project) {
-        foreach ($name in @('id', 'name', 'title', 'kind', 'status', 'version', 'branch', 'freezeTag')) {
-            if (Test-RequiredProperty $manifest.project $name 'project') {
-                $value = @($manifest.project.$name)
-                if ($value.Count -eq 0 -or [string]::IsNullOrWhiteSpace([string]$value[0])) {
-                    Add-ContractError "project.$name cannot be empty."
-                }
-            }
-        }
-        if ($manifest.project.id -ne '2026-023' -or $manifest.project.name -ne 'HistoryVulcan') {
-            Add-ContractError 'Project identity must be 2026-023/HistoryVulcan.'
-        }
-        # The V3 freeze tag stays v3.0.3. From 3.1 the version line may move forward,
-        # but project.version must always match VulcanVersion.props (DEC-009).
-        # Keep this file ASCII only: it has no BOM, so Windows PowerShell would
-        # decode non-ASCII bytes with the system code page and fail to parse.
-        if ($manifest.project.freezeTag -ne 'v3.0.3') {
-            Add-ContractError 'V3 freeze tag must remain v3.0.3.'
-        }
-        $versionPropsPath = Join-Path $repoRoot 'b-Code-HistoryVulcan\VulcanVersion.props'
-        if (Test-Path $versionPropsPath) {
-            $sourceVersion = ([xml](Get-Content $versionPropsPath -Raw)).Project.PropertyGroup.VulcanVersion
-            if ([string]$sourceVersion -ne [string]$manifest.project.version) {
-                $versionMismatch = "project.version ($($manifest.project.version)) must match VulcanVersion.props ($sourceVersion)."
-                Add-ContractError $versionMismatch
-            }
-        }
-        else {
-            Add-ContractError 'b-Code-HistoryVulcan\VulcanVersion.props is missing.'
-        }
-    }
-
-    if ($null -ne $manifest.paths) {
-        foreach ($name in @('activeRoots', 'sourceRoots', 'generatedRoots', 'archiveRoots',
-                'allowedRootDirectoryPrefixes')) {
-            $null = Test-RequiredProperty $manifest.paths $name 'paths'
-        }
-        foreach ($relativePath in @($manifest.paths.activeRoots) + @($manifest.paths.sourceRoots)) {
-            $fullPath = Resolve-ContractPath -RelativePath ([string]$relativePath) -Context 'Declared directory'
-            if ($null -ne $fullPath -and -not (Test-Path -LiteralPath $fullPath -PathType Container)) {
-                Add-ContractError "Declared directory does not exist: $relativePath"
-            }
-        }
-
-        $allowedPrefixes = @($manifest.paths.allowedRootDirectoryPrefixes)
-        $allowedNames = @($manifest.paths.allowedRootDirectoryNames)
-        foreach ($expectedPrefix in @('a-', 'b-', 'z-')) {
-            if ($allowedPrefixes -notcontains $expectedPrefix) {
-                Add-ContractError "paths.allowedRootDirectoryPrefixes must include '$expectedPrefix'."
-            }
-        }
-        foreach ($directory in Get-ChildItem -LiteralPath $repoRoot -Directory -Force) {
-            if ($directory.Name.StartsWith('.')) {
-                continue
-            }
-            $allowed = @($allowedPrefixes | Where-Object {
-                $directory.Name.StartsWith([string]$_, [StringComparison]::OrdinalIgnoreCase)
-            }).Count -ne 0
-            if (-not $allowed) {
-                $allowed = @($allowedNames | Where-Object {
-                    $directory.Name.Equals([string]$_, [StringComparison]::OrdinalIgnoreCase)
-                }).Count -ne 0
-            }
-            if (-not $allowed) {
-                Add-ContractError "Root directory is not allowed by the naming contract: $($directory.Name)"
-            }
-        }
-    }
-
-    if ($null -ne $manifest.documents) {
-        foreach ($property in $manifest.documents.PSObject.Properties) {
-            $relativePath = [string]$property.Value
-            $fullPath = Resolve-ContractPath -RelativePath $relativePath -Context "documents.$($property.Name)"
-            if ($null -ne $fullPath -and -not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
-                Add-ContractError "Declared document does not exist: $relativePath"
-            }
-            elseif ($relativePath.EndsWith('.md', [StringComparison]::OrdinalIgnoreCase)) {
-                $markdownFiles.Add($fullPath)
-            }
-        }
-
-        $uiStyleProperty = $manifest.documents.PSObject.Properties['uiStyle']
-        if ($null -ne $uiStyleProperty) {
-            $uiStylePath = Resolve-ContractPath -RelativePath ([string]$uiStyleProperty.Value) -Context 'documents.uiStyle'
-            $themeDirectory = Join-Path $repoRoot 'b-Code-HistoryVulcan\src\HistoryVulcan.Shell\Themes'
-            if ($null -ne $uiStylePath -and (Test-Path -LiteralPath $uiStylePath -PathType Leaf)) {
-                $uiStyleText = Get-Content -LiteralPath $uiStylePath -Raw -Encoding UTF8
-                $tokenKeys = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
-                foreach ($tokenFileName in @('ShellTokens.xaml', 'ShellTokens.Dark.xaml')) {
-                    $tokenText = Get-Content -LiteralPath (Join-Path $themeDirectory $tokenFileName) -Raw -Encoding UTF8
-                    foreach ($tokenMatch in [regex]::Matches(
-                            $tokenText,
-                            'x:Key="(?<key>Shell\.(?:Brush|Radius|Font|Space|Size)\.[^"]+)"')) {
-                        $null = $tokenKeys.Add($tokenMatch.Groups['key'].Value)
-                    }
-                }
-                foreach ($tokenKey in $tokenKeys) {
-                    if ($uiStyleText.IndexOf($tokenKey, [StringComparison]::Ordinal) -lt 0) {
-                        Add-ContractError "UI style contract is missing theme token: $tokenKey"
-                    }
-                }
-            }
-        }
-    }
-
-    if ($null -ne $manifest.commands) {
-        foreach ($name in @('setup', 'build', 'test', 'verify', 'run', 'package')) {
-            if (Test-RequiredProperty $manifest.commands $name 'commands') {
-                $value = $manifest.commands.$name
-                if ($null -ne $value -and ($value -isnot [string] -or [string]::IsNullOrWhiteSpace($value))) {
-                    Add-ContractError "commands.$name must be a non-empty string or null."
-                }
-            }
-        }
-    }
-}
-
-$linkPattern = [regex]'\[[^\]]+\]\((?<target>[^)]+)\)'
-foreach ($filePath in @($markdownFiles | Select-Object -Unique)) {
-    if (-not (Test-Path -LiteralPath $filePath -PathType Leaf)) {
-        continue
-    }
-    $content = Get-Content -LiteralPath $filePath -Raw -Encoding UTF8
-    foreach ($match in $linkPattern.Matches($content)) {
-        $target = $match.Groups['target'].Value.Trim().Trim('<', '>')
-        if ($target.StartsWith('#') -or $target -match '^[a-zA-Z][a-zA-Z0-9+.-]*:') {
-            continue
-        }
-        $pathPart = [Uri]::UnescapeDataString(($target -split '#', 2)[0])
-        if ([string]::IsNullOrWhiteSpace($pathPart)) {
-            continue
-        }
-        $linkedPath = [IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $filePath) $pathPart))
-        if (-not (Test-Path -LiteralPath $linkedPath)) {
-            $relativeFile = $filePath.Substring($repoRoot.Length + 1)
-            Add-ContractError "Broken Markdown link: $relativeFile -> $target"
-        }
-    }
-}
-
-$placeholderPattern = [regex]'\{\{[^{}\r\n]+\}\}'
-$strictFiles = @(
-    Join-Path $repoRoot 'README.md'
-    Join-Path $repoRoot 'project.manifest.json'
-    Get-ChildItem -LiteralPath (Join-Path $repoRoot 'b-Office\current') -Filter '*.md' -File |
-        ForEach-Object FullName
-)
-foreach ($filePath in $strictFiles) {
-    $content = Get-Content -LiteralPath $filePath -Raw -Encoding UTF8
-    if ($placeholderPattern.IsMatch($content)) {
-        Add-ContractError "Instantiation placeholder remains in: $($filePath.Substring($repoRoot.Length + 1))"
-    }
-}
-
-if ($errors.Count -ne 0) {
-    Write-Host "Project contract validation failed with $($errors.Count) error(s):" -ForegroundColor Red
-    foreach ($contractError in $errors) {
-        Write-Host "  - $contractError" -ForegroundColor Red
-    }
-    exit 1
-}
-
-$mode = if ($Instantiation) { 'instantiation' } else { 'project' }
-Write-Host "Project contract validation passed ($mode mode)." -ForegroundColor Green
+& $dianaEntry -ProjectRoot $repoRoot -Instantiation:$Instantiation
+exit $LASTEXITCODE

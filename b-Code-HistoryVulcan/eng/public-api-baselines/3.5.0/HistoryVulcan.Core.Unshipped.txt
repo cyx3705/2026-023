@@ -109,3 +109,12 @@ static HistoryVulcan.Core.Commands.DomainFocus.WouldPrefix(string? input, string
 HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Domain = 3 -> HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind
 HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Class = 4 -> HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind
 HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind.Method = 5 -> HistoryVulcan.Core.CommandSurface.ConsoleCompletionKind
+BaseVariable.ModuleInfoBase
+BaseVariable.ModuleInfoBase.ModuleInfoBase() -> void
+virtual BaseVariable.ModuleInfoBase.Author.get -> string!
+virtual BaseVariable.ModuleInfoBase.Description.get -> string!
+virtual BaseVariable.ModuleInfoBase.Enabled.get -> bool
+virtual BaseVariable.ModuleInfoBase.MainClassType.get -> System.Type?
+virtual BaseVariable.ModuleInfoBase.ModuleName.get -> string!
+virtual BaseVariable.ModuleInfoBase.Open.get -> bool
+virtual BaseVariable.ModuleInfoBase.Version.get -> string!
