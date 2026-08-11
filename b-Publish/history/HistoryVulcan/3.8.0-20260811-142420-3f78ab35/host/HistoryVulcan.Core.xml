@@ -26,48 +26,6 @@
         <member name="M:HistoryVulcan.Core.AppIdentity.From(System.Reflection.Assembly)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="T:HistoryVulcan.Core.Clients.ClientKind">
-             <summary>
-             接入命令总线的客户端种类。
-            
-             本族类型此前住在 Core.Mcp，但它并非 MCP 协议形态：种类覆盖 Mcp / Shell / Web 三类
-             客户端，且承载 AuthSubject、Scopes、IsLoopback 等安全身份，MCP 审计与 Web 限流共同
-             依赖它。冻结前正名到 Core.Clients——名字要说实话，而冻结之后就再也改不了了。
-             </summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Clients.ClientKind.Mcp">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Clients.ClientKind.Shell">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Clients.ClientKind.Web">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Clients.ClientSession">
-            <summary>一次客户端会话的稳定身份。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Clients.ClientSession.#ctor(System.String,HistoryVulcan.Core.Clients.ClientKind,System.String,System.String,System.DateTimeOffset)">
-            <summary>一次客户端会话的稳定身份。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Clients.ClientSession.RemoteAddress">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Clients.ClientSession.DeviceId">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Clients.ClientSession.AuthSubject">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Clients.ClientSession.Scopes">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Clients.ClientSession.IsLoopback">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Clients.ClientSession.Create(HistoryVulcan.Core.Clients.ClientKind,System.String,System.String,System.String,System.String,System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
         <member name="T:HistoryVulcan.Core.Commands.BuiltinCommandDefinitions">
             <summary>
             Shared metadata for commands that execute locally in both the desktop shell and a service host.
@@ -207,14 +165,10 @@
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Commands.CommandDescriptor">
-             <summary>
-             一条指令的注册模型(§5.3):名称、参数定义、执行体、帮助文本与二次确认。
-            
-             冻结契约:本类是地基类型,消费方能力**不得**再以新增字段的方式落地——用
-             <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.Annotations"/>。原 SupportsUndo 是「Q6 预留、首版不实现」的空位,
-             接线至今零行为,已在冻结前删除:冻结会把预留位永久固化,而真要做撤销时,
-             该重新设计而不是继承一个从未被验证过的字段。
-             </summary>
+            <summary>
+            一条指令的注册模型(§5.3):名称、参数定义、执行体、帮助文本、
+            二次确认与撤销能力位(撤销为 Q6 预留,首版不实现)。
+            </summary>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Name">
             <summary>完整指令名,小写,如 "vulcan.ui.dock"、"vulcan.command.help"。</summary>
@@ -242,6 +196,9 @@
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.ConfirmPrompt">
             <summary>执行前需二次确认时,返回确认提示文本;null 表示无需确认(§5.2 拦截器)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.SupportsUndo">
+            <summary>撤销能力位(§5.4,Q6:首版只预留)。</summary>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Dangerous">
             <summary>
@@ -513,7 +470,7 @@
             前端向服务端权威目录发布的执行能力。只携带稳定元数据，不序列化 handler。
             </summary>
         </member>
-        <member name="M:HistoryVulcan.Core.Commands.FrontendCommandCapability.#ctor(System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{HistoryVulcan.Core.Commands.CommandParameterCapability},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.String)">
+        <member name="M:HistoryVulcan.Core.Commands.FrontendCommandCapability.#ctor(System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{HistoryVulcan.Core.Commands.CommandParameterCapability},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.String)">
             <summary>
             前端向服务端权威目录发布的执行能力。只携带稳定元数据，不序列化 handler。
             </summary>
@@ -852,6 +809,42 @@
         <member name="M:HistoryVulcan.Core.Logging.ShellLogExtensions.Error(HistoryVulcan.Core.Logging.IShellLog,System.String,System.String)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
+        <member name="T:HistoryVulcan.Core.Mcp.ClientKind">
+            <summary>接入命令总线的客户端种类。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.ClientKind.Mcp">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.ClientKind.Shell">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.ClientKind.Web">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.ClientSession">
+            <summary>一次客户端会话的稳定身份。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.ClientSession.#ctor(System.String,HistoryVulcan.Core.Mcp.ClientKind,System.String,System.String,System.DateTimeOffset)">
+            <summary>一次客户端会话的稳定身份。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.ClientSession.RemoteAddress">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.ClientSession.DeviceId">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.ClientSession.AuthSubject">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.ClientSession.Scopes">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.ClientSession.IsLoopback">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.ClientSession.Create(HistoryVulcan.Core.Mcp.ClientKind,System.String,System.String,System.String,System.String,System.String,System.String,System.Collections.Generic.IEnumerable{System.String},System.Boolean)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
         <member name="T:HistoryVulcan.Core.Mcp.IMcpAuditLog">
              <summary>
              MCP 调用留痕（铁律 2 / MS-05：每次调用与拒绝都必须留痕）。
@@ -869,7 +862,7 @@
             <param name="result">结果：成功 / 拒绝 / 远程拒绝 / 确认超时 等。</param>
             <param name="elapsedMs">耗时毫秒；未执行记 0。</param>
         </member>
-        <member name="M:HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(HistoryVulcan.Core.Clients.ClientSession,System.String,System.String,System.String,System.Int64)">
+        <member name="M:HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(HistoryVulcan.Core.Mcp.ClientSession,System.String,System.String,System.String,System.Int64)">
             <summary>记录带稳定会话身份的 MCP 调用；旧实现自动转发到兼容签名。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Mcp.McpConfirmationScope">
@@ -921,7 +914,7 @@
              按名字补登记的只读指令集合。
             
              **V2.4.4 起默认为空**:只读性的单一真值是 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.Readonly"/>——
-             由命令在注册处自己声明,与 ConfirmPrompt 同级。
+             由命令在注册处自己声明,与 ConfirmPrompt / SupportsUndo 同级。
              0.4.4 时代的 18 条框架基线与派生应用登记的 14 条已全部迁至各自描述符,
              保留双份会让「一件事实两处声明」以新形态复活,故本集合清空。
             
