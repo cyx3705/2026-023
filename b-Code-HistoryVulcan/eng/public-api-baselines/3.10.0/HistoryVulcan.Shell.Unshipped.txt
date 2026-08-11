@@ -1,0 +1,30 @@
+﻿const HistoryVulcan.Shell.Modules.ModuleCommands.KeyModuleRoots = "module.roots" -> string!
+HistoryVulcan.Shell.Console.ConsoleView.ActivateContent() -> void
+HistoryVulcan.Shell.Mcp.CommandCatalogRow.CommandClass.get -> string!
+HistoryVulcan.Shell.Mcp.CommandCatalogRow.CommandClass.init -> void
+HistoryVulcan.Shell.Mcp.CommandCatalogRow.Method.get -> string!
+HistoryVulcan.Shell.Mcp.CommandCatalogRow.Method.init -> void
+HistoryVulcan.Shell.ShellConfig.ModuleDiscoveryRoots.get -> System.Collections.Generic.List<string!>!
+HistoryVulcan.Shell.ShellConfig.RequireConfirmedModuleSources.get -> bool
+HistoryVulcan.Shell.ShellConfig.RequireConfirmedModuleSources.set -> void
+HistoryVulcan.Shell.ShellWindow.AttachCommandCatalogSession(HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession! session) -> void
+HistoryVulcan.Shell.ShellWindow.ConfigureCommandCompletionRouting(System.Func<bool>! isConsoleFocused, System.Action! showCommandCatalog) -> void
+HistoryVulcan.Shell.ShellWindow.RefreshCommandCompletionFocus() -> void
+HistoryVulcan.Shell.Console.ConsoleView.ConsoleView(HistoryVulcan.Core.Logging.IShellLog! log, HistoryVulcan.Core.Commands.CommandBus! bus, HistoryVulcan.Core.Commands.CommandHistory! history, HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession! catalogSession, int bufferLimit = 50000) -> void
+*REMOVED*HistoryVulcan.Shell.Console.ConsoleView.ConsoleView(HistoryVulcan.Core.Logging.IShellLog! log, HistoryVulcan.Core.Commands.CommandBus! bus, HistoryVulcan.Core.Commands.CommandHistory! history, HistoryVulcan.Core.CommandSurface.ICommandCatalogSession! catalogSession, int bufferLimit = 50000) -> void
+HistoryVulcan.Shell.Panels.PanelManager.Definitions.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Extensibility.Panels.PanelDefinition!>!
+HistoryVulcan.Shell.Panels.PanelManager.PanelManager(string! panelsDir, System.Collections.Generic.IEnumerable<HistoryVulcan.Extensibility.Panels.PanelDefinition!>? configured, HistoryVulcan.Core.Commands.CommandBus! bus, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+HistoryVulcan.Shell.Panels.PanelView.PanelView(HistoryVulcan.Extensibility.Panels.PanelDefinition! def, HistoryVulcan.Core.Commands.CommandBus! bus, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+HistoryVulcan.Shell.Panels.PanelView.Rebuild(HistoryVulcan.Extensibility.Panels.PanelDefinition! def) -> void
+HistoryVulcan.Shell.ShellConfig.Panels.get -> System.Collections.Generic.List<HistoryVulcan.Extensibility.Panels.PanelDefinition!>!
+*REMOVED*HistoryVulcan.Shell.Panels.PanelManager.Definitions.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Panels.PanelDefinition!>!
+*REMOVED*HistoryVulcan.Shell.Panels.PanelManager.PanelManager(string! panelsDir, System.Collections.Generic.IEnumerable<HistoryVulcan.Core.Panels.PanelDefinition!>? configured, HistoryVulcan.Core.Commands.CommandBus! bus, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+*REMOVED*HistoryVulcan.Shell.Panels.PanelView.PanelView(HistoryVulcan.Core.Panels.PanelDefinition! def, HistoryVulcan.Core.Commands.CommandBus! bus, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+*REMOVED*HistoryVulcan.Shell.Panels.PanelView.Rebuild(HistoryVulcan.Core.Panels.PanelDefinition! def) -> void
+*REMOVED*HistoryVulcan.Shell.ShellConfig.Panels.get -> System.Collections.Generic.List<HistoryVulcan.Core.Panels.PanelDefinition!>!
+static HistoryVulcan.Shell.Mcp.CommandCatalogCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter! exporter, HistoryVulcan.Services.Mcp.PromptGovernanceStore! prompts, System.Func<HistoryVulcan.Services.Mcp.McpGateway?>! gateway, string! source = "app") -> void
+static HistoryVulcan.Shell.Mcp.CommandCatalogCommands.Snapshot(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter! exporter, HistoryVulcan.Services.Mcp.PromptGovernanceStore! prompts, string! policy) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Shell.Mcp.CommandCatalogRow!>!
+static HistoryVulcan.Shell.Mcp.PromptGovernanceCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter! exporter, HistoryVulcan.Services.Mcp.PromptGovernanceStore! store, string! source = "app") -> void
+*REMOVED*static HistoryVulcan.Shell.Mcp.CommandCatalogCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Mcp.CommandSchemaExporter! exporter, HistoryVulcan.Services.Mcp.PromptGovernanceStore! prompts, System.Func<HistoryVulcan.Services.Mcp.McpGateway?>! gateway, string! source = "app") -> void
+*REMOVED*static HistoryVulcan.Shell.Mcp.CommandCatalogCommands.Snapshot(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Mcp.CommandSchemaExporter! exporter, HistoryVulcan.Services.Mcp.PromptGovernanceStore! prompts, string! policy) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Shell.Mcp.CommandCatalogRow!>!
+*REMOVED*static HistoryVulcan.Shell.Mcp.PromptGovernanceCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Mcp.CommandSchemaExporter! exporter, HistoryVulcan.Services.Mcp.PromptGovernanceStore! store, string! source = "app") -> void
