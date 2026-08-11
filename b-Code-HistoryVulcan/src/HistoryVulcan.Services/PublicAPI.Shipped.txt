@@ -1,0 +1,323 @@
+﻿#nullable enable
+HistoryVulcan.Services.AppPaths
+HistoryVulcan.Services.AppPaths.AppPaths(string! appName, bool createBusinessDirectories = true) -> void
+HistoryVulcan.Services.AppPaths.AppPaths(string! appName, string! rootDirectory, bool createBusinessDirectories = true) -> void
+HistoryVulcan.Services.AppPaths.DataDir.get -> string!
+HistoryVulcan.Services.AppPaths.LayoutDir.get -> string!
+HistoryVulcan.Services.AppPaths.LogsDir.get -> string!
+HistoryVulcan.Services.AppPaths.ModulesDir.get -> string!
+HistoryVulcan.Services.AppPaths.PanelsDir.get -> string!
+HistoryVulcan.Services.AppPaths.Root.get -> string!
+HistoryVulcan.Services.FileLayoutStore
+HistoryVulcan.Services.FileLayoutStore.DeleteCurrent() -> void
+HistoryVulcan.Services.FileLayoutStore.FileLayoutStore(HistoryVulcan.Services.AppPaths! paths) -> void
+HistoryVulcan.Services.FileLayoutStore.ListNamed() -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Services.FileLayoutStore.ReadCurrent() -> string?
+HistoryVulcan.Services.FileLayoutStore.ReadNamed(string! name) -> string?
+HistoryVulcan.Services.FileLayoutStore.WriteCurrent(string! payload) -> void
+HistoryVulcan.Services.FileLayoutStore.WriteNamed(string! name, string! payload) -> void
+HistoryVulcan.Services.Mcp.McpAuditRecorder
+HistoryVulcan.Services.Mcp.McpAuditRecorder.McpAuditRecorder(string! dataDirectory, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+HistoryVulcan.Services.Mcp.McpAuditRecorder.RecordMcp(string! client, string! tool, string! arguments, string! result, long elapsedMs) -> void
+HistoryVulcan.Services.Mcp.McpGateway
+HistoryVulcan.Services.Mcp.McpGateway.AutostartEnabled.get -> bool
+HistoryVulcan.Services.Mcp.McpGateway.CallCount.get -> long
+HistoryVulcan.Services.Mcp.McpGateway.ConfirmMode.get -> string!
+HistoryVulcan.Services.Mcp.McpGateway.ConfirmTimeout.get -> int
+HistoryVulcan.Services.Mcp.McpGateway.Dispose() -> void
+HistoryVulcan.Services.Mcp.McpGateway.IsRunning.get -> bool
+HistoryVulcan.Services.Mcp.McpGateway.LastCall.get -> string!
+HistoryVulcan.Services.Mcp.McpGateway.McpGateway(System.Func<HistoryVulcan.Core.Commands.CommandBus?>! busAccessor, HistoryVulcan.Core.Storage.ISettingsService! settings, HistoryVulcan.Core.Logging.IShellLog! log, HistoryVulcan.Core.Mcp.IMcpAuditLog! history, HistoryVulcan.Services.Mcp.PromptGovernanceStore! prompts, HistoryVulcan.Core.ApplicationIdentity! identity, System.Func<string!, string!, int, bool?>? remoteConfirm = null) -> void
+HistoryVulcan.Services.Mcp.McpGateway.Policy.get -> string!
+HistoryVulcan.Services.Mcp.McpGateway.Port.get -> int
+HistoryVulcan.Services.Mcp.McpGateway.Start(int? port) -> (bool Success, string! Message)
+HistoryVulcan.Services.Mcp.McpGateway.Stop() -> (bool Success, string! Message)
+HistoryVulcan.Services.Mcp.McpGateway.TryAutostart() -> (bool Success, string! Message)
+HistoryVulcan.Services.Mcp.PromptCorrection
+HistoryVulcan.Services.Mcp.PromptCorrection.Claim.get -> string!
+HistoryVulcan.Services.Mcp.PromptCorrection.Claim.init -> void
+HistoryVulcan.Services.Mcp.PromptCorrection.Command.get -> string!
+HistoryVulcan.Services.Mcp.PromptCorrection.Command.init -> void
+HistoryVulcan.Services.Mcp.PromptCorrection.Correction.get -> string!
+HistoryVulcan.Services.Mcp.PromptCorrection.Correction.init -> void
+HistoryVulcan.Services.Mcp.PromptCorrection.Created.get -> string!
+HistoryVulcan.Services.Mcp.PromptCorrection.Created.init -> void
+HistoryVulcan.Services.Mcp.PromptCorrection.Evidence.get -> string!
+HistoryVulcan.Services.Mcp.PromptCorrection.Evidence.init -> void
+HistoryVulcan.Services.Mcp.PromptCorrection.Id.get -> string!
+HistoryVulcan.Services.Mcp.PromptCorrection.Id.init -> void
+HistoryVulcan.Services.Mcp.PromptCorrection.LinkedProposal.get -> string?
+HistoryVulcan.Services.Mcp.PromptCorrection.LinkedProposal.init -> void
+HistoryVulcan.Services.Mcp.PromptCorrection.PromptCorrection(string! Id, string! Command, string! Claim, string! Correction, string! Evidence, string! SourceClient, string! Created, string! Status, string? LinkedProposal) -> void
+HistoryVulcan.Services.Mcp.PromptCorrection.SourceClient.get -> string!
+HistoryVulcan.Services.Mcp.PromptCorrection.SourceClient.init -> void
+HistoryVulcan.Services.Mcp.PromptCorrection.Status.get -> string!
+HistoryVulcan.Services.Mcp.PromptCorrection.Status.init -> void
+HistoryVulcan.Services.Mcp.PromptGovernanceStore
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.AllEffectiveDescriptions() -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.ApplyDirect(string! command, string? description, string! source, string! reason, string? revertedFrom = null, string? createdBy = null) -> HistoryVulcan.Services.Mcp.PromptRevision!
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.ApplyProposal(string! id, string! reviewer) -> HistoryVulcan.Services.Mcp.PromptRevision!
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.ApproveProposal(string! id, string! reviewer) -> HistoryVulcan.Services.Mcp.PromptProposal!
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.CreateCorrection(string! command, string! claim, string! correction, string! evidence, string! sourceClient, string? linkedProposal = null) -> HistoryVulcan.Services.Mcp.PromptCorrection!
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.CreateIncident(string! command, string! symptom, string! expected, string! actual, string! evidence, string! sourceClient, string? linkedCorrection = null) -> HistoryVulcan.Services.Mcp.PromptIncident!
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.CreateProposal(string! command, string! oldText, string! proposedText, string! reason, string! evidence, string! sourceClient) -> HistoryVulcan.Services.Mcp.PromptProposal!
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetCorrection(string! id) -> HistoryVulcan.Services.Mcp.PromptCorrection?
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetCurrentRevision(string! command) -> HistoryVulcan.Services.Mcp.PromptRevision?
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetProposal(string! id) -> HistoryVulcan.Services.Mcp.PromptProposal?
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetRevision(string! id) -> HistoryVulcan.Services.Mcp.PromptRevision?
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetRevisions(string! command, int limit = 50) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Mcp.PromptRevision!>!
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.ListCorrections(string? command = null, int limit = 100) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Mcp.PromptCorrection!>!
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.ListIncidents(string? command = null, int limit = 100) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Mcp.PromptIncident!>!
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.ListProposals(string? command = null, bool openOnly = false, int limit = 100) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Mcp.PromptProposal!>!
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.PromptGovernanceStore(string! dataDirectory, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.RejectProposal(string! id, string! reviewer, string! reason) -> HistoryVulcan.Services.Mcp.PromptProposal!
+HistoryVulcan.Services.Mcp.PromptGovernanceStore.RevertToRevision(string! revisionId, string! reviewer, string! reason) -> HistoryVulcan.Services.Mcp.PromptRevision!
+HistoryVulcan.Services.Mcp.PromptIncident
+HistoryVulcan.Services.Mcp.PromptIncident.Actual.get -> string!
+HistoryVulcan.Services.Mcp.PromptIncident.Actual.init -> void
+HistoryVulcan.Services.Mcp.PromptIncident.Command.get -> string!
+HistoryVulcan.Services.Mcp.PromptIncident.Command.init -> void
+HistoryVulcan.Services.Mcp.PromptIncident.Created.get -> string!
+HistoryVulcan.Services.Mcp.PromptIncident.Created.init -> void
+HistoryVulcan.Services.Mcp.PromptIncident.Evidence.get -> string!
+HistoryVulcan.Services.Mcp.PromptIncident.Evidence.init -> void
+HistoryVulcan.Services.Mcp.PromptIncident.Expected.get -> string!
+HistoryVulcan.Services.Mcp.PromptIncident.Expected.init -> void
+HistoryVulcan.Services.Mcp.PromptIncident.Id.get -> string!
+HistoryVulcan.Services.Mcp.PromptIncident.Id.init -> void
+HistoryVulcan.Services.Mcp.PromptIncident.LinkedCorrection.get -> string?
+HistoryVulcan.Services.Mcp.PromptIncident.LinkedCorrection.init -> void
+HistoryVulcan.Services.Mcp.PromptIncident.PromptIncident(string! Id, string! Command, string! Symptom, string! Expected, string! Actual, string! Evidence, string! SourceClient, string! Created, string? Resolution, string? LinkedCorrection) -> void
+HistoryVulcan.Services.Mcp.PromptIncident.Resolution.get -> string?
+HistoryVulcan.Services.Mcp.PromptIncident.Resolution.init -> void
+HistoryVulcan.Services.Mcp.PromptIncident.SourceClient.get -> string!
+HistoryVulcan.Services.Mcp.PromptIncident.SourceClient.init -> void
+HistoryVulcan.Services.Mcp.PromptIncident.Symptom.get -> string!
+HistoryVulcan.Services.Mcp.PromptIncident.Symptom.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal
+HistoryVulcan.Services.Mcp.PromptProposal.AppliedRevision.get -> string?
+HistoryVulcan.Services.Mcp.PromptProposal.AppliedRevision.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal.BaseRevision.get -> string?
+HistoryVulcan.Services.Mcp.PromptProposal.BaseRevision.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal.Command.get -> string!
+HistoryVulcan.Services.Mcp.PromptProposal.Command.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal.Created.get -> string!
+HistoryVulcan.Services.Mcp.PromptProposal.Created.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal.Evidence.get -> string!
+HistoryVulcan.Services.Mcp.PromptProposal.Evidence.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal.Id.get -> string!
+HistoryVulcan.Services.Mcp.PromptProposal.Id.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal.OldText.get -> string!
+HistoryVulcan.Services.Mcp.PromptProposal.OldText.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal.PromptProposal(string! Id, string! Command, string? BaseRevision, string! OldText, string! ProposedText, string! Reason, string! Evidence, string! SourceClient, string! Created, string! Status, string? Reviewer, string? Reviewed, string? ReviewNote, string? AppliedRevision) -> void
+HistoryVulcan.Services.Mcp.PromptProposal.ProposedText.get -> string!
+HistoryVulcan.Services.Mcp.PromptProposal.ProposedText.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal.Reason.get -> string!
+HistoryVulcan.Services.Mcp.PromptProposal.Reason.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal.Reviewed.get -> string?
+HistoryVulcan.Services.Mcp.PromptProposal.Reviewed.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal.Reviewer.get -> string?
+HistoryVulcan.Services.Mcp.PromptProposal.Reviewer.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal.ReviewNote.get -> string?
+HistoryVulcan.Services.Mcp.PromptProposal.ReviewNote.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal.SourceClient.get -> string!
+HistoryVulcan.Services.Mcp.PromptProposal.SourceClient.init -> void
+HistoryVulcan.Services.Mcp.PromptProposal.Status.get -> string!
+HistoryVulcan.Services.Mcp.PromptProposal.Status.init -> void
+HistoryVulcan.Services.Mcp.PromptRevision
+HistoryVulcan.Services.Mcp.PromptRevision.Applied.get -> bool
+HistoryVulcan.Services.Mcp.PromptRevision.Applied.init -> void
+HistoryVulcan.Services.Mcp.PromptRevision.Command.get -> string!
+HistoryVulcan.Services.Mcp.PromptRevision.Command.init -> void
+HistoryVulcan.Services.Mcp.PromptRevision.Created.get -> string!
+HistoryVulcan.Services.Mcp.PromptRevision.Created.init -> void
+HistoryVulcan.Services.Mcp.PromptRevision.CreatedBy.get -> string!
+HistoryVulcan.Services.Mcp.PromptRevision.CreatedBy.init -> void
+HistoryVulcan.Services.Mcp.PromptRevision.Description.get -> string?
+HistoryVulcan.Services.Mcp.PromptRevision.Description.init -> void
+HistoryVulcan.Services.Mcp.PromptRevision.Id.get -> string!
+HistoryVulcan.Services.Mcp.PromptRevision.Id.init -> void
+HistoryVulcan.Services.Mcp.PromptRevision.ParentRevision.get -> string?
+HistoryVulcan.Services.Mcp.PromptRevision.ParentRevision.init -> void
+HistoryVulcan.Services.Mcp.PromptRevision.PromptRevision(string! Id, string! Command, string? Description, string? ParentRevision, string! Source, string! Reason, string! Created, string! CreatedBy, bool Applied, string? RevertedFrom) -> void
+HistoryVulcan.Services.Mcp.PromptRevision.Reason.get -> string!
+HistoryVulcan.Services.Mcp.PromptRevision.Reason.init -> void
+HistoryVulcan.Services.Mcp.PromptRevision.RevertedFrom.get -> string?
+HistoryVulcan.Services.Mcp.PromptRevision.RevertedFrom.init -> void
+HistoryVulcan.Services.Mcp.PromptRevision.Source.get -> string!
+HistoryVulcan.Services.Mcp.PromptRevision.Source.init -> void
+HistoryVulcan.Services.Modules.ModuleHost
+HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.CommandRegistry! registry) -> void
+HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Commands.CommandBus! bus, HistoryVulcan.Core.Storage.ISettingsService! settings, string! dataDirectory) -> void
+HistoryVulcan.Services.Modules.ModuleHost.ChangeDirectory(string! newDir) -> void
+HistoryVulcan.Services.Modules.ModuleHost.Dispose() -> void
+HistoryVulcan.Services.Modules.ModuleHost.EnableCommands.get -> bool
+HistoryVulcan.Services.Modules.ModuleHost.EnableCommands.set -> void
+HistoryVulcan.Services.Modules.ModuleHost.EnableFileWatching.get -> bool
+HistoryVulcan.Services.Modules.ModuleHost.EnableFileWatching.set -> void
+HistoryVulcan.Services.Modules.ModuleHost.EnableUiModules.get -> bool
+HistoryVulcan.Services.Modules.ModuleHost.EnableUiModules.set -> void
+HistoryVulcan.Services.Modules.ModuleHost.ModuleHost(string! modulesDir, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+HistoryVulcan.Services.Modules.ModuleHost.Modules.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Modules.ModuleMeta!>!
+HistoryVulcan.Services.Modules.ModuleHost.ModulesDirectory.get -> string!
+HistoryVulcan.Services.Modules.ModuleHost.Reload() -> void
+HistoryVulcan.Services.Modules.ModuleHost.ReloadCompleted -> System.Action?
+HistoryVulcan.Services.Modules.ModuleHost.ShellUi.get -> HistoryVulcan.Core.Modules.IShellUiRegistrar?
+HistoryVulcan.Services.Modules.ModuleHost.ShellUi.set -> void
+HistoryVulcan.Services.Modules.ModuleHost.Start() -> void
+HistoryVulcan.Services.Modules.ModuleHost.UiContext.get -> System.Threading.SynchronizationContext?
+HistoryVulcan.Services.Modules.ModuleHost.UiContext.set -> void
+HistoryVulcan.Services.Modules.ModuleMeta
+HistoryVulcan.Services.Modules.ModuleMeta.AssemblyFile.get -> string!
+HistoryVulcan.Services.Modules.ModuleMeta.AssemblyFile.init -> void
+HistoryVulcan.Services.Modules.ModuleMeta.Author.get -> string!
+HistoryVulcan.Services.Modules.ModuleMeta.Author.init -> void
+HistoryVulcan.Services.Modules.ModuleMeta.CommandCount.get -> int
+HistoryVulcan.Services.Modules.ModuleMeta.CommandCount.init -> void
+HistoryVulcan.Services.Modules.ModuleMeta.Description.get -> string!
+HistoryVulcan.Services.Modules.ModuleMeta.Description.init -> void
+HistoryVulcan.Services.Modules.ModuleMeta.ModuleMeta(string! ModuleName, string! Description, string! Author, string! Version, bool Open, string! AssemblyFile, int CommandCount, string! Slot = "", bool Ui = false) -> void
+HistoryVulcan.Services.Modules.ModuleMeta.ModuleName.get -> string!
+HistoryVulcan.Services.Modules.ModuleMeta.ModuleName.init -> void
+HistoryVulcan.Services.Modules.ModuleMeta.Open.get -> bool
+HistoryVulcan.Services.Modules.ModuleMeta.Open.init -> void
+HistoryVulcan.Services.Modules.ModuleMeta.Slot.get -> string!
+HistoryVulcan.Services.Modules.ModuleMeta.Slot.init -> void
+HistoryVulcan.Services.Modules.ModuleMeta.Ui.get -> bool
+HistoryVulcan.Services.Modules.ModuleMeta.Ui.init -> void
+HistoryVulcan.Services.Modules.ModuleMeta.Version.get -> string!
+HistoryVulcan.Services.Modules.ModuleMeta.Version.init -> void
+HistoryVulcan.Services.Modules.ModulePanelSync
+HistoryVulcan.Services.SettingsService
+HistoryVulcan.Services.SettingsService.All() -> System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string!, string!>>!
+HistoryVulcan.Services.SettingsService.Get(string! key) -> string?
+HistoryVulcan.Services.SettingsService.GetInt(string! key, int fallback) -> int
+HistoryVulcan.Services.SettingsService.Set(string! key, string! value) -> void
+HistoryVulcan.Services.SettingsService.SettingsService(HistoryVulcan.Services.AppPaths! paths) -> void
+HistoryVulcan.Services.ShellLog
+HistoryVulcan.Services.ShellLog.Dispose() -> void
+HistoryVulcan.Services.ShellLog.EntryAdded -> System.EventHandler<HistoryVulcan.Core.Logging.ShellLogEntry!>?
+HistoryVulcan.Services.ShellLog.Log(HistoryVulcan.Core.Logging.ShellLogLevel level, string! category, string! message) -> void
+HistoryVulcan.Services.ShellLog.ShellLog(HistoryVulcan.Services.AppPaths! paths, int retainDays = 30) -> void
+HistoryVulcan.Services.ShellLog.Snapshot() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Logging.ShellLogEntry!>!
+HistoryVulcan.Services.Web.DeviceAuthenticationResult
+HistoryVulcan.Services.Web.DeviceAuthenticationResult.DeviceAuthenticationResult(bool Success, string? DeviceId, string? Subject, System.Collections.Generic.IReadOnlySet<string!>! Scopes, string? Failure = null) -> void
+HistoryVulcan.Services.Web.DeviceAuthenticationResult.DeviceId.get -> string?
+HistoryVulcan.Services.Web.DeviceAuthenticationResult.DeviceId.init -> void
+HistoryVulcan.Services.Web.DeviceAuthenticationResult.Failure.get -> string?
+HistoryVulcan.Services.Web.DeviceAuthenticationResult.Failure.init -> void
+HistoryVulcan.Services.Web.DeviceAuthenticationResult.Scopes.get -> System.Collections.Generic.IReadOnlySet<string!>!
+HistoryVulcan.Services.Web.DeviceAuthenticationResult.Scopes.init -> void
+HistoryVulcan.Services.Web.DeviceAuthenticationResult.Subject.get -> string?
+HistoryVulcan.Services.Web.DeviceAuthenticationResult.Subject.init -> void
+HistoryVulcan.Services.Web.DeviceAuthenticationResult.Success.get -> bool
+HistoryVulcan.Services.Web.DeviceAuthenticationResult.Success.init -> void
+HistoryVulcan.Services.Web.DevicePairingResult
+HistoryVulcan.Services.Web.DevicePairingResult.AccessToken.get -> string?
+HistoryVulcan.Services.Web.DevicePairingResult.AccessToken.init -> void
+HistoryVulcan.Services.Web.DevicePairingResult.DeviceId.get -> string?
+HistoryVulcan.Services.Web.DevicePairingResult.DeviceId.init -> void
+HistoryVulcan.Services.Web.DevicePairingResult.DevicePairingResult(bool Success, string? ServerId, string? DeviceId, string? AccessToken, System.Collections.Generic.IReadOnlySet<string!>! Scopes, string? Failure = null) -> void
+HistoryVulcan.Services.Web.DevicePairingResult.Failure.get -> string?
+HistoryVulcan.Services.Web.DevicePairingResult.Failure.init -> void
+HistoryVulcan.Services.Web.DevicePairingResult.Scopes.get -> System.Collections.Generic.IReadOnlySet<string!>!
+HistoryVulcan.Services.Web.DevicePairingResult.Scopes.init -> void
+HistoryVulcan.Services.Web.DevicePairingResult.ServerId.get -> string?
+HistoryVulcan.Services.Web.DevicePairingResult.ServerId.init -> void
+HistoryVulcan.Services.Web.DevicePairingResult.Success.get -> bool
+HistoryVulcan.Services.Web.DevicePairingResult.Success.init -> void
+HistoryVulcan.Services.Web.IDeviceAuthenticationProvider
+HistoryVulcan.Services.Web.IDeviceAuthenticationProvider.Authenticate(string! deviceId, string! token, string? remoteAddress) -> HistoryVulcan.Services.Web.DeviceAuthenticationResult!
+HistoryVulcan.Services.Web.IDevicePairingProvider
+HistoryVulcan.Services.Web.IDevicePairingProvider.Pair(string! code, string! deviceId, string! deviceName, string? remoteAddress) -> HistoryVulcan.Services.Web.DevicePairingResult!
+HistoryVulcan.Services.Web.ShellConnectionState
+HistoryVulcan.Services.Web.ShellConnectionState.Connecting = 1 -> HistoryVulcan.Services.Web.ShellConnectionState
+HistoryVulcan.Services.Web.ShellConnectionState.Disconnected = 0 -> HistoryVulcan.Services.Web.ShellConnectionState
+HistoryVulcan.Services.Web.ShellConnectionState.PairingRequired = 2 -> HistoryVulcan.Services.Web.ShellConnectionState
+HistoryVulcan.Services.Web.ShellConnectionState.Ready = 3 -> HistoryVulcan.Services.Web.ShellConnectionState
+HistoryVulcan.Services.Web.ShellConnectionState.Rejected = 4 -> HistoryVulcan.Services.Web.ShellConnectionState
+HistoryVulcan.Services.Web.ShellConnectionState.VersionMismatch = 5 -> HistoryVulcan.Services.Web.ShellConnectionState
+HistoryVulcan.Services.Web.ShellEndpointProfile
+HistoryVulcan.Services.Web.ShellEndpointProfile.AccessTokenProvider.get -> System.Func<string?>?
+HistoryVulcan.Services.Web.ShellEndpointProfile.AccessTokenProvider.init -> void
+HistoryVulcan.Services.Web.ShellEndpointProfile.BaseUri.get -> System.Uri!
+HistoryVulcan.Services.Web.ShellEndpointProfile.BaseUri.init -> void
+HistoryVulcan.Services.Web.ShellEndpointProfile.CertificateFingerprint.get -> string?
+HistoryVulcan.Services.Web.ShellEndpointProfile.CertificateFingerprint.init -> void
+HistoryVulcan.Services.Web.ShellEndpointProfile.ConnectTimeout.get -> System.TimeSpan?
+HistoryVulcan.Services.Web.ShellEndpointProfile.ConnectTimeout.init -> void
+HistoryVulcan.Services.Web.ShellEndpointProfile.DeviceId.get -> string!
+HistoryVulcan.Services.Web.ShellEndpointProfile.DeviceId.init -> void
+HistoryVulcan.Services.Web.ShellEndpointProfile.EffectiveConnectTimeout.get -> System.TimeSpan
+HistoryVulcan.Services.Web.ShellEndpointProfile.ServerId.get -> string?
+HistoryVulcan.Services.Web.ShellEndpointProfile.ServerId.init -> void
+HistoryVulcan.Services.Web.ShellEndpointProfile.ShellEndpointProfile(System.Uri! BaseUri, string! DeviceId, System.Func<string?>? AccessTokenProvider = null, string? CertificateFingerprint = null, System.TimeSpan? ConnectTimeout = null, string? ServerId = null) -> void
+HistoryVulcan.Services.Web.ShellEndpointProfile.ValidateCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2? certificate) -> bool
+HistoryVulcan.Services.Web.ShellServiceClient
+HistoryVulcan.Services.Web.ShellServiceClient.DataDeserializer.get -> System.Func<string!, System.Text.Json.JsonElement, object?>?
+HistoryVulcan.Services.Web.ShellServiceClient.DataDeserializer.set -> void
+HistoryVulcan.Services.Web.ShellServiceClient.Dispose() -> void
+HistoryVulcan.Services.Web.ShellServiceClient.ExecuteAsync(string! text, string! source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
+HistoryVulcan.Services.Web.ShellServiceClient.LogReceived -> System.EventHandler<HistoryVulcan.Core.Logging.ShellLogEntry!>?
+HistoryVulcan.Services.Web.ShellServiceClient.ModuleRevisionReceived -> System.Action<long>?
+HistoryVulcan.Services.Web.ShellServiceClient.PairAsync(string! code, string! deviceName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<HistoryVulcan.Services.Web.DevicePairingResult!>!
+HistoryVulcan.Services.Web.ShellServiceClient.ReconnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+HistoryVulcan.Services.Web.ShellServiceClient.RunEventLoopAsync(HistoryVulcan.Core.Commands.CommandBus! localBus, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+HistoryVulcan.Services.Web.ShellServiceClient.ShellServiceClient(HistoryVulcan.Services.Web.ShellEndpointProfile! profile, string! name) -> void
+HistoryVulcan.Services.Web.ShellServiceClient.ShellServiceClient(System.Uri! baseUri, string! name) -> void
+HistoryVulcan.Services.Web.ShellServiceClient.State.get -> HistoryVulcan.Services.Web.ShellConnectionState
+HistoryVulcan.Services.Web.ShellServiceClient.StateChanged -> System.Action<HistoryVulcan.Services.Web.ShellConnectionState>?
+HistoryVulcan.Services.Web.ShellServiceClient.WaitForReadyAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+HistoryVulcan.Services.Web.WebCommands
+HistoryVulcan.Services.Web.WebGateway
+HistoryVulcan.Services.Web.WebGateway.ActiveBindAddress.get -> string!
+HistoryVulcan.Services.Web.WebGateway.BindAddress.get -> string!
+HistoryVulcan.Services.Web.WebGateway.ConnectedClients.get -> int
+HistoryVulcan.Services.Web.WebGateway.ConnectedShells.get -> int
+HistoryVulcan.Services.Web.WebGateway.DeviceAuthentication.get -> HistoryVulcan.Services.Web.IDeviceAuthenticationProvider?
+HistoryVulcan.Services.Web.WebGateway.DeviceAuthentication.set -> void
+HistoryVulcan.Services.Web.WebGateway.DevicePairing.get -> HistoryVulcan.Services.Web.IDevicePairingProvider?
+HistoryVulcan.Services.Web.WebGateway.DevicePairing.set -> void
+HistoryVulcan.Services.Web.WebGateway.DisconnectDevice(string! deviceId) -> int
+HistoryVulcan.Services.Web.WebGateway.Dispose() -> void
+HistoryVulcan.Services.Web.WebGateway.IsRunning.get -> bool
+HistoryVulcan.Services.Web.WebGateway.Port.get -> int
+HistoryVulcan.Services.Web.WebGateway.PublishModuleRevision(long revision) -> void
+HistoryVulcan.Services.Web.WebGateway.RelayFrontendCommandAsync(string! text, string! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
+HistoryVulcan.Services.Web.WebGateway.RequestWebConfirmation(string! prompt, string! source, System.TimeSpan timeout) -> bool
+HistoryVulcan.Services.Web.WebGateway.ServerId.get -> string!
+HistoryVulcan.Services.Web.WebGateway.ServerId.set -> void
+HistoryVulcan.Services.Web.WebGateway.Start(int? port = null) -> (bool Success, string! Message)
+HistoryVulcan.Services.Web.WebGateway.Stop() -> (bool Success, string! Message)
+HistoryVulcan.Services.Web.WebGateway.WebGateway(System.Func<HistoryVulcan.Core.Commands.CommandBus?>! busAccessor, HistoryVulcan.Core.Storage.ISettingsService! settings, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+const HistoryVulcan.Services.Mcp.McpGateway.KeyAutostart = "mcp.autostart" -> string!
+const HistoryVulcan.Services.Mcp.McpGateway.KeyConfirm = "mcp.confirm" -> string!
+const HistoryVulcan.Services.Mcp.McpGateway.KeyConfirmTimeout = "mcp.confirmtimeout" -> string!
+const HistoryVulcan.Services.Mcp.McpGateway.KeyPolicy = "mcp.policy" -> string!
+const HistoryVulcan.Services.Mcp.McpGateway.KeyPort = "mcp.port" -> string!
+const HistoryVulcan.Services.Mcp.McpGateway.KeyPortRetries = "mcp.portretries" -> string!
+const HistoryVulcan.Services.Mcp.McpGateway.KeySessionLimit = "mcp.sessionlimit" -> string!
+const HistoryVulcan.Services.Mcp.McpGateway.KeyTimeout = "mcp.timeout" -> string!
+const HistoryVulcan.Services.Mcp.McpGateway.KeyToken = "mcp.token" -> string!
+const HistoryVulcan.Services.Mcp.PromptGovernanceStore.TableDescriptions = "mcp_descriptions" -> string!
+const HistoryVulcan.Services.Mcp.PromptGovernanceStore.TableProposals = "mcp_prompt_proposals" -> string!
+const HistoryVulcan.Services.Web.WebGateway.KeyBind = "web.bind" -> string!
+const HistoryVulcan.Services.Web.WebGateway.KeyConfirm = "web.confirm" -> string!
+const HistoryVulcan.Services.Web.WebGateway.KeyCors = "web.cors" -> string!
+const HistoryVulcan.Services.Web.WebGateway.KeyFrontendCatalog = "web.frontendcatalog" -> string!
+const HistoryVulcan.Services.Web.WebGateway.KeyFrontendCatalogLimit = "web.frontendcataloglimit" -> string!
+const HistoryVulcan.Services.Web.WebGateway.KeyPort = "web.port" -> string!
+const HistoryVulcan.Services.Web.WebGateway.KeyPortRetries = "web.portretries" -> string!
+const HistoryVulcan.Services.Web.WebGateway.KeyRateLimit = "web.ratelimit" -> string!
+const HistoryVulcan.Services.Web.WebGateway.KeyRateWindowLimit = "web.ratewindowlimit" -> string!
+const HistoryVulcan.Services.Web.WebGateway.KeyToken = "web.token" -> string!
+static HistoryVulcan.Services.AppPaths.GetDataDir(string! root) -> string!
+static HistoryVulcan.Services.AppPaths.GetModulesDir(string! root) -> string!
+static HistoryVulcan.Services.AppPaths.GetPanelsDir(string! root) -> string!
+static HistoryVulcan.Services.Modules.ModuleHost.FindModuleDomainConflicts(System.Collections.Generic.IEnumerable<string!>! reservedCommandNames, System.Collections.Generic.IEnumerable<string!>! moduleCommandNames) -> System.Collections.Generic.IReadOnlySet<string!>!
+static HistoryVulcan.Services.Modules.ModulePanelSync.SyncFiles(string! modulesDir, string! panelsDir, HistoryVulcan.Core.Logging.IShellLog! log) -> bool
+static HistoryVulcan.Services.Web.DeviceAuthenticationResult.Accept(string! deviceId, string! subject, System.Collections.Generic.IEnumerable<string!>! scopes) -> HistoryVulcan.Services.Web.DeviceAuthenticationResult!
+static HistoryVulcan.Services.Web.DeviceAuthenticationResult.Reject(string! failure = "unauthorized") -> HistoryVulcan.Services.Web.DeviceAuthenticationResult!
+static HistoryVulcan.Services.Web.ShellEndpointProfile.NormalizeFingerprint(string? value) -> string!
+static HistoryVulcan.Services.Web.WebCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Services.Web.WebGateway! gateway, HistoryVulcan.Core.Storage.ISettingsService! settings, string! source = "framework:web") -> void
+static readonly HistoryVulcan.Services.Mcp.McpGateway.SupportedProtocols -> System.Collections.Generic.IReadOnlyList<string!>!

@@ -175,7 +175,7 @@
         <member name="M:HistoryVulcan.Services.Mcp.McpGateway.Dispose">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.ExecuteToolAsync(HistoryVulcan.Core.Mcp.ClientSession,System.Text.Json.Nodes.JsonNode,HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Core.Mcp.McpToolInfo,System.String,System.String,System.Boolean,System.String,System.Action{System.String,System.String,System.String})">
+        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.ExecuteToolAsync(HistoryVulcan.Core.Mcp.ClientSession,System.Text.Json.Nodes.JsonNode,HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Extensibility.Mcp.McpToolInfo,System.String,System.String,System.Boolean,System.String,System.Action{System.String,System.String,System.String})">
             <summary>组装指令经总线执行并映射为 MCP 结果;preApproved=true 时置确认预批准域(CX-03)。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Mcp.McpGateway.RelayConfirmAsync(HistoryVulcan.Core.Mcp.ClientSession,HistoryVulcan.Core.Commands.CommandBus,System.String,System.Nullable{System.Text.Json.JsonElement},System.String)">
