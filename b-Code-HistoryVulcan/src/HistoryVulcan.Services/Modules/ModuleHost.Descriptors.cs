@@ -198,9 +198,8 @@ public sealed partial class ModuleHost
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public void Dispose()
     {
-        UnbindMcpExposurePolicy();
-        _watcher?.Dispose();
-        _debounce?.Dispose();
+        _mcpPolicy.Unbind();
+        _watcher.Dispose();
         var ui = UiContext;
         if (ui != null)
         {
@@ -223,19 +222,6 @@ public sealed partial class ModuleHost
         }
     }
 
-    private void UnbindMcpExposurePolicy()
-    {
-        if (!_mcpPolicyBound)
-            return;
-
-        if (_moduleOfCommandResolver != null
-            && ReferenceEquals(McpExposurePolicy.ModuleOfCommand, _moduleOfCommandResolver))
-            McpExposurePolicy.ModuleOfCommand = _previousModuleOfCommandResolver;
-        if (_moduleExposureResolver != null
-            && ReferenceEquals(McpExposurePolicy.ModuleExposure, _moduleExposureResolver))
-            McpExposurePolicy.ModuleExposure = _previousModuleExposureResolver;
-        _mcpPolicyBound = false;
-    }
 
     private void UnregisterCommands(Snapshot snapshot)
     {

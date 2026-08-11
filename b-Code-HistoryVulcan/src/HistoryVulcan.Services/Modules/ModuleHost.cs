@@ -47,21 +47,18 @@ public sealed partial class ModuleHost : IDisposable
     private ISettingsService? _settings;
     private string? _dataDirectory;
     private Snapshot _current = Snapshot.Empty;
-    private FileSystemWatcher? _watcher;
-    private Timer? _debounce;
+    private readonly ModuleDirectoryWatcher _watcher;
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    private Func<string, string?>? _moduleOfCommandResolver;
-    private Func<string, string?>? _moduleExposureResolver;
-    private Func<string, string?>? _previousModuleOfCommandResolver;
-    private Func<string, string?>? _previousModuleExposureResolver;
-    private bool _mcpPolicyBound;
+    private readonly ModuleMcpPolicyBinder _mcpPolicy;
 
     /// <summary>按模块目录与日志建立宿主；装载与命令注册由 Attach/Start 触发。</summary>
     public ModuleHost(string modulesDir, IShellLog log)
     {
         _dir = modulesDir;
         _log = log;
+        _watcher = new ModuleDirectoryWatcher(log, Reload);
+        _mcpPolicy = new ModuleMcpPolicyBinder(ResolveModuleOfCommand, ResolveModuleExposure);
     }
 
     /// <summary>Creates a module host backed by explicit Z-level manifest discovery.</summary>
@@ -71,6 +68,8 @@ public sealed partial class ModuleHost : IDisposable
         _discoverySource = discoverySource;
         _dir = "";
         _log = log;
+        _watcher = new ModuleDirectoryWatcher(log, Reload);
+        _mcpPolicy = new ModuleMcpPolicyBinder(ResolveModuleOfCommand, ResolveModuleExposure);
     }
 
     /// <summary>
@@ -122,7 +121,7 @@ public sealed partial class ModuleHost : IDisposable
     public void Attach(CommandRegistry registry)
     {
         _registry = registry;
-        BindMcpExposurePolicy();
+        _mcpPolicy.Bind();
     }
 
     /// <summary>接入模块业务运行所需的完整宿主上下文。</summary>
@@ -144,7 +143,7 @@ public sealed partial class ModuleHost : IDisposable
         _bus = bus;
         _settings = settings;
         _dataDirectory = Path.GetFullPath(dataDirectory);
-        BindMcpExposurePolicy();
+        _mcpPolicy.Bind();
     }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -155,7 +154,7 @@ public sealed partial class ModuleHost : IDisposable
         Reload();
         if (_discoverySource == null && EnableFileWatching)
         {
-            StartWatcher();
+            _watcher.Watch(_dir);
             _log.Info("module", $"正在监听模块目录: {_dir}");
         }
     }
@@ -163,21 +162,19 @@ public sealed partial class ModuleHost : IDisposable
     /// <summary>module.dir path=:切换模块目录并整体重载。</summary>
     public void ChangeDirectory(string newDir)
     {
-        _watcher?.Dispose();
-        _watcher = null;
+        _watcher.Stop();
         _dir = newDir;
         Directory.CreateDirectory(_dir);
         Reload();
         if (EnableFileWatching)
-            StartWatcher();
+            _watcher.Watch(_dir);
         _log.Info("module", $"模块目录已切换: {_dir}");
     }
 
     /// <summary>Replaces the configured Z discovery roots and immediately reloads modules.</summary>
     public void ChangeDiscoveryRoots(IEnumerable<string> roots)
     {
-        _watcher?.Dispose();
-        _watcher = null;
+        _watcher.Stop();
         _confirmedSources = null;
         _discoverySource = new ZModuleDiscoverySource(roots);
         Reload();
@@ -215,52 +212,6 @@ public sealed partial class ModuleHost : IDisposable
         Reload();
     }
 
-    private void StartWatcher()
-    {
-        _watcher = new FileSystemWatcher(_dir)
-        {
-            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName
-                           | NotifyFilters.Size | NotifyFilters.CreationTime,
-            IncludeSubdirectories = true, // V2.2 MH-03:模块槽子目录同样触发热重载
-        };
-        _watcher.Created += (_, e) => OnFileEvent(e.Name);
-        _watcher.Changed += (_, e) => OnFileEvent(e.Name);
-        _watcher.Deleted += (_, e) => OnFileEvent(e.Name);
-        _watcher.Renamed += (_, e) => OnFileEvent(e.Name);
-        _watcher.EnableRaisingEvents = true;
-    }
-
-    private void OnFileEvent(string? file)
-    {
-        // 只关心模块本体、XML 注释文档与模块旁面板(MD-08)
-        var ext = Path.GetExtension(file ?? "").ToLowerInvariant();
-        if (ext is ".dll" or ".xml"
-            || (file?.EndsWith(".panel.json", StringComparison.OrdinalIgnoreCase) ?? false))
-        {
-            ScheduleReload(file);
-        }
-    }
-
-    /// <summary>文件事件防抖:拷贝大 DLL 会触发多次 Changed,静默 800ms 后才真正重载。</summary>
-    private void ScheduleReload(string? file)
-    {
-        _log.Info("module", $"检测到模块变化: {file ?? "?"},准备热重载...");
-        lock (_reloadLock)
-        {
-            _debounce ??= new Timer(_ =>
-            {
-                try
-                {
-                    Reload();
-                }
-                catch (Exception ex)
-                {
-                    _log.Error("module", $"热重载失败: {ex.Message}");
-                }
-            }, null, Timeout.Infinite, Timeout.Infinite);
-            _debounce.Change(800, Timeout.Infinite);
-        }
-    }
 
     /// <summary>整体重载:构建新快照 → 注册表换血(UI 线程) → 卸载旧 ALC。</summary>
     public void Reload()
@@ -371,25 +322,6 @@ public sealed partial class ModuleHost : IDisposable
         next.FinalizeMetas();
     }
 
-    private void BindMcpExposurePolicy()
-    {
-        if (_moduleOfCommandResolver == null)
-            _moduleOfCommandResolver = ResolveModuleOfCommand;
-        if (_moduleExposureResolver == null)
-            _moduleExposureResolver = ResolveModuleExposure;
-        if (!_mcpPolicyBound)
-        {
-            _previousModuleOfCommandResolver = McpExposurePolicy.ModuleOfCommand;
-            _previousModuleExposureResolver = McpExposurePolicy.ModuleExposure;
-            _mcpPolicyBound = true;
-        }
-
-        // The process-level policy follows the single ModuleHost that owns the
-        // authoritative registry. Both resolvers read live state so a reload
-        // changes exposure without rebuilding the MCP gateway.
-        McpExposurePolicy.ModuleOfCommand = _moduleOfCommandResolver;
-        McpExposurePolicy.ModuleExposure = _moduleExposureResolver;
-    }
 
     private string? ResolveModuleOfCommand(string commandName)
     {
