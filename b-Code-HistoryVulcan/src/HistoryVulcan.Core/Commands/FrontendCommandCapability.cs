@@ -1,4 +1,4 @@
-namespace HistoryVulcan.Core.Commands;
+﻿namespace HistoryVulcan.Core.Commands;
 
 /// <summary>可跨进程同步的命令参数元数据。</summary>
 public sealed record CommandParameterCapability(
@@ -41,7 +41,6 @@ public sealed record FrontendCommandCapability(
     string Summary,
     string? Example,
     IReadOnlyList<CommandParameterCapability> Parameters,
-    bool SupportsUndo,
     bool Readonly,
     bool Dangerous,
     bool RequiresUiThread,
@@ -63,7 +62,6 @@ public sealed record FrontendCommandCapability(
         descriptor.Summary,
         descriptor.Example,
         descriptor.Parameters.Select(CommandParameterCapability.From).ToList(),
-        descriptor.SupportsUndo,
         descriptor.Readonly,
         descriptor.IsDangerous,
         descriptor.RequiresUiThread,
@@ -84,7 +82,6 @@ public sealed record FrontendCommandCapability(
         Summary = Summary,
         Example = Example,
         Parameters = Parameters.Select(parameter => parameter.ToParameter()).ToList(),
-        SupportsUndo = SupportsUndo,
         Readonly = Readonly,
         Dangerous = Dangerous,
         ConfirmPrompt = Dangerous ? _ => $"确认执行前端命令 {Name}？" : null,

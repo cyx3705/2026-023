@@ -51,7 +51,6 @@ public sealed class FrontendCommandCatalogTests
                     AllowedValues = ["brief", "full"],
                 },
             ],
-            SupportsUndo = true,
             Readonly = true,
             Dangerous = true,
             RequiresUiThread = true,
@@ -70,7 +69,6 @@ public sealed class FrontendCommandCatalogTests
         Assert.Equal(source.CommandClass, proxy.CommandClass);
         Assert.Equal(source.Summary, proxy.Summary);
         Assert.Equal(source.Example, proxy.Example);
-        Assert.Equal(source.SupportsUndo, proxy.SupportsUndo);
         Assert.Equal(source.Readonly, proxy.Readonly);
         Assert.Equal(source.IsDangerous, proxy.IsDangerous);
         Assert.Equal(source.RequiresUiThread, proxy.RequiresUiThread);

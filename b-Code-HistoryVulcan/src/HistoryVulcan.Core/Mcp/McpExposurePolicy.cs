@@ -1,4 +1,4 @@
-using HistoryVulcan.Core.Commands;
+﻿using HistoryVulcan.Core.Commands;
 
 namespace HistoryVulcan.Core.Mcp;
 
@@ -38,7 +38,7 @@ public static class McpExposurePolicy
     /// 按名字补登记的只读指令集合。
     ///
     /// **V2.4.4 起默认为空**:只读性的单一真值是 <see cref="CommandDescriptor.Readonly"/>——
-    /// 由命令在注册处自己声明,与 ConfirmPrompt / SupportsUndo 同级。
+    /// 由命令在注册处自己声明,与 ConfirmPrompt 同级。
     /// 0.4.4 时代的 18 条框架基线与派生应用登记的 14 条已全部迁至各自描述符,
     /// 保留双份会让「一件事实两处声明」以新形态复活,故本集合清空。
     ///

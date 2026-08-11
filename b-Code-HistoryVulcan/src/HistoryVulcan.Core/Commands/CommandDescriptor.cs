@@ -1,8 +1,12 @@
-namespace HistoryVulcan.Core.Commands;
+﻿namespace HistoryVulcan.Core.Commands;
 
 /// <summary>
-/// 一条指令的注册模型(§5.3):名称、参数定义、执行体、帮助文本、
-/// 二次确认与撤销能力位(撤销为 Q6 预留,首版不实现)。
+/// 一条指令的注册模型(§5.3):名称、参数定义、执行体、帮助文本与二次确认。
+///
+/// 冻结契约:本类是地基类型,消费方能力**不得**再以新增字段的方式落地——用
+/// <see cref="Annotations"/>。原 SupportsUndo 是「Q6 预留、首版不实现」的空位,
+/// 接线至今零行为,已在冻结前删除:冻结会把预留位永久固化,而真要做撤销时,
+/// 该重新设计而不是继承一个从未被验证过的字段。
 /// </summary>
 public sealed class CommandDescriptor
 {
@@ -32,9 +36,6 @@ public sealed class CommandDescriptor
 
     /// <summary>执行前需二次确认时,返回确认提示文本;null 表示无需确认(§5.2 拦截器)。</summary>
     public Func<CommandContext, string?>? ConfirmPrompt { get; init; }
-
-    /// <summary>撤销能力位(§5.4,Q6:首版只预留)。</summary>
-    public bool SupportsUndo { get; init; }
 
     /// <summary>
     /// 代理描述符无法序列化原始确认函数时保留危险性元数据。

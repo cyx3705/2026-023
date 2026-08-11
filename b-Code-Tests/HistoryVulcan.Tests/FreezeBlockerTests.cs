@@ -1,4 +1,4 @@
-
+﻿
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -10,6 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
+using HistoryVulcan.Core.Clients;
 using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.Services.Web;

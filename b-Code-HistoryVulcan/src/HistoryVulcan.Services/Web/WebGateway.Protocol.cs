@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
@@ -9,6 +9,7 @@ using System.Threading.Channels;
 using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
+using HistoryVulcan.Core.Clients;
 using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Core.Storage;
 

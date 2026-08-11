@@ -9,6 +9,7 @@ using System.Threading.Channels;
 using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
+using HistoryVulcan.Core.Clients;
 using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Extensibility.Mcp;
 using HistoryVulcan.Core.Storage;

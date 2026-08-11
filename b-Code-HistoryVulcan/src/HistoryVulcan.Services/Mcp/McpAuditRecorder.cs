@@ -1,6 +1,7 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using HistoryVulcan.Core.Logging;
+using HistoryVulcan.Core.Clients;
 using HistoryVulcan.Core.Mcp;
 
 namespace HistoryVulcan.Services.Mcp;

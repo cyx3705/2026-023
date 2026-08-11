@@ -62,3 +62,5 @@ static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.FindAutomaticRoot(s
 *REMOVED*HistoryVulcan.Services.Modules.ModuleHost.GlobalShortcuts.set -> void
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ProjectDirectoryPattern = "*-History*" -> string!
 HistoryVulcan.Services.Mcp.McpGateway.VisibleTools() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Extensibility.Mcp.McpToolInfo!>!
+HistoryVulcan.Services.Web.WebGateway.TryGetSession(string! source, out HistoryVulcan.Core.Clients.ClientSession! session) -> bool
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.TryGetSession(string! source, out HistoryVulcan.Core.Mcp.ClientSession! session) -> bool

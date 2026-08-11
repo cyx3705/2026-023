@@ -1,6 +1,12 @@
-namespace HistoryVulcan.Core.Mcp;
+﻿namespace HistoryVulcan.Core.Clients;
 
-/// <summary>接入命令总线的客户端种类。</summary>
+/// <summary>
+/// 接入命令总线的客户端种类。
+///
+/// 本族类型此前住在 Core.Mcp，但它并非 MCP 协议形态：种类覆盖 Mcp / Shell / Web 三类
+/// 客户端，且承载 AuthSubject、Scopes、IsLoopback 等安全身份，MCP 审计与 Web 限流共同
+/// 依赖它。冻结前正名到 Core.Clients——名字要说实话，而冻结之后就再也改不了了。
+/// </summary>
 public enum ClientKind
 {
     /// <summary>Provides this HistoryVulcan public contract member.</summary>

@@ -1,4 +1,4 @@
-namespace HistoryVulcan.Core.Commands;
+﻿namespace HistoryVulcan.Core.Commands;
 
 /// <summary>
 /// Shared metadata for commands that execute locally in both the desktop shell and a service host.
@@ -34,7 +34,6 @@ public static class BuiltinCommandDefinitions
             Example = definition.Example,
             Parameters = definition.Parameters.Select(Clone).ToList(),
             ConfirmPrompt = definition.ConfirmPrompt,
-            SupportsUndo = definition.SupportsUndo,
             Dangerous = definition.Dangerous,
             Readonly = definition.Readonly,
             RequiresUiThread = requiresUiThread,
@@ -113,7 +112,6 @@ public static class BuiltinCommandDefinitions
         string? Example = null,
         IReadOnlyList<ParameterSpec>? ParameterList = null,
         bool Readonly = false,
-        bool SupportsUndo = false,
         bool Dangerous = false,
         Func<CommandContext, string?>? ConfirmPrompt = null)
     {

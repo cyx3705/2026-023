@@ -289,7 +289,6 @@ HistoryVulcan.Services.Web.WebGateway.ServerId.get -> string!
 HistoryVulcan.Services.Web.WebGateway.ServerId.set -> void
 HistoryVulcan.Services.Web.WebGateway.Start(int? port = null) -> (bool Success, string! Message)
 HistoryVulcan.Services.Web.WebGateway.Stop() -> (bool Success, string! Message)
-HistoryVulcan.Services.Web.WebGateway.TryGetSession(string! source, out HistoryVulcan.Core.Mcp.ClientSession! session) -> bool
 HistoryVulcan.Services.Web.WebGateway.WebGateway(System.Func<HistoryVulcan.Core.Commands.CommandBus?>! busAccessor, HistoryVulcan.Core.Storage.ISettingsService! settings, HistoryVulcan.Core.Logging.IShellLog! log) -> void
 const HistoryVulcan.Services.Mcp.McpGateway.KeyAutostart = "mcp.autostart" -> string!
 const HistoryVulcan.Services.Mcp.McpGateway.KeyConfirm = "mcp.confirm" -> string!

@@ -1,4 +1,4 @@
-using HistoryVulcan.Core.Commands;
+﻿using HistoryVulcan.Core.Commands;
 
 namespace HistoryVulcan.Services.Modules;
 
@@ -16,7 +16,6 @@ internal static class ModuleCommandTaxonomy
             Example = source.Example,
             Parameters = source.Parameters,
             ConfirmPrompt = source.ConfirmPrompt,
-            SupportsUndo = source.SupportsUndo,
             Dangerous = source.Dangerous,
             Readonly = source.Readonly,
             RequiresUiThread = source.RequiresUiThread,

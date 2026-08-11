@@ -32,6 +32,7 @@ virtual BaseVariable.ModuleInfoBase.ModuleName.get -> string!
 virtual BaseVariable.ModuleInfoBase.Open.get -> bool
 virtual BaseVariable.ModuleInfoBase.Version.get -> string!
 HistoryVulcan.Core.Commands.CommandBus.InvokeAsync(string! text, string! source, System.Threading.CancellationToken cancellation = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
+HistoryVulcan.Core.Commands.FrontendCommandCapability.FrontendCommandCapability(string! Name, string! Summary, string? Example, System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Commands.CommandParameterCapability!>! Parameters, bool Readonly, bool Dangerous, bool RequiresUiThread, bool AllowUnspecifiedParameters, bool AllowMcpExecution, string! Source) -> void
 *REMOVED*HistoryVulcan.Core.Input.GlobalShortcutDescriptor
 *REMOVED*HistoryVulcan.Core.Input.GlobalShortcutDescriptor.GlobalShortcutDescriptor(string! Id, System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Input.GlobalShortcutStroke!>! Strokes, string! CommandText, int MaxIntervalMilliseconds = 350) -> void
 *REMOVED*HistoryVulcan.Core.Input.GlobalShortcutDescriptor.CommandText.get -> string!
@@ -153,3 +154,64 @@ HistoryVulcan.Core.Commands.CommandDescriptor.HasAnnotation(string! key) -> bool
 *REMOVED*static HistoryVulcan.Core.Mcp.CommandSchemaExporter.HardExclusionReason(string! commandName) -> string?
 *REMOVED*static HistoryVulcan.Core.Mcp.CommandSchemaExporter.IsHardExcluded(string! commandName) -> bool
 *REMOVED*static HistoryVulcan.Core.Mcp.CommandSchemaExporter.MakeToolName(string! commandName, System.Collections.Generic.HashSet<string!>! used) -> string!
+HistoryVulcan.Core.Clients.ClientKind
+HistoryVulcan.Core.Clients.ClientKind.Mcp = 0 -> HistoryVulcan.Core.Clients.ClientKind
+HistoryVulcan.Core.Clients.ClientKind.Shell = 1 -> HistoryVulcan.Core.Clients.ClientKind
+HistoryVulcan.Core.Clients.ClientKind.Web = 2 -> HistoryVulcan.Core.Clients.ClientKind
+HistoryVulcan.Core.Clients.ClientSession
+HistoryVulcan.Core.Clients.ClientSession.AuthSubject.get -> string?
+HistoryVulcan.Core.Clients.ClientSession.AuthSubject.init -> void
+HistoryVulcan.Core.Clients.ClientSession.ClientSession(string! Id, HistoryVulcan.Core.Clients.ClientKind Kind, string! Name, string! ProtocolVersion, System.DateTimeOffset ConnectedAt) -> void
+HistoryVulcan.Core.Clients.ClientSession.ConnectedAt.get -> System.DateTimeOffset
+HistoryVulcan.Core.Clients.ClientSession.ConnectedAt.init -> void
+HistoryVulcan.Core.Clients.ClientSession.DeviceId.get -> string?
+HistoryVulcan.Core.Clients.ClientSession.DeviceId.init -> void
+HistoryVulcan.Core.Clients.ClientSession.Id.get -> string!
+HistoryVulcan.Core.Clients.ClientSession.Id.init -> void
+HistoryVulcan.Core.Clients.ClientSession.IsLoopback.get -> bool
+HistoryVulcan.Core.Clients.ClientSession.IsLoopback.init -> void
+HistoryVulcan.Core.Clients.ClientSession.Kind.get -> HistoryVulcan.Core.Clients.ClientKind
+HistoryVulcan.Core.Clients.ClientSession.Kind.init -> void
+HistoryVulcan.Core.Clients.ClientSession.Name.get -> string!
+HistoryVulcan.Core.Clients.ClientSession.Name.init -> void
+HistoryVulcan.Core.Clients.ClientSession.ProtocolVersion.get -> string!
+HistoryVulcan.Core.Clients.ClientSession.ProtocolVersion.init -> void
+HistoryVulcan.Core.Clients.ClientSession.RemoteAddress.get -> string?
+HistoryVulcan.Core.Clients.ClientSession.RemoteAddress.init -> void
+HistoryVulcan.Core.Clients.ClientSession.Scopes.get -> System.Collections.Generic.IReadOnlySet<string!>!
+HistoryVulcan.Core.Clients.ClientSession.Scopes.init -> void
+HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(HistoryVulcan.Core.Clients.ClientSession! session, string! tool, string! arguments, string! result, long elapsedMs) -> void
+static HistoryVulcan.Core.Clients.ClientSession.Create(HistoryVulcan.Core.Clients.ClientKind kind, string! name, string! protocolVersion = "2025-03-26", string? id = null, string? remoteAddress = null, string? deviceId = null, string? authSubject = null, System.Collections.Generic.IEnumerable<string!>? scopes = null, bool isLoopback = false) -> HistoryVulcan.Core.Clients.ClientSession!
+*REMOVED*HistoryVulcan.Core.Mcp.ClientKind
+*REMOVED*HistoryVulcan.Core.Mcp.ClientKind.Mcp = 0 -> HistoryVulcan.Core.Mcp.ClientKind
+*REMOVED*HistoryVulcan.Core.Mcp.ClientKind.Shell = 1 -> HistoryVulcan.Core.Mcp.ClientKind
+*REMOVED*HistoryVulcan.Core.Mcp.ClientKind.Web = 2 -> HistoryVulcan.Core.Mcp.ClientKind
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.AuthSubject.get -> string?
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.AuthSubject.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.ClientSession(string! Id, HistoryVulcan.Core.Mcp.ClientKind Kind, string! Name, string! ProtocolVersion, System.DateTimeOffset ConnectedAt) -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.ConnectedAt.get -> System.DateTimeOffset
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.ConnectedAt.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.DeviceId.get -> string?
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.DeviceId.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Id.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Id.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.IsLoopback.get -> bool
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.IsLoopback.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Kind.get -> HistoryVulcan.Core.Mcp.ClientKind
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Kind.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Name.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Name.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.ProtocolVersion.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.ProtocolVersion.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.RemoteAddress.get -> string?
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.RemoteAddress.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Scopes.get -> System.Collections.Generic.IReadOnlySet<string!>!
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Scopes.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(HistoryVulcan.Core.Mcp.ClientSession! session, string! tool, string! arguments, string! result, long elapsedMs) -> void
+*REMOVED*static HistoryVulcan.Core.Mcp.ClientSession.Create(HistoryVulcan.Core.Mcp.ClientKind kind, string! name, string! protocolVersion = "2025-03-26", string? id = null, string? remoteAddress = null, string? deviceId = null, string? authSubject = null, System.Collections.Generic.IEnumerable<string!>? scopes = null, bool isLoopback = false) -> HistoryVulcan.Core.Mcp.ClientSession!
+*REMOVED*HistoryVulcan.Core.Commands.CommandDescriptor.SupportsUndo.get -> bool
+*REMOVED*HistoryVulcan.Core.Commands.CommandDescriptor.SupportsUndo.init -> void
+*REMOVED*HistoryVulcan.Core.Commands.FrontendCommandCapability.FrontendCommandCapability(string! Name, string! Summary, string? Example, System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Commands.CommandParameterCapability!>! Parameters, bool SupportsUndo, bool Readonly, bool Dangerous, bool RequiresUiThread, bool AllowUnspecifiedParameters, bool AllowMcpExecution, string! Source) -> void
+*REMOVED*HistoryVulcan.Core.Commands.FrontendCommandCapability.SupportsUndo.get -> bool
+*REMOVED*HistoryVulcan.Core.Commands.FrontendCommandCapability.SupportsUndo.init -> void

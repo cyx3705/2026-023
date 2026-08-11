@@ -1,4 +1,4 @@
-{
+﻿{
   "schemaVersion": 1,
   "template": {
     "isTemplate": false,
@@ -15,7 +15,7 @@
       "package"
     ],
     "status": "active",
-    "version": "3.8.0",
+    "version": "3.9.0",
     "branch": "2026-023-HistoryVulcan",
     "freezeTag": "v3.0.3"
   },

@@ -1,3 +1,5 @@
+﻿using HistoryVulcan.Core.Clients;
+
 namespace HistoryVulcan.Core.Mcp;
 
 /// <summary>
