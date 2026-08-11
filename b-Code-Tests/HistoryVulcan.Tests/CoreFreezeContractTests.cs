@@ -1,6 +1,7 @@
-using HistoryVulcan.Core.Commands;
+﻿using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Mcp;
+using HistoryVulcan.Extensibility.Mcp;
 using HistoryVulcan.Services;
 using HistoryVulcan.Services.Mcp;
 using HistoryVulcan.Shell.Mcp;

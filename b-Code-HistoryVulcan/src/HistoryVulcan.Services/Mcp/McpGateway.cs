@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
@@ -8,6 +8,7 @@ using System.Text.Json.Nodes;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core;
 using HistoryVulcan.Core.Mcp;
+using HistoryVulcan.Extensibility.Mcp;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.Services.Web;

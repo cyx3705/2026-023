@@ -33,7 +33,6 @@ HistoryVulcan.Services.Mcp.McpGateway.Port.get -> int
 HistoryVulcan.Services.Mcp.McpGateway.Start(int? port) -> (bool Success, string! Message)
 HistoryVulcan.Services.Mcp.McpGateway.Stop() -> (bool Success, string! Message)
 HistoryVulcan.Services.Mcp.McpGateway.TryAutostart() -> (bool Success, string! Message)
-HistoryVulcan.Services.Mcp.McpGateway.VisibleTools() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Mcp.McpToolInfo!>!
 HistoryVulcan.Services.Mcp.PromptCorrection
 HistoryVulcan.Services.Mcp.PromptCorrection.Claim.get -> string!
 HistoryVulcan.Services.Mcp.PromptCorrection.Claim.init -> void

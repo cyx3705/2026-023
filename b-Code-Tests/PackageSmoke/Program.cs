@@ -1,7 +1,8 @@
-using System.Reflection;
+﻿using System.Reflection;
 using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Mcp;
+using HistoryVulcan.Extensibility.Mcp;
 using HistoryVulcan.Services;
 using HistoryVulcan.ServiceHost;
 using HistoryVulcan.Shell;

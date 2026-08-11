@@ -1,7 +1,11 @@
-namespace HistoryVulcan.Core.Panels;
+﻿namespace HistoryVulcan.Extensibility.Panels;
 
 /// <summary>
 /// 控制面板声明(§4.5,P-01):JSON 配置文件与 C# 注册 API 共用的信息模型。
+///
+/// 住在演进层而不是 Core:控件类型与属性是一份注定要生长的数据 schema——每加一种
+/// 控件或一个属性都是一次契约变更。它同时是宿主便利功能而非模块地基(零模块消费),
+/// 因此不该占用 Core 的冻结额度。
 /// 面板 = 一个可停靠工具窗口,内容为若干输入控件 + 指令触发按钮。
 /// </summary>
 public sealed class PanelDefinition

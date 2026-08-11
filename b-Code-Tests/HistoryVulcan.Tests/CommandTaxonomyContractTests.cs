@@ -1,4 +1,5 @@
-using HistoryVulcan.Core.Commands;
+﻿using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Extensibility.Commands;
 using HistoryVulcan.Core.Mcp;
 using Xunit;
 

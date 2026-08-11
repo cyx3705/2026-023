@@ -66,6 +66,29 @@ public sealed class CommandDescriptor
     /// <summary>代理描述符可接受任意参数并原样转发；本地业务命令不应开启。</summary>
     public bool AllowUnspecifiedParameters { get; init; }
 
+    /// <summary>
+    /// 消费方注解。总线自身**从不读取**本字典;它存在的唯一目的是让新的消费方能力
+    /// 不再以「给本类加一个字段」的方式落地。
+    ///
+    /// 背景:本类历史上为每个消费方各长过一个字段——Domain / CommandClass(命令目录的
+    /// 分类展示)、AllowMcpExecution(MCP 暴露)、ExecutionSite(前端路由)、SupportsUndo
+    /// (至今未实现的预留位)。这些字段总线一个都不用,却让「命令描述符」这个地基类型
+    /// 跟着每个消费方一起变,冻结因此无从谈起。
+    ///
+    /// 约定:键用 <c>&lt;消费方&gt;.&lt;能力&gt;</c>,如 <c>mcp.execute</c>、<c>catalog.hidden</c>。
+    /// 消费方自行定义与解释自己的键,总线只负责原样携带。新增能力**不得**再加字段。
+    /// </summary>
+    public IReadOnlyDictionary<string, string> Annotations { get; init; }
+        = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>读取一条消费方注解;不存在时返回 null。</summary>
+    public string? Annotation(string key)
+        => key != null && Annotations.TryGetValue(key, out var value) ? value : null;
+
+    /// <summary>判定一条布尔注解是否为真;缺省与非法值均视为 false。</summary>
+    public bool HasAnnotation(string key)
+        => bool.TryParse(Annotation(key), out var value) && value;
+
     /// <summary>执行体。长任务应内部 await 后台工作并经 Progress 上报(§5.2 约束)。</summary>
     public required Func<CommandContext, Task<CommandResult>> Handler { get; init; }
 

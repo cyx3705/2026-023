@@ -1,4 +1,8 @@
-namespace HistoryVulcan.Core.Commands;
+﻿using HistoryVulcan.Core.Commands;
+
+using HistoryVulcan.Core.Mcp;
+
+namespace HistoryVulcan.Extensibility.Commands;
 
 /// <summary>
 /// 域聚焦下的输入解析（DEC-025 / REQ-CMD-012）。纯函数，不持有注册表也不碰界面，

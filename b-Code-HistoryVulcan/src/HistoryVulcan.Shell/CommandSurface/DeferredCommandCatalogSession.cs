@@ -1,5 +1,6 @@
 ﻿using HistoryVulcan.Extensibility.CommandSurface;
 using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Extensibility.Commands;
 
 namespace HistoryVulcan.Shell.CommandSurface;
 

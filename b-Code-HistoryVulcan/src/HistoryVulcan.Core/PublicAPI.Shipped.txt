@@ -303,25 +303,6 @@ HistoryVulcan.Core.Mcp.ClientSession.RemoteAddress.get -> string?
 HistoryVulcan.Core.Mcp.ClientSession.RemoteAddress.init -> void
 HistoryVulcan.Core.Mcp.ClientSession.Scopes.get -> System.Collections.Generic.IReadOnlySet<string!>!
 HistoryVulcan.Core.Mcp.ClientSession.Scopes.init -> void
-HistoryVulcan.Core.Mcp.CommandManualGenerator
-HistoryVulcan.Core.Mcp.CommandManualPreview
-HistoryVulcan.Core.Mcp.CommandManualPreview.Applied.get -> bool
-HistoryVulcan.Core.Mcp.CommandManualPreview.Applied.init -> void
-HistoryVulcan.Core.Mcp.CommandManualPreview.CommandCount.get -> int
-HistoryVulcan.Core.Mcp.CommandManualPreview.CommandCount.init -> void
-HistoryVulcan.Core.Mcp.CommandManualPreview.CommandManualPreview(string! Path, int CommandCount, string! Sha256, string! Markdown, bool Applied) -> void
-HistoryVulcan.Core.Mcp.CommandManualPreview.Markdown.get -> string!
-HistoryVulcan.Core.Mcp.CommandManualPreview.Markdown.init -> void
-HistoryVulcan.Core.Mcp.CommandManualPreview.Path.get -> string!
-HistoryVulcan.Core.Mcp.CommandManualPreview.Path.init -> void
-HistoryVulcan.Core.Mcp.CommandManualPreview.Sha256.get -> string!
-HistoryVulcan.Core.Mcp.CommandManualPreview.Sha256.init -> void
-HistoryVulcan.Core.Mcp.CommandSchemaExporter
-HistoryVulcan.Core.Mcp.CommandSchemaExporter.CommandSchemaExporter(HistoryVulcan.Core.Commands.CommandRegistry! registry) -> void
-HistoryVulcan.Core.Mcp.CommandSchemaExporter.DescriptionsProvider.get -> System.Func<System.Collections.Generic.IReadOnlyDictionary<string!, string!>!>?
-HistoryVulcan.Core.Mcp.CommandSchemaExporter.DescriptionsProvider.set -> void
-HistoryVulcan.Core.Mcp.CommandSchemaExporter.ExportTools() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Mcp.McpToolInfo!>!
-HistoryVulcan.Core.Mcp.CommandSchemaExporter.Find(string! nameOrTool) -> HistoryVulcan.Core.Mcp.McpToolInfo?
 HistoryVulcan.Core.Mcp.GatewayAwareConfirmation
 HistoryVulcan.Core.Mcp.GatewayAwareConfirmation.Confirm(string! prompt) -> bool
 HistoryVulcan.Core.Mcp.GatewayAwareConfirmation.GatewayAwareConfirmation(HistoryVulcan.Core.Commands.IConfirmationService? inner) -> void
@@ -330,22 +311,6 @@ HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(HistoryVulcan.Core.Mcp.ClientSessi
 HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(string! client, string! tool, string! arguments, string! result, long elapsedMs) -> void
 HistoryVulcan.Core.Mcp.McpConfirmationScope
 HistoryVulcan.Core.Mcp.McpExposurePolicy
-HistoryVulcan.Core.Mcp.McpToolInfo
-HistoryVulcan.Core.Mcp.McpToolInfo.CommandName.get -> string!
-HistoryVulcan.Core.Mcp.McpToolInfo.CommandName.init -> void
-HistoryVulcan.Core.Mcp.McpToolInfo.Customized.get -> bool
-HistoryVulcan.Core.Mcp.McpToolInfo.Customized.init -> void
-HistoryVulcan.Core.Mcp.McpToolInfo.Dangerous.get -> bool
-HistoryVulcan.Core.Mcp.McpToolInfo.Dangerous.init -> void
-HistoryVulcan.Core.Mcp.McpToolInfo.DefaultDescription.get -> string!
-HistoryVulcan.Core.Mcp.McpToolInfo.DefaultDescription.init -> void
-HistoryVulcan.Core.Mcp.McpToolInfo.Description.get -> string!
-HistoryVulcan.Core.Mcp.McpToolInfo.Description.init -> void
-HistoryVulcan.Core.Mcp.McpToolInfo.InputSchema.get -> System.Text.Json.Nodes.JsonObject!
-HistoryVulcan.Core.Mcp.McpToolInfo.InputSchema.init -> void
-HistoryVulcan.Core.Mcp.McpToolInfo.McpToolInfo(string! ToolName, string! CommandName, string! Description, System.Text.Json.Nodes.JsonObject! InputSchema, bool Dangerous, string! DefaultDescription = "", bool Customized = false) -> void
-HistoryVulcan.Core.Mcp.McpToolInfo.ToolName.get -> string!
-HistoryVulcan.Core.Mcp.McpToolInfo.ToolName.init -> void
 HistoryVulcan.Core.Mcp.PromptTextIntegrity
 HistoryVulcan.Core.Modules.IDeferredStartupWork
 HistoryVulcan.Core.Modules.IDeferredStartupWork.ExecuteAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
@@ -372,44 +337,6 @@ HistoryVulcan.Core.Modules.ModuleCommandAttribute
 HistoryVulcan.Core.Modules.ModuleCommandAttribute.ModuleCommandAttribute() -> void
 HistoryVulcan.Core.Modules.ModuleCommandAttribute.Readonly.get -> bool
 HistoryVulcan.Core.Modules.ModuleCommandAttribute.Readonly.init -> void
-HistoryVulcan.Core.Panels.PanelControl
-HistoryVulcan.Core.Panels.PanelControl.Command.get -> string?
-HistoryVulcan.Core.Panels.PanelControl.Command.set -> void
-HistoryVulcan.Core.Panels.PanelControl.Default.get -> string?
-HistoryVulcan.Core.Panels.PanelControl.Default.set -> void
-HistoryVulcan.Core.Panels.PanelControl.Id.get -> string?
-HistoryVulcan.Core.Panels.PanelControl.Id.set -> void
-HistoryVulcan.Core.Panels.PanelControl.Items.get -> System.Collections.Generic.List<string!>?
-HistoryVulcan.Core.Panels.PanelControl.Items.set -> void
-HistoryVulcan.Core.Panels.PanelControl.Label.get -> string?
-HistoryVulcan.Core.Panels.PanelControl.Label.set -> void
-HistoryVulcan.Core.Panels.PanelControl.Max.get -> double?
-HistoryVulcan.Core.Panels.PanelControl.Max.set -> void
-HistoryVulcan.Core.Panels.PanelControl.Min.get -> double?
-HistoryVulcan.Core.Panels.PanelControl.Min.set -> void
-HistoryVulcan.Core.Panels.PanelControl.PanelControl() -> void
-HistoryVulcan.Core.Panels.PanelControl.Required.get -> bool
-HistoryVulcan.Core.Panels.PanelControl.Required.set -> void
-HistoryVulcan.Core.Panels.PanelControl.Step.get -> double?
-HistoryVulcan.Core.Panels.PanelControl.Step.set -> void
-HistoryVulcan.Core.Panels.PanelControl.Style.get -> string?
-HistoryVulcan.Core.Panels.PanelControl.Style.set -> void
-HistoryVulcan.Core.Panels.PanelControl.Type.get -> string!
-HistoryVulcan.Core.Panels.PanelControl.Type.set -> void
-HistoryVulcan.Core.Panels.PanelDefinition
-HistoryVulcan.Core.Panels.PanelDefinition.Controls.get -> System.Collections.Generic.List<HistoryVulcan.Core.Panels.PanelControl!>!
-HistoryVulcan.Core.Panels.PanelDefinition.Controls.set -> void
-HistoryVulcan.Core.Panels.PanelDefinition.Id.get -> string!
-HistoryVulcan.Core.Panels.PanelDefinition.Id.set -> void
-HistoryVulcan.Core.Panels.PanelDefinition.PanelDefinition() -> void
-HistoryVulcan.Core.Panels.PanelDefinition.Ratio.get -> double
-HistoryVulcan.Core.Panels.PanelDefinition.Ratio.set -> void
-HistoryVulcan.Core.Panels.PanelDefinition.Side.get -> string!
-HistoryVulcan.Core.Panels.PanelDefinition.Side.set -> void
-HistoryVulcan.Core.Panels.PanelDefinition.Title.get -> string!
-HistoryVulcan.Core.Panels.PanelDefinition.Title.set -> void
-HistoryVulcan.Core.Panels.PanelDefinition.Visible.get -> bool
-HistoryVulcan.Core.Panels.PanelDefinition.Visible.set -> void
 HistoryVulcan.Core.Storage.ILayoutStore
 HistoryVulcan.Core.Storage.ILayoutStore.DeleteCurrent() -> void
 HistoryVulcan.Core.Storage.ILayoutStore.ListNamed() -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -453,12 +380,6 @@ static HistoryVulcan.Core.Logging.ShellLogExtensions.Error(this HistoryVulcan.Co
 static HistoryVulcan.Core.Logging.ShellLogExtensions.Info(this HistoryVulcan.Core.Logging.IShellLog! log, string! category, string! message) -> void
 static HistoryVulcan.Core.Logging.ShellLogExtensions.Warn(this HistoryVulcan.Core.Logging.IShellLog! log, string! category, string! message) -> void
 static HistoryVulcan.Core.Mcp.ClientSession.Create(HistoryVulcan.Core.Mcp.ClientKind kind, string! name, string! protocolVersion = "2025-03-26", string? id = null, string? remoteAddress = null, string? deviceId = null, string? authSubject = null, System.Collections.Generic.IEnumerable<string!>? scopes = null, bool isLoopback = false) -> HistoryVulcan.Core.Mcp.ClientSession!
-static HistoryVulcan.Core.Mcp.CommandManualGenerator.Render(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Mcp.CommandSchemaExporter! exporter, string! policy) -> string!
-static HistoryVulcan.Core.Mcp.CommandManualGenerator.Sha256(string! markdown) -> string!
-static HistoryVulcan.Core.Mcp.CommandSchemaExporter.BuildCommandText(string! commandName, System.Text.Json.JsonElement? arguments) -> string!
-static HistoryVulcan.Core.Mcp.CommandSchemaExporter.HardExclusionReason(string! commandName) -> string?
-static HistoryVulcan.Core.Mcp.CommandSchemaExporter.IsHardExcluded(string! commandName) -> bool
-static HistoryVulcan.Core.Mcp.CommandSchemaExporter.MakeToolName(string! commandName, System.Collections.Generic.HashSet<string!>! used) -> string!
 static HistoryVulcan.Core.Mcp.McpConfirmationScope.PreApproved.get -> bool
 static HistoryVulcan.Core.Mcp.McpConfirmationScope.RunPreApprovedAsync<T>(System.Func<System.Threading.Tasks.Task<T>!>! action) -> System.Threading.Tasks.Task<T>!
 static HistoryVulcan.Core.Mcp.McpExposurePolicy.HardExclusionReason(string! commandName) -> string?

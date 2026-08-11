@@ -1,9 +1,9 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Docking;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Core.Panels;
+using HistoryVulcan.Extensibility.Panels;
 
 namespace HistoryVulcan.Shell.Panels;
 

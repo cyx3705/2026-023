@@ -1,8 +1,9 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Mcp;
+using HistoryVulcan.Extensibility.Mcp;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.ServiceHost;
 using HistoryVulcan.Services.Web;

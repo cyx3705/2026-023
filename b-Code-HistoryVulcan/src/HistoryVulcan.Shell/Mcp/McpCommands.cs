@@ -1,4 +1,5 @@
-using HistoryVulcan.Core.Mcp;
+﻿using HistoryVulcan.Core.Mcp;
+using HistoryVulcan.Extensibility.Mcp;
 using HistoryVulcan.Services.Mcp;
 using System.Text;
 using System.Text.Json;

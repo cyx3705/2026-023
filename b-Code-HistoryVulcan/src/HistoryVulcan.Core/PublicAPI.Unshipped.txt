@@ -22,16 +22,6 @@ static HistoryVulcan.Core.Commands.ModuleDomainNaming.ToDomain(string! moduleNam
 static HistoryVulcan.Core.Mcp.McpExposurePolicy.DiagnosticCommandNames.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
 HistoryVulcan.Core.Commands.CommandRegistry.Domains() -> System.Collections.Generic.IReadOnlyList<string!>!
 HistoryVulcan.Core.Commands.CommandRegistry.IsRegisteredDomain(string? candidate) -> bool
-HistoryVulcan.Core.Commands.CommandClassLabels
-const HistoryVulcan.Core.Commands.CommandClassLabels.None = "无类" -> string!
-static HistoryVulcan.Core.Commands.CommandClassLabels.Display(string? commandClass) -> string!
-static HistoryVulcan.Core.Commands.CommandClassLabels.IsNone(string? commandClass) -> bool
-static HistoryVulcan.Core.Commands.CommandClassLabels.ToKey(string? label) -> string!
-HistoryVulcan.Core.Commands.DomainFocus
-const HistoryVulcan.Core.Commands.DomainFocus.All = "全部" -> string!
-static HistoryVulcan.Core.Commands.DomainFocus.IsUnfocused(string? domain) -> bool
-static HistoryVulcan.Core.Commands.DomainFocus.Resolve(string? input, string? focusedDomain, System.Func<string!, bool>! isRegisteredDomain) -> string!
-static HistoryVulcan.Core.Commands.DomainFocus.WouldPrefix(string? input, string? focusedDomain, System.Func<string!, bool>! isRegisteredDomain) -> bool
 BaseVariable.ModuleInfoBase
 BaseVariable.ModuleInfoBase.ModuleInfoBase() -> void
 virtual BaseVariable.ModuleInfoBase.Author.get -> string!
@@ -80,3 +70,86 @@ HistoryVulcan.Core.Commands.CommandBus.InvokeAsync(string! text, string! source,
 *REMOVED*HistoryVulcan.Core.Input.IGlobalShortcutModule.RegisterShortcuts(HistoryVulcan.Core.Input.IGlobalShortcutRegistrar! registrar) -> void
 *REMOVED*HistoryVulcan.Core.Input.IGlobalShortcutRegistrar
 *REMOVED*HistoryVulcan.Core.Input.IGlobalShortcutRegistrar.Register(HistoryVulcan.Core.Input.GlobalShortcutDescriptor! descriptor) -> System.IDisposable!
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Command.get -> string?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Command.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Default.get -> string?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Default.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Id.get -> string?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Id.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Items.get -> System.Collections.Generic.List<string!>?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Items.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Label.get -> string?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Label.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Max.get -> double?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Max.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Min.get -> double?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Min.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.PanelControl() -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Required.get -> bool
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Required.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Step.get -> double?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Step.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Style.get -> string?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Style.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Type.get -> string!
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Type.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Controls.get -> System.Collections.Generic.List<HistoryVulcan.Core.Panels.PanelControl!>!
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Controls.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Id.get -> string!
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Id.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.PanelDefinition() -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Ratio.get -> double
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Ratio.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Side.get -> string!
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Side.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Title.get -> string!
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Title.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Visible.get -> bool
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Visible.set -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Annotations.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+HistoryVulcan.Core.Commands.CommandDescriptor.Annotations.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Annotation(string! key) -> string?
+HistoryVulcan.Core.Commands.CommandDescriptor.HasAnnotation(string! key) -> bool
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualGenerator
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Applied.get -> bool
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Applied.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.CommandCount.get -> int
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.CommandCount.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.CommandManualPreview(string! Path, int CommandCount, string! Sha256, string! Markdown, bool Applied) -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Markdown.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Markdown.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Path.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Path.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Sha256.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Sha256.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandSchemaExporter
+*REMOVED*HistoryVulcan.Core.Mcp.CommandSchemaExporter.CommandSchemaExporter(HistoryVulcan.Core.Commands.CommandRegistry! registry) -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandSchemaExporter.DescriptionsProvider.get -> System.Func<System.Collections.Generic.IReadOnlyDictionary<string!, string!>!>?
+*REMOVED*HistoryVulcan.Core.Mcp.CommandSchemaExporter.DescriptionsProvider.set -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandSchemaExporter.ExportTools() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Mcp.McpToolInfo!>!
+*REMOVED*HistoryVulcan.Core.Mcp.CommandSchemaExporter.Find(string! nameOrTool) -> HistoryVulcan.Core.Mcp.McpToolInfo?
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.CommandName.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.CommandName.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.Customized.get -> bool
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.Customized.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.Dangerous.get -> bool
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.Dangerous.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.DefaultDescription.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.DefaultDescription.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.Description.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.Description.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.InputSchema.get -> System.Text.Json.Nodes.JsonObject!
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.InputSchema.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.McpToolInfo(string! ToolName, string! CommandName, string! Description, System.Text.Json.Nodes.JsonObject! InputSchema, bool Dangerous, string! DefaultDescription = "", bool Customized = false) -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.ToolName.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.ToolName.init -> void
+*REMOVED*static HistoryVulcan.Core.Mcp.CommandManualGenerator.Render(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Mcp.CommandSchemaExporter! exporter, string! policy) -> string!
+*REMOVED*static HistoryVulcan.Core.Mcp.CommandManualGenerator.Sha256(string! markdown) -> string!
+*REMOVED*static HistoryVulcan.Core.Mcp.CommandSchemaExporter.BuildCommandText(string! commandName, System.Text.Json.JsonElement? arguments) -> string!
+*REMOVED*static HistoryVulcan.Core.Mcp.CommandSchemaExporter.HardExclusionReason(string! commandName) -> string?
+*REMOVED*static HistoryVulcan.Core.Mcp.CommandSchemaExporter.IsHardExcluded(string! commandName) -> bool
+*REMOVED*static HistoryVulcan.Core.Mcp.CommandSchemaExporter.MakeToolName(string! commandName, System.Collections.Generic.HashSet<string!>! used) -> string!

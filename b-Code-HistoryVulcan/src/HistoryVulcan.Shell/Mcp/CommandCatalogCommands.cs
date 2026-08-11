@@ -1,9 +1,11 @@
-using HistoryVulcan.Core.Mcp;
+﻿using HistoryVulcan.Core.Mcp;
+using HistoryVulcan.Extensibility.Mcp;
 using HistoryVulcan.Services.Mcp;
 using System.IO;
 using System.Text;
 using System.Text.Json;
 using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Extensibility.Commands;
 
 namespace HistoryVulcan.Shell.Mcp;
 

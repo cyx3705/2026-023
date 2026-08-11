@@ -1,10 +1,12 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using HistoryVulcan.Core.Commands;
 
-namespace HistoryVulcan.Core.Mcp;
+using HistoryVulcan.Core.Mcp;
+
+namespace HistoryVulcan.Extensibility.Mcp;
 
 /// <summary>
 /// 一条指令的 MCP 工具形态(MC-01):tools/list 条目与本地 vulcan.mcp.schema 共用。

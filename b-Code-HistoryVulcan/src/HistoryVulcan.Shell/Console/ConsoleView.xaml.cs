@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Extensibility.Commands;
 using HistoryVulcan.Extensibility.CommandSurface;
 using HistoryVulcan.Core.Logging;
 

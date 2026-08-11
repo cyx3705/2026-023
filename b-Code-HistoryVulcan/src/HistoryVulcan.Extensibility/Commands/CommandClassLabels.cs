@@ -1,4 +1,8 @@
-namespace HistoryVulcan.Core.Commands;
+﻿using HistoryVulcan.Core.Commands;
+
+using HistoryVulcan.Core.Mcp;
+
+namespace HistoryVulcan.Extensibility.Commands;
 
 /// <summary>
 /// 「无类」显示标签的唯一真源（DEC-025）。两段名 <c>&lt;域&gt;.&lt;方法&gt;</c> 是该域的

@@ -1,8 +1,11 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
+using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
 
-namespace HistoryVulcan.Core.Mcp;
+using HistoryVulcan.Core.Mcp;
+
+namespace HistoryVulcan.Extensibility.Mcp;
 
 /// <summary>Provides this HistoryVulcan public contract member.</summary>
 public sealed record CommandManualPreview(
