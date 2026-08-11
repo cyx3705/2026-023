@@ -175,10 +175,10 @@
         <member name="M:HistoryVulcan.Services.Mcp.McpGateway.Dispose">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.ExecuteToolAsync(HistoryVulcan.Core.Clients.ClientSession,System.Text.Json.Nodes.JsonNode,HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Extensibility.Mcp.McpToolInfo,System.String,System.String,System.Boolean,System.String,System.Action{System.String,System.String,System.String})">
+        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.ExecuteToolAsync(HistoryVulcan.Core.Mcp.ClientSession,System.Text.Json.Nodes.JsonNode,HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Extensibility.Mcp.McpToolInfo,System.String,System.String,System.Boolean,System.String,System.Action{System.String,System.String,System.String})">
             <summary>组装指令经总线执行并映射为 MCP 结果;preApproved=true 时置确认预批准域(CX-03)。</summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.RelayConfirmAsync(HistoryVulcan.Core.Clients.ClientSession,HistoryVulcan.Core.Commands.CommandBus,System.String,System.Nullable{System.Text.Json.JsonElement},System.String)">
+        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.RelayConfirmAsync(HistoryVulcan.Core.Mcp.ClientSession,HistoryVulcan.Core.Commands.CommandBus,System.String,System.Nullable{System.Text.Json.JsonElement},System.String)">
             <summary>
             宿主确认中继(CX-02):复用描述符 ConfirmPrompt 文案,标注 MCP 客户端弹框由人裁决。
             返回批准、拒绝、确认超时或排队超时。ConfirmPrompt 对本次输入返回 null
@@ -736,7 +736,7 @@
         <member name="M:HistoryVulcan.Services.Web.WebGateway.DisconnectDevice(System.String)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.TryGetSession(System.String,HistoryVulcan.Core.Clients.ClientSession@)">
+        <member name="M:HistoryVulcan.Services.Web.WebGateway.TryGetSession(System.String,HistoryVulcan.Core.Mcp.ClientSession@)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Web.WebGateway.Start(System.Nullable{System.Int32})">
