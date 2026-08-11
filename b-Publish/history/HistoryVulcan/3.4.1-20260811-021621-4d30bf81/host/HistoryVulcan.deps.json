@@ -7,16 +7,16 @@
   "targets": {
     ".NETCoreApp,Version=v8.0": {},
     ".NETCoreApp,Version=v8.0/win-x64": {
-      "HistoryVulcan/3.5.0": {
+      "HistoryVulcan/3.4.1": {
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "3.5.0",
-          "OneHistory.HistoryVulcan.ServiceHost": "3.5.0",
-          "OneHistory.HistoryVulcan.Services": "3.5.0",
-          "OneHistory.HistoryVulcan.Shell": "3.5.0",
-          "HistoryVulcan.Core": "3.5.0.0",
-          "HistoryVulcan.ServiceHost": "3.5.0.0",
-          "HistoryVulcan.Services": "3.5.0.0",
-          "HistoryVulcan.Shell": "3.5.0.0"
+          "OneHistory.HistoryVulcan.Core": "3.4.1",
+          "OneHistory.HistoryVulcan.ServiceHost": "3.4.1",
+          "OneHistory.HistoryVulcan.Services": "3.4.1",
+          "OneHistory.HistoryVulcan.Shell": "3.4.1",
+          "HistoryVulcan.Core": "3.4.1.0",
+          "HistoryVulcan.ServiceHost": "3.4.1.0",
+          "HistoryVulcan.Services": "3.4.1.0",
+          "HistoryVulcan.Shell": "3.4.1.0"
         },
         "runtime": {
           "HistoryVulcan.dll": {}
@@ -94,87 +94,87 @@
           }
         }
       },
-      "OneHistory.HistoryVulcan.Core/3.5.0": {
+      "OneHistory.HistoryVulcan.Core/3.4.1": {
         "runtime": {
           "HistoryVulcan.Core.dll": {
-            "assemblyVersion": "3.5.0.0",
-            "fileVersion": "3.5.0.0"
+            "assemblyVersion": "3.4.1.0",
+            "fileVersion": "3.4.1.0"
           }
         }
       },
-      "OneHistory.HistoryVulcan.ServiceHost/3.5.0": {
+      "OneHistory.HistoryVulcan.ServiceHost/3.4.1": {
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "3.5.0",
-          "OneHistory.HistoryVulcan.Services": "3.5.0"
+          "OneHistory.HistoryVulcan.Core": "3.4.1",
+          "OneHistory.HistoryVulcan.Services": "3.4.1"
         },
         "runtime": {
           "HistoryVulcan.ServiceHost.dll": {
-            "assemblyVersion": "3.5.0.0",
-            "fileVersion": "3.5.0.0"
+            "assemblyVersion": "3.4.1.0",
+            "fileVersion": "3.4.1.0"
           }
         }
       },
-      "OneHistory.HistoryVulcan.Services/3.5.0": {
+      "OneHistory.HistoryVulcan.Services/3.4.1": {
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "3.5.0"
+          "OneHistory.HistoryVulcan.Core": "3.4.1"
         },
         "runtime": {
           "HistoryVulcan.Services.dll": {
-            "assemblyVersion": "3.5.0.0",
-            "fileVersion": "3.5.0.0"
+            "assemblyVersion": "3.4.1.0",
+            "fileVersion": "3.4.1.0"
           }
         }
       },
-      "OneHistory.HistoryVulcan.Shell/3.5.0": {
+      "OneHistory.HistoryVulcan.Shell/3.4.1": {
         "dependencies": {
           "Dirkster.AvalonDock": "4.72.1",
           "Dirkster.AvalonDock.Themes.VS2013": "4.72.1",
-          "OneHistory.HistoryVulcan.Core": "3.5.0",
-          "OneHistory.HistoryVulcan.Services": "3.5.0"
+          "OneHistory.HistoryVulcan.Core": "3.4.1",
+          "OneHistory.HistoryVulcan.Services": "3.4.1"
         },
         "runtime": {
           "HistoryVulcan.Shell.dll": {
-            "assemblyVersion": "3.5.0.0",
-            "fileVersion": "3.5.0.0"
+            "assemblyVersion": "3.4.1.0",
+            "fileVersion": "3.4.1.0"
           }
         }
       },
-      "HistoryVulcan.Core/3.5.0.0": {
+      "HistoryVulcan.Core/3.4.1.0": {
         "runtime": {
           "HistoryVulcan.Core.dll": {
-            "assemblyVersion": "3.5.0.0",
-            "fileVersion": "3.5.0.0"
+            "assemblyVersion": "3.4.1.0",
+            "fileVersion": "3.4.1.0"
           }
         }
       },
-      "HistoryVulcan.ServiceHost/3.5.0.0": {
+      "HistoryVulcan.ServiceHost/3.4.1.0": {
         "runtime": {
           "HistoryVulcan.ServiceHost.dll": {
-            "assemblyVersion": "3.5.0.0",
-            "fileVersion": "3.5.0.0"
+            "assemblyVersion": "3.4.1.0",
+            "fileVersion": "3.4.1.0"
           }
         }
       },
-      "HistoryVulcan.Services/3.5.0.0": {
+      "HistoryVulcan.Services/3.4.1.0": {
         "runtime": {
           "HistoryVulcan.Services.dll": {
-            "assemblyVersion": "3.5.0.0",
-            "fileVersion": "3.5.0.0"
+            "assemblyVersion": "3.4.1.0",
+            "fileVersion": "3.4.1.0"
           }
         }
       },
-      "HistoryVulcan.Shell/3.5.0.0": {
+      "HistoryVulcan.Shell/3.4.1.0": {
         "runtime": {
           "HistoryVulcan.Shell.dll": {
-            "assemblyVersion": "3.5.0.0",
-            "fileVersion": "3.5.0.0"
+            "assemblyVersion": "3.4.1.0",
+            "fileVersion": "3.4.1.0"
           }
         }
       }
     }
   },
   "libraries": {
-    "HistoryVulcan/3.5.0": {
+    "HistoryVulcan/3.4.1": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
@@ -193,42 +193,42 @@
       "path": "dirkster.avalondock.themes.vs2013/4.72.1",
       "hashPath": "dirkster.avalondock.themes.vs2013.4.72.1.nupkg.sha512"
     },
-    "OneHistory.HistoryVulcan.Core/3.5.0": {
+    "OneHistory.HistoryVulcan.Core/3.4.1": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "OneHistory.HistoryVulcan.ServiceHost/3.5.0": {
+    "OneHistory.HistoryVulcan.ServiceHost/3.4.1": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "OneHistory.HistoryVulcan.Services/3.5.0": {
+    "OneHistory.HistoryVulcan.Services/3.4.1": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "OneHistory.HistoryVulcan.Shell/3.5.0": {
+    "OneHistory.HistoryVulcan.Shell/3.4.1": {
       "type": "project",
       "serviceable": false,
       "sha512": ""
     },
-    "HistoryVulcan.Core/3.5.0.0": {
+    "HistoryVulcan.Core/3.4.1.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
     },
-    "HistoryVulcan.ServiceHost/3.5.0.0": {
+    "HistoryVulcan.ServiceHost/3.4.1.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
     },
-    "HistoryVulcan.Services/3.5.0.0": {
+    "HistoryVulcan.Services/3.4.1.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""
     },
-    "HistoryVulcan.Shell/3.5.0.0": {
+    "HistoryVulcan.Shell/3.4.1.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""

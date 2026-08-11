@@ -1,6 +1,6 @@
 # HistoryVulcan 复用说明
 
-这是其他项目和 AI 接入 HistoryVulcan 时应优先读取的首要入口。当前正式版本为 **3.5.0**，
+这是其他项目和 AI 接入 HistoryVulcan 时应优先读取的首要入口。当前正式版本为 **3.4.1**，
 可运行宿主位于同级 `host/`，当前版本消费合同位于同级 `docs/`；不要扫描发布归档、历史版本或框架源码来推断用法。
 
 ## 平台与运行
@@ -11,18 +11,18 @@
 - 外置模块必须遵守同版本 API、命令和 UI 风格合同；禁止复制 HistoryVulcan 源码或修改部署目录中的程序集。
 
 当前正式部署不提供 NuGet feed。确需把 HistoryVulcan 作为库嵌入其他宿主时，四个框架包必须从单独批准的
-兼容包源取得并固定为同一版本；不要把历史 Z feed 当作当前 3.5.0 合同。
+兼容包源取得并固定为同一版本；不要把历史 Z feed 当作当前 3.4.1 合同。
 
 兼容桌面应用只直接引用 Shell；`Core` 和 `Services` 会传递进入：
 
 ```xml
-<PackageReference Include="OneHistory.HistoryVulcan.Shell" Version="3.5.0" />
+<PackageReference Include="OneHistory.HistoryVulcan.Shell" Version="3.4.1" />
 ```
 
 兼容无窗服务宿主只直接引用 ServiceHost；`Core` 和 `Services` 会传递进入：
 
 ```xml
-<PackageReference Include="OneHistory.HistoryVulcan.ServiceHost" Version="3.5.0" />
+<PackageReference Include="OneHistory.HistoryVulcan.ServiceHost" Version="3.4.1" />
 ```
 
 只有同一进程同时承担桌面 Shell 和服务宿主职责时，才同时直接引用两者。

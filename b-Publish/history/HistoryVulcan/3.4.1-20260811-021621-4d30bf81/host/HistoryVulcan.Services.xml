@@ -298,11 +298,8 @@
             注册表变更经 WPF Dispatcher 序列化到 UI 线程。
             </summary>
         </member>
-        <member name="F:HistoryVulcan.Services.Modules.ModuleHost._moduleOfCommandResolver">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.#ctor(System.String,HistoryVulcan.Core.Logging.IShellLog)">
-            <summary>按模块目录与日志建立宿主；装载与命令注册由 Attach/Start 触发。</summary>
+            <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.#ctor(HistoryVulcan.Services.Modules.IModuleDiscoverySource,HistoryVulcan.Core.Logging.IShellLog)">
             <summary>Creates a module host backed by explicit Z-level manifest discovery.</summary>
@@ -415,9 +412,6 @@
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.RegisteredNames">
             <summary>实际注册成功的指令名(热重载时按此注销)。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.McpExposures">
-            <summary>Manifest-declared MCP exposure by module owner for the live snapshot.</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Metas">
             <summary>模块元信息(vulcan.module.list);CommandCount 在注册完成后定稿。</summary>
