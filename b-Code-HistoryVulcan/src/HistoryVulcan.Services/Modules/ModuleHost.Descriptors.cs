@@ -1,10 +1,9 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
 using HistoryVulcan.Core.Commands;
-using HistoryVulcan.Core.Input;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Core.Modules;
@@ -202,7 +201,6 @@ public sealed partial class ModuleHost
         UnbindMcpExposurePolicy();
         _watcher?.Dispose();
         _debounce?.Dispose();
-        DisposeShortcutRegistrations(_current);
         var ui = UiContext;
         if (ui != null)
         {
@@ -249,15 +247,6 @@ public sealed partial class ModuleHost
         snapshot.RegisteredNames.Clear();
     }
 
-    private static void DisposeShortcutRegistrations(Snapshot snapshot)
-    {
-        foreach (var registration in snapshot.ShortcutRegistrations)
-        {
-            try { registration.Dispose(); }
-            catch { }
-        }
-        snapshot.ShortcutRegistrations.Clear();
-    }
 
     // ---------------------------------------------------------------- 快照与加载上下文
 
@@ -277,9 +266,7 @@ public sealed partial class ModuleHost
 
         public List<(IUiModule Module, string Owner)> UiModules { get; } = new();
 
-        public List<(IGlobalShortcutModule Module, string Owner)> PendingShortcuts { get; } = new();
 
-        public List<IDisposable> ShortcutRegistrations { get; } = new();
 
         /// <summary>Manifest-declared MCP exposure by module owner for the live snapshot.</summary>
         public Dictionary<string, string?> McpExposures { get; } = new(StringComparer.OrdinalIgnoreCase);

@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Windows;
 using HistoryVulcan.Core.Commands;
 
@@ -29,8 +29,6 @@ public static class ServiceCommands
                 mcp = composition.Mcp?.IsRunning ?? false,
                 web = composition.Web?.IsRunning ?? false,
                 modules = composition.Modules?.Modules.Count ?? 0,
-                shortcuts = composition.GlobalShortcuts?.Registrations.Count ?? 0,
-                shortcutsEnabled = composition.GlobalShortcuts?.IsEnabled ?? false,
             })),
         }, source);
 
@@ -70,24 +68,6 @@ public static class ServiceCommands
 
         RegisterFrontendLifecycle(registry, composition, executablePath, source);
 
-        registry.Register(new CommandDescriptor
-        {
-            Name = "vulcan.app.shortcuts",
-            Domain = "vulcan",
-            CommandClass = "app",
-            Summary = "列出已注册的全局快捷键（注册与派发归 HistoryMercury）",
-            Readonly = true,
-            Handler = CommandDescriptor.Sync(_ =>
-            {
-                var shortcuts = composition.GlobalShortcuts?.Registrations ?? [];
-                return CommandResult.Ok(
-                    shortcuts.Count == 0
-                        ? "当前没有全局快捷键"
-                        : string.Join('\n', shortcuts.Select(item =>
-                            $"{item.Owner}/{item.Id}: {Format(item)} -> {item.CommandText}")),
-                    shortcuts);
-            }),
-        }, source);
 
         registry.Register(new CommandDescriptor
         {
@@ -143,10 +123,6 @@ public static class ServiceCommands
             }),
         }, source);
     }
-
-    private static string Format(HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo info)
-        => string.Join(" ", info.Strokes.Select(stroke =>
-            $"{stroke.Modifiers}+VK_{stroke.VirtualKey:X2}"));
 
     private static void RegisterFrontendLifecycle(
         CommandRegistry registry,

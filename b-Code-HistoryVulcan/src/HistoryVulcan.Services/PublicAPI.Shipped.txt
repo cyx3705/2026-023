@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 HistoryVulcan.Services.AppPaths
 HistoryVulcan.Services.AppPaths.AppPaths(string! appName, bool createBusinessDirectories = true) -> void
 HistoryVulcan.Services.AppPaths.AppPaths(string! appName, string! rootDirectory, bool createBusinessDirectories = true) -> void
@@ -158,8 +158,6 @@ HistoryVulcan.Services.Modules.ModuleHost.EnableFileWatching.get -> bool
 HistoryVulcan.Services.Modules.ModuleHost.EnableFileWatching.set -> void
 HistoryVulcan.Services.Modules.ModuleHost.EnableUiModules.get -> bool
 HistoryVulcan.Services.Modules.ModuleHost.EnableUiModules.set -> void
-HistoryVulcan.Services.Modules.ModuleHost.GlobalShortcuts.get -> HistoryVulcan.Core.Input.IGlobalShortcutHost?
-HistoryVulcan.Services.Modules.ModuleHost.GlobalShortcuts.set -> void
 HistoryVulcan.Services.Modules.ModuleHost.ModuleHost(string! modulesDir, HistoryVulcan.Core.Logging.IShellLog! log) -> void
 HistoryVulcan.Services.Modules.ModuleHost.Modules.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Modules.ModuleMeta!>!
 HistoryVulcan.Services.Modules.ModuleHost.ModulesDirectory.get -> string!

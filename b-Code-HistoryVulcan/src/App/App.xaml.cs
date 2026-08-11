@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -8,7 +8,6 @@ using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Docking;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Core.Input;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.ServiceHost;
 using HistoryVulcan.Services;
@@ -205,13 +204,15 @@ public partial class App : Application
         var registry = new CommandRegistry();
         var bus = new CommandBus(registry, log);
         var discoveryRoots = ResolveModuleDiscoveryRoots(settings);
-        var shortcuts = TryCreateGlobalShortcutHost(bus, log, discoveryRoots);
+        // 全局快捷键不再由宿主装配。此前这里要先用 Assembly.LoadFrom 全盘预扫描模块 DLL
+        // （不进 ALC、不可卸载）找出 IGlobalShortcutHost 实现，再按约定构造签名反射构造——
+        // 为一个「按键 → 命令名」的能力付出了预扫描 + 类型契约 + 扫描驱动三重成本。
+        // 现由提供方自持并经 <域>.hotkey.* 命令暴露，宿主不需要知道快捷键这个概念存在。
         var modules = new ModuleHost(
             new ZModuleDiscoverySource(discoveryRoots), log)
         {
             EnableCommands = true,
             EnableUiModules = false,
-            GlobalShortcuts = shortcuts,
         };
         var web = new WebGateway(() => bus, settings, log)
         {
@@ -256,7 +257,6 @@ public partial class App : Application
             Settings = settings,
             Log = log,
             Modules = modules,
-            GlobalShortcuts = shortcuts,
             Mcp = mcp,
             Web = web,
             EndpointFile = Path.Combine(servicePaths.Root, "endpoint.json"),
@@ -377,80 +377,6 @@ public partial class App : Application
 
         if (migrated > 0)
             log.Info("mcp", $"已迁移 {migrated} 项旧前端 MCP 配置到后台设置");
-    }
-
-    /// <summary>
-    /// 按合同发现全局快捷键宿主(DEC-023)。3.3.1 之前这里硬编码了 "HistoryMercury.dll" 与
-    /// "Mercury.Input.GlobalShortcutService" 两个字符串,并额外探测兄弟仓库的 bin 目录——
-    /// 框架点名具体模块,换实现或改命名空间就静默失效。
-    /// 现在只在已发现的模块目录里找实现了 <see cref="IGlobalShortcutHost"/> 的公开类型,
-    /// 谁提供实现由部署决定,框架不认识任何具体模块名。
-    /// </summary>
-    private static IGlobalShortcutHost? TryCreateGlobalShortcutHost(
-        CommandBus bus,
-        IShellLog log,
-        IReadOnlyList<string> discoveryRoots)
-    {
-        foreach (var candidate in EnumerateModuleAssemblies(discoveryRoots))
-        {
-            Type[] types;
-            try
-            {
-                types = Assembly.LoadFrom(candidate).GetTypes();
-            }
-            catch (Exception ex) when (ex is BadImageFormatException
-                                           or FileLoadException
-                                           or ReflectionTypeLoadException)
-            {
-                continue;
-            }
-
-            var implementation = types.FirstOrDefault(type =>
-                type is { IsAbstract: false, IsPublic: true }
-                && typeof(IGlobalShortcutHost).IsAssignableFrom(type));
-            if (implementation == null)
-                continue;
-
-            try
-            {
-                // 合同构造签名:(CommandBus, IShellLog);缺失时退回无参构造。
-                var host = implementation.GetConstructor([typeof(CommandBus), typeof(IShellLog)]) != null
-                    ? (IGlobalShortcutHost)Activator.CreateInstance(implementation, bus, log)!
-                    : (IGlobalShortcutHost)Activator.CreateInstance(implementation)!;
-                log.Info("hotkey", $"全局快捷键宿主: {implementation.FullName}({Path.GetFileName(candidate)})");
-                return host;
-            }
-            catch (Exception ex)
-            {
-                log.Warn("hotkey", $"构造全局快捷键宿主 {implementation.FullName} 失败: {ex.Message}");
-            }
-        }
-
-        log.Info("hotkey", "未发现 IGlobalShortcutHost 实现，全局快捷键未启用。");
-        return null;
-    }
-
-    /// <summary>枚举模块发现根下的候选程序集;不认识任何具体模块名。</summary>
-    private static IEnumerable<string> EnumerateModuleAssemblies(IReadOnlyList<string> discoveryRoots)
-    {
-        foreach (var root in discoveryRoots)
-        {
-            if (!Directory.Exists(root))
-                continue;
-
-            string[] files;
-            try
-            {
-                files = Directory.GetFiles(root, "*.dll", SearchOption.AllDirectories);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                continue;
-            }
-
-            foreach (var file in files.OrderByDescending(File.GetLastWriteTimeUtc))
-                yield return file;
-        }
     }
 
     private static void RegisterServiceModuleCommands(

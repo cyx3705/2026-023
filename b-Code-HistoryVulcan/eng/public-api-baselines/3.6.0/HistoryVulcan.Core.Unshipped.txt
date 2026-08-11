@@ -1,5 +1,4 @@
-﻿#nullable enable
-HistoryVulcan.Core.Commands.CommandDescriptor.CommandClass.get -> string?
+﻿HistoryVulcan.Core.Commands.CommandDescriptor.CommandClass.get -> string?
 HistoryVulcan.Core.Commands.CommandDescriptor.CommandClass.init -> void
 HistoryVulcan.Core.Commands.CommandDescriptor.Domain.get -> string?
 HistoryVulcan.Core.Commands.CommandDescriptor.Domain.init -> void

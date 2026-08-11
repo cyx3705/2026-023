@@ -1,11 +1,10 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
 using System.Xml.Linq;
 using HistoryVulcan.Core.Commands;
-using HistoryVulcan.Core.Input;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Core.Modules;
@@ -102,8 +101,6 @@ public sealed partial class ModuleHost : IDisposable
     /// <summary>命令工作台挂载点；无窗服务进程或未装配 Shell 时保持 null。</summary>
     public IShellCommandWorkbenchHost? CommandWorkbench { get; set; }
 
-    /// <summary>后台宿主提供的全局快捷键注册器；前端 UI 宿主保持 null。</summary>
-    public IGlobalShortcutHost? GlobalShortcuts { get; set; }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public string ModulesDirectory => _dir;
@@ -310,8 +307,6 @@ public sealed partial class ModuleHost : IDisposable
 
     private void SwapRegistrations(Snapshot old, Snapshot next)
     {
-        DisposeShortcutRegistrations(old);
-        RegisterShortcuts(next);
 
         if (_registry == null)
         {
@@ -409,28 +404,6 @@ public sealed partial class ModuleHost : IDisposable
     private string? ResolveModuleExposure(string moduleName)
         => _current.McpExposures.GetValueOrDefault(moduleName);
 
-    private void RegisterShortcuts(Snapshot snapshot)
-    {
-        if (GlobalShortcuts == null)
-            return;
-
-        foreach (var (module, owner) in snapshot.PendingShortcuts)
-        {
-            IGlobalShortcutRegistrar? registrar = null;
-            try
-            {
-                registrar = GlobalShortcuts.CreateOwnerRegistrar(owner);
-                module.RegisterShortcuts(registrar);
-                snapshot.ShortcutRegistrations.Add(registrar);
-            }
-            catch (Exception ex)
-            {
-                try { registrar?.Dispose(); }
-                catch { }
-                _log.Warn("hotkey", $"模块 {owner} 快捷键注册失败: {ex.Message}");
-            }
-        }
-    }
 
     /// <summary>
     /// 返回按旧命令名前缀计算的冲突集合。仅保留给旧消费方诊断；
@@ -634,25 +607,6 @@ public sealed partial class ModuleHost : IDisposable
 
         var discoveredOwner = discovered?.Name;
 
-        if (GlobalShortcuts != null && OperatingSystem.IsWindows())
-        {
-            var owner = discoveredOwner ?? (slot.Length > 0 ? slot : Path.GetFileNameWithoutExtension(dllPath));
-            foreach (var shortcutType in types.Where(type =>
-                         type.IsPublic && !type.IsAbstract
-                         && typeof(IGlobalShortcutModule).IsAssignableFrom(type)))
-            {
-                try
-                {
-                    var module = (IGlobalShortcutModule)snap.GetInstance(shortcutType);
-                    snap.PendingShortcuts.Add((module, owner));
-                }
-                catch (Exception ex)
-                {
-                    _log.Warn("hotkey", $"实例化模块 {owner} 快捷键入口失败: {ex.Message}");
-                }
-            }
-        }
-
         if (uiEnabled && EnableUiModules)
         {
             var owner = discoveredOwner ?? (slot.Length > 0 ? slot : Path.GetFileNameWithoutExtension(dllPath));
@@ -811,7 +765,6 @@ public sealed partial class ModuleHost : IDisposable
         Type[] lifecycleContracts =
         [
             typeof(IModuleContextAware),
-            typeof(IGlobalShortcutModule),
             typeof(IUiModule),
         ];
 

@@ -1,42 +1,4 @@
-#nullable enable
-HistoryVulcan.Core.Input.GlobalShortcutDescriptor
-HistoryVulcan.Core.Input.GlobalShortcutDescriptor.GlobalShortcutDescriptor(string! Id, System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Input.GlobalShortcutStroke!>! Strokes, string! CommandText, int MaxIntervalMilliseconds = 350) -> void
-HistoryVulcan.Core.Input.GlobalShortcutDescriptor.CommandText.get -> string!
-HistoryVulcan.Core.Input.GlobalShortcutDescriptor.CommandText.init -> void
-HistoryVulcan.Core.Input.GlobalShortcutDescriptor.Id.get -> string!
-HistoryVulcan.Core.Input.GlobalShortcutDescriptor.Id.init -> void
-HistoryVulcan.Core.Input.GlobalShortcutDescriptor.MaxIntervalMilliseconds.get -> int
-HistoryVulcan.Core.Input.GlobalShortcutDescriptor.MaxIntervalMilliseconds.init -> void
-HistoryVulcan.Core.Input.GlobalShortcutDescriptor.Strokes.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Input.GlobalShortcutStroke!>!
-HistoryVulcan.Core.Input.GlobalShortcutDescriptor.Strokes.init -> void
-HistoryVulcan.Core.Input.GlobalShortcutModifiers
-HistoryVulcan.Core.Input.GlobalShortcutModifiers.Alt = 1 -> HistoryVulcan.Core.Input.GlobalShortcutModifiers
-HistoryVulcan.Core.Input.GlobalShortcutModifiers.Control = 2 -> HistoryVulcan.Core.Input.GlobalShortcutModifiers
-HistoryVulcan.Core.Input.GlobalShortcutModifiers.None = 0 -> HistoryVulcan.Core.Input.GlobalShortcutModifiers
-HistoryVulcan.Core.Input.GlobalShortcutModifiers.Shift = 4 -> HistoryVulcan.Core.Input.GlobalShortcutModifiers
-HistoryVulcan.Core.Input.GlobalShortcutModifiers.Windows = 8 -> HistoryVulcan.Core.Input.GlobalShortcutModifiers
-HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo
-HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.CommandText.get -> string!
-HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.CommandText.init -> void
-HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.Id.get -> string!
-HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.Id.init -> void
-HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.MaxIntervalMilliseconds.get -> int
-HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.MaxIntervalMilliseconds.init -> void
-HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.Owner.get -> string!
-HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.Owner.init -> void
-HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.Strokes.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Input.GlobalShortcutStroke!>!
-HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.Strokes.init -> void
-HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.GlobalShortcutRegistrationInfo(string! Id, string! Owner, System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Input.GlobalShortcutStroke!>! Strokes, string! CommandText, int MaxIntervalMilliseconds) -> void
-HistoryVulcan.Core.Input.GlobalShortcutStroke
-HistoryVulcan.Core.Input.GlobalShortcutStroke.GlobalShortcutStroke(int VirtualKey, HistoryVulcan.Core.Input.GlobalShortcutModifiers Modifiers = HistoryVulcan.Core.Input.GlobalShortcutModifiers.None) -> void
-HistoryVulcan.Core.Input.GlobalShortcutStroke.Modifiers.get -> HistoryVulcan.Core.Input.GlobalShortcutModifiers
-HistoryVulcan.Core.Input.GlobalShortcutStroke.Modifiers.init -> void
-HistoryVulcan.Core.Input.GlobalShortcutStroke.VirtualKey.get -> int
-HistoryVulcan.Core.Input.GlobalShortcutStroke.VirtualKey.init -> void
-HistoryVulcan.Core.Input.IGlobalShortcutModule
-HistoryVulcan.Core.Input.IGlobalShortcutModule.RegisterShortcuts(HistoryVulcan.Core.Input.IGlobalShortcutRegistrar! registrar) -> void
-HistoryVulcan.Core.Input.IGlobalShortcutRegistrar
-HistoryVulcan.Core.Input.IGlobalShortcutRegistrar.Register(HistoryVulcan.Core.Input.GlobalShortcutDescriptor! descriptor) -> System.IDisposable!
+﻿#nullable enable
 HistoryVulcan.Core.AppIdentity
 HistoryVulcan.Core.ApplicationIdentity
 HistoryVulcan.Core.ApplicationIdentity.ApplicationIdentity(string! Name, string! Version, string! InformationalVersion, string! FileVersion) -> void

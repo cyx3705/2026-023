@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -78,17 +78,6 @@ public static class ServiceHost
             () => app.Shutdown(),
             servicePath,
             serviceArguments: serviceArguments);
-        if (composition.GlobalShortcuts != null && OperatingSystem.IsWindows())
-        {
-            try
-            {
-                composition.GlobalShortcuts.Start();
-            }
-            catch (Exception ex)
-            {
-                composition.Log.Warn("hotkey", $"全局快捷键服务启动失败: {ex.Message}");
-            }
-        }
 
         // The module registry is authoritative for both Web and MCP. Complete the first
         // synchronous load before either listener is opened so the first remote catalog

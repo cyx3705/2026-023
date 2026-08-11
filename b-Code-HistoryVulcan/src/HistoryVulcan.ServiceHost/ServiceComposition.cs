@@ -1,5 +1,4 @@
-using HistoryVulcan.Core.Commands;
-using HistoryVulcan.Core.Input;
+﻿using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Modules;
 using HistoryVulcan.Core.Storage;
@@ -24,7 +23,6 @@ public sealed class ServiceComposition : IDisposable
 
     public ModuleHost? Modules { get; init; }
 
-    public IGlobalShortcutHost? GlobalShortcuts { get; init; }
 
     public McpGateway? Mcp { get; init; }
 
@@ -46,7 +44,6 @@ public sealed class ServiceComposition : IDisposable
         Web?.Dispose();
         Mcp?.Dispose();
         Modules?.Dispose();
-        GlobalShortcuts?.Dispose();
         DisposeApplicationServices?.Invoke();
         if (Log is IDisposable disposable)
             disposable.Dispose();

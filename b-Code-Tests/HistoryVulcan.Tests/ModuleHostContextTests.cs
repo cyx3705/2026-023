@@ -1,5 +1,4 @@
-using HistoryVulcan.Core.Commands;
-using HistoryVulcan.Core.Input;
+﻿using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Modules;
 using HistoryVulcan.Core.Storage;
@@ -141,45 +140,6 @@ namespace HistoryVulcan.Tests
             }
         }
 
-        [Fact]
-        public void ReloadReplacesOwnedGlobalShortcutsWithoutConflictOrLeak()
-        {
-            var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));
-            var modulesDirectory = Path.Combine(root, "modules");
-            var slotDirectory = Path.Combine(modulesDirectory, "context-fixture");
-            Directory.CreateDirectory(slotDirectory);
-            File.Copy(typeof(ContextFixtureModuleInfo).Assembly.Location,
-                Path.Combine(slotDirectory, "ContextFixture.dll"));
-
-            var log = new TestLog();
-            var shortcuts = new TestShortcutHost();
-            var host = new ModuleHost(modulesDirectory, log)
-            {
-                EnableFileWatching = false,
-                EnableUiModules = false,
-                GlobalShortcuts = shortcuts,
-            };
-
-            try
-            {
-                host.Start();
-                Assert.Single(shortcuts.Registrations);
-
-                host.Reload();
-
-                var registration = Assert.Single(shortcuts.Registrations);
-                Assert.Equal("context-fixture", registration.Owner);
-                Assert.Equal("reload-probe", registration.Id);
-                Assert.DoesNotContain(log.Entries,
-                    item => item.Category == "hotkey" && item.Level == ShellLogLevel.Warn);
-            }
-            finally
-            {
-                host.Dispose();
-                Assert.Empty(shortcuts.Registrations);
-                Directory.Delete(root, recursive: true);
-            }
-        }
 
         private sealed class MemorySettings : ISettingsService
         {
@@ -211,53 +171,6 @@ namespace HistoryVulcan.Tests
             public IReadOnlyList<ShellLogEntry> Snapshot() => Entries;
         }
 
-        private sealed class TestShortcutHost : IGlobalShortcutHost
-        {
-            private readonly Dictionary<string, GlobalShortcutRegistrationInfo> _registrations =
-                new(StringComparer.OrdinalIgnoreCase);
-
-            public bool IsEnabled => true;
-            public IReadOnlyList<GlobalShortcutRegistrationInfo> Registrations => _registrations.Values.ToArray();
-            public void Start() { }
-            public void Stop() { }
-
-            public IDisposable Register(GlobalShortcutDescriptor descriptor, string owner)
-            {
-                if (_registrations.Values.Any(item =>
-                        item.Strokes.Take(Math.Min(item.Strokes.Count, descriptor.Strokes.Count))
-                            .SequenceEqual(descriptor.Strokes.Take(Math.Min(item.Strokes.Count, descriptor.Strokes.Count)))))
-                    throw new InvalidOperationException($"快捷键冲突: {descriptor.Id}");
-                var key = owner + "/" + descriptor.Id;
-                _registrations.Add(key, new GlobalShortcutRegistrationInfo(
-                    descriptor.Id, owner, descriptor.Strokes, descriptor.CommandText,
-                    descriptor.MaxIntervalMilliseconds));
-                return new ActionDisposable(() => _registrations.Remove(key));
-            }
-
-            public IGlobalShortcutRegistrar CreateOwnerRegistrar(string owner)
-                => new OwnerRegistrar(this, owner);
-
-            public void UnregisterOwner(string owner)
-            {
-                foreach (var key in _registrations.Keys
-                             .Where(key => key.StartsWith(owner + "/", StringComparison.OrdinalIgnoreCase))
-                             .ToArray())
-                    _registrations.Remove(key);
-            }
-
-            public void Dispose() => _registrations.Clear();
-
-            private sealed class OwnerRegistrar(TestShortcutHost host, string owner) : IGlobalShortcutRegistrar
-            {
-                public IDisposable Register(GlobalShortcutDescriptor descriptor) => host.Register(descriptor, owner);
-                public void Dispose() => host.UnregisterOwner(owner);
-            }
-
-            private sealed class ActionDisposable(Action dispose) : IDisposable
-            {
-                public void Dispose() => dispose();
-            }
-        }
     }
 
     public sealed class ContextFixtureModuleInfo : BaseVariable.ModuleInfoBase
@@ -290,14 +203,6 @@ namespace HistoryVulcan.Tests
 
         [ModuleCommand(CommandClass = "probe")]
         public string Probe() => "reflected";
-    }
-
-    public sealed class ContextShortcutFixture : IGlobalShortcutModule
-    {
-        public void RegisterShortcuts(IGlobalShortcutRegistrar registrar)
-            => registrar.Register(new GlobalShortcutDescriptor(
-                "reload-probe", [new GlobalShortcutStroke(0xBF), new GlobalShortcutStroke(0xBF)],
-                "contextfixture.context-probe"));
     }
 
 }

@@ -87,6 +87,51 @@ public sealed class CommandBus
     public event Action<string, string, CommandResult>? Executed;
 
     /// <summary>
+    /// 安静调用通道:执行指令但不回显、不入历史、不触发 <see cref="Executed"/>。
+    ///
+    /// <see cref="ExecuteAsync"/> 是**操作者通道**——每次调用都会把指令与结果写进日志,
+    /// 供人和 AI 追溯。宿主自身的高频内部调用(逐键补全、状态轮询一类)若走那条路,
+    /// 会把控制台灌满,问题不在延迟而在语义:那些调用不是"操作"。
+    ///
+    /// 本方法让宿主与模块之间可以按**命令名**而不是按**类型**集成:调用方只依赖一个
+    /// 字符串和本总线,不依赖被调方的 CLR 契约,因此被调方可以自由演进而不触动宿主公开面。
+    /// 面向用户的动作仍应走 <see cref="ExecuteAsync"/>,不要用本方法绕过审计。
+    /// </summary>
+    /// <param name="text">指令文本,语法与 <see cref="ExecuteAsync"/> 一致。</param>
+    /// <param name="source">来源标签;仅用于确认路由与远端判定,不会被回显。</param>
+    /// <param name="cancellation">取消令牌。</param>
+    public async Task<CommandResult> InvokeAsync(
+        string text,
+        string source,
+        CancellationToken cancellation = default)
+    {
+        var trimmed = text.Trim();
+        try
+        {
+            return await ExecuteCoreAsync(
+                trimmed,
+                source,
+                TaxonomyOfCommandText(trimmed),
+                cancellation).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            return CommandResult.Fail("指令已取消");
+        }
+        catch (Exception ex)
+        {
+            // 与 ExecuteAsync 同样的兜底(N-05):总线自身缺陷不得击穿宿主。
+            // 安静通道不回显,但内部错误仍需留痕,否则故障会静默消失。
+            var safeError = ex.GetType().Name;
+            _log.Log(
+                ShellLogLevel.Error,
+                EchoCategoryPrefix + "internal",
+                $"总线内部错误({safeError}) 于安静调用: {TaxonomyOfCommandText(trimmed).Domain}");
+            return CommandResult.Fail($"总线内部错误: {safeError}");
+        }
+    }
+
+    /// <summary>
     /// 执行一行指令文本。source 为来源标签(C-01):UI / 手动 / 脚本:文件名 / layout。
     /// 返回值在指令(含异步长任务)完成后才落定;方法自身不抛异常。
     /// </summary>
