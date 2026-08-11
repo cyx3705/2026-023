@@ -81,21 +81,7 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
             log.Log(ShellLogLevel.Fatal, "app", $"未处理异常(非 UI 线程): {args.ExceptionObject}");
 
-        var config = new ShellConfig
-        {
-            AppName = identity.Name,
-            AppVersion = identity.Version,
-            EnableModules = false,
-            EnableUiModules = true,
-            // 装配 MCP 网关，使 vulcan.mcp.* 指令可用。装配不等于监听：
-            // 端口只在显式执行 vulcan.mcp.start（或 mcp.autostart=true）时才打开。
-            EnableMcp = true,
-            RequireConfirmedModuleSources = true,
-            EnableRemoteManagementViews = true,
-            CloseBehavior = ShellCloseBehavior.Hide,
-            // HistoryVulcan 独立宿主是模块生命周期的最终所有者；Janus 等产品只声明
-            // 自己的业务窗口与模块，不再包装第二套 ModuleHost/ModulesView。
-        };
+        var config = CreateStandaloneFrontendConfig(identity);
         config.ModuleDiscoveryRoots.AddRange(ResolveModuleDiscoveryRoots(settings));
 
         // 默认布局保留控制台底部停靠位置；业务页面由模块提供。
@@ -150,15 +136,17 @@ public partial class App : Application
             {
                 if (source.Equals("Service:Relay", StringComparison.OrdinalIgnoreCase))
                     return false;
-                if (text.TrimStart().StartsWith("vulcan.app.", StringComparison.OrdinalIgnoreCase))
-                    return false;
 
                 // 本机已登记且需 UI 线程的页面状态命令（如 HistoryMinerva.convert）就地执行，
                 // 勿转到服务进程——那边没有页面实例。
                 try
                 {
-                    var name = CommandParser.Parse(text.Trim()).Name;
-                    if (window.Commands.Registry.TryGet(name, out var descriptor)
+                    var parsed = CommandParser.Parse(text.Trim());
+                    if (IsBackendMcpSettingCommand(parsed))
+                        return true;
+                    if (parsed.Name.StartsWith("vulcan.app.", StringComparison.OrdinalIgnoreCase))
+                        return false;
+                    if (window.Commands.Registry.TryGet(parsed.Name, out var descriptor)
                         && descriptor.RequiresUiThread
                         && descriptor.ExecutionSite != CommandExecutionSite.Frontend)
                         return false;
@@ -213,6 +201,7 @@ public partial class App : Application
         var servicePaths = new AppPaths(identity.Name, Path.Combine(paths.Root, "service"));
         var log = new ShellLog(servicePaths);
         var settings = new SettingsService(servicePaths);
+        MigrateLegacyMcpSettings(new SettingsService(paths), settings, log);
         var registry = new CommandRegistry();
         var bus = new CommandBus(registry, log);
         var discoveryRoots = ResolveModuleDiscoveryRoots(settings);
@@ -234,14 +223,29 @@ public partial class App : Application
 
         modules.Attach(registry, bus, settings, servicePaths.Root);
         RegisterServiceModuleCommands(registry, modules, settings);
-        // The backend owns the authoritative catalog. Register its read-only catalog
-        // commands before the frontend publishes UI capabilities so vulcan.command.list and
-        // vulcan.command.domains can expose the eventual combined registry.
-        HistoryVulcan.Shell.Mcp.CommandCatalogCommands.RegisterAll(
+        RegisterServiceMcpSettingCommands(registry, settings);
+
+        // The backend registry owns both module commands and the MCP projection. Prompt and
+        // audit state stay at the historical application root so moving the listener does not
+        // orphan existing governance revisions or call history.
+        var prompts = new Services.Mcp.PromptGovernanceStore(paths.Root, log);
+        var audit = new Services.Mcp.McpAuditRecorder(paths.Root, log);
+        var confirmation = new ServiceConfirmation();
+        Services.Mcp.McpGateway? mcp = null;
+        mcp = new Services.Mcp.McpGateway(
+            () => bus,
+            settings,
+            log,
+            audit,
+            prompts,
+            identity,
+            confirmation.ConfirmRemote);
+        HistoryVulcan.Shell.Mcp.McpCommands.RegisterAll(
             registry,
-            new Core.Mcp.CommandSchemaExporter(registry),
-            prompts: null!,
-            gateway: static () => null,
+            () => bus,
+            () => mcp,
+            settings,
+            prompts,
             source: "framework:service");
 
         return new ServiceComposition
@@ -253,11 +257,126 @@ public partial class App : Application
             Log = log,
             Modules = modules,
             GlobalShortcuts = shortcuts,
+            Mcp = mcp,
             Web = web,
             EndpointFile = Path.Combine(servicePaths.Root, "endpoint.json"),
             RegisterAutostartOnFirstRun = true,
             Autostart = new WindowsRunAutostartManager(),
         };
+    }
+
+    internal static ShellConfig CreateStandaloneFrontendConfig(
+        HistoryVulcan.Core.ApplicationIdentity identity)
+        => new()
+        {
+            AppName = identity.Name,
+            AppVersion = identity.Version,
+            EnableModules = false,
+            EnableUiModules = true,
+            // 独立双进程宿主的 MCP 由后台权威注册表统一承载；前端只保留远程管理视图。
+            EnableMcp = false,
+            RequireConfirmedModuleSources = true,
+            EnableRemoteManagementViews = true,
+            CloseBehavior = ShellCloseBehavior.Hide,
+            // HistoryVulcan 独立宿主是模块生命周期的最终所有者；Janus 等产品只声明
+            // 自己的业务窗口与模块，不再包装第二套 ModuleHost/ModulesView。
+        };
+
+    internal static bool IsBackendMcpSettingCommand(ParsedCommand parsed)
+    {
+        if (!parsed.Name.Equals("vulcan.app.get", StringComparison.OrdinalIgnoreCase)
+            && !parsed.Name.Equals("vulcan.app.set", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var key = parsed.Named.GetValueOrDefault("key") ?? parsed.Positionals.FirstOrDefault();
+        return key?.StartsWith("mcp.", StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    internal static void RegisterServiceMcpSettingCommands(
+        CommandRegistry registry,
+        ISettingsService settings)
+    {
+        registry.Register(BuiltinCommandDefinitions.Bind(
+            "vulcan.app.set",
+            CommandDescriptor.Sync(context =>
+            {
+                var key = context.RequireString("key");
+                if (!key.StartsWith("mcp.", StringComparison.OrdinalIgnoreCase))
+                    return CommandResult.Fail("后台设置入口只接受 mcp.* 配置键");
+
+                var value = context.RequireString("value");
+                settings.Set(key, value);
+                return CommandResult.Ok($"{key} = {DisplayServiceSettingValue(key, value)}");
+            })),
+            "framework:service");
+        registry.Register(BuiltinCommandDefinitions.Bind(
+            "vulcan.app.get",
+            CommandDescriptor.Sync(context =>
+            {
+                var key = context.GetString("key");
+                if (key != null)
+                {
+                    if (!key.StartsWith("mcp.", StringComparison.OrdinalIgnoreCase))
+                        return CommandResult.Fail("后台设置入口只接受 mcp.* 配置键");
+                    var value = settings.Get(key);
+                    return value == null
+                        ? CommandResult.Ok($"{key} (未设置)")
+                        : CommandResult.Ok($"{key} = {DisplayServiceSettingValue(key, value)}");
+                }
+
+                var values = settings.All()
+                    .Where(item => item.Key.StartsWith("mcp.", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                return values.Count == 0
+                    ? CommandResult.Ok("(无 MCP 配置项)")
+                    : CommandResult.Ok(
+                        $"共 {values.Count} 项:" + string.Concat(values.Select(item =>
+                            $"\n  {item.Key} = {DisplayServiceSettingValue(item.Key, item.Value)}")));
+            })),
+            "framework:service");
+    }
+
+    private static string DisplayServiceSettingValue(string key, string value)
+    {
+        var normalized = key.Replace(".", "", StringComparison.Ordinal)
+            .Replace("_", "", StringComparison.Ordinal)
+            .Replace("-", "", StringComparison.Ordinal);
+        return normalized.EndsWith("token", StringComparison.OrdinalIgnoreCase)
+               || normalized.EndsWith("password", StringComparison.OrdinalIgnoreCase)
+               || normalized.EndsWith("secret", StringComparison.OrdinalIgnoreCase)
+               || normalized.EndsWith("privatekey", StringComparison.OrdinalIgnoreCase)
+            ? "(已配置)"
+            : value;
+    }
+
+    internal static void MigrateLegacyMcpSettings(
+        ISettingsService legacy,
+        ISettingsService service,
+        IShellLog log)
+    {
+        string[] keys =
+        [
+            Services.Mcp.McpGateway.KeyPort,
+            Services.Mcp.McpGateway.KeyPolicy,
+            Services.Mcp.McpGateway.KeyToken,
+            Services.Mcp.McpGateway.KeyAutostart,
+            Services.Mcp.McpGateway.KeyTimeout,
+            Services.Mcp.McpGateway.KeyConfirm,
+            Services.Mcp.McpGateway.KeyConfirmTimeout,
+            Services.Mcp.McpGateway.KeyPortRetries,
+            Services.Mcp.McpGateway.KeySessionLimit,
+        ];
+        var migrated = 0;
+        foreach (var key in keys)
+        {
+            if (service.Get(key) != null || legacy.Get(key) is not { } value)
+                continue;
+            service.Set(key, value);
+            migrated++;
+        }
+
+        if (migrated > 0)
+            log.Info("mcp", $"已迁移 {migrated} 项旧前端 MCP 配置到后台设置");
     }
 
     /// <summary>

@@ -83,6 +83,11 @@ public sealed partial class WebGateway : IDisposable
         }
     }
 
+    private static bool IsTrustedLoopbackShell(ClientSession session)
+        => session.Kind == ClientKind.Shell
+           && session.IsLoopback
+           && string.Equals(session.AuthSubject, "loopback-shell", StringComparison.Ordinal);
+
     private static string SessionSource(ClientSession session)
         => $"{(session.IsLoopback ? session.Kind.ToString() : "Lan" + session.Kind)}:" +
            $"v1.{Base64UrlEncode(session.Id)}:{session.Name}";
@@ -159,6 +164,24 @@ public sealed partial class WebGateway : IDisposable
                 : current with { Count = current.Count + 1 });
         TrimRateWindows(now, sessionId);
         return window.Count <= limit;
+    }
+
+    private async Task WriteRateLimitAsync(HttpListenerContext context, string key)
+    {
+        var retryAfterSeconds = 60;
+        if (_rateWindows.TryGetValue(key, out var window))
+        {
+            retryAfterSeconds = Math.Max(1, (int)Math.Ceiling(
+                (window.Start.AddMinutes(1) - DateTimeOffset.UtcNow).TotalSeconds));
+        }
+
+        context.Response.Headers["Retry-After"] = retryAfterSeconds.ToString(
+            System.Globalization.CultureInfo.InvariantCulture);
+        await WriteJsonAsync(context, new
+        {
+            error = "rate limit exceeded",
+            retryAfterSeconds,
+        }, 429).ConfigureAwait(false);
     }
 
     private bool IsRateLimitReached(string key)

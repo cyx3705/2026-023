@@ -101,12 +101,13 @@
           "xunit.extensibility.core": "[2.9.2]"
         }
       },
-      "historymercury": {
+      "HistoryVulcan": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[3.3.0, )",
-          "OneHistory.HistoryVulcan.Services": "[3.3.0, )",
-          "OneHistory.HistoryVulcan.Shell": "[3.3.0, )"
+          "OneHistory.HistoryVulcan.Core": "[3.5.0, )",
+          "OneHistory.HistoryVulcan.ServiceHost": "[3.5.0, )",
+          "OneHistory.HistoryVulcan.Services": "[3.5.0, )",
+          "OneHistory.HistoryVulcan.Shell": "[3.5.0, )"
         }
       },
       "OneHistory.HistoryVulcan.Core": {
@@ -115,14 +116,14 @@
       "OneHistory.HistoryVulcan.ServiceHost": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[3.3.0, )",
-          "OneHistory.HistoryVulcan.Services": "[3.3.0, )"
+          "OneHistory.HistoryVulcan.Core": "[3.5.0, )",
+          "OneHistory.HistoryVulcan.Services": "[3.5.0, )"
         }
       },
       "OneHistory.HistoryVulcan.Services": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[3.3.0, )"
+          "OneHistory.HistoryVulcan.Core": "[3.5.0, )"
         }
       },
       "OneHistory.HistoryVulcan.Shell": {
@@ -130,8 +131,8 @@
         "dependencies": {
           "Dirkster.AvalonDock": "[4.72.1, )",
           "Dirkster.AvalonDock.Themes.VS2013": "[4.72.1, )",
-          "OneHistory.HistoryVulcan.Core": "[3.3.0, )",
-          "OneHistory.HistoryVulcan.Services": "[3.3.0, )"
+          "OneHistory.HistoryVulcan.Core": "[3.5.0, )",
+          "OneHistory.HistoryVulcan.Services": "[3.5.0, )"
         }
       },
       "Dirkster.AvalonDock": {

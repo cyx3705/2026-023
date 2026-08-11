@@ -103,6 +103,11 @@ HistoryVulcan 不覆盖该声明。3.0.2 起，模块运行期注册的右侧窗
 中央命令集/详情依赖 HistoryMercury 4.1.0，无 Mercury 时不可用。消费方显式设置 `EnableMcp=true` 后才装配上述能力；若同时设置 `mcp.autostart=false`，启动时只装配
 不监听，之后可用 `vulcan.mcp.start` 启动。
 
+HistoryVulcan 自身的单 EXE 双进程宿主是一个明确例外：前端保持 `EnableMcp=false`，后台服务在唯一权威
+`CommandRegistry` 上装配 MCP、非 UI 模块与完整 `McpCommands`。后台先同步装载模块，再开放 Web/MCP，
+因此首次 `tools/list` 已包含所有成功装载且策略可见的模块命令。嵌入式消费方原有
+`ShellConfig.EnableMcp` 行为不变。
+
 MCP 启用后的默认端口为 `8737 + stableHash(appName) % 200`。显式 `mcp.port` 优先；端口占用时按
 `mcp.portretries` 有界顺延，默认尝试 20 次。网关停止时释放监听、会话和取消令牌。
 
@@ -121,11 +126,17 @@ MCP 启用后的默认端口为 `8737 + stableHash(appName) % 200`。显式 `mcp
 `mcp.sessionlimit` 限制；超时只切断当前 MCP 响应，不会强行中止已经进入宿主的命令，后续应通过只读命令
 查询结果。
 
+`tools/list` 和 `tools/call` 直接读取同一个后台注册表/总线，不维护模块名单。模块热重载后工具目录动态变化，
+无需重启网关。独立宿主会把旧前端设置中的九个 `mcp.*` 键按“后台缺失才复制”迁移；远程
+`vulcan.app.get/set` 只允许这些键，token、密码、私钥和 secret 只返回“已配置”。
+
 ## Web 与前端目录
 
 Web 默认端口为 `8938 + stableHash(appName) % 200`，支持 `web.port` 与 `web.portretries`。默认只应绑定
 回环地址；远程绑定需要显式鉴权、设备配对和来源限制。限流窗口与前端目录缓存分别受
-`web.ratewindowlimit`、`web.frontendcataloglimit` 约束。
+`web.ratewindowlimit`、`web.frontendcataloglimit` 约束。失败鉴权仍按远端地址限流，普通鉴权 Web/远端
+会话按会话限流；已认证的本机 `loopback-shell` 是双进程控制通道，不消耗公网 Web 请求配额。429 响应带
+`Retry-After` 和 JSON 重试秒数。
 
 每个前端目录携带 session id 与应用名。调用前端命令时可用 `_frontend=<session id 或 app name>` 定向；
 只有一个在线前端时自动选择；多个前端且未指定时明确失败。前端离线后目录仍可查阅，但执行明确失败。
@@ -146,5 +157,7 @@ WebSocket 支持分片文本消息，总消息上限 1 MiB。
 - `vulcan.module.list` 能显示名称、版本、槽和命令数；坏 DLL 或缺依赖只影响对应模块。
 - 模块命令在 Help、命令目录与 MCP schema 中保持同源；服务端本地模块热重载后会更新本地权威目录。
   Shell 前端在连接后动态注册的命令需要重连，才会重新发布到服务端权威目录。
+- 独立宿主的真实 `tools/list` 能看到策略允许的 Diana、Janus、Mercury、Minerva 工具；调用、卸载与重载
+  共用后台命令总线，网关端口不变。
 - 前端连接后目录自动出现；多前端歧义、定向、中断和离线执行行为符合上述规则。
 - MCP/Web 默认端口在同机多应用间稳定分离，冲突顺延有界，Stop 后端口可重新绑定。

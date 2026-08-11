@@ -151,7 +151,7 @@ public sealed class ShellServiceClient : IDisposable
             request.Content = JsonContent.Create(new { text, source }, options: JsonOptions);
             using var response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
-                return CommandResult.Fail($"服务命令请求失败: HTTP {(int)response.StatusCode}");
+                return await DescribeCommandFailureAsync(response, cancellationToken).ConfigureAwait(false);
 
             var result = await response.Content.ReadFromJsonAsync<ResultEnvelope>(
                 JsonOptions,
@@ -187,6 +187,31 @@ public sealed class ShellServiceClient : IDisposable
         {
             return CommandResult.Fail("后台服务请求超时");
         }
+    }
+
+    private static async Task<CommandResult> DescribeCommandFailureAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        if (response.StatusCode != System.Net.HttpStatusCode.TooManyRequests)
+            return CommandResult.Fail($"服务命令请求失败: HTTP {(int)response.StatusCode}");
+
+        int? retryAfterSeconds = response.Headers.RetryAfter?.Delta is { } delta
+            ? Math.Max(1, (int)Math.Ceiling(delta.TotalSeconds))
+            : null;
+        try
+        {
+            var error = await response.Content.ReadFromJsonAsync<RateLimitEnvelope>(
+                JsonOptions, cancellationToken).ConfigureAwait(false);
+            retryAfterSeconds ??= error?.RetryAfterSeconds;
+        }
+        catch (JsonException)
+        {
+        }
+
+        return CommandResult.Fail(retryAfterSeconds is > 0
+            ? $"服务请求触发限流: HTTP 429，请在 {retryAfterSeconds} 秒后重试"
+            : "服务请求触发限流: HTTP 429，请稍后重试");
     }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -495,6 +520,8 @@ public sealed class ShellServiceClient : IDisposable
     }
 
     private sealed record ResultEnvelope(bool Success, string? Message, JsonElement? Data);
+
+    private sealed record RateLimitEnvelope(string? Error, int? RetryAfterSeconds);
 
     private sealed record HealthEnvelope(
         string ServerId,

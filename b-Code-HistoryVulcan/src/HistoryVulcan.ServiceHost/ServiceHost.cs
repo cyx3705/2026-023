@@ -89,6 +89,20 @@ public static class ServiceHost
                 composition.Log.Warn("hotkey", $"全局快捷键服务启动失败: {ex.Message}");
             }
         }
+
+        // The module registry is authoritative for both Web and MCP. Complete the first
+        // synchronous load before either listener is opened so the first remote catalog
+        // cannot observe a framework-only intermediate snapshot.
+        try
+        {
+            composition.Modules?.Attach(composition.Registry);
+            composition.Modules?.Start();
+        }
+        catch (Exception ex)
+        {
+            composition.Log.Warn("module", $"模块启动失败，远程网关将仅暴露成功注册的指令: {ex.Message}");
+        }
+
         if (composition.Web != null)
         {
             composition.Bus.FrontendExecutor = composition.Web.RelayFrontendCommandAsync;
@@ -123,16 +137,6 @@ public static class ServiceHost
 
         app.Dispatcher.BeginInvoke(() =>
         {
-            try
-            {
-                composition.Modules?.Attach(composition.Registry);
-                composition.Modules?.Start();
-            }
-            catch (Exception ex)
-            {
-                composition.Log.Warn("module", $"模块异步启动失败: {ex.Message}");
-            }
-
             foreach (var work in composition.DeferredWork)
                 _ = Task.Run(() => RunDeferredAsync(work, composition.Log));
         }, DispatcherPriority.ApplicationIdle);

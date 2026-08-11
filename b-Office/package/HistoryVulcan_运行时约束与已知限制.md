@@ -40,7 +40,7 @@
 |---|---:|---|
 | 模块命令宿主 | 关闭 | `ShellConfig.EnableModules=true` |
 | UI 模块宿主 | 关闭 | `ShellConfig.EnableUiModules=true`，或随 `EnableModules=true` 启用 |
-| MCP 网关与治理 | 关闭 | `ShellConfig.EnableMcp=true`；只装配不监听时另设 `mcp.autostart=false` |
+| MCP 网关与治理 | 关闭 | 嵌入式 Shell 用 `ShellConfig.EnableMcp=true`；独立双进程宿主只在后台装配，是否监听仍由 `mcp.autostart` 或显式 start 决定 |
 | 远程管理视图 | 关闭 | `ShellConfig.EnableRemoteManagementViews=true` |
 | 本地 `vulcan.command.*` | 开启 | Shell 核心能力，不创建网络监听 |
 | 命令集/详情与双 `/` | 依赖 Mercury | HistoryMercury 拥有命令工作台与 `GlobalShortcutService`；双 `/` → `mercury.wakeconsole` 再组合 Vulcan 窗口指令；无 Mercury 时不可用 |
@@ -52,7 +52,7 @@
 | `mcp.sessionlimit` | `1024` | MCP 会话缓存上限，范围 `16..65536` |
 | `web.port` | 未设置时 `8938 + stableHash(appName) % 200` | 显式值优先 |
 | `web.portretries` | `20` | 初始端口冲突后的顺延次数，范围 `0..100` |
-| `web.ratelimit` | `120` | 失败鉴权尝试按远端地址限流，成功请求按会话限流，均按每分钟计，范围 `10..10000`；更换 `X-Session-Id` 不能绕过失败鉴权限流 |
+| `web.ratelimit` | `120` | 失败鉴权按远端地址、成功的 Web/远端会话按会话限流，均按每分钟计，范围 `10..10000`；认证本机 `loopback-shell` 控制通道不计入公网配额；429 带重试秒数 |
 | `web.ratewindowlimit` | `4096` | 限流窗口缓存上限，范围 `128..65536` |
 | `web.frontendcataloglimit` | `32` | 离线前端目录缓存上限，范围 `1..256` |
 | `console.buffer` | `50000` | 控制台行和入站事件上限，最小 `1000` |

@@ -417,7 +417,7 @@ public sealed partial class WebGateway : IDisposable
             {
                 if (!AllowRequest(remoteRateKey))
                 {
-                    await WriteJsonAsync(context, new { error = "rate limit exceeded" }, 429).ConfigureAwait(false);
+                    await WriteRateLimitAsync(context, remoteRateKey).ConfigureAwait(false);
                     return;
                 }
                 await HandlePairingAsync(context).ConfigureAwait(false);
@@ -426,7 +426,7 @@ public sealed partial class WebGateway : IDisposable
 
             if (IsRateLimitReached(remoteRateKey))
             {
-                await WriteJsonAsync(context, new { error = "rate limit exceeded" }, 429).ConfigureAwait(false);
+                await WriteRateLimitAsync(context, remoteRateKey).ConfigureAwait(false);
                 return;
             }
             var requestedSession = CreateSession(context.Request);
@@ -435,16 +435,19 @@ public sealed partial class WebGateway : IDisposable
             {
                 if (!AllowRequest(remoteRateKey))
                 {
-                    await WriteJsonAsync(context, new { error = "rate limit exceeded" }, 429).ConfigureAwait(false);
+                    await WriteRateLimitAsync(context, remoteRateKey).ConfigureAwait(false);
                     return;
                 }
                 await WriteJsonAsync(context, new { error = "unauthorized" }, 401).ConfigureAwait(false);
                 return;
             }
 
-            if (!AllowRequest(session.Id))
+            // The authenticated loopback Shell is the standalone host's control plane. Its
+            // catalog refreshes and user commands must not consume the public Web quota.
+            // Remote Shell/Web sessions and failed authentication remain rate limited.
+            if (!IsTrustedLoopbackShell(session) && !AllowRequest(session.Id))
             {
-                await WriteJsonAsync(context, new { error = "rate limit exceeded" }, 429).ConfigureAwait(false);
+                await WriteRateLimitAsync(context, session.Id).ConfigureAwait(false);
                 return;
             }
 

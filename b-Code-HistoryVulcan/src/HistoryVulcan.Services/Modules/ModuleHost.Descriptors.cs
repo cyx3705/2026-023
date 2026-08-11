@@ -304,7 +304,7 @@ public sealed partial class ModuleHost
             Modules.Clear();
             foreach (var group in Metas.GroupBy(meta => meta.Name, StringComparer.OrdinalIgnoreCase))
             {
-            var first = group.First();
+                var first = group.First();
                 Modules.Add(new ModuleMeta(
                     first.Name,
                     string.Join("; ", group.Select(meta => meta.Desc).Where(value => value.Length > 0)),
