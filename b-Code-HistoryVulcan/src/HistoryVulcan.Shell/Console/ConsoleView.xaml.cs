@@ -753,16 +753,26 @@ public partial class ConsoleView : UserControl, Core.Modules.IActivatableToolCon
             return;
 
         var candidate = _completionResult.Candidates[_completionIndex];
-        var text = Input.Text.Remove(_completionResult.ReplaceStart, _completionResult.ReplaceLength)
+        var originalText = Input.Text;
+        var originalCaret = Input.CaretIndex;
+        var text = originalText.Remove(_completionResult.ReplaceStart, _completionResult.ReplaceLength)
             .Insert(_completionResult.ReplaceStart, candidate.InsertText);
         var caret = _completionResult.ReplaceStart + candidate.InsertText.Length;
+        if (candidate.Kind == ConsoleCompletionKind.Value
+            && caret == text.Length
+            && (text.Length == 0 || !char.IsWhiteSpace(text[^1])))
+        {
+            text += " ";
+            caret++;
+        }
+
         _suppressTextChanged = true;
         Input.Text = text;
         Input.CaretIndex = caret;
         _suppressTextChanged = false;
-        if (candidate.Kind is ConsoleCompletionKind.Domain
-            or ConsoleCompletionKind.Class
-            or ConsoleCompletionKind.Method)
+        var advanced = !string.Equals(text, originalText, StringComparison.Ordinal)
+                       || caret != originalCaret;
+        if (advanced)
         {
             ClearCompletionVisuals();
             RefreshCompletions();

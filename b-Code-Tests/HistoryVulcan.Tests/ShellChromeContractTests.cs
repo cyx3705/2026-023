@@ -1002,6 +1002,44 @@ public sealed class ShellChromeContractTests
             Assert.True(console.HandleCompletionKey(Key.Tab, ModifierKeys.None));
             Assert.True(UiTestHost.PumpUntil(() => session.LastText == "vulcan.proj.open "));
             Assert.Equal("name=", Assert.Single(session.LastResult.Candidates).InsertText);
+
+            Assert.True(console.HandleCompletionKey(Key.Tab, ModifierKeys.None));
+            Assert.True(UiTestHost.PumpUntil(() => session.LastText == "vulcan.proj.open name="));
+            Assert.Equal("Mercury", Assert.Single(session.LastResult.Candidates).InsertText);
+
+            Assert.True(console.HandleCompletionKey(Key.Tab, ModifierKeys.None));
+            Assert.True(UiTestHost.PumpUntil(() => session.LastText == "vulcan.proj.open name=Mercury "));
+            Assert.Equal("vulcan.proj.open name=Mercury ", input.Text);
+            Assert.False(popup.IsOpen);
+        });
+    }
+
+    [Fact]
+    public void PositionalParameterHintThatDoesNotChangeTextClosesWithoutRefreshing()
+    {
+        var session = new CompletionCatalogSession();
+        RunShell(window =>
+        {
+            window.AttachCommandCatalogSession(session);
+            window.Docking.MaximizeWindow(StandardWindowIds.Console);
+            UiTestHost.Pump();
+            window.RefreshCommandCompletionFocus();
+            var console = Assert.Single(FindVisualDescendants<ConsoleView>(window));
+            var input = Assert.IsType<TextBox>(console.FindName("Input"));
+            var popup = Assert.IsType<Popup>(console.FindName("CompletionPopup"));
+
+            input.Focus();
+            Keyboard.Focus(input);
+            input.Text = "vulcan.proj.free ";
+            input.CaretIndex = input.Text.Length;
+
+            Assert.True(UiTestHost.PumpUntil(() => popup.IsOpen));
+            var calls = session.CompletionCalls;
+            Assert.True(console.HandleCompletionKey(Key.Tab, ModifierKeys.None));
+            UiTestHost.Pump();
+            Assert.Equal("vulcan.proj.free ", input.Text);
+            Assert.False(popup.IsOpen);
+            Assert.Equal(calls, session.CompletionCalls);
         });
     }
 
@@ -1381,6 +1419,7 @@ public sealed class ShellChromeContractTests
         public CommandCatalogFilter CurrentFilter => new();
         public ConsoleCompletionResult LastResult { get; private set; } = ConsoleCompletionResult.Empty;
         public string LastText { get; private set; } = "";
+        public int CompletionCalls { get; private set; }
 
         public Task<bool> RefreshAsync(bool force = false, CancellationToken cancellationToken = default)
             => Task.FromResult(true);
@@ -1409,29 +1448,33 @@ public sealed class ShellChromeContractTests
             CancellationToken cancellationToken = default)
         {
             LastText = text;
-            var candidate = text switch
+            CompletionCalls++;
+            var (candidate, replaceStart, replaceLength) = text switch
             {
-                "v" => Completion("vulcan.", ConsoleCompletionKind.Domain),
-                "vulcan." => Completion("vulcan.proj.", ConsoleCompletionKind.Class),
-                "vulcan.proj." => Completion("vulcan.proj.open ", ConsoleCompletionKind.Method),
-                "vulcan.proj.open " => Completion("name=", ConsoleCompletionKind.Parameter),
-                _ => null,
+                "v" => (Completion("vulcan.", ConsoleCompletionKind.Domain), 0, 1),
+                "vulcan." => (Completion("vulcan.proj.", ConsoleCompletionKind.Class), 0, 7),
+                "vulcan.proj." => (Completion("vulcan.proj.open ", ConsoleCompletionKind.Method), 0, 12),
+                "vulcan.proj.open " => (Completion("name=", ConsoleCompletionKind.Parameter), 17, 0),
+                "vulcan.proj.open name=" => (Completion("Mercury", ConsoleCompletionKind.Value), 22, 0),
+                "vulcan.proj.free " => (Completion("name", ConsoleCompletionKind.Parameter, ""), 17, 0),
+                _ => (null, 0, 0),
             };
             LastResult = new ConsoleCompletionResult
             {
                 Candidates = candidate is null ? [] : [candidate],
-                ReplaceStart = 0,
-                ReplaceLength = text.Length,
+                ReplaceStart = replaceStart,
+                ReplaceLength = replaceLength,
             };
             return Task.FromResult(LastResult);
         }
 
         private static ConsoleCompletionCandidate Completion(
             string text,
-            ConsoleCompletionKind kind)
+            ConsoleCompletionKind kind,
+            string? insertText = null)
             => new()
             {
-                InsertText = text,
+                InsertText = insertText ?? text,
                 DisplayText = text,
                 Description = kind.ToString(),
                 Kind = kind,
