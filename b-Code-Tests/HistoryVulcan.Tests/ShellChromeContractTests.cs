@@ -1009,7 +1009,15 @@ public sealed class ShellChromeContractTests
 
             Assert.True(console.HandleCompletionKey(Key.Tab, ModifierKeys.None));
             Assert.True(UiTestHost.PumpUntil(() => session.LastText == "vulcan.proj.open name=Mercury "));
-            Assert.Equal("vulcan.proj.open name=Mercury ", input.Text);
+            Assert.Equal("mode=", Assert.Single(session.LastResult.Candidates).InsertText);
+
+            Assert.True(console.HandleCompletionKey(Key.Tab, ModifierKeys.None));
+            Assert.True(UiTestHost.PumpUntil(() => session.LastText == "vulcan.proj.open name=Mercury mode="));
+            Assert.Equal("Fast", Assert.Single(session.LastResult.Candidates).InsertText);
+
+            Assert.True(console.HandleCompletionKey(Key.Tab, ModifierKeys.None));
+            Assert.True(UiTestHost.PumpUntil(() => session.LastText == "vulcan.proj.open name=Mercury mode=Fast "));
+            Assert.Equal("vulcan.proj.open name=Mercury mode=Fast ", input.Text);
             Assert.False(popup.IsOpen);
         });
     }
@@ -1456,6 +1464,8 @@ public sealed class ShellChromeContractTests
                 "vulcan.proj." => (Completion("vulcan.proj.open ", ConsoleCompletionKind.Method), 0, 12),
                 "vulcan.proj.open " => (Completion("name=", ConsoleCompletionKind.Parameter), 17, 0),
                 "vulcan.proj.open name=" => (Completion("Mercury", ConsoleCompletionKind.Value), 22, 0),
+                "vulcan.proj.open name=Mercury " => (Completion("mode=", ConsoleCompletionKind.Parameter), 30, 0),
+                "vulcan.proj.open name=Mercury mode=" => (Completion("Fast", ConsoleCompletionKind.Value), 35, 0),
                 "vulcan.proj.free " => (Completion("name", ConsoleCompletionKind.Parameter, ""), 17, 0),
                 _ => (null, 0, 0),
             };
