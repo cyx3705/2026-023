@@ -1,6 +1,6 @@
 # HistoryVulcan AI 工作合同
 
-本文件适用于整个仓库。**当前源码候选为 3.11.2，正式 Z 部署为 3.11.1**；`HistoryVulcan.Core`
+本文件适用于整个仓库。**当前源码与正式 Z 部署均为 3.11.2**；`HistoryVulcan.Core`
 公开面自 3.9.0 起冻结，Shell 与 Extensibility 仍可在不改变 Core 合同的前提下演进。进入项目后先确认现行合同和修改边界，
 再按任务读取最小必要上下文。
 
