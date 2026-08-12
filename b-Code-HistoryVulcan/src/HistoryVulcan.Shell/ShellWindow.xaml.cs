@@ -161,9 +161,9 @@ public partial class ShellWindow : Window, IShellCommandWorkbenchHost
         _docking = new DockingHost(DockManager, config.ToolWindows, layoutStore, log, settings);
         _docking.Initialize();
         ConfigureCommandCompletionRouting(
-            // Keyboard focus in the console is enough to own completion. Normal docked layout
-            // must not redirect the first typed character to the command catalog.
-            () => true,
+            () => _docking.MaximizedId?.Equals(
+                StandardWindowIds.Console,
+                StringComparison.OrdinalIgnoreCase) == true,
             () =>
             {
                 _ = ShowCommandCatalogForCompletionAsync();

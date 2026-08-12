@@ -151,6 +151,33 @@ public sealed class FrontendCommandCatalogTests
     }
 
     [Fact]
+    public async Task CommandShowPreservesRegistrationAnnotations()
+    {
+        using var fixture = GatewayFixture.Start(withCatalog: true);
+        fixture.ServiceRegistry.Register(new CommandDescriptor
+        {
+            Name = "sample.app.mode",
+            Domain = "sample",
+            CommandClass = "app",
+            Summary = "Select a mode",
+            Parameters = [new ParameterSpec { Name = "mode", Description = "Mode", Position = 0 }],
+            Annotations = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["completion.values.mode"] = "sample.modes",
+            },
+            Handler = CommandDescriptor.Sync(_ => CommandResult.Ok()),
+        }, "module:Sample");
+
+        var result = await fixture.ServiceBus.ExecuteAsync(
+            "vulcan.command.show name=sample.app.mode", "Test");
+
+        Assert.True(result.Success, result.Message);
+        var detail = Assert.IsType<CommandCatalogDetail>(result.Data);
+        Assert.Equal("sample.modes", detail.Annotations["completion.values.mode"]);
+        Assert.Equal(0, Assert.Single(detail.Parameters).Position);
+    }
+
+    [Fact]
     public async Task MultipleFrontendsRequireDeterministicTarget()
     {
         using var fixture = GatewayFixture.Start();

@@ -1,8 +1,8 @@
 # HistoryVulcan API 与指令手册
 
-> 适用版本：HistoryVulcan **3.3.2** 正式（已部署于 `z-HistoryVulcan`；3.1.8 不受支持）
+> 适用版本：HistoryVulcan **3.11.1** 正式（已部署于 `z-HistoryVulcan`）
 
-本手册给出 3.3.2 正式公开 API 的常用入口和框架基础命令。正式宿主运行入口为
+本手册给出当前正式公开 API 的常用入口和框架基础命令。正式宿主运行入口为
 `host/HistoryVulcan.exe`，程序集 XML 文档位于同一 `host/` 目录；兼容框架包的完整签名位于
 `lib/<TFM>/HistoryVulcan.*.xml`。源码仓中的四份 `PublicAPI.Shipped.txt` 是冻结门禁，不随运行宿主发布。
 最终命令集合以应用运行时的 `vulcan.command.list`、`vulcan.command.show` 和 `vulcan.command.manual` 为准。
@@ -12,7 +12,7 @@
 无 Mercury 时双 `/` 与命令集/详情不可用。
 **3.3.2（DEC-023）在此基础上把类收敛为九类、退役影子域 `debug`，并确立
 模块注册名与指令域的去品牌前缀规则（见 §3.3.1）；3.4.0（DEC-025）恢复受控的两段直接方法与域聚焦。** 3.3.1 → 3.3.2 的逐条改名映射见
-§3.3.4 与 `HistoryVulcan_消费变更摘要.md`。当前正式部署版本为 **3.3.2**（位于 `z-HistoryVulcan`）；当前源码候选为 **3.5.0**，新增稳定语义命令 `vulcan.app.focusconsole`。
+§3.3.4 与 `HistoryVulcan_消费变更摘要.md`。当前正式部署与源码版本均为 **3.11.1**（正式宿主位于 `z-HistoryVulcan`）。
 3.1.9 是旧名 AppShell 的最后快照，已随 3.2.0 发布退役；3.1.8 不作为稳定支持版本。以下包表和最小宿主代码
 描述当前正式合同，但正式部署不提供 NuGet feed。
 
@@ -251,12 +251,14 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 | 命令 | 用途 |
 |---|---|
 | `vulcan.command.list` | 结构化目录（可按 domain/class/mcp/filter 过滤） |
-| `vulcan.command.show` | 单条完整元数据与参数 |
+| `vulcan.command.show` | 单条完整元数据、参数与注册注解（3.11.1 起含 `Annotations`） |
 | `vulcan.command.domains` | 按域统计 |
 | `vulcan.command.manual` | 生成运行时命令手册 |
 | `vulcan.command.copyexample` | 复制示例到剪贴板 |
 
 `vulcan.command.list` 返回的行含 `Domain`、`CommandClass`、`Method`（末段方法名）以及 MCP/风险等字段。
+`vulcan.command.show` 返回 `CommandCatalogDetail`；3.11.1 起其兼容扩展属性 `Annotations` 原样携带
+`CommandDescriptor.Annotations`。参数常用值或动态来源应由命令注册模块声明，目录消费者不得按命令名称推测。
 注册表辅助：`CommandRegistry.GetMethod`（同 `LegacyMethod`）、`LegacyDomain` / `LegacyClass` / `LegacyMethod`
 可从命令名推导域/类/方法段。
 
@@ -410,12 +412,12 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
   `CommandBus.ResultCategory` / `ProgressCategory` 兼容前缀后附加命令域。长文本按当前窗格宽度软换行，复制和导出保留原始逻辑文本。
 - 3.3.0 起命令工作台（目录会话、补全引擎、命令集/详情视图）与全局快捷键由 HistoryMercury 4.1.0 拥有；
   目录数据仍来自 `vulcan.command.list` / `vulcan.command.domains`，参数详情由 `vulcan.command.show` 延迟加载。
-  Shell 仅保留控制台日志面。无 Mercury 时双 `/` 与命令集/详情不可用；有 Mercury 时，控制台聚焦态
-  （如 `vulcan.ui.max name=console`）仍可弹出候选，`Shift+W`/`Shift+S`/`Tab`/`Enter` 行为不变。
+  Shell 仅保留控制台日志面。无 Mercury 时双 `/` 与命令集/详情不可用；有 Mercury 时，仅控制台聚焦态
+  （如 `vulcan.ui.max name=console`）弹出候选，`Shift+W`/`Shift+S`/`Tab`/`Enter` 行为不变；普通停靠布局不启用命令助手。
 
 ## 6. 基础命令目录
 
-以下是 HistoryVulcan **3.3.2 正式**框架命令快照（83 条）。宿主只注册已启用能力对应的组；
+以下是 HistoryVulcan 基础框架命令参考。宿主只注册已启用能力对应的组；
 运行时 `vulcan.command.list` 是最终权威目录。
 3.3.1→3.3.2 的 32 条改名映射见 `../history/3.3.2-vulcan-class-realign.md`；
 更早的 3.3.0 硬切见 `../history/3.3.0-vulcan-command-rename.md`。

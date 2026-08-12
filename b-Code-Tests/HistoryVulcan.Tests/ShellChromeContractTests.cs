@@ -958,11 +958,37 @@ public sealed class ShellChromeContractTests
             input.Text = "v";
             input.CaretIndex = input.Text.Length;
 
-            Assert.True(
-                UiTestHost.PumpUntil(() => popup.IsOpen),
-                "Normal docked layout redirected console input instead of showing completion.");
+            UiTestHost.PumpUntil(() => input.Text == "v");
+            Assert.False(popup.IsOpen);
             Assert.True(input.IsKeyboardFocusWithin);
             Assert.Equal("v", input.Text);
+            Assert.Equal("", session.LastText);
+            Assert.False(console.HandleCompletionKey(Key.Tab, ModifierKeys.None));
+            Assert.Equal("v", input.Text);
+        });
+    }
+
+    [Fact]
+    public void FocusedConsoleCompletesDomainClassMethodAndParameter()
+    {
+        var session = new CompletionCatalogSession();
+        RunShell(window =>
+        {
+            window.AttachCommandCatalogSession(session);
+            window.Docking.MaximizeWindow(StandardWindowIds.Console);
+            UiTestHost.Pump();
+            window.RefreshCommandCompletionFocus();
+            var console = Assert.Single(FindVisualDescendants<ConsoleView>(window));
+            var input = Assert.IsType<TextBox>(console.FindName("Input"));
+            var popup = Assert.IsType<Popup>(console.FindName("CompletionPopup"));
+
+            Assert.Equal(StandardWindowIds.Console, window.Docking.MaximizedId);
+            input.Focus();
+            Keyboard.Focus(input);
+            input.Text = "v";
+            input.CaretIndex = input.Text.Length;
+
+            Assert.True(UiTestHost.PumpUntil(() => popup.IsOpen));
             Assert.Equal("vulcan.", Assert.Single(session.LastResult.Candidates).InsertText);
 
             Assert.True(console.HandleCompletionKey(Key.Tab, ModifierKeys.None));
@@ -976,7 +1002,6 @@ public sealed class ShellChromeContractTests
             Assert.True(console.HandleCompletionKey(Key.Tab, ModifierKeys.None));
             Assert.True(UiTestHost.PumpUntil(() => session.LastText == "vulcan.proj.open "));
             Assert.Equal("name=", Assert.Single(session.LastResult.Candidates).InsertText);
-            Assert.True(input.IsKeyboardFocusWithin);
         });
     }
 

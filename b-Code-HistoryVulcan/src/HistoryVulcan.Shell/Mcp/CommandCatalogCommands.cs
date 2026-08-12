@@ -47,7 +47,12 @@ public sealed record CommandParameterInfo(
 public sealed record CommandCatalogDetail(
     CommandCatalogRow Command,
     IReadOnlyList<CommandParameterInfo> Parameters,
-    string? McpInputSchema);
+    string? McpInputSchema)
+{
+    /// <summary>命令注册方提供、由具体消费方解释的目录注解。</summary>
+    public IReadOnlyDictionary<string, string> Annotations { get; init; }
+        = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+}
 
 public sealed record CommandDomainInfo(string Domain, int Count);
 
@@ -248,7 +253,10 @@ public static class CommandCatalogCommands
                     parameter.Description)).ToList();
                 var tool = exporter.Find(descriptor.Name);
                 var schema = tool?.InputSchema.ToJsonString(PrettyJson);
-                var detail = new CommandCatalogDetail(row, parameters, schema);
+                var detail = new CommandCatalogDetail(row, parameters, schema)
+                {
+                    Annotations = descriptor.Annotations,
+                };
 
                 var text = new StringBuilder(
                     $"{descriptor.Name} "

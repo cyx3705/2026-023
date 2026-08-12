@@ -1,11 +1,12 @@
-# HistoryVulcan 3.11.0 Candidate
+# HistoryVulcan 3.11.1
 
 本仓库是 OneHistory HistoryVulcan（原 AppShell，3.2.0 起改名）的独立源码、合同与发布资产真值。
 `3.0.3` 是 V3 冻结基线，冻结标签为 `v3.0.3`；版本线不再与 HistoryJanus 对齐，`0.7.x` 仅保留用于回滚。
 
-当前源码候选版本为 `3.11.0`；`HistoryVulcan.Core` 公开面自 `3.9.0` 起冻结。
-3.10.1 修复普通停靠布局下控制台首字母被命令集页面劫持的问题，普通布局与最大化布局现在都在
-控制台输入框内使用同一套域 → 类 → 方法 → 参数 Popup 补全，未修改 CommandBus 或 Core 合同。
+当前源码与正式 Z 快照均为 `3.11.1`；`HistoryVulcan.Core` 公开面自 `3.9.0` 起冻结。
+3.11.1 将命令助手限定到控制台最大化/聚焦布局：普通停靠布局输入字母或 Tab 均不打开 Popup、
+不切换命令集、不回填命令集选中项；聚焦布局仍连续完成域 → 类 → 方法 → 参数。
+`vulcan.command.show` 兼容性增加命令注册注解，供 Mercury 读取注册方声明的动态候选。Core、CommandBus、解析器和注册协议均未修改。
 3.5.0 新增稳定语义命令
 `vulcan.app.focusconsole`，由服务端、前端、远程中继和 `--focus-console` 启动共同复用；
 Mercury 的双 `/` 只绑定该命令，`mercury.shortcut.wakeconsole` 仅作为兼容包装。
@@ -94,7 +95,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ..\2026-019-HistoryDiana\b-C
 未被使用，保留一套指向旧包 ID 的生成链只会让发布入口有两个真值。需要回溯 0.7 线时从
 Git 历史取回。现行回滚仍由 `b-Publish/history/<版本>/` 的 3.x 同构副本承担。
 
-宿主候选位于 `b-Publish/current`。当前正式快照为 3.3.2：运行入口 `z-HistoryVulcan/host/HistoryVulcan.exe`，
+宿主候选位于 `b-Publish/current`。当前正式快照为 3.11.1：运行入口 `z-HistoryVulcan/host/HistoryVulcan.exe`，
 UI 风格合同 `z-HistoryVulcan/docs/HistoryVulcan_UI风格与嵌入页面规范.md`。
 旧名 `z-Package-AppShell/` 的 3.1.9 快照已随 3.2.0 发布退役删除（同构副本入库于 `b-Publish/history/3.1.9/`）。
 旧候选整体归档到 `b-Publish/history/<版本>/`。宿主部署脚本不会执行 Git commit、tag、push，

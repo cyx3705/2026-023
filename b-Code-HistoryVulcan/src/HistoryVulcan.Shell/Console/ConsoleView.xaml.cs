@@ -175,7 +175,7 @@ public partial class ConsoleView : UserControl, Core.Modules.IActivatableToolCon
         if (!enabled)
         {
             HideCompletions();
-            SyncCommandCatalog(showCatalog: true);
+            SyncCommandCatalog(showCatalog: false);
         }
         else if (Input.IsKeyboardFocusWithin && !string.IsNullOrWhiteSpace(Input.Text))
             RefreshCompletions();
@@ -672,7 +672,7 @@ public partial class ConsoleView : UserControl, Core.Modules.IActivatableToolCon
         if (!(_completionFocusPredicate?.Invoke() ?? _completionFocusEnabled))
         {
             ClearCompletionVisuals();
-            SyncCommandCatalog(redirectNonFocused && Input.IsKeyboardFocusWithin);
+            SyncCommandCatalog(showCatalog: false);
             return;
         }
 
@@ -811,16 +811,6 @@ public partial class ConsoleView : UserControl, Core.Modules.IActivatableToolCon
             }
         }
 
-        var catalogMode = !(_completionFocusPredicate?.Invoke() ?? _completionFocusEnabled)
-                          && !string.IsNullOrWhiteSpace(Input.Text);
-        if (!_completionResult.HasCandidates && catalogMode && modifiers == ModifierKeys.Shift)
-        {
-            if (key == Key.W)
-                return _catalogSession.MoveSelection(-1);
-            if (key == Key.S)
-                return _catalogSession.MoveSelection(+1);
-        }
-
         if (key != Key.Tab)
             return false;
 
@@ -834,14 +824,9 @@ public partial class ConsoleView : UserControl, Core.Modules.IActivatableToolCon
             return true;
         }
 
-        if (catalogMode && _catalogSession.SelectedCommandName is { } commandName)
-        {
-            SetInputText(commandName);
-            return true;
-        }
-
-        // Preserve the existing no-op Tab behavior while the input remains focused.
-        return true;
+        // Without an active completion popup, leave Tab to WPF focus traversal. In particular,
+        // normal docked console input must never read or commit the command-catalog selection.
+        return false;
     }
 
     private void OnInputPasting(object sender, DataObjectPastingEventArgs e)
