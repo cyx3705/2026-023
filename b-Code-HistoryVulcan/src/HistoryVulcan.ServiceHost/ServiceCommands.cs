@@ -110,19 +110,26 @@ public static class ServiceCommands
                     return CommandResult.Fail("当前宿主未配置自启动管理器");
                 var mode = ctx.GetString("mode");
                 if (mode == null)
-                    return CommandResult.Ok(manager.IsEnabled(composition.ServiceName)
+                    return CommandResult.Ok(IsAutostartEnabled(composition)
                         ? "服务登录启动已开启"
                         : "服务登录启动已关闭");
 
+                var enabled = mode.Equals("on", StringComparison.OrdinalIgnoreCase);
+                composition.Settings.Set("svc.autostart", enabled ? "true" : "false");
                 manager.SetEnabled(
                     composition.ServiceName,
                     executablePath,
                     serviceArguments,
-                    mode.Equals("on", StringComparison.OrdinalIgnoreCase));
-                return CommandResult.Ok($"服务登录启动已{(mode == "on" ? "开启" : "关闭")}");
+                    enabled);
+                return CommandResult.Ok($"服务登录启动已{(enabled ? "开启" : "关闭")}");
             }),
         }, source);
     }
+
+    private static bool IsAutostartEnabled(ServiceComposition composition)
+        => composition.Settings.Get("svc.autostart") is not { } value
+           || !bool.TryParse(value, out var enabled)
+           || enabled;
 
     private static void RegisterFrontendLifecycle(
         CommandRegistry registry,

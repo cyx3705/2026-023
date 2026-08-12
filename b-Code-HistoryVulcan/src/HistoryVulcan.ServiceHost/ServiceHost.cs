@@ -111,8 +111,17 @@ public static class ServiceHost
         {
             try
             {
-                if (!composition.Autostart.IsEnabled(
-                        composition.ServiceName, servicePath, serviceArguments))
+                var preference = composition.Settings.Get("svc.autostart");
+                var enabled = preference is null
+                              || !bool.TryParse(preference, out var parsed)
+                              || parsed;
+                if (!enabled)
+                {
+                    composition.Autostart.SetEnabled(
+                        composition.ServiceName, servicePath, serviceArguments, enabled: false);
+                }
+                else if (!composition.Autostart.IsEnabled(
+                             composition.ServiceName, servicePath, serviceArguments))
                 {
                     composition.Autostart.SetEnabled(
                         composition.ServiceName, servicePath, serviceArguments, enabled: true);

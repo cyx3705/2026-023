@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Windows;
+using Microsoft.Win32;
 using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Docking;
@@ -34,6 +35,7 @@ public partial class App : Application
 
     /// <summary>诊断指令开关(DEC-023):默认关闭,正式命令集不含承压注水等诊断工具。</summary>
     private const string DiagnosticCommandsSettingKey = "diagnostics.commands";
+    internal const string ServiceAutostartSettingKey = "svc.autostart";
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
@@ -319,6 +321,39 @@ public partial class App : Application
             RegisterAutostartOnFirstRun = true,
             Autostart = new WindowsRunAutostartManager(),
         };
+    }
+
+    internal static int RepairAutostart(string executablePath)
+    {
+        try
+        {
+            AppIdentity.Use(typeof(App).Assembly);
+            var identity = AppIdentity.Current;
+            var paths = new AppPaths(identity.Name);
+            var settings = new SettingsService(
+                new AppPaths(identity.Name, Path.Combine(paths.Root, "service")));
+            var manager = new WindowsRunAutostartManager();
+            var enabled = settings.Get(ServiceAutostartSettingKey) is not { } value
+                          || !bool.TryParse(value, out var parsed)
+                          || parsed;
+            var serviceName = identity.Name + ".Backend";
+            manager.SetEnabled(serviceName, executablePath, ["--service"], enabled);
+            RemoveLegacyAutostartAlias();
+            Console.WriteLine($"HistoryVulcan 登录启动已{(enabled ? "修复" : "关闭")}: {serviceName}");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"修复登录启动失败: {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static void RemoveLegacyAutostartAlias()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(
+            @"Software\Microsoft\Windows\CurrentVersion\Run", writable: true);
+        key?.DeleteValue("AppShell.Backend", throwOnMissingValue: false);
     }
 
     internal static ShellConfig CreateStandaloneFrontendConfig(

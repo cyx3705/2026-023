@@ -1,9 +1,12 @@
-# HistoryVulcan 3.5.0 Candidate
+# HistoryVulcan 3.11.0 Candidate
 
 本仓库是 OneHistory HistoryVulcan（原 AppShell，3.2.0 起改名）的独立源码、合同与发布资产真值。
 `3.0.3` 是 V3 冻结基线，冻结标签为 `v3.0.3`；版本线不再与 HistoryJanus 对齐，`0.7.x` 仅保留用于回滚。
 
-当前源码候选为 `3.5.0`，正式 Z 部署仍为 `3.3.2`。3.5.0 新增稳定语义命令
+当前源码候选版本为 `3.11.0`；`HistoryVulcan.Core` 公开面自 `3.9.0` 起冻结。
+3.10.1 修复普通停靠布局下控制台首字母被命令集页面劫持的问题，普通布局与最大化布局现在都在
+控制台输入框内使用同一套域 → 类 → 方法 → 参数 Popup 补全，未修改 CommandBus 或 Core 合同。
+3.5.0 新增稳定语义命令
 `vulcan.app.focusconsole`，由服务端、前端、远程中继和 `--focus-console` 启动共同复用；
 Mercury 的双 `/` 只绑定该命令，`mercury.shortcut.wakeconsole` 仅作为兼容包装。
 3.4.0（DEC-025）恢复受控的两段直接方法与域聚焦，`mercury.go` 是首个正式用例。
@@ -17,8 +20,7 @@ Mercury 的双 `/` 只绑定该命令，`mercury.shortcut.wakeconsole` 仅作为
 3.1.10 对“轻松指令”和中央命令集做了内部高内聚重构：
 两种交互共享由 `CommandBus` 驱动的目录快照、详情缓存、检索和选择状态，不新增公开 API 或改变命令语义。
 控制台聚焦时输入框上方显示命令、参数名和允许值候选，
-`Shift+W`/`Shift+S` 上下选择、`Tab` 写入当前候选而不执行；普通布局由控制台输入直接检索中央命令集，
-命令集不再保留独立搜索框；3.1.7 建立的 UI 风格合同继续统一嵌入页面的色板、字体、字号、
+`Shift+W`/`Shift+S` 上下选择、`Tab` 写入当前候选并立即展开下一层而不执行；3.1.7 建立的 UI 风格合同继续统一嵌入页面的色板、字体、字号、
 圆角、间距、控件尺寸、顶栏归属和响应式验收规则。HistoryVulcan 采用单 EXE 双进程运行模型，后台服务承载
 命令、模块和日志；全局快捷键与命令工作台由 Mercury 提供。双 `/` 唤出并聚焦控制台（需 Mercury）；前端关闭默认隐藏而不停止后台。
 删除 HistoryVulcan

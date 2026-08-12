@@ -13,6 +13,7 @@ internal static class Program
     /// 命令手册是发布产物而非运行时操作，用显式的 CLI 入口更诚实。
     /// </summary>
     private const string ExportManualSwitch = "--export-command-manual";
+    private const string RepairAutostartSwitch = "--repair-autostart";
 
     [STAThread]
     private static int Main(string[] args)
@@ -28,6 +29,13 @@ internal static class Program
             }
 
             return App.ExportCommandManual(args[exportIndex + 1]);
+        }
+
+        if (args.Any(argument => argument.Equals(RepairAutostartSwitch, StringComparison.OrdinalIgnoreCase)))
+        {
+            var executable = Environment.ProcessPath
+                             ?? throw new InvalidOperationException("无法确定 HistoryVulcan 可执行文件路径");
+            return App.RepairAutostart(executable);
         }
 
         if (args.Any(argument => argument.Equals("--service", StringComparison.OrdinalIgnoreCase)))

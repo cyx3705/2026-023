@@ -109,12 +109,6 @@
                 </Button>
             </StackPanel>
 
-            <!-- UI-05.2:指令结果瞬时回执(原状态栏左侧信息) -->
-            <Border x:Name="Toast"
-                    Style="{StaticResource Shell.Toast}"
-                    MouseLeftButtonDown="OnToastClick">
-                <TextBlock x:Name="ToastText" Style="{StaticResource Shell.Toast.Text}" />
-            </Border>
         </Grid>
     </Border>
 </Window>

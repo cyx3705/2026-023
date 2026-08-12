@@ -28,13 +28,9 @@
                                         DisplayMemberBinding="{Binding ModuleName}" />
                         <GridViewColumn Header="版本" Width="80"
                                         DisplayMemberBinding="{Binding Version}" />
-                        <GridViewColumn Header="暴露" Width="80"
-                                        DisplayMemberBinding="{Binding Mode}" />
                         <GridViewColumn Header="指令数" Width="60"
                                         DisplayMemberBinding="{Binding CommandCount}" />
-                        <GridViewColumn Header="来源文件" Width="180"
-                                        DisplayMemberBinding="{Binding AssemblyFile}" />
-                        <GridViewColumn Header="描述" Width="320"
+                        <GridViewColumn Header="描述" Width="520"
                                         DisplayMemberBinding="{Binding Description}" />
                     </GridView>
                 </ListView.View>

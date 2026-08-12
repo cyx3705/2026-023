@@ -56,9 +56,6 @@ public partial class ShellWindow : Window, IShellCommandWorkbenchHost
     // UI-03:折叠后的菜单挂在顶栏菜单按钮上(挂上去才能继承窗体资源与样式)
     private readonly ContextMenu _menu = new();
 
-    // UI-05.2:指令结果瞬时回执的收起计时器
-    private readonly DispatcherTimer _toastTimer;
-
     private int _errorCount;
     private bool _menusInitialized;
 
@@ -112,14 +109,6 @@ public partial class ShellWindow : Window, IShellCommandWorkbenchHost
         // UI-08:上次选择的主题先于任何界面成型生效,避免启动瞬间闪一下浅色
         ApplyTheme(settings.Get(ThemeSettingsKey) ?? ThemeLight, persist: false);
 
-        // UI-05.2:成功 2.5s、失败 6s 后收起,间隔在 ShowToast 里按结果设定
-        _toastTimer = new DispatcherTimer(DispatcherPriority.Background);
-        _toastTimer.Tick += (_, _) =>
-        {
-            _toastTimer.Stop();
-            Toast.Visibility = Visibility.Collapsed;
-        };
-
         StateChanged += (_, _) => ApplyWindowStateChrome();
         SourceInitialized += OnShellSourceInitialized;
         PreviewKeyDown += OnShellPreviewKeyDown;
@@ -170,14 +159,11 @@ public partial class ShellWindow : Window, IShellCommandWorkbenchHost
         _panels.RegisterWindows(config.ToolWindows);
 
         _docking = new DockingHost(DockManager, config.ToolWindows, layoutStore, log, settings);
-        _docking.CommandGenerated += (_, e) =>
-            Dispatcher.BeginInvoke(() => ShowToast($"[{e.Source}] {e.CommandText}", success: true));
         _docking.Initialize();
         ConfigureCommandCompletionRouting(
-            () => string.Equals(
-                _docking.MaximizedId,
-                StandardWindowIds.Console,
-                StringComparison.OrdinalIgnoreCase),
+            // Keyboard focus in the console is enough to own completion. Normal docked layout
+            // must not redirect the first typed character to the command catalog.
+            () => true,
             () =>
             {
                 _ = ShowCommandCatalogForCompletionAsync();
@@ -346,18 +332,11 @@ public partial class ShellWindow : Window, IShellCommandWorkbenchHost
                 log.Warn("mcp", message);
         }
 
-        // 成功仍给瞬时回执；失败直接打开控制台，避免错误浮层遮挡工作区。
+        // 命令结果统一进入 IShellLog/控制台；失败仍自动打开控制台查看全文。
         _bus.Executed += (text, source, result) => Dispatcher.BeginInvoke(() =>
         {
-            var summary = result.Message.Split('\n')[0];
-            if (result.Success)
+            if (!result.Success)
             {
-                ShowToast($"✓ [{source}] {text} —— {summary}", success: true);
-            }
-            else
-            {
-                Toast.Visibility = Visibility.Collapsed;
-                _toastTimer.Stop();
                 FocusConsole(resetFilters: true, preserveMaximizedLayout: true);
             }
             UpdateLayoutIndicator();
@@ -589,25 +568,6 @@ public partial class ShellWindow : Window, IShellCommandWorkbenchHost
 
     private void OnErrorBadgeClick(object sender, RoutedEventArgs e)
         => _ = _bus.ExecuteAsync("vulcan.log.focus errors=true", "UI");
-
-    /// <summary>UI-05.2:指令结果瞬时回执;失败停留更久,点击跳控制台看全文。</summary>
-    private void ShowToast(string text, bool success)
-    {
-        ToastText.Text = text;
-        if (TryFindResource(success ? "Shell.Brush.TextPrimary" : "Shell.Brush.Danger") is Brush brush)
-            ToastText.Foreground = brush;
-        Toast.Visibility = Visibility.Visible;
-        _toastTimer.Stop();
-        _toastTimer.Interval = TimeSpan.FromSeconds(success ? 2.5 : 6);
-        _toastTimer.Start();
-    }
-
-    private void OnToastClick(object sender, MouseButtonEventArgs e)
-    {
-        Toast.Visibility = Visibility.Collapsed;
-        _toastTimer.Stop();
-        _ = _bus.ExecuteAsync("vulcan.log.focus", "UI");
-    }
 
     // ---------------------------------------------------------------- 顶栏窗口控件(UI-02)
 

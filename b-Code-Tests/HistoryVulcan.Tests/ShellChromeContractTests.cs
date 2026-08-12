@@ -12,6 +12,7 @@ using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Docking;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Storage;
+using HistoryVulcan.Extensibility.CommandSurface;
 using HistoryVulcan.Services;
 using HistoryVulcan.Shell;
 using HistoryVulcan.Shell.Console;
@@ -155,7 +156,7 @@ public sealed class ShellChromeContractTests
             Assert.False(result.Success);
             Assert.True(window.Docking.ListWindows()
                 .Single(item => item.Id == StandardWindowIds.Console).IsVisible);
-            Assert.Equal(Visibility.Collapsed, RequireElement<FrameworkElement>(window, "Toast").Visibility);
+            Assert.Null(window.FindName("Toast"));
         });
     }
 
@@ -941,6 +942,45 @@ public sealed class ShellChromeContractTests
     }
 
     [Fact]
+    public void ConsoleTypingInNormalLayoutKeepsCompletionInConsole()
+    {
+        var session = new CompletionCatalogSession();
+        RunShell(window =>
+        {
+            window.AttachCommandCatalogSession(session);
+            var console = Assert.Single(FindVisualDescendants<ConsoleView>(window));
+            var input = Assert.IsType<TextBox>(console.FindName("Input"));
+            var popup = Assert.IsType<Popup>(console.FindName("CompletionPopup"));
+
+            Assert.Null(window.Docking.MaximizedId);
+            input.Focus();
+            Keyboard.Focus(input);
+            input.Text = "v";
+            input.CaretIndex = input.Text.Length;
+
+            Assert.True(
+                UiTestHost.PumpUntil(() => popup.IsOpen),
+                "Normal docked layout redirected console input instead of showing completion.");
+            Assert.True(input.IsKeyboardFocusWithin);
+            Assert.Equal("v", input.Text);
+            Assert.Equal("vulcan.", Assert.Single(session.LastResult.Candidates).InsertText);
+
+            Assert.True(console.HandleCompletionKey(Key.Tab, ModifierKeys.None));
+            Assert.True(UiTestHost.PumpUntil(() => session.LastText == "vulcan."));
+            Assert.Equal("vulcan.proj.", Assert.Single(session.LastResult.Candidates).InsertText);
+
+            Assert.True(console.HandleCompletionKey(Key.Tab, ModifierKeys.None));
+            Assert.True(UiTestHost.PumpUntil(() => session.LastText == "vulcan.proj."));
+            Assert.Equal("vulcan.proj.open ", Assert.Single(session.LastResult.Candidates).InsertText);
+
+            Assert.True(console.HandleCompletionKey(Key.Tab, ModifierKeys.None));
+            Assert.True(UiTestHost.PumpUntil(() => session.LastText == "vulcan.proj.open "));
+            Assert.Equal("name=", Assert.Single(session.LastResult.Candidates).InsertText);
+            Assert.True(input.IsKeyboardFocusWithin);
+        });
+    }
+
+    [Fact]
     public void ConsoleLongLinesWrapAtCurrentWidthWithoutHorizontalExtentOrLogicalNewlines()
     {
         UiTestHost.RunSta(() =>
@@ -1300,6 +1340,79 @@ public sealed class ShellChromeContractTests
             _entries.Add(entry);
             EntryAdded?.Invoke(this, entry);
         }
+    }
+
+    private sealed class CompletionCatalogSession : ICommandCatalogSession
+    {
+        public event EventHandler<CommandCatalogChangedEventArgs>? Changed
+        {
+            add { }
+            remove { }
+        }
+
+        public IReadOnlyList<string> Domains => ["vulcan"];
+        public IReadOnlyList<string> Classes => ["app"];
+        public string? SelectedCommandName => null;
+        public CommandCatalogFilter CurrentFilter => new();
+        public ConsoleCompletionResult LastResult { get; private set; } = ConsoleCompletionResult.Empty;
+        public string LastText { get; private set; } = "";
+
+        public Task<bool> RefreshAsync(bool force = false, CancellationToken cancellationToken = default)
+            => Task.FromResult(true);
+
+        public void SetFilter(CommandCatalogFilter filter) { }
+
+        public bool TrySetDomain(string domain, out IReadOnlyList<string> availableDomains)
+        {
+            availableDomains = ["全部", "vulcan"];
+            return availableDomains.Contains(domain, StringComparer.OrdinalIgnoreCase);
+        }
+
+        public bool TrySetCommandClass(string commandClass, out IReadOnlyList<string> availableClasses)
+        {
+            availableClasses = ["全部", "app"];
+            return availableClasses.Contains(commandClass, StringComparer.OrdinalIgnoreCase);
+        }
+
+        public void SetConsoleQuery(string query) { }
+        public bool MoveSelection(int direction) => false;
+        public void Select(string? commandName) { }
+
+        public Task<ConsoleCompletionResult> CompleteAsync(
+            string text,
+            int caretIndex,
+            CancellationToken cancellationToken = default)
+        {
+            LastText = text;
+            var candidate = text switch
+            {
+                "v" => Completion("vulcan.", ConsoleCompletionKind.Domain),
+                "vulcan." => Completion("vulcan.proj.", ConsoleCompletionKind.Class),
+                "vulcan.proj." => Completion("vulcan.proj.open ", ConsoleCompletionKind.Method),
+                "vulcan.proj.open " => Completion("name=", ConsoleCompletionKind.Parameter),
+                _ => null,
+            };
+            LastResult = new ConsoleCompletionResult
+            {
+                Candidates = candidate is null ? [] : [candidate],
+                ReplaceStart = 0,
+                ReplaceLength = text.Length,
+            };
+            return Task.FromResult(LastResult);
+        }
+
+        private static ConsoleCompletionCandidate Completion(
+            string text,
+            ConsoleCompletionKind kind)
+            => new()
+            {
+                InsertText = text,
+                DisplayText = text,
+                Description = kind.ToString(),
+                Kind = kind,
+            };
+
+        public void Dispose() { }
     }
 
     private sealed class MemorySettings : ISettingsService

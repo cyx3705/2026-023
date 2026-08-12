@@ -119,29 +119,4 @@
         </Setter>
     </Style>
 
-    <!-- ================================================================ 瞬时提示(UI-05.2) -->
-
-    <Style x:Key="Shell.Toast" TargetType="Border">
-        <Setter Property="Background" Value="{DynamicResource Shell.Brush.Surface}" />
-        <Setter Property="CornerRadius" Value="{DynamicResource Shell.Radius.Inner}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource Shell.Brush.Hairline}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="Padding" Value="12,8" />
-        <Setter Property="Margin" Value="0,0,16,16" />
-        <Setter Property="MaxWidth" Value="520" />
-        <Setter Property="HorizontalAlignment" Value="Right" />
-        <Setter Property="VerticalAlignment" Value="Bottom" />
-        <Setter Property="Effect" Value="{DynamicResource Shell.Shadow.Flyout}" />
-        <Setter Property="Visibility" Value="Collapsed" />
-    </Style>
-
-    <Style x:Key="Shell.Toast.Text" TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="{DynamicResource Shell.Font.Family}" />
-        <Setter Property="FontSize" Value="{DynamicResource Shell.Font.Body}" />
-        <Setter Property="Foreground" Value="{DynamicResource Shell.Brush.TextPrimary}" />
-        <Setter Property="TextWrapping" Value="Wrap" />
-        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-        <Setter Property="MaxHeight" Value="60" />
-    </Style>
-
 </ResourceDictionary>
