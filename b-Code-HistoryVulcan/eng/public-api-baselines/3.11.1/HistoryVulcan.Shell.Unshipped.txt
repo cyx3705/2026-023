@@ -1,12 +1,9 @@
-﻿#nullable enable
-const HistoryVulcan.Shell.Modules.ModuleCommands.KeyModuleRoots = "module.roots" -> string!
+﻿const HistoryVulcan.Shell.Modules.ModuleCommands.KeyModuleRoots = "module.roots" -> string!
 HistoryVulcan.Shell.Console.ConsoleView.ActivateContent() -> void
 HistoryVulcan.Shell.Mcp.CommandCatalogRow.CommandClass.get -> string!
 HistoryVulcan.Shell.Mcp.CommandCatalogRow.CommandClass.init -> void
 HistoryVulcan.Shell.Mcp.CommandCatalogRow.Method.get -> string!
 HistoryVulcan.Shell.Mcp.CommandCatalogRow.Method.init -> void
-HistoryVulcan.Shell.Mcp.CommandCatalogDetail.Annotations.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
-HistoryVulcan.Shell.Mcp.CommandCatalogDetail.Annotations.init -> void
 HistoryVulcan.Shell.ShellConfig.ModuleDiscoveryRoots.get -> System.Collections.Generic.List<string!>!
 HistoryVulcan.Shell.ShellConfig.RequireConfirmedModuleSources.get -> bool
 HistoryVulcan.Shell.ShellConfig.RequireConfirmedModuleSources.set -> void
@@ -31,3 +28,5 @@ static HistoryVulcan.Shell.Mcp.PromptGovernanceCommands.RegisterAll(HistoryVulca
 *REMOVED*static HistoryVulcan.Shell.Mcp.CommandCatalogCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Mcp.CommandSchemaExporter! exporter, HistoryVulcan.Services.Mcp.PromptGovernanceStore! prompts, System.Func<HistoryVulcan.Services.Mcp.McpGateway?>! gateway, string! source = "app") -> void
 *REMOVED*static HistoryVulcan.Shell.Mcp.CommandCatalogCommands.Snapshot(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Mcp.CommandSchemaExporter! exporter, HistoryVulcan.Services.Mcp.PromptGovernanceStore! prompts, string! policy) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Shell.Mcp.CommandCatalogRow!>!
 *REMOVED*static HistoryVulcan.Shell.Mcp.PromptGovernanceCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Mcp.CommandSchemaExporter! exporter, HistoryVulcan.Services.Mcp.PromptGovernanceStore! store, string! source = "app") -> void
+HistoryVulcan.Shell.Mcp.CommandCatalogDetail.Annotations.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+HistoryVulcan.Shell.Mcp.CommandCatalogDetail.Annotations.init -> void
