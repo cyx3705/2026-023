@@ -1,0 +1,426 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>HistoryVulcan.Extensibility</name>
+    </assembly>
+    <members>
+        <member name="T:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionKind">
+            <summary>控制台补全候选种类。</summary>
+            <remarks>
+            3.4.0（DEC-025）起命令名补全按域 → 类 → 方法分段推进，每段有自己的种类供界面分组；
+            <see cref="F:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionKind.Command"/> 保留给整名候选。
+            </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionKind.Command">
+            <summary>命令名。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionKind.Parameter">
+            <summary>参数名。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionKind.Value">
+            <summary>参数值。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionKind.Domain">
+            <summary>指令域，补全后落点是 <c>域.</c>。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionKind.Class">
+            <summary>指令类，补全后落点是 <c>类.</c>。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionKind.Method">
+            <summary>指令方法，补全后落点是 <c>方法 </c>（含尾随空格，直接进入参数段）。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionCandidate">
+            <summary>单条控制台补全候选。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionCandidate.InsertText">
+            <summary>写入输入框的文本。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionCandidate.DisplayText">
+            <summary>列表显示文本。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionCandidate.Description">
+            <summary>候选说明。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionCandidate.Kind">
+            <summary>候选种类。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionResult">
+            <summary>一次补全计算结果。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionResult.Empty">
+            <summary>无候选结果。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionResult.Candidates">
+            <summary>候选列表。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionResult.ReplaceStart">
+            <summary>替换起点。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionResult.ReplaceLength">
+            <summary>替换长度。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.ConsoleCompletionResult.HasCandidates">
+            <summary>是否有候选。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.CommandSurface.CommandCatalogFilter">
+            <summary>命令目录会话筛选状态（控制台与命令集共用）。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.CommandSurface.CommandCatalogFilter.#ctor(System.String,System.String,System.String,System.Int32)">
+            <summary>命令目录会话筛选状态（控制台与命令集共用）。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.CommandSurface.CommandCatalogChangeKind">
+            <summary>目录会话变更种类。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Extensibility.CommandSurface.CommandCatalogChangeKind.Snapshot">
+            <summary>快照重载。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Extensibility.CommandSurface.CommandCatalogChangeKind.Filter">
+            <summary>筛选变更。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Extensibility.CommandSurface.CommandCatalogChangeKind.Selection">
+            <summary>选择变更。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Extensibility.CommandSurface.CommandCatalogChangeKind.Invalidated">
+            <summary>注册表失效，需刷新。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.CommandSurface.CommandCatalogChangedEventArgs">
+            <summary>目录会话变更参数。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.CommandSurface.CommandCatalogChangedEventArgs.#ctor(HistoryVulcan.Extensibility.CommandSurface.CommandCatalogChangeKind)">
+            <summary>目录会话变更参数。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.CommandCatalogChangedEventArgs.Kind">
+            <summary>变更种类。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession">
+            <summary>
+            控制台补全与命令集/详情共享的最小目录会话面。
+            具体实现由命令工作台模块（Mercury）提供；Shell 仅持有延迟代理。
+            </summary>
+        </member>
+        <member name="E:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession.Changed">
+            <summary>目录或筛选变化。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession.Domains">
+            <summary>当前可见域列表（不含「全部」）。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession.Classes">
+            <summary>当前域下的类列表（不含「全部」）；域为全部时为空。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession.SelectedCommandName">
+            <summary>当前选中的命令名。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession.CurrentFilter">
+            <summary>当前筛选。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession.RefreshAsync(System.Boolean,System.Threading.CancellationToken)">
+            <summary>刷新目录快照。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession.SetFilter(HistoryVulcan.Extensibility.CommandSurface.CommandCatalogFilter)">
+            <summary>设置完整筛选。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession.TrySetDomain(System.String,System.Collections.Generic.IReadOnlyList{System.String}@)">
+            <summary>尝试设置域筛选。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession.TrySetCommandClass(System.String,System.Collections.Generic.IReadOnlyList{System.String}@)">
+            <summary>尝试设置类筛选。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession.SetConsoleQuery(System.String)">
+            <summary>设置控制台检索词（同步命令集列表）。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession.MoveSelection(System.Int32)">
+            <summary>在可见行中移动选择。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession.Select(System.String)">
+            <summary>选中指定命令。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession.CompleteAsync(System.String,System.Int32,System.Threading.CancellationToken)">
+            <summary>为控制台输入计算补全。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.Commands.CommandClassLabels">
+            <summary>
+            「无类」显示标签的唯一真源（DEC-025）。两段名 <c>&lt;域&gt;.&lt;方法&gt;</c> 是该域的
+            无类直接方法，其类为空串；目录、控制台与命令集都用这里的标签显示与筛选。
+            </summary>
+            <remarks>
+            这里**只做显示层翻译**，不承担任何类推导。类推导的唯一入口是
+            <see cref="M:HistoryVulcan.Core.Commands.CommandRegistry.LegacyClass(System.String)"/>；3.3.2 曾有一个同时管显示和推导的
+            <c>CommandClassNames</c>，两职合一导致筛选值与注册值互相污染，故拆开。
+            </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Extensibility.Commands.CommandClassLabels.None">
+            <summary>无类直接方法在界面上的类名。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Commands.CommandClassLabels.Display(System.String)">
+            <summary>把类键翻译成显示标签：空串 → <see cref="F:HistoryVulcan.Extensibility.Commands.CommandClassLabels.None"/>。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Commands.CommandClassLabels.ToKey(System.String)">
+            <summary>把显示标签翻译回类键：<see cref="F:HistoryVulcan.Extensibility.Commands.CommandClassLabels.None"/> → 空串。筛选比较前调用。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Commands.CommandClassLabels.IsNone(System.String)">
+            <summary>该类键是否代表无类直接方法。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.Commands.DomainFocus">
+            <summary>
+            域聚焦下的输入解析（DEC-025 / REQ-CMD-012）。纯函数，不持有注册表也不碰界面，
+            控制台与 Mercury 补全引擎共用同一份判定，避免两侧各写一套导致行为漂移。
+            </summary>
+            <remarks>
+            只有两条规则：输入首段命中**已注册域**时按绝对名解析；否则补上当前聚焦域前缀。
+            「退出聚焦」因此不需要任何域提供指令——<c>mercury.go</c>、<c>vulcan.*</c>
+            的首段本身就是已注册域，在任何聚焦状态下都能直接输入。
+            </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Extensibility.Commands.DomainFocus.All">
+            <summary>域筛选下拉里代表「不聚焦」的值。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Commands.DomainFocus.IsUnfocused(System.String)">
+            <summary>该值是否表示未聚焦到任何域。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Commands.DomainFocus.Resolve(System.String,System.String,System.Func{System.String,System.Boolean})">
+            <summary>
+            把用户输入解析成实际要执行的指令文本。
+            </summary>
+            <param name="input">用户在控制台输入的原文。</param>
+            <param name="focusedDomain">当前聚焦域；<see cref="F:HistoryVulcan.Extensibility.Commands.DomainFocus.All"/> 或空表示未聚焦。</param>
+            <param name="isRegisteredDomain">
+            判断一个首段是否是已注册域。权威源必须是运行期注册表
+            （<see cref="M:HistoryVulcan.Core.Commands.CommandRegistry.IsRegisteredDomain(System.String)"/>），不得传入硬编码域清单。
+            </param>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Commands.DomainFocus.WouldPrefix(System.String,System.String,System.Func{System.String,System.Boolean})">
+            <summary>
+            输入是否会被拼上聚焦域前缀。界面据此提示「当前输入将解析为 &lt;域&gt;.…」。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Commands.DomainFocus.HeadSegment(System.String)">
+            <summary>
+            取第一个 token 的首段（第一个点之前的部分）。没有点时整个 token 就是首段。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.Mcp.CommandManualPreview">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandManualPreview.#ctor(System.String,System.Int32,System.String,System.String,System.Boolean)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.Mcp.CommandManualGenerator">
+            <summary>从运行时注册表和 MCP 投影生成确定性命令手册。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandManualGenerator.Render(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandManualGenerator.Sha256(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.Mcp.McpToolInfo">
+            <summary>
+            一条指令的 MCP 工具形态(MC-01):tools/list 条目与本地 vulcan.mcp.schema 共用。
+            Dangerous = 带 ConfirmPrompt(总线确认闸口),网关侧按 MS-04 对 MCP 一律拒绝执行。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Mcp.McpToolInfo.#ctor(System.String,System.String,System.String,System.Text.Json.Nodes.JsonObject,System.Boolean,System.String,System.Boolean)">
+            <summary>
+            一条指令的 MCP 工具形态(MC-01):tools/list 条目与本地 vulcan.mcp.schema 共用。
+            Dangerous = 带 ConfirmPrompt(总线确认闸口),网关侧按 MS-04 对 MCP 一律拒绝执行。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter">
+            <summary>
+            指令元数据自描述层(V2.1 §3,MC-01~06):
+            CommandRegistry 的指令元数据 ↔ MCP 工具描述(JSON Schema)双向映射。
+            铁律 1:本层与网关的唯一上游是指令注册表/总线,不认识 ModuleHost 与任何 DLL 类型。
+            每次调用现算不缓存(MC-04),模块热重载后的指令增删即刻反映。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter.#ctor(HistoryVulcan.Core.Commands.CommandRegistry)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter.DescriptionsProvider">
+            <summary>
+            生效提示词提供者(V2.1.2,装配点接 PromptGovernanceStore.AllEffectiveDescriptions):
+            修订在导出读取侧合成，应用后客户端下次 tools/list 即见新描述，无需重启。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter.IsHardExcluded(System.String)">
+            <summary>
+            硬排除清单(MS-03,任何策略下都不暴露):
+            vulcan.app.quit(远端不得杀宿主)、debug.*(承压/注水等自测工具)、
+            mcp.*(防远端自锁与递归启停)。代码内常量,不走配置。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter.HardExclusionReason(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter.ExportTools">
+            <summary>全量导出(MC-01):注册表指令 − 硬排除,含危险标记与提示词覆盖;调用即现算。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter.Find(System.String)">
+            <summary>按工具名或指令名找一条(vulcan.mcp.schema name= 与 tools/call 共用)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter.MakeToolName(System.String,System.Collections.Generic.HashSet{System.String})">
+            <summary>指令名 → MCP 合法工具名(^[a-zA-Z0-9_-]{1,64}$):点等非法字符换下划线,冲突追加序号。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter.IllegalChars">
+            <remarks>
+            Pattern:<br/>
+            <code>[^a-zA-Z0-9_-]</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match a character in the set [^-0-9A-Z_a-z].<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter.DefaultNode(HistoryVulcan.Core.Commands.ParamType,System.String)">
+            <summary>Default 是字符串表达,按声明类型转成 JSON 原生类型(转不动回落字符串)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter.BuildCommandText(System.String,System.Nullable{System.Text.Json.JsonElement})">
+            <summary>
+            tools/call 的 arguments(JSON 对象) → 总线指令文本。
+            值编码复用 CommandParser.QuoteArg(§5.1 官方转义),与手输语法完全同轨;
+            嵌套对象/数组序列化为紧凑 JSON 字符串传入(由指令自己解释)。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchHost">
+            <summary>
+            Shell 暴露给命令工作台模块的挂载点：共享选择态、目录会话接到控制台，以及补全路由。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchHost.Bus">
+            <summary>宿主指令总线。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchHost.CommandSelection">
+            <summary>命令集与详情联动选中态。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchHost.Settings">
+            <summary>设置存储。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchHost.Log">
+            <summary>宿主日志。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchHost.DataDirectory">
+            <summary>数据根目录。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchHost.AttachCommandCatalogSession(HistoryVulcan.Extensibility.CommandSurface.ICommandCatalogSession)">
+            <summary>把真实目录会话挂到控制台延迟代理上。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchHost.ConfigureCommandCompletionRouting(System.Func{System.Boolean},System.Action)">
+            <summary>配置控制台补全聚焦判定与非聚焦时唤起命令集。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchHost.RefreshCommandCompletionFocus">
+            <summary>布局变化后刷新补全聚焦态。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchAware">
+            <summary>模块实现本接口后，宿主在 CreateUi 前注入命令工作台挂载点。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchAware.CommandWorkbench">
+            <summary>命令工作台宿主；服务宿主或未装配时可为 null。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.Panels.PanelDefinition">
+             <summary>
+             控制面板声明(§4.5,P-01):JSON 配置文件与 C# 注册 API 共用的信息模型。
+            
+             住在演进层而不是 Core:控件类型与属性是一份注定要生长的数据 schema——每加一种
+             控件或一个属性都是一次契约变更。它同时是宿主便利功能而非模块地基(零模块消费),
+             因此不该占用 Core 的冻结额度。
+             面板 = 一个可停靠工具窗口,内容为若干输入控件 + 指令触发按钮。
+             </summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelDefinition.Id">
+            <summary>面板 id,同时是窗口名(vulcan.ui.show name=&lt;id&gt;);小写、进程内唯一。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelDefinition.Title">
+            <summary>标题栏显示名。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelDefinition.Visible">
+            <summary>默认是否可见。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelDefinition.Side">
+            <summary>默认停靠方位:left / right / top / bottom。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelDefinition.Ratio">
+            <summary>默认占主窗体比例。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelDefinition.Controls">
+            <summary>控件清单,按声明顺序纵向排布(P-06 简单行列栅格)。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Extensibility.Panels.PanelControl">
+            <summary>
+            面板内一个控件(P-02 八类):
+            button / text / number / combo / check / slider / file / dir / label。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelControl.Type">
+            <summary>控件类型(见类注释)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelControl.Id">
+            <summary>控件 id:指令模板以 {id} 引用其当前值;button/label 可省略。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelControl.Label">
+            <summary>左侧标签文本;button 的按钮文字。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelControl.Command">
+            <summary>button 专用:指令模板,{控件id} 占位引用同面板输入控件当前值(P-03)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelControl.Items">
+            <summary>combo 专用:候选项。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelControl.Min">
+            <summary>number / slider:范围与步进(P-02)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelControl.Max">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelControl.Step">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelControl.Default">
+            <summary>默认值(文本表达)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelControl.Style">
+            <summary>button 可选样式:"danger" 红色强调。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Panels.PanelControl.Required">
+            <summary>校验(P-04):必填。</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.IllegalChars_0">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the IllegalChars method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.IllegalChars_0.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.IllegalChars_0.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.IllegalChars_0.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.IllegalChars_0.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.IllegalChars_0.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.IllegalChars_0.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.IllegalChars_0.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.Utilities">
+            <summary>Helper methods used by generated <see cref="T:System.Text.RegularExpressions.Regex"/>-derived implementations.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout">
+            <summary>Default timeout value set in <see cref="T:System.AppContext"/>, or <see cref="F:System.Text.RegularExpressions.Regex.InfiniteMatchTimeout"/> if none was set.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_hasTimeout">
+            <summary>Whether <see cref="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout"/> is non-infinite.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_ascii_20FF03FEFFFF87FEFFFF07">
+            <summary>Supports searching for characters in or not in "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".</summary>
+        </member>
+    </members>
+</doc>
