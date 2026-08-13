@@ -1,0 +1,2 @@
+﻿*REMOVED*HistoryVulcan.ServiceHost.ServiceComposition.GlobalShortcuts.get -> HistoryVulcan.Core.Input.IGlobalShortcutHost?
+*REMOVED*HistoryVulcan.ServiceHost.ServiceComposition.GlobalShortcuts.init -> void
