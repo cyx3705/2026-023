@@ -267,13 +267,26 @@ public sealed partial class DockingHost
                     placement?.Selected ?? false);
             }
         }
-        else if (d.DefaultSide == DockSide.Tab && d.DefaultTabTarget != null &&
-                 FindCenterDocument(d.DefaultTabTarget) != null)
+        else if (d.DefaultSide == DockSide.Center
+                 || (d.DefaultSide == DockSide.Tab && d.DefaultTabTarget != null &&
+                     FindCenterDocument(d.DefaultTabTarget) != null))
         {
+            // 中央区的工具窗口：位置仍是中央，身份是 LayoutAnchorable。
+            // 隐藏态与落位沿用中央页的既有语义，使它与此前的文档页在用户可见行为上一致。
+            var placement = _orphanPlacements.GetValueOrDefault(d.Id);
+            var hidden = _hiddenCenterIds.Contains(d.Id)
+                         || !d.DefaultVisible
+                         || placement?.Hidden == true;
             var anchorable = MoveToAnchorable(d);
-            ShowAnchorableAsCenterPage(anchorable);
-            if (!d.DefaultVisible)
+            ShowAnchorableAsCenterPage(
+                anchorable,
+                placement?.CenterIndex,
+                placement?.Selected ?? false);
+            if (hidden)
+            {
                 anchorable.Hide();
+                _hiddenCenterIds.Add(d.Id);
+            }
         }
         else
         {
@@ -322,8 +335,20 @@ public sealed partial class DockingHost
     private bool IsPrimaryCommandDocument(string id)
         => id.Equals(StandardWindowIds.Mcp, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// 只有宿主自持的主命令页使用文档身份(<c>LayoutDocument</c>)；其余一律是工具窗口
+    /// (<c>LayoutAnchorable</c>)，声明 <see cref="DockSide.Center"/> 的窗口仍落在中央区，
+    /// 但以中央页形态呈现(<c>ShowAnchorableAsCenterPage</c>)。
+    ///
+    /// 为什么模块不再能注册文档页：文档页的拖动行为明显弱于工具窗口，且会引出一连串
+    /// 停靠相关缺陷。与其逐个修复文档页的拖动路径，不如取消这条注册路径——**中央位置**
+    /// 是模块真正需要的，**文档身份**只是当初取得该位置的手段。
+    ///
+    /// 旧布局自动迁移：恢复时若存档中的 LayoutDocument 对应的描述符已不再是文档身份，
+    /// 反序列化回调会取消该节点，随后由 EnsureRegisteredWindow 以工具窗口重建。
+    /// </summary>
     private bool UsesDocumentIdentity(ToolWindowDescriptor descriptor)
-        => IsPrimaryCommandDocument(descriptor.Id) || descriptor.DefaultSide == DockSide.Center;
+        => IsPrimaryCommandDocument(descriptor.Id);
 
     private LayoutDocumentPane FindMainDocumentPane()
         => _manager.Layout.RootPanel.Descendents()

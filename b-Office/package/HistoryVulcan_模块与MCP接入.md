@@ -1,4 +1,4 @@
-# HistoryVulcan 模块与 MCP 接入
+﻿# HistoryVulcan 模块与 MCP 接入
 
 > 适用版本：HistoryVulcan **3.3.2** 正式（已部署于 `z-HistoryVulcan`；3.1.8 不受支持）
 > 3.3.0（DEC-022）：内置命令硬切为 `vulcan.<类>.<方法>`（Domain=`vulcan`）；全局快捷键（含 `GlobalShortcutService`）与命令工作台由 HistoryMercury 4.1.0 拥有。
@@ -31,6 +31,18 @@
 模块以 `BaseVariable.ModuleInfoBase` 派生类型描述名称、版本、启用状态与方法暴露。公共、非泛型、非属性
 访问器方法映射为 `<模块名>.<方法名>`；相邻 XML 文件为 Help、命令目录和 MCP schema 提供摘要。命令重名
 时拒绝新项，不覆盖框架、应用或其他模块命令。
+
+### 窗口注册：只有工具窗口
+
+`IShellUiRegistrar.RegisterToolWindow` 注册的窗口一律是工具窗口。自 3.11.3 起宿主**不再提供文档页
+（主窗口页面）注册路径**：声明 `DefaultSide = DockSide.Center` 的窗口仍落在中央工作区，但以中央页形态
+呈现而不是文档页。位置不变，变的是身份。
+
+模块代码无需修改；已保存的布局在下次启动时自动迁移——存档中的文档页节点会被丢弃并按工具窗口重建。
+唯一的文档页是宿主自持的主命令页，模块不能注册也不能替换。
+
+取消这条路径的原因与当前已知缺口，见
+[UI 风格与嵌入页面规范 · 窗口形态](HistoryVulcan_UI风格与嵌入页面规范.md)。
 
 3.1.9 起，需要宿主服务的外置模块实现 `IModuleContextAware`。装载后宿主调用 `Attach(IModuleContext)`，
 上下文提供权威 `CommandBus`、`IShellLog`、`ISettingsService` 和宿主数据根目录；模块应在该根目录下使用
@@ -86,7 +98,8 @@ HistoryVulcan 不覆盖该声明。3.0.2 起，模块运行期注册的右侧窗
 3.1.1 起，历史布局中已经存在的同侧独立窗格也会在加载时合并成一个标签组；同一轴的侧栏合计最多占 50%，
 中央主工作区至少保留 50%。模块不应通过额外侧栏规避该主区保护规则。
 
-命令集是固定中央主文档（由 HistoryMercury 提供页面）。模块中央窗口通过 `DockSide.Center` 进入同一个文档标签组；中央自己的页面头和
+命令集是固定中央主文档（由 HistoryMercury 提供页面），也是**唯一**的文档页。模块中央窗口通过
+`DockSide.Center` 进入同一个中央标签组，但以工具窗口身份呈现（见上文「窗口注册」）；中央自己的页面头和
 页面选择标签始终显示，模块页可通过标签或 `IDockingService.Show` 切换。模块卸载、隐藏或浮动时，命令集仍留在主区。模块不得自行维护另一套首页
 或页面生命周期，也不得直接依赖内部 AvalonDock 文档类型，更不得自建第二套命令目录 UI。
 
