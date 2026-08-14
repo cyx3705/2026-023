@@ -17,6 +17,8 @@
    `b-Office/文档中心.md`，涉及消费或跨项目复用时读取 `b-Office/package/复用说明.md`。
 4. 只进入 manifest 声明的活动目录。`b-Publish/`、`z-HistoryVulcan/`、`bin/`、`obj/`
    和 `artifacts/` 默认不进入源码维护上下文。
+5. 跨项目说明书：先执行 `diana.docs.catalog`，把完整输出留在本对话中，再调用其中一条
+   `diana.docs.<通道>`。不要打开别的 worktree 的 package，也不要依赖手写文件表。
 
 ## 真值与冲突处理
 

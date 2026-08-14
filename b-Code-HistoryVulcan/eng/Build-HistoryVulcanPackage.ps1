@@ -176,8 +176,7 @@ Run `host/HistoryVulcan.exe`. Historical releases are stored under `b-Publish/hi
         selfContained = $false
         sourceCommit = $sourceCommit
         sourceDirty = $sourceDirty
-        # 消费文档不再随快照分发：单一真值由 HistoryDiana 的 b-Office-OneHistory 托管，
-        # 发布管线在每次部署后同步镜像。快照内再放一份只会产生第二处会漂移的副本。
+        # 消费 Markdown 由 Diana 发布管线写入 docs/ 并重写 SHA256SUMS；本构建只记录编辑源文件名。
         documents = @($documentNames)
         files = @($payloadFiles | ForEach-Object {
             $relative = $_.FullName.Substring($temporary.Length).TrimStart('\', '/').Replace('\', '/')

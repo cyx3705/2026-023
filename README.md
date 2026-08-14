@@ -102,8 +102,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ..\2026-019-HistoryDiana\b-C
 Git 历史取回。现行回滚仍由 `b-Publish/history/<版本>/` 的 3.x 同构副本承担。
 
 宿主候选位于 `b-Publish/current`。当前正式快照为 3.11.3：运行入口 `z-HistoryVulcan/host/HistoryVulcan.exe`。
-消费文档不再随 Z 快照分发（`z-HistoryVulcan/docs/` 已移除）：单一真值是本仓库的 `b-Office/package/`，
-发布管线在每次部署后同步镜像到 HistoryDiana 的 `b-Office-OneHistory/消费文档/`。
+已发布说明书在 `z-HistoryVulcan/docs/`，编辑源是本仓库的 `b-Office/package/`；跨项目读取走 `diana.docs.vulcan`。
 旧名 `z-Package-AppShell/` 的 3.1.9 快照已随 3.2.0 发布退役删除（同构副本入库于 `b-Publish/history/3.1.9/`）。
 旧候选整体归档到 `b-Publish/history/<版本>/`。宿主部署脚本不会执行 Git commit、tag、push，
 也不会生成或推送 NuGet 包。

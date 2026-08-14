@@ -152,11 +152,6 @@ public sealed partial class ModuleHost : IDisposable
         if (_discoverySource == null)
             Directory.CreateDirectory(_dir);
         Reload();
-        if (_discoverySource == null && EnableFileWatching)
-        {
-            _watcher.Watch(_dir);
-            _log.Info("module", $"正在监听模块目录: {_dir}");
-        }
     }
 
     /// <summary>module.dir path=:切换模块目录并整体重载。</summary>
@@ -166,8 +161,6 @@ public sealed partial class ModuleHost : IDisposable
         _dir = newDir;
         Directory.CreateDirectory(_dir);
         Reload();
-        if (EnableFileWatching)
-            _watcher.Watch(_dir);
         _log.Info("module", $"模块目录已切换: {_dir}");
     }
 
@@ -252,9 +245,70 @@ public sealed partial class ModuleHost : IDisposable
                 _log.Info("module",
                     $"模块装载完成: {next.Modules.Count} 个模块,{next.RegisteredNames.Count} 条指令");
             }
+
+            SyncFileWatching();
         }
 
         ReloadCompleted?.Invoke();
+    }
+
+    private void SyncFileWatching()
+    {
+        if (!EnableFileWatching)
+        {
+            _watcher.Stop();
+            return;
+        }
+
+        var targets = ListFileWatchTargets();
+        if (!_watcher.Watch(targets))
+            return;
+        if (targets.Count == 1)
+            _log.Info("module", $"正在监听模块目录: {targets[0]}");
+        else if (targets.Count > 1)
+            _log.Info("module", $"正在监听 {targets.Count} 个 Z 模块目录");
+    }
+
+    private List<string> ListFileWatchTargets()
+    {
+        if (_discoverySource == null)
+            return string.IsNullOrWhiteSpace(_dir) ? [] : [_dir];
+
+        var targets = new List<string>();
+        foreach (var root in _discoverySource.Roots)
+        {
+            if (!Directory.Exists(root))
+                continue;
+
+            string[] projects;
+            try
+            {
+                projects = Directory.GetDirectories(root, ZModuleDiscoverySource.ProjectDirectoryPattern);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                _log.Warn("module", $"模块发现根不可读,跳过监听: {root}: {ex.Message}");
+                continue;
+            }
+
+            foreach (var project in projects)
+            {
+                try
+                {
+                    foreach (var package in Directory.GetDirectories(project, "z-*"))
+                    {
+                        if (File.Exists(Path.Combine(package, ZModuleDiscoverySource.ManifestFileName)))
+                            targets.Add(package);
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    _log.Warn("module", $"项目目录不可读,跳过监听: {project}: {ex.Message}");
+                }
+            }
+        }
+
+        return targets;
     }
 
     private void SwapRegistrations(Snapshot old, Snapshot next)

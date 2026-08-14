@@ -26,7 +26,8 @@
 `module.manifest.json`，且 `schemaVersion=1`、`type=HistoryVulcan.Module`；`artifact`、`docs`、`deps`
 是相对 manifest 所在 Z 目录且必须存在。模块名是生命周期 owner 和唯一命令域，文件夹名只用于定位候选。
 `vulcan.module.roots` 可查询或设置分号分隔的绝对根，`paths=auto` 恢复自动识别；`vulcan.module.reload` 负责重扫、卸载旧快照、
-装载有效入口并发布修订。错误 manifest、越界、缺入口、重名和身份/版本不符会跳过并写诊断。
+装载有效入口并发布修订。后台同时监听每个含 `module.manifest.json` 的 `z-*` 目录：模块以内存流加载故不锁文件，
+覆盖快照后 800ms 防抖自动热重载，换模块不必关宿主。错误 manifest、越界、缺入口、重名和身份/版本不符会跳过并写诊断。
 
 模块以 `BaseVariable.ModuleInfoBase` 派生类型描述名称、版本、启用状态与方法暴露。公共、非泛型、非属性
 访问器方法映射为 `<模块名>.<方法名>`；相邻 XML 文件为 Help、命令目录和 MCP schema 提供摘要。命令重名
