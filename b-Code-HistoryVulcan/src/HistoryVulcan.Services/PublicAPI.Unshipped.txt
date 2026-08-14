@@ -1,4 +1,7 @@
 ﻿#nullable enable
+const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.AutomaticRootNotFound = "未能向上找到含多个编号项目目录的项目库根。" -> string!
+const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.DefaultLibraryRoot = "C:\\OneHistory\\HistoryClio" -> string!
+const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.LegacyVestaLibrary = "C:\\OneHistory\\HistoryVesta" -> string!
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ManifestFileName = "module.manifest.json" -> string!
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ManifestType = "HistoryVulcan.Module" -> string!
 HistoryVulcan.Services.Modules.IModuleDiscoverySource
@@ -57,7 +60,9 @@ HistoryVulcan.Services.Modules.ZModuleDiscoverySource
 HistoryVulcan.Services.Modules.ZModuleDiscoverySource.Discover() -> HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot!
 HistoryVulcan.Services.Modules.ZModuleDiscoverySource.Roots.get -> System.Collections.Generic.IReadOnlyList<string!>!
 HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ZModuleDiscoverySource(System.Collections.Generic.IEnumerable<string!>! roots) -> void
+static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.CoerceConfiguredRoot(string! path) -> string!
 static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.FindAutomaticRoot(string! startPath) -> string?
+static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ResolveAutomaticRoot() -> string?
 *REMOVED*HistoryVulcan.Services.Modules.ModuleHost.GlobalShortcuts.get -> HistoryVulcan.Core.Input.IGlobalShortcutHost?
 *REMOVED*HistoryVulcan.Services.Modules.ModuleHost.GlobalShortcuts.set -> void
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ProjectDirectoryPattern = "*-History*" -> string!

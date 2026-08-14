@@ -12,9 +12,8 @@ public sealed class ModuleZHotReloadTests
     public async Task DiscoveryHostReloadsWhenZPackageDllChanges()
     {
         var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));
-        var vesta = Path.Combine(root, "HistoryVesta");
-        var package = Path.Combine(vesta, "2026-099-HistoryFixture", "z-HistoryFixture");
-        Directory.CreateDirectory(Path.Combine(vesta, "HistoryVesta.git"));
+        var library = Path.Combine(root, "library");
+        var package = Path.Combine(library, "2026-099-HistoryFixture", "z-HistoryFixture");
         Directory.CreateDirectory(package);
 
         var dllPath = Path.Combine(package, "ContextFixture.dll");
@@ -35,7 +34,7 @@ public sealed class ModuleZHotReloadTests
         var log = new TestLog();
         var settings = new MemorySettings();
         var bus = new CommandBus(registry, log);
-        using var host = new ModuleHost(new ZModuleDiscoverySource([vesta]), log)
+        using var host = new ModuleHost(new ZModuleDiscoverySource([library]), log)
         {
             EnableUiModules = false,
             EnableFileWatching = true,

@@ -58,7 +58,7 @@ HistoryVulcan 独立可执行宿主显式启用模块生命周期与模块管理
 | `b-Code-Tests/` | HistoryVulcan 回归、布局、命令、安全与包合同测试 |
 | `b-Code-Samples/` | 模块开发示例 |
 | `b-Office/package/` | 消费文档与嵌入页面 UI 风格合同编辑源 |
-| `b-Office/current/` | 现行项目、验证、升级与发布合同 |
+| `b-Office/current/` | 现行四份合同（概览、技术、决策、验证）加冻结与断头审计 |
 | `b-Code-HistoryVulcan/eng/release/` | 发布清单和生成模板等机器输入 |
 | `b-Office/` | 冻结契约、内部设计与执行证据 |
 | `b-Publish/current/` | 唯一一份可覆盖的当前候选和完整发布测试结果 |

@@ -32,7 +32,7 @@ b-Office/package/
 - [运行时约束与已知限制](HistoryVulcan_运行时约束与已知限制.md)：消费方必须遵守的运行时限制。
 - [消费变更摘要](HistoryVulcan_消费变更摘要.md)：只保留影响消费者的版本变化（含 3.3.0 DEC-022）。
 
-发布清单和生成模板位于 `../../b-Code-HistoryVulcan/eng/release/`；升级、发布与回滚规则位于
-`../current/升级与发布.md`，完整版本记录位于 `../history/`。新增或改名消费手册时，必须同时更新
+发布清单和生成模板位于 `../../b-Code-HistoryVulcan/eng/release/`；发布步骤见
+`../current/项目概览.md`，完整版本记录位于 `../history/`。新增或改名消费手册时，必须同时更新
 `../../b-Code-HistoryVulcan/eng/release/consumer-docs.json`、根 `project.manifest.json` 和本索引；不得直接编辑 `b-Publish/current/docs`
 或 `b-Publish/history/<版本>/docs` 下的生成副本。

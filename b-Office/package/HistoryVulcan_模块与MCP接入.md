@@ -21,7 +21,8 @@
 ## 模块宿主
 
 `ShellConfig.EnableModules` 默认为 `false`。正式独立宿主开启后台 Z 发现和命令生命周期；消费方只加载声明了
-`ui=true` 的 UI 部分时可单独设置 `EnableUiModules=true`。正式发现根自动向上定位 `HistoryVesta.git`，
+`ui=true` 的 UI 部分时可单独设置 `EnableUiModules=true`。正式发现根自动向上定位项目库根
+（含多个编号项目目录的父目录；每个项目是独立 git 仓库），
 每个根只枚举 `<project>/z-*`，不读取或监听 `%AppData%/<应用名>/Modules`。每个 Z 目录必须含显式
 `module.manifest.json`，且 `schemaVersion=1`、`type=HistoryVulcan.Module`；`artifact`、`docs`、`deps`
 是相对 manifest 所在 Z 目录且必须存在。模块名是生命周期 owner 和唯一命令域，文件夹名只用于定位候选。

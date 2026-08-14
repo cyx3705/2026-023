@@ -567,16 +567,16 @@ public partial class App : Application
                     ';',
                     StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Where(Path.IsPathFullyQualified)
-                .Select(Path.GetFullPath)
+                .Select(ZModuleDiscoverySource.CoerceConfiguredRoot)
+                .Where(Directory.Exists)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
             if (roots.Count > 0)
                 return roots;
         }
 
-        var root = ZModuleDiscoverySource.FindAutomaticRoot(AppContext.BaseDirectory)
-                   ?? ZModuleDiscoverySource.FindAutomaticRoot(Environment.CurrentDirectory)
-                   ?? throw new InvalidOperationException("未能向上找到 HistoryVesta.git 模块发现根。");
+        var root = ZModuleDiscoverySource.ResolveAutomaticRoot()
+                   ?? throw new InvalidOperationException(ZModuleDiscoverySource.AutomaticRootNotFound);
         return [root];
     }
 

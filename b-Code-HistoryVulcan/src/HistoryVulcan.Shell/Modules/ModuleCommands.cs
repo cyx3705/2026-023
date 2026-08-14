@@ -118,9 +118,8 @@ public static class ModuleCommands
     {
         if (paths.Equals("auto", StringComparison.OrdinalIgnoreCase))
         {
-            var root = ZModuleDiscoverySource.FindAutomaticRoot(AppContext.BaseDirectory)
-                       ?? ZModuleDiscoverySource.FindAutomaticRoot(Environment.CurrentDirectory)
-                       ?? throw new InvalidOperationException("未能向上找到 HistoryVesta.git。");
+            var root = ZModuleDiscoverySource.ResolveAutomaticRoot()
+                       ?? throw new InvalidOperationException(ZModuleDiscoverySource.AutomaticRootNotFound);
             return [root];
         }
 
@@ -128,7 +127,8 @@ public static class ModuleCommands
         if (values.Length == 0 || values.Any(path => !Path.IsPathFullyQualified(path)))
             throw new ArgumentException("vulcan.module.roots 只接受分号分隔的绝对路径或 auto。");
         var roots = values
-            .Select(Path.GetFullPath)
+            .Select(ZModuleDiscoverySource.CoerceConfiguredRoot)
+            .Where(Directory.Exists)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
         return roots;

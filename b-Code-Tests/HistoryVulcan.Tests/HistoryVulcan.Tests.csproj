@@ -28,8 +28,8 @@
     <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.Shell\HistoryVulcan.Shell.csproj" />
     <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.Extensibility\HistoryVulcan.Extensibility.csproj" />
     <!--
-      DEC-023:此处曾有一条指向兄弟工作树 ..\..\..\2026-021-HistoryMercury 的 ProjectReference。
-      各 2026-0xx-* 目录是同一仓库的不同 worktree 分支,GitHub 上本分支内不存在 Mercury 目录,
+      DEC-023:此处曾有一条指向邻接项目 ..\..\..\2026-021-HistoryMercury 的 ProjectReference。
+      邻接编号目录是另一座 git 仓库（DEC-040），本仓内不存在 Mercury；
       该引用让 CI 冻结门禁在 restore 阶段必然失败,也让框架反向依赖模块。
       依赖 Mercury 具体实现的联调用例交回 HistoryMercury 仓库;
       本项目只验证 Core 合同与无 Mercury 时的降级路径。不得恢复跨仓库引用。

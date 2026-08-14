@@ -16,7 +16,7 @@
     ],
     "status": "active",
     "version": "3.11.3",
-    "branch": "2026-023-HistoryVulcan",
+    "branch": "main",
     "freezeTag": "v3.0.3"
   },
   "paths": {
@@ -60,10 +60,8 @@
     "decisions": "b-Office/current/有效决策.md",
     "verification": "b-Office/current/验证合同.md",
     "freeze": "b-Office/current/冻结合同.md",
-    "upgradeAndRelease": "b-Office/current/升级与发布.md",
-    "uiPlan31": "b-Office/history/V3.1界面现代化方案.md",
     "commandPipelineAudit": "b-Office/current/断头指令审计表.md",
-    "commandBusHealth": "b-Office/current/命令总线健康检查.md",
+    "uiPlan31": "b-Office/history/V3.1界面现代化方案.md",
     "classRealign332": "b-Office/history/3.3.2-vulcan-class-realign.md",
     "historyBoundary": "b-Office/history/历史资料说明.md",
     "servicePlan32": "b-Office/history/V3.2后台服务化方案.md",

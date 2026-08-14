@@ -76,8 +76,9 @@ MCP/Web 硬排除。命令集里不应再看到 `debug` 类。
   旧→新映射见 `../history/3.3.0-vulcan-command-rename.md`。
 - 3.2.2 的域和类是严格两级筛选：选择具体域后类列表只来自该域，域为“全部”时类固定为“全部”且禁用；控制台新增
   `vulcan.log.class`，命令集和控制台共享同一目录会话合同（3.3.0 起由 Mercury 实现并挂接，见上）。
-- 3.2.2 正式宿主只从 HistoryVesta 项目 `<project>/z-*` 中的 `module.manifest.json` 发现 `type=HistoryVulcan.Module`
+- 3.2.2 正式宿主只从各编号项目 `<project>/z-*` 中的 `module.manifest.json` 发现 `type=HistoryVulcan.Module`
   模块，旧 AppData Modules 和曾用 `module.dir` 不再参与正式装载。模块名是命令域 owner，功能分支通过显式类声明。
+  自动根按含多个 `YYYY-NNN-*` 目录的项目库识别（HistoryClio），不再向上寻找 `HistoryVesta.git`。
 
 - 3.2.1 将 HistoryVulcan 内置命令统一归入单一宿主域，以 `CommandClass` 区分功能分支；
   模块稳定名称就是模块域，旧模块未声明类时归入 `core`。3.3.0 起域短拼为 `vulcan` 且命令文本硬切。

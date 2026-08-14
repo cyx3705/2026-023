@@ -49,16 +49,17 @@
       "OneHistory.HistoryVulcan.Extensibility": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[3.6.1, )"
+          "OneHistory.HistoryVulcan.Core": "[3.11.3, )"
         }
       },
       "OneHistory.HistoryVulcan.Services": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[3.6.1, )",
-          "OneHistory.HistoryVulcan.Extensibility": "[3.6.1, )"
+          "OneHistory.HistoryVulcan.Core": "[3.11.3, )",
+          "OneHistory.HistoryVulcan.Extensibility": "[3.11.3, )"
         }
       }
-    }
+    },
+    "net8.0-windows7.0/win-x64": {}
   }
 }

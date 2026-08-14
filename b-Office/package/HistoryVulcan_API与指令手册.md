@@ -520,7 +520,7 @@ HistoryVulcan 自身只有一个域 `vulcan`，内置业务命令分为九类；
 |---|---|
 | `vulcan.module.list` | 列出模块、版本、槽和命令数 |
 | `vulcan.module.reload` | 重新发现并装载模块 |
-| `vulcan.module.roots [paths=<绝对根1;绝对根2>|auto]` | 查询/设置 Z 模块发现根；`auto` 恢复向上识别 `HistoryVesta.git` |
+| `vulcan.module.roots [paths=<绝对根1;绝对根2>|auto]` | 查询/设置 Z 模块发现根；`auto` 恢复向上识别项目库根 |
 | `vulcan.module.open` | 在资源管理器中打开模块目录 |
 
 模块公开方法另外注册为 `<模块域>.<类>.<方法>`，模块域按 §3.3.1 去掉 `History` 前缀

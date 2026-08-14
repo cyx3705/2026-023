@@ -3,7 +3,7 @@ name: HistoryVulcan Freeze Gate
 on:
   push:
     branches:
-      - 2026-023-HistoryVulcan
+      - main
   workflow_dispatch:
 
 permissions:

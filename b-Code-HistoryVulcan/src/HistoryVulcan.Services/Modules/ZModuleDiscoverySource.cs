@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace HistoryVulcan.Services.Modules;
 
@@ -57,6 +58,21 @@ public sealed class ZModuleDiscoverySource : IModuleDiscoverySource
     /// </summary>
     public const string ProjectDirectoryPattern = "*-History*";
 
+    /// <summary>当前 OneHistory 项目库根。自动发现与旧 Vesta 路径迁移都落到这里。</summary>
+    public const string DefaultLibraryRoot = @"C:\OneHistory\HistoryClio";
+
+    /// <summary>已退役的共享项目库根；配置里若仍指向它则改写到 <see cref="DefaultLibraryRoot"/>。</summary>
+    public const string LegacyVestaLibrary = @"C:\OneHistory\HistoryVesta";
+
+    /// <summary>自动发现失败时的说明：库根靠编号项目目录识别，不靠裸仓哨兵。</summary>
+    public const string AutomaticRootNotFound =
+        "未能向上找到含多个编号项目目录的项目库根。";
+
+    private const int MinimumNumberedProjects = 2;
+
+    private static readonly Regex NumberedProjectName =
+        new(@"^\d{4}-\d{3}-.+", RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -64,7 +80,7 @@ public sealed class ZModuleDiscoverySource : IModuleDiscoverySource
 
     private readonly IReadOnlyList<string> _roots;
 
-    /// <summary>Creates a scanner for one or more absolute HistoryVesta roots.</summary>
+    /// <summary>Creates a scanner for one or more absolute project-library roots.</summary>
     public ZModuleDiscoverySource(IEnumerable<string> roots)
     {
         ArgumentNullException.ThrowIfNull(roots);
@@ -84,7 +100,10 @@ public sealed class ZModuleDiscoverySource : IModuleDiscoverySource
     /// <inheritdoc />
     public IReadOnlyList<string> Roots => _roots;
 
-    /// <summary>Walks upward until a directory containing <c>HistoryVesta.git</c> is found.</summary>
+    /// <summary>
+    /// Walks upward until a directory contains at least two numbered project folders
+    /// (<c>YYYY-NNN-*</c>). Does not open <c>.git</c> and does not use a bare-repo sentinel.
+    /// </summary>
     public static string? FindAutomaticRoot(string startPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(startPath);
@@ -92,11 +111,62 @@ public sealed class ZModuleDiscoverySource : IModuleDiscoverySource
         var directory = File.Exists(path) ? Directory.GetParent(path) : new DirectoryInfo(path);
         while (directory != null)
         {
-            if (Directory.Exists(Path.Combine(directory.FullName, "HistoryVesta.git")))
+            if (LooksLikeLibraryRoot(directory.FullName))
                 return directory.FullName;
             directory = directory.Parent;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Rewrites a configured discovery root: missing or retired Vesta paths become
+    /// <see cref="DefaultLibraryRoot"/> when that library exists.
+    /// </summary>
+    public static string CoerceConfiguredRoot(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        var full = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        if (full.Equals(LegacyVestaLibrary, StringComparison.OrdinalIgnoreCase)
+            || Directory.Exists(Path.Combine(full, "HistoryVesta.git")))
+        {
+            if (LooksLikeLibraryRoot(DefaultLibraryRoot))
+                return DefaultLibraryRoot;
+        }
+
+        return full;
+    }
+
+    /// <summary>Walks from the process location, then the well-known Clio library.</summary>
+    public static string? ResolveAutomaticRoot()
+        => FindAutomaticRoot(AppContext.BaseDirectory)
+           ?? FindAutomaticRoot(Environment.CurrentDirectory)
+           ?? FindAutomaticRoot(DefaultLibraryRoot);
+
+    private static bool LooksLikeLibraryRoot(string directory)
+    {
+        try
+        {
+            var counted = 0;
+            foreach (var child in Directory.EnumerateDirectories(directory))
+            {
+                if ((File.GetAttributes(child) & FileAttributes.ReparsePoint) != 0)
+                    continue;
+                if (!NumberedProjectName.IsMatch(Path.GetFileName(child)))
+                    continue;
+                if (++counted >= MinimumNumberedProjects)
+                    return true;
+            }
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+
+        return false;
     }
 
     /// <inheritdoc />

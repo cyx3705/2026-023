@@ -69,13 +69,44 @@ public sealed class ZModuleDiscoveryTests
     }
 
     [Fact]
-    public void AutomaticRootWalksUpToHistoryVestaMarker()
+    public void AutomaticRootWalksUpToNumberedProjectLibrary()
     {
         using var temp = new TemporaryDirectory();
+        Directory.CreateDirectory(Path.Combine(temp.Path, "2026-001-HistoryA"));
+        Directory.CreateDirectory(Path.Combine(temp.Path, "2026-002-HistoryB"));
         Directory.CreateDirectory(Path.Combine(temp.Path, "HistoryVesta.git"));
-        var nested = Directory.CreateDirectory(Path.Combine(temp.Path, "project", "z-module", "host"));
+        var nested = Directory.CreateDirectory(
+            Path.Combine(temp.Path, "2026-023-HistoryVulcan", "b-Code", "host"));
 
         Assert.Equal(temp.Path, ZModuleDiscoverySource.FindAutomaticRoot(nested.FullName));
+    }
+
+    [Fact]
+    public void AutomaticRootIgnoresBareRepoSentinelAndSingleProjectFolder()
+    {
+        using var sentinelOnly = new TemporaryDirectory();
+        Directory.CreateDirectory(Path.Combine(sentinelOnly.Path, "HistoryVesta.git"));
+        var nestedSentinel = Directory.CreateDirectory(Path.Combine(sentinelOnly.Path, "host"));
+        Assert.Null(ZModuleDiscoverySource.FindAutomaticRoot(nestedSentinel.FullName));
+
+        using var oneProject = new TemporaryDirectory();
+        Directory.CreateDirectory(Path.Combine(oneProject.Path, "2026-023-HistoryVulcan"));
+        var nestedOne = Directory.CreateDirectory(Path.Combine(oneProject.Path, "host"));
+        Assert.Null(ZModuleDiscoverySource.FindAutomaticRoot(nestedOne.FullName));
+    }
+
+    [Fact]
+    public void CoerceConfiguredRootRewritesRetiredVestaLibraryToClio()
+    {
+        if (!Directory.Exists(ZModuleDiscoverySource.DefaultLibraryRoot))
+            return;
+
+        Assert.Equal(
+            ZModuleDiscoverySource.DefaultLibraryRoot,
+            ZModuleDiscoverySource.CoerceConfiguredRoot(ZModuleDiscoverySource.LegacyVestaLibrary));
+        Assert.Equal(
+            ZModuleDiscoverySource.DefaultLibraryRoot,
+            ZModuleDiscoverySource.FindAutomaticRoot(ZModuleDiscoverySource.DefaultLibraryRoot));
     }
 
     [Fact]
