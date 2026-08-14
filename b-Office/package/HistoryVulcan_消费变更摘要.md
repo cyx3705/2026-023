@@ -76,8 +76,9 @@ MCP/Web 硬排除。命令集里不应再看到 `debug` 类。
   旧→新映射见 `../history/3.3.0-vulcan-command-rename.md`。
 - 3.2.2 的域和类是严格两级筛选：选择具体域后类列表只来自该域，域为“全部”时类固定为“全部”且禁用；控制台新增
   `vulcan.log.class`，命令集和控制台共享同一目录会话合同（3.3.0 起由 Mercury 实现并挂接，见上）。
-- 3.2.2 正式宿主只从 HistoryVesta 项目 `<project>/z-*` 中的 `module.manifest.json` 发现 `type=HistoryVulcan.Module`
+- 3.2.2 正式宿主只从各编号项目 `<project>/z-*` 中的 `module.manifest.json` 发现 `type=HistoryVulcan.Module`
   模块，旧 AppData Modules 和曾用 `module.dir` 不再参与正式装载。模块名是命令域 owner，功能分支通过显式类声明。
+  自动根按含多个 `YYYY-NNN-*` 目录的项目库识别（HistoryClio），不再向上寻找 `HistoryVesta.git`。
 
 - 3.2.1 将 HistoryVulcan 内置命令统一归入单一宿主域，以 `CommandClass` 区分功能分支；
   模块稳定名称就是模块域，旧模块未声明类时归入 `core`。3.3.0 起域短拼为 `vulcan` 且命令文本硬切。
@@ -102,11 +103,15 @@ MCP/Web 硬排除。命令集里不应再看到 `debug` 类。
   仅保留控制台日志面与挂接前的 `DeferredCommandCatalogSession`。
 - 3.1.9 将模块宿主上下文纳入公开合同：模块可实现 `IModuleContextAware` 获取权威命令总线、日志、设置和
   宿主数据根目录；`ModuleHost.Attach` 可接入这些宿主服务，`ShellConfig.ModuleDirectory` 可显式选择部署模块目录。
+- 3.11.2 修复参数补全回归：参数名提交后继续显示注册的允许值/常用值，参数值提交后继续下一个参数；
+  不改变文本或光标的位置参数结构提示会关闭且不重算，避免无限弹出。
 - 3.1.8 新增控制台“轻松指令”：控制台聚焦时在输入框上方显示命令、参数名和参数允许值候选；
   `Shift+W` 上移、`Shift+S` 下移，`Tab` 写入候选但不执行，`Shift+Tab` 不参与候选逻辑，`Enter` 保持唯一执行入口。
-  普通布局首次非空输入通过曾用 `win.show name=mcp` → 现用 `vulcan.win.show name=mcp` 切换中央命令集，并直接按控制台文本过滤命令名、说明和示例；
-  命令集删除独立搜索框，`Shift+W/S` 选择列表、`Tab` 回填命令名但不执行。候选直接读取运行期命令注册表，模块
+  3.10.1 起普通布局首字母不再切换中央命令集；3.11.1 进一步把 Popup 助手限定到控制台最大化/聚焦布局，
+  普通布局输入字母或 Tab 不弹候选也不提交命令集选中项；
+  `Shift+W/S` 选择列表、`Tab` 回填并立即展开下一层但不执行。候选直接读取运行期命令注册表，模块
   命令注册或注销后同步刷新；消费方无需复制补全或检索接线。3.3.0 起上述命令集/补全由 Mercury 提供，无 Mercury 时不可用。
+- 3.11.1 的 `vulcan.command.show` 在既有参数元数据外携带 `CommandDescriptor.Annotations`。模块可据此声明自己的常用参数来源；Mercury 不再硬编码其他模块的候选。
 - 3.1.7 新增 UI 风格与嵌入页面规范，浅色/深色色板、字体、字号、圆角、间距、固定尺寸、控件状态、
   顶栏归属和响应式验收随宿主快照发布；项目合同保证文档覆盖全部 Shell 视觉令牌。
 - 3.1.6 过滤 AvalonDock 在窗格模板重建期间产生的特定瞬态鼠标离开异常，不再把第三方无害异常显示为

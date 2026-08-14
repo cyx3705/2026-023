@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      longRunningTestSeconds 需要 diagnosticMessages 才生效。
+      挂死的用例会周期性打印 [Long Running Test] 名称，而不是整轮静默无输出（DEC-023）。
+    -->
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\App\App.csproj" />
+    <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.Core\HistoryVulcan.Core.csproj" />
+    <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.ServiceHost\HistoryVulcan.ServiceHost.csproj" />
+    <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.Services\HistoryVulcan.Services.csproj" />
+    <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.Shell\HistoryVulcan.Shell.csproj" />
+    <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.Extensibility\HistoryVulcan.Extensibility.csproj" />
+    <!--
+      DEC-023:此处曾有一条指向邻接项目 ..\..\..\2026-021-HistoryMercury 的 ProjectReference。
+      邻接编号目录是另一座 git 仓库（DEC-040），本仓内不存在 Mercury；
+      该引用让 CI 冻结门禁在 restore 阶段必然失败,也让框架反向依赖模块。
+      依赖 Mercury 具体实现的联调用例交回 HistoryMercury 仓库;
+      本项目只验证 Core 合同与无 Mercury 时的降级路径。不得恢复跨仓库引用。
+    -->
+  </ItemGroup>
+
+</Project>
