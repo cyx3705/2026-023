@@ -24,13 +24,11 @@
       "b-Code-HistoryVulcan/src",
       "b-Code-Tests",
       "b-Code-HistoryVulcan/eng",
-      "b-Code-Samples",
       "b-Office/current",
       "b-Office/package"
     ],
     "sourceRoots": [
-      "b-Code-HistoryVulcan/src",
-      "b-Code-Samples"
+      "b-Code-HistoryVulcan/src"
     ],
     "generatedRoots": [
       "b-Publish/current",
