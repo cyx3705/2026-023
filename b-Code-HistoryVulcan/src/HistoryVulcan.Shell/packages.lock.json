@@ -59,7 +59,6 @@
           "OneHistory.HistoryVulcan.Extensibility": "[3.11.3, )"
         }
       }
-    },
-    "net8.0-windows7.0/win-x64": {}
+    }
   }
 }

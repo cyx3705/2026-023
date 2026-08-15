@@ -69,3 +69,5 @@ const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ProjectDirectoryPatt
 HistoryVulcan.Services.Mcp.McpGateway.VisibleTools() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Extensibility.Mcp.McpToolInfo!>!
 HistoryVulcan.Services.Web.WebGateway.TryGetSession(string! source, out HistoryVulcan.Core.Clients.ClientSession! session) -> bool
 *REMOVED*HistoryVulcan.Services.Web.WebGateway.TryGetSession(string! source, out HistoryVulcan.Core.Mcp.ClientSession! session) -> bool
+HistoryVulcan.Services.Modules.ModuleHost.LoadTrialUi(string! packagePath, string! owner) -> HistoryVulcan.Core.Commands.CommandResult!
+HistoryVulcan.Services.Modules.ModuleHost.UnloadTrialUi(string! owner) -> HistoryVulcan.Core.Commands.CommandResult!

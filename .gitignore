@@ -52,3 +52,7 @@ b-Office/evidence/**/*.zip
 
 # Local Inno Setup bootstrap download (not a release artifact)
 b-Code-HistoryVulcan/eng/tools/
+
+# diana.worktree.create 在 AI 工作区生成的本机覆盖点：内容是这台机器上的绝对路径，
+# 入库会让别人的构建指向不存在的目录。另外四个项目早已登记，本仓一直漏登记。
+Directory.Build.user.props

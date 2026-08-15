@@ -201,6 +201,49 @@ public sealed class ZModuleDiscoverySource : IModuleDiscoverySource
         return new ModuleDiscoverySnapshot(_roots, modules, diagnostics);
     }
 
+    /// <summary>
+    /// 按同一套清单规则校验单个 z 目录，供不经根扫描的候选装载复用（试用界面)。
+    /// 复用 <see cref="DiscoverPackage"/> 而不是另写一份宽松解析:候选与正式模块必须
+    /// 用同一把尺子量,否则会出现试用能装、正式发现却拒绝的分叉。
+    /// </summary>
+    internal static bool TryReadPackage(
+        string package,
+        out ModuleDiscoveryEntry entry,
+        out string error)
+    {
+        entry = null!;
+        error = "";
+        if (string.IsNullOrWhiteSpace(package) || !Path.IsPathFullyQualified(package))
+        {
+            error = "候选快照目录必须是绝对路径。";
+            return false;
+        }
+
+        var full = Path.GetFullPath(package.Trim());
+        if (!Directory.Exists(full))
+        {
+            error = $"目录不存在: {full}";
+            return false;
+        }
+        if (!File.Exists(Path.Combine(full, ManifestFileName)))
+        {
+            error = $"目录里没有 {ManifestFileName}: {full}";
+            return false;
+        }
+
+        var entries = new List<ModuleDiscoveryEntry>();
+        var diagnostics = new List<ModuleDiscoveryDiagnostic>();
+        DiscoverPackage(full, entries, diagnostics);
+        if (entries.Count == 1)
+        {
+            entry = entries[0];
+            return true;
+        }
+
+        error = diagnostics.Count > 0 ? diagnostics[0].Message : $"{ManifestFileName} 无效。";
+        return false;
+    }
+
     private static void DiscoverRoot(
         string root,
         ICollection<ModuleDiscoveryEntry> entries,

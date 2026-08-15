@@ -277,6 +277,63 @@ public partial class ShellWindow : Window, IShellCommandWorkbenchHost
             _modules.ShellUi = _shellUi;
             _modules.CommandWorkbench = this;
 
+            // 候选模块的界面验收入口。只有承载界面的宿主注册它们:前端把整份注册表作为
+            // FrontendCapabilityCatalog 发布到后台,后台因此拿到一份 ExecutionSite=Frontend
+            // 的代理——住在无窗 --service 进程里的模块(如 Diana 的 diana.trial.load ui=true)
+            // 于是能经总线中继过来建界面,而不必自己去找一个它根本没有的 IShellUiRegistrar。
+            if (config.EnableUiModules)
+            {
+                registry.Register(new CommandDescriptor
+                {
+                    Name = "vulcan.module.trialui.load",
+                    Domain = "vulcan",
+                    CommandClass = "module",
+                    Summary = "在前端临时创建候选模块界面(不进入正式模块快照)",
+                    Example = "vulcan.module.trialui.load path=C:\\candidate\\z-HistoryJanus alias=janus",
+                    RequiresUiThread = true,
+                    Parameters =
+                    [
+                        new ParameterSpec
+                        {
+                            Name = "path",
+                            Description = "候选 z 快照目录(须含 module.manifest.json 且 ui=true)",
+                            Required = true,
+                            Position = 0,
+                        },
+                        new ParameterSpec
+                        {
+                            Name = "alias",
+                            Description = "试用界面别名,同时是 ShellUi 的注销粒度",
+                            Required = true,
+                            Position = 1,
+                        },
+                    ],
+                    Handler = CommandDescriptor.Sync(context => _modules.LoadTrialUi(
+                        context.RequireString("path"), context.RequireString("alias"))),
+                });
+                registry.Register(new CommandDescriptor
+                {
+                    Name = "vulcan.module.trialui.unload",
+                    Domain = "vulcan",
+                    CommandClass = "module",
+                    Summary = "卸载前端临时候选模块界面并回收其可卸载程序集",
+                    Example = "vulcan.module.trialui.unload alias=janus",
+                    RequiresUiThread = true,
+                    Parameters =
+                    [
+                        new ParameterSpec
+                        {
+                            Name = "alias",
+                            Description = "装载时使用的试用界面别名",
+                            Required = true,
+                            Position = 0,
+                        },
+                    ],
+                    Handler = CommandDescriptor.Sync(context => _modules.UnloadTrialUi(
+                        context.RequireString("alias"))),
+                });
+            }
+
             // MD-08:窗口成型前先做一次文件级面板同步,上一会话遗留的模块旁面板本次即成窗口
             if (config.ModuleDiscoveryRoots.Count == 0)
             {
