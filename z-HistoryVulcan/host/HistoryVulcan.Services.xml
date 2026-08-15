@@ -410,6 +410,12 @@
              (<see cref="F:HistoryVulcan.Core.Commands.CommandExecutionSite.Frontend"/>)中继到这里。
              </summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Unload(System.String)">
+            <summary>
+            从当前快照卸下一个已装载模块（命令、界面、可卸载程序集），不扫描磁盘、不触发整体重载。
+            文件监听仍指向原 z 目录；下次 <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.Reload"/> 或文件变化会把正式模块装回来。
+            </summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.UnloadTrialUi(System.String)">
             <summary>卸载前端临时试用界面并回收其 owner 与可卸载程序集。</summary>
         </member>
@@ -451,6 +457,9 @@
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Contexts">
             <summary>本快照持有的全部加载上下文(MH-01:根平铺一个 + 每模块槽一个)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.ContextsByOwner">
+            <summary>模块 owner → 装载它的 ALC；槽内多模块可共享同一上下文。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.PendingCommands">
             <summary>扫描出的待注册指令(注册在 UI 线程完成,冲突者被剔除)。</summary>
