@@ -1,6 +1,6 @@
 # HistoryVulcan 消费变更摘要
 
-适用版本：HistoryVulcan **3.11.4** 正式（已部署于 `z-HistoryVulcan`）。
+适用版本：HistoryVulcan **3.11.5** 正式（已部署于 `z-HistoryVulcan`）。
 
 本文按版本累积，不是单版本发布说明：下面的「破坏性变更」自 3.3.2 起逐条累加，每条都标注引入版本；
 「主要变化」是不需要改代码的增量。从 3.3.1 及更早升级的消费方需要通读破坏性变更全节。
@@ -96,6 +96,11 @@ MCP/Web 硬排除。命令集里不应再看到 `debug` 类。
 
 ## 主要变化
 
+- 3.11.5 新增按模块卸载：`vulcan.module.unload name=`。`name` 取自 `vulcan.module.list`
+  （例如 `HistoryJanus`）。从当前快照移除该模块的命令、界面和可卸载程序集，**不改磁盘**；
+  `vulcan.module.reload` 或文件变化会把正式模块装回来。后台 MCP 可调用；已连接前端时一次调用
+  同时卸两边。候选试用若要替换正式模块界面，应先 unload 再 `trialui.load`（换一个别名），
+  否则会撞工具窗口 Id。详见 API 手册 §6.4。
 - 3.11.4 新增候选模块界面试用：`vulcan.module.trialui.load path= alias=` 与
   `vulcan.module.trialui.unload alias=`。两条按 `EnableUiModules` 注册（与其余按 `EnableModules` 注册的
   `vulcan.module.*` 不同），**只存在于承载界面的前端**。无窗 `--service` 后台进程没有
