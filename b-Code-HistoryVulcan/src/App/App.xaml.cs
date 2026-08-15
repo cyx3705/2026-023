@@ -281,7 +281,7 @@ public partial class App : Application
             web.PublishModuleRevision(Interlocked.Increment(ref moduleRevision));
 
         modules.Attach(registry, bus, settings, servicePaths.Root);
-        RegisterServiceModuleCommands(registry, modules, settings);
+        RegisterServiceModuleCommands(registry, modules, settings, bus);
         RegisterServiceMcpSettingCommands(registry, settings);
 
         // The backend registry owns both module commands and the MCP projection. Prompt and
@@ -473,7 +473,8 @@ public partial class App : Application
     private static void RegisterServiceModuleCommands(
         CommandRegistry registry,
         ModuleHost host,
-        SettingsService settings)
+        SettingsService settings,
+        CommandBus bus)
     {
         registry.Register(new CommandDescriptor
         {
@@ -501,6 +502,52 @@ public partial class App : Application
             {
                 await Task.Run(host.Reload).ConfigureAwait(false);
                 return CommandResult.Ok($"重载完成: {host.Modules.Count} 个模块");
+            },
+        }, "framework:service");
+
+        registry.Register(new CommandDescriptor
+        {
+            Name = "vulcan.module.unload",
+            Domain = "vulcan",
+            CommandClass = "module",
+            Summary = "卸载一个已装载模块（命令与界面）；不改磁盘，reload 会装回",
+            Example = "vulcan.module.unload name=HistoryJanus",
+            Parameters =
+            [
+                new ParameterSpec
+                {
+                    Name = "name",
+                    Description = "vulcan.module.list 中的模块名",
+                    Required = true,
+                    Position = 0,
+                },
+            ],
+            Handler = async ctx =>
+            {
+                var name = ctx.RequireString("name");
+                string? frontendNote = null;
+                if (bus.FrontendExecutor is { } frontend)
+                {
+                    var remote = await frontend(
+                        $"vulcan.module.unload name={CommandParser.QuoteArg(name)}",
+                        "framework:service",
+                        ctx.Cancellation).ConfigureAwait(false);
+                    frontendNote = remote.Success
+                        ? "前端界面已一并卸载"
+                        : $"前端: {remote.Message}";
+                }
+
+                var local = host.Unload(name);
+                if (!local.Success)
+                {
+                    if (frontendNote == "前端界面已一并卸载")
+                        return CommandResult.Ok($"前端界面已卸载，但后台: {local.Message}");
+                    return local;
+                }
+
+                return frontendNote == null
+                    ? local
+                    : CommandResult.Ok($"{local.Message}；{frontendNote}");
             },
         }, "framework:service");
 

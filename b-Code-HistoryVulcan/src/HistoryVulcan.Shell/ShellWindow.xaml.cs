@@ -334,6 +334,28 @@ public partial class ShellWindow : Window, IShellCommandWorkbenchHost
                 });
             }
 
+            registry.Register(new CommandDescriptor
+            {
+                Name = "vulcan.module.unload",
+                Domain = "vulcan",
+                CommandClass = "module",
+                Summary = "卸载一个已装载模块的界面与本进程快照",
+                Example = "vulcan.module.unload name=HistoryJanus",
+                RequiresUiThread = true,
+                Parameters =
+                [
+                    new ParameterSpec
+                    {
+                        Name = "name",
+                        Description = "vulcan.module.list 中的模块名",
+                        Required = true,
+                        Position = 0,
+                    },
+                ],
+                Handler = CommandDescriptor.Sync(context =>
+                    _modules.Unload(context.RequireString("name"))),
+            });
+
             // MD-08:窗口成型前先做一次文件级面板同步,上一会话遗留的模块旁面板本次即成窗口
             if (config.ModuleDiscoveryRoots.Count == 0)
             {

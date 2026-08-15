@@ -299,6 +299,112 @@ public sealed partial class ModuleHost : IDisposable
         }
     }
 
+    /// <summary>
+    /// 从当前快照卸下一个已装载模块（命令、界面、可卸载程序集），不扫描磁盘、不触发整体重载。
+    /// 文件监听仍指向原 z 目录；下次 <see cref="Reload"/> 或文件变化会把正式模块装回来。
+    /// </summary>
+    public CommandResult Unload(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return CommandResult.Fail("vulcan.module.unload 需要 name（vulcan.module.list 中的模块名）。");
+
+        var key = name.Trim();
+        lock (_reloadLock)
+        {
+            CommandResult? result = null;
+            var ui = UiContext;
+            if (ui != null)
+                ui.Send(_ => result = UnloadFromSnapshot(key), null);
+            else
+                result = UnloadFromSnapshot(key);
+            return result!;
+        }
+    }
+
+    private CommandResult UnloadFromSnapshot(string name)
+    {
+        var snap = _current;
+        var match = snap.Modules.FirstOrDefault(module =>
+            module.ModuleName.Equals(name, StringComparison.OrdinalIgnoreCase));
+        if (match == null)
+        {
+            return CommandResult.Fail(snap.Modules.Count == 0
+                ? $"没有已装载的模块 {name}。"
+                : $"没有已装载的模块 {name}；当前有: {string.Join("、", snap.Modules.Select(module => module.ModuleName))}");
+        }
+
+        var owner = match.ModuleName;
+        DestroyUiForOwner(snap, owner);
+
+        if (_registry != null)
+        {
+            var source = $"module:{owner}";
+            foreach (var command in _registry.All().ToList())
+            {
+                if (!_registry.GetSource(command.Name).Equals(source, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                _registry.Unregister(command.Name);
+                snap.RegisteredNames.RemoveAll(registered =>
+                    registered.Equals(command.Name, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
+        snap.PendingCommands.RemoveAll(item =>
+            item.ModuleName.Equals(owner, StringComparison.OrdinalIgnoreCase));
+        snap.Metas.RemoveAll(meta =>
+            meta.Name.Equals(owner, StringComparison.OrdinalIgnoreCase));
+        snap.McpExposures.Remove(owner);
+        snap.ClearCommandCount(owner);
+
+        if (snap.ContextsByOwner.Remove(owner, out var alc)
+            && snap.ContextsByOwner.Values.All(remaining => !ReferenceEquals(remaining, alc)))
+        {
+            snap.DropInstancesFrom(alc);
+            snap.Contexts.Remove(alc);
+            alc.Unload();
+        }
+
+        snap.FinalizeMetas();
+        _log.Info("module", $"已卸载模块: {owner}");
+        return CommandResult.Ok($"已卸载模块: {owner}");
+    }
+
+    private void DestroyUiForOwner(Snapshot snap, string owner)
+    {
+        var owners = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { owner };
+        foreach (var meta in snap.Metas.Where(meta =>
+                     meta.Name.Equals(owner, StringComparison.OrdinalIgnoreCase)))
+        {
+            if (meta.Slot.Length > 0)
+                owners.Add(meta.Slot);
+            if (meta.File.Length > 0)
+                owners.Add(Path.GetFileNameWithoutExtension(meta.File));
+        }
+
+        var doomed = snap.UiModules.Where(item => owners.Contains(item.Owner)).ToList();
+        snap.UiModules.RemoveAll(item => owners.Contains(item.Owner));
+        foreach (var (module, uiOwner) in doomed)
+        {
+            try
+            {
+                module.DestroyUi();
+            }
+            catch (Exception ex)
+            {
+                _log.Warn("module", $"销毁 UI 模块 {module.GetType().FullName} 失败: {ex.Message}");
+            }
+
+            try
+            {
+                ShellUi?.UnregisterOwner(uiOwner);
+            }
+            catch (Exception ex)
+            {
+                _log.Warn("module", $"回收模块界面失败 ({uiOwner}): {ex.Message}");
+            }
+        }
+    }
+
     /// <summary>卸载前端临时试用界面并回收其 owner 与可卸载程序集。</summary>
     public CommandResult UnloadTrialUi(string owner)
     {
@@ -620,7 +726,8 @@ public sealed partial class ModuleHost : IDisposable
                 module.ArtifactPath,
                 module.PackagePath,
                 module.Ui,
-                module);
+                module,
+                alc);
         }
         catch (Exception ex)
         {
@@ -660,7 +767,7 @@ public sealed partial class ModuleHost : IDisposable
             try
             {
                 var asm = LoadAssembly(alc, dll);
-                ScanAssembly(snap, asm, dll, slot, uiEnabled, null);
+                ScanAssembly(snap, asm, dll, slot, uiEnabled, null, alc);
             }
             catch (Exception ex)
             {
@@ -702,7 +809,8 @@ public sealed partial class ModuleHost : IDisposable
         string dllPath,
         string slot,
         bool uiEnabled,
-        ModuleDiscoveryEntry? discovered)
+        ModuleDiscoveryEntry? discovered,
+        AssemblyLoadContext alc)
     {
         var fileName = Path.GetFileName(dllPath);
         var types = LoadTypes(asm);
@@ -812,6 +920,7 @@ public sealed partial class ModuleHost : IDisposable
                 discovered?.Version ?? declaredVersion,
                 open, fileName, slot, uiEnabled,
                 discovered?.PackagePath, discovered?.ManifestPath));
+            snap.ContextsByOwner[moduleName] = alc;
 
             if (!EnableCommands)
             {

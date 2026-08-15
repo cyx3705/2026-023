@@ -1,9 +1,9 @@
-# HistoryVulcan 3.11.3
+# HistoryVulcan 3.11.5
 
 本仓库是 OneHistory HistoryVulcan（原 AppShell，3.2.0 起改名）的独立源码、合同与发布资产真值。
 `3.0.3` 是 V3 冻结基线，冻结标签为 `v3.0.3`；版本线不再与 HistoryJanus 对齐，`0.7.x` 仅保留用于回滚。
 
-当前源码与正式 Z 快照均为 `3.11.3`；`HistoryVulcan.Core` 公开面自 `3.9.0` 起冻结。
+当前源码候选为 `3.11.5`；正式 Z 快照仍为 `3.11.4`，直至本版本发布。`HistoryVulcan.Core` 公开面自 `3.9.0` 起冻结。
 3.11.3 取消模块的文档页注册路径：窗口只有工具窗口一种形态。声明 `DockSide.Center` 的模块窗口
 仍落在中央工作区，但以中央页形态呈现——位置不变，变的是身份。模块代码与用户布局都无需处理，
 已保存的文档页节点在恢复时自动重建为工具窗口。取消原因、迁移与已知缺口见
@@ -101,7 +101,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ..\2026-019-HistoryDiana\b-C
 未被使用，保留一套指向旧包 ID 的生成链只会让发布入口有两个真值。需要回溯 0.7 线时从
 Git 历史取回。现行回滚仍由 `b-Publish/history/<版本>/` 的 3.x 同构副本承担。
 
-宿主候选位于 `b-Publish/current`。当前正式快照为 3.11.3：运行入口 `z-HistoryVulcan/host/HistoryVulcan.exe`。
+宿主候选位于 `b-Publish/current`。当前正式快照为 3.11.4：运行入口 `z-HistoryVulcan/host/HistoryVulcan.exe`。
 已发布说明书在 `z-HistoryVulcan/docs/`，编辑源是本仓库的 `b-Office/package/`；跨项目读取走 `diana.docs.vulcan`。
 旧名 `z-Package-AppShell/` 的 3.1.9 快照已随 3.2.0 发布退役删除（同构副本入库于 `b-Publish/history/3.1.9/`）。
 旧候选整体归档到 `b-Publish/history/<版本>/`。宿主部署脚本不会执行 Git commit、tag、push，

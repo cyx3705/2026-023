@@ -1,6 +1,6 @@
 # HistoryVulcan API 与指令手册
 
-> 适用版本：HistoryVulcan **3.11.2** 正式（已部署于 `z-HistoryVulcan`）
+> 适用版本：HistoryVulcan **3.11.5** 候选（正式部署仍为 `z-HistoryVulcan` 的 3.11.4）
 
 本手册给出当前正式公开 API 的常用入口和框架基础命令。正式宿主运行入口为
 `host/HistoryVulcan.exe`，程序集 XML 文档位于同一 `host/` 目录；兼容框架包的完整签名位于
@@ -12,7 +12,7 @@
 无 Mercury 时双 `/` 与命令集/详情不可用。
 **3.3.2（DEC-023）在此基础上把类收敛为九类、退役影子域 `debug`，并确立
 模块注册名与指令域的去品牌前缀规则（见 §3.3.1）；3.4.0（DEC-025）恢复受控的两段直接方法与域聚焦。** 3.3.1 → 3.3.2 的逐条改名映射见
-§3.3.4 与 `HistoryVulcan_消费变更摘要.md`。当前源码与正式部署均为 **3.11.2**（正式宿主位于 `z-HistoryVulcan`）。
+§3.3.4 与 `HistoryVulcan_消费变更摘要.md`。当前源码候选为 **3.11.5**（正式宿主位于 `z-HistoryVulcan`，仍为 3.11.4）。
 3.1.9 是旧名 AppShell 的最后快照，已随 3.2.0 发布退役；3.1.8 不作为稳定支持版本。以下包表和最小宿主代码
 描述当前正式合同，但正式部署不提供 NuGet feed。
 
@@ -432,7 +432,7 @@ HistoryVulcan 自身只有一个域 `vulcan`，内置业务命令分为九类；
 | `vulcan` | `ui` | 21 | `vulcan.ui.*`：停靠窗口、命名布局、面板、文件对话框 |
 | `vulcan` | `log` | 11 | `vulcan.log.*`（无 `cls` 别名；含承压 `flood`） |
 | `vulcan` | `mcp` | 11 | `vulcan.mcp.*` |
-| `vulcan` | `module` | 6 | `vulcan.module.*`（其中 `trialui.*` 2 条只在承载界面的前端注册） |
+| `vulcan` | `module` | 7 | `vulcan.module.*`（其中 `trialui.*` 2 条只在承载界面的前端注册） |
 | `vulcan` | `prompt` | 8 | `vulcan.prompt.*`：描述治理、勘误与事故 |
 | `vulcan` | `svc` | 4 | `vulcan.svc.*` |
 | `vulcan` | `web` | 5 | `vulcan.web.*` |
@@ -520,6 +520,7 @@ HistoryVulcan 自身只有一个域 `vulcan`，内置业务命令分为九类；
 |---|---|
 | `vulcan.module.list` | 列出模块、版本、槽和命令数 |
 | `vulcan.module.reload` | 重新发现并装载模块 |
+| `vulcan.module.unload name=` | 从当前快照卸下一个已装载模块（命令、界面、ALC）；不改磁盘，reload 会装回 |
 | `vulcan.module.roots [paths=<绝对根1;绝对根2>|auto]` | 查询/设置 Z 模块发现根；`auto` 恢复向上识别项目库根 |
 | `vulcan.module.open` | 在资源管理器中打开模块目录 |
 
@@ -545,6 +546,10 @@ HistoryVulcan 自身只有一个域 `vulcan`，内置业务命令分为九类；
 因此持有一份 `ExecutionSite=Frontend` 的同名代理。住在后台的模块（如 Diana 的
 `diana.trial.load ... ui=true`）经命令总线调用 `vulcan.module.trialui.load` 即可中继到前端建界面，
 不需要自己去找一个它根本没有的 `IShellUiRegistrar`。前端未连接时该代理返回「前端未连接」。
+
+正式模块已经占用相同工具窗口 Id 时，试用装载会撞 `DockingHost` 的「禁止静默覆盖」。
+先执行 `vulcan.module.unload name=<正式模块名>` 卸掉正式模块（后台会中继到前端拆界面），
+再用另一个 `alias` 调用 `trialui.load`。`unload` 不改磁盘，`vulcan.module.reload` 会把正式模块装回。
 
 ### 6.5 命令目录与 MCP
 

@@ -101,6 +101,39 @@ public sealed class ModuleTrialUiTests
     }
 
     [Fact]
+    public void UnloadFormalModuleFreesWindowIdsSoTrialUiCanLoad()
+    {
+        using var fixture = TrialPackage.Create(ui: true);
+        var registry = new CommandRegistry();
+        var shellUi = new RecordingShellUi();
+        using var host = CreateFrontendHost(fixture, shellUi, out var log);
+        host.EnableCommands = true;
+        host.Attach(registry, new CommandBus(registry, log), new MemorySettings(), fixture.DataDirectory);
+        fixture.InstallAsLoadedUiModule();
+        host.Start();
+
+        var loaded = Assert.Single(host.Modules);
+        Assert.Equal(TrialPackage.ModuleName, loaded.ModuleName);
+        Assert.Contains(TrialUiFixtureModule.ToolWindowId, shellUi.RegisteredWindowIds);
+
+        var blocked = host.LoadTrialUi(fixture.PackagePath, "janus-trial");
+        Assert.False(blocked.Success);
+        Assert.Contains("工具窗口 Id 冲突", blocked.Message, StringComparison.Ordinal);
+
+        var unloaded = host.Unload(loaded.ModuleName);
+        Assert.True(unloaded.Success, unloaded.Message);
+        Assert.Empty(host.Modules);
+        Assert.Contains(TrialUiFixtureModule.ToolWindowId, shellUi.UnregisteredWindows);
+        Assert.Contains("context-fixture", shellUi.UnregisteredOwners);
+
+        var trial = host.LoadTrialUi(fixture.PackagePath, "janus-trial");
+        Assert.True(trial.Success, trial.Message);
+        Assert.Empty(host.Modules);
+        Assert.Equal(2, shellUi.RegisteredWindowIds.Count);
+        Assert.Contains(TrialUiFixtureModule.ToolWindowId, shellUi.RegisteredWindowIds);
+    }
+
+    [Fact]
     public void TrialUiRefusesPackagesThatDeclareNoUi()
     {
         using var fixture = TrialPackage.Create(ui: false);
@@ -201,6 +234,24 @@ public sealed class ModuleTrialUiTests
                 Path.Combine(slot, "ContextFixture.dll"));
         }
 
+        /// <summary>正式装载且声明 ui=true，使 Start 会创建与试用夹具相同 Id 的工具窗口。</summary>
+        public void InstallAsLoadedUiModule()
+        {
+            InstallAsLoadedModule();
+            File.WriteAllText(
+                Path.Combine(ModulesDirectory, "context-fixture", "module.manifest.json"),
+                $$"""
+                {
+                  "schemaVersion": 1,
+                  "type": "HistoryVulcan.Module",
+                  "name": "{{ModuleName}}",
+                  "version": "v1.0.0",
+                  "artifact": "ContextFixture.dll",
+                  "ui": true
+                }
+                """);
+        }
+
         public void Dispose()
         {
             try { Directory.Delete(_root, recursive: true); } catch (IOException) { }
@@ -215,9 +266,13 @@ public sealed class ModuleTrialUiTests
     {
         public List<string> RegisteredOwners { get; } = [];
 
+        public List<string> RegisteredWindowIds { get; } = [];
+
         public List<string> UnregisteredWindows { get; } = [];
 
         public List<string> UnregisteredOwners { get; } = [];
+
+        private readonly HashSet<string> _windowIds = new(StringComparer.OrdinalIgnoreCase);
 
         public bool IsUiThread => true;
 
@@ -225,11 +280,18 @@ public sealed class ModuleTrialUiTests
 
         public IDisposable RegisterToolWindow(ToolWindowDescriptor descriptor, string owner)
         {
+            if (!_windowIds.Add(descriptor.Id))
+                throw new InvalidOperationException($"工具窗口 Id 冲突: {descriptor.Id}(禁止静默覆盖,§5.3)");
+            RegisteredWindowIds.Add(descriptor.Id);
             RegisteredOwners.Add(owner);
             return new Registration();
         }
 
-        public void UnregisterToolWindow(string id) => UnregisteredWindows.Add(id);
+        public void UnregisterToolWindow(string id)
+        {
+            _windowIds.Remove(id);
+            UnregisteredWindows.Add(id);
+        }
 
         public void UnregisterOwner(string owner) => UnregisteredOwners.Add(owner);
 

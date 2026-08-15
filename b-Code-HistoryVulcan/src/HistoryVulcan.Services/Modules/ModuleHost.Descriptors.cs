@@ -245,6 +245,9 @@ public sealed partial class ModuleHost
         /// <summary>本快照持有的全部加载上下文(MH-01:根平铺一个 + 每模块槽一个)。</summary>
         public List<AssemblyLoadContext> Contexts { get; } = new();
 
+        /// <summary>模块 owner → 装载它的 ALC；槽内多模块可共享同一上下文。</summary>
+        public Dictionary<string, AssemblyLoadContext> ContextsByOwner { get; } = new(StringComparer.OrdinalIgnoreCase);
+
         /// <summary>扫描出的待注册指令(注册在 UI 线程完成,冲突者被剔除)。</summary>
         public List<(CommandDescriptor Descriptor, string ModuleName)> PendingCommands { get; } = new();
 
@@ -272,6 +275,17 @@ public sealed partial class ModuleHost
 
         public void CountCommand(string moduleName)
             => _commandCounts[moduleName] = _commandCounts.GetValueOrDefault(moduleName) + 1;
+
+        public void ClearCommandCount(string moduleName) => _commandCounts.Remove(moduleName);
+
+        public void DropInstancesFrom(AssemblyLoadContext alc)
+        {
+            foreach (var type in _instances.Keys)
+            {
+                if (ReferenceEquals(AssemblyLoadContext.GetLoadContext(type.Assembly), alc))
+                    _instances.TryRemove(type, out _);
+            }
+        }
 
         public void FinalizeMetas()
         {
