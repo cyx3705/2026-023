@@ -140,6 +140,55 @@ namespace HistoryVulcan.Tests
             }
         }
 
+        [Fact]
+        public void UnloadRemovesTheModuleAndItsCommandsWithoutReloading()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));
+            var modulesDirectory = Path.Combine(root, "modules");
+            var slotDirectory = Path.Combine(modulesDirectory, "context-fixture");
+            Directory.CreateDirectory(slotDirectory);
+            File.Copy(
+                typeof(ContextFixtureModuleInfo).Assembly.Location,
+                Path.Combine(slotDirectory, "ContextFixture.dll"));
+
+            var registry = new CommandRegistry();
+            var log = new TestLog();
+            var settings = new MemorySettings();
+            var bus = new CommandBus(registry, log);
+            using var host = new ModuleHost(modulesDirectory, log)
+            {
+                EnableFileWatching = false,
+                EnableUiModules = false,
+            };
+
+            try
+            {
+                host.Attach(registry, bus, settings, Path.Combine(root, "data"));
+                host.Start();
+                Assert.Equal("contextfixture", Assert.Single(host.Modules).ModuleName);
+                Assert.True(registry.TryGet("contextfixture.Probe", out _));
+
+                var missing = host.Unload("HistoryJanus");
+                Assert.False(missing.Success);
+                Assert.Contains("没有已装载的模块", missing.Message, StringComparison.Ordinal);
+
+                var empty = host.Unload("  ");
+                Assert.False(empty.Success);
+                Assert.Contains("需要 name", empty.Message, StringComparison.Ordinal);
+
+                var unloaded = host.Unload("contextfixture");
+                Assert.True(unloaded.Success, unloaded.Message);
+                Assert.Empty(host.Modules);
+                Assert.False(registry.TryGet("contextfixture.Probe", out _));
+                Assert.False(registry.TryGet("contextfixture.context-probe", out _));
+                Assert.False(host.Unload("contextfixture").Success);
+            }
+            finally
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+
 
         private sealed class MemorySettings : ISettingsService
         {

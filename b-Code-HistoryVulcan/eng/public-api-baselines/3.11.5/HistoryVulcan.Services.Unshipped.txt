@@ -1,4 +1,3 @@
-﻿#nullable enable
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.AutomaticRootNotFound = "未能向上找到含多个编号项目目录的项目库根。" -> string!
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.DefaultLibraryRoot = "C:\\OneHistory\\HistoryClio" -> string!
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.LegacyVestaLibrary = "C:\\OneHistory\\HistoryVesta" -> string!
