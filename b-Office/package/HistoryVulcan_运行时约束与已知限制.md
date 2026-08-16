@@ -47,8 +47,8 @@
 
 | 设置键 | 默认值 | 说明 |
 |---|---:|---|
-| `mcp.port` | 未设置时 `8737 + stableHash(appName) % 200` | 显式值优先 |
-| `mcp.portretries` | `20` | 初始端口冲突后的顺延次数，范围 `0..100` |
+| `mcp.port` | 未设置时 `8737 + stableHash(appName) % 200`，成功后写入设置 | 显式值优先；只绑这一端口 |
+| `mcp.portretries` | 忽略 | 3.11.6 起占用不再顺延 |
 | `mcp.sessionlimit` | `1024` | MCP 会话缓存上限，范围 `16..65536` |
 | `web.port` | 未设置时 `8938 + stableHash(appName) % 200` | 显式值优先 |
 | `web.portretries` | `20` | 初始端口冲突后的顺延次数，范围 `0..100` |

@@ -1,6 +1,6 @@
 # HistoryVulcan 消费变更摘要
 
-适用版本：HistoryVulcan **3.11.5** 正式（已部署于 `z-HistoryVulcan`）。
+适用版本：HistoryVulcan **3.11.6** 正式（已部署于 `z-HistoryVulcan`）。
 
 本文按版本累积，不是单版本发布说明：下面的「破坏性变更」自 3.3.2 起逐条累加，每条都标注引入版本；
 「主要变化」是不需要改代码的增量。从 3.3.1 及更早升级的消费方需要通读破坏性变更全节。
@@ -96,6 +96,9 @@ MCP/Web 硬排除。命令集里不应再看到 `debug` 类。
 
 ## 主要变化
 
+- 3.11.6 固定 MCP 端口：`mcp.port` 未设置时首次派生并写入；之后只监听这一端口。占用时失败，
+  不再顺延到 `port+1` 并把新值写回设置。`mcp.portretries` 仍可迁移保留，但启动不再读取。
+  Cursor 等客户端因此不会跟到一个已经不监听的端口。
 - 3.11.5 新增按模块卸载：`vulcan.module.unload name=`。`name` 取自 `vulcan.module.list`
   （例如 `HistoryJanus`）。从当前快照移除该模块的命令、界面和可卸载程序集，**不改磁盘**；
   `vulcan.module.reload` 或文件变化会把正式模块装回来。后台 MCP 可调用；已连接前端时一次调用

@@ -49,7 +49,6 @@ public sealed partial class McpGateway : IDisposable
 
     private const int DefaultPortBase = 8737;
     private const int DefaultPortSpan = 200;
-    private const int DefaultPortRetries = 20;
     private const int DefaultSessionLimit = 1024;
     private const int MaxClientNameLength = 100;
     private const int MaxProtocolVersionLength = 64;
@@ -225,44 +224,29 @@ public sealed partial class McpGateway : IDisposable
                 System.Globalization.CultureInfo.InvariantCulture, out var configuredPort)
                 ? configuredPort
                 : (int?)null;
-            var requestedPort = port ?? configured;
-            var initialPort = requestedPort ?? DeriveDefaultPort(_identity.Name);
-            if (initialPort is < 1024 or > 65535)
-                return (false, $"端口无效: {initialPort}(允许 1024~65535)");
+            var requestedPort = port ?? configured ?? DeriveDefaultPort(_identity.Name);
+            if (requestedPort is < 1024 or > 65535)
+                return (false, $"端口无效: {requestedPort}(允许 1024~65535)");
 
-            var retries = Math.Clamp(
-                _settings.GetInt(KeyPortRetries, DefaultPortRetries), 0, 100);
-            Exception? lastError = null;
-            for (var attempt = 0; attempt <= retries; attempt++)
+            try
             {
-                var candidate = initialPort + attempt;
-                if (candidate > 65535)
-                    break;
-                try
-                {
-                    // 只挂根前缀再自行校验路径:HttpListener 前缀须以 / 结尾,
-                    // 挂 /mcp/ 会漏接不带尾斜杠的 /mcp 请求
-                    var listener = new HttpListener();
-                    listener.Prefixes.Add($"http://127.0.0.1:{candidate}/");
-                    listener.Start();
-                    _listener = listener;
-                    Port = candidate;
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    lastError = ex;
-                    _listener?.Close();
-                    _listener = null;
-                }
+                // 只挂根前缀再自行校验路径:HttpListener 前缀须以 / 结尾,
+                // 挂 /mcp/ 会漏接不带尾斜杠的 /mcp 请求
+                var listener = new HttpListener();
+                listener.Prefixes.Add($"http://127.0.0.1:{requestedPort}/");
+                listener.Start();
+                _listener = listener;
+                Port = requestedPort;
+            }
+            catch (Exception ex)
+            {
+                _listener?.Close();
+                _listener = null;
+                return (false,
+                    $"监听失败: 端口 {requestedPort} 不可用: {ex.Message}。mcp.port 已固定，不会改绑其他端口。");
             }
 
-            if (_listener == null)
-                return (false,
-                    $"监听失败: 从端口 {initialPort} 起连续尝试 {retries + 1} 个端口均不可用: {lastError?.Message}");
-
-            if (port.HasValue || configured.HasValue)
-                _settings.Set(KeyPort, Port.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            _settings.Set(KeyPort, Port.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
             _cts = new CancellationTokenSource();
             _ = AcceptLoopAsync(_listener, _cts.Token);
