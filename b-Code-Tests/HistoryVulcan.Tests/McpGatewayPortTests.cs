@@ -55,14 +55,26 @@ public sealed class McpGatewayPortTests
     }
 
     [Fact]
-    public void OccupiedDerivedPortRetriesSequentially()
+    public void UnconfiguredStartPersistsDerivedPort()
+    {
+        using var fixture = Fixture.Create("PersistDerivedPortApp");
+        Assert.True(fixture.Gateway.Start(null).Success);
+        Assert.Equal(
+            fixture.Gateway.Port.ToString(),
+            fixture.Settings.Get(McpGateway.KeyPort));
+    }
+
+    [Fact]
+    public void OccupiedDerivedPortFailsWithoutWalking()
     {
         using var first = Fixture.Create("SamePortApp");
         using var second = Fixture.Create("SamePortApp");
 
         Assert.True(first.Gateway.Start(null).Success);
-        Assert.True(second.Gateway.Start(null).Success);
-        Assert.Equal(first.Gateway.Port + 1, second.Gateway.Port);
+        var (success, message) = second.Gateway.Start(null);
+        Assert.False(success);
+        Assert.Contains("已固定", message, StringComparison.Ordinal);
+        Assert.False(second.Gateway.IsRunning);
     }
 
     [Fact]
@@ -83,18 +95,20 @@ public sealed class McpGatewayPortTests
     // （xUnit 的 Timeout 只对 async 用例生效）。整轮卡住的可见性由
     // xunit.runner.json 的 longRunningTestSeconds 诊断承担。
     [Fact]
-    public void ExplicitPortRetryPersistsActualPortAndStopClearsRuntimePort()
+    public void OccupiedExplicitPortFailsWithoutRewritingSettings()
     {
         using var first = Fixture.Create("RetryPortOwner");
         using var second = Fixture.Create("RetryPortCandidate");
         var port = FreePort();
         Assert.True(first.Gateway.Start(port).Success);
 
-        Assert.True(second.Gateway.Start(port).Success);
-        Assert.Equal(port + 1, second.Gateway.Port);
-        Assert.Equal((port + 1).ToString(), second.Settings.Get(McpGateway.KeyPort));
-        Assert.True(second.Gateway.Stop().Success);
+        var (success, message) = second.Gateway.Start(port);
+        Assert.False(success);
+        Assert.Contains("已固定", message, StringComparison.Ordinal);
+        Assert.Null(second.Settings.Get(McpGateway.KeyPort));
         Assert.Equal(0, second.Gateway.Port);
+        Assert.True(first.Gateway.Stop().Success);
+        Assert.Equal(0, first.Gateway.Port);
     }
 
     private sealed class Fixture : IDisposable

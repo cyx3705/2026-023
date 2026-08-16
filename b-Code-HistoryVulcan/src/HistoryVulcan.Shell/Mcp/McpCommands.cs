@@ -51,7 +51,7 @@ public static class McpCommands
             new ParameterSpec
             {
                 Name = "port",
-                Description = "监听端口(缺省读 mcp.port 配置,默认 8737;显式指定时持久化)",
+                Description = "监听端口(缺省读 mcp.port;未设置则派生并写入。占用时失败,不改绑)",
                 Type = ParamType.Int,
                 Position = 0,
             },

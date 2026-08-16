@@ -1,4 +1,4 @@
-# HistoryVulcan 3.11.5
+# HistoryVulcan 3.11.6
 
 This is the current HistoryVulcan host snapshot.
 
