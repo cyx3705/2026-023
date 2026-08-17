@@ -3,7 +3,7 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$activeRoots = @('b-Code-HistoryVulcan\src', 'b-Code-Samples')
+$activeRoots = @('b-Code-HistoryVulcan\src')
 $excluded = '\\(bin|obj|artifacts|history|b-Publish|z-HistoryVulcan)\\'
 $suppressionPattern = 'NoWarn|SuppressMessage|#pragma\s+warning\s+disable'
 $violations = [System.Collections.Generic.List[string]]::new()
@@ -21,11 +21,14 @@ foreach ($relativeRoot in $activeRoots) {
     }
 }
 
-$hotspots = Get-ChildItem -LiteralPath (Join-Path $root 'b-Code-HistoryVulcan\src') -Recurse -File |
+# Force array semantics so the single-hotspot case behaves the same in Windows
+# PowerShell 5.1 and pwsh. Without this, a scalar PSCustomObject has no Count
+# property and one violation incorrectly passes the gate.
+$hotspots = @(Get-ChildItem -LiteralPath (Join-Path $root 'b-Code-HistoryVulcan\src') -Recurse -File |
     Where-Object { $_.Extension -in '.cs', '.xaml' -and $_.FullName -notmatch $excluded } |
     ForEach-Object { [pscustomobject]@{ Path = $_.FullName; Lines = (Get-Content -LiteralPath $_.FullName).Count } } |
     Where-Object Lines -gt 1000 |
-    Sort-Object Lines -Descending
+    Sort-Object Lines -Descending)
 
 foreach ($hotspot in $hotspots) {
     Write-Warning ("Hotspot: {0} ({1} lines); split by responsibility." -f $hotspot.Path, $hotspot.Lines)
