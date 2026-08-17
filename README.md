@@ -102,7 +102,7 @@ Git 历史取回。现行回滚仍由 `z-Publish/history/<版本>/` 的 3.x 同�
 
 宿主候选与正式运行入口统一为 `z-Publish/host/HistoryVulcan.exe`。已发布说明书在
 `z-Publish/docs/`，编辑源是本仓库的 `b-Office/package/`；跨项目读取走 `diana.docs.vulcan`。
-旧名 `z-Package-AppShell/` 的 3.1.9 快照已随 3.2.0 发布退役删除（同构副本入库于 `z-Publish/history/3.1.9/`）。
+3.1.9 旧快照已随 3.2.0 发布退役删除（同构副本入库于 `z-Publish/history/3.1.9/`）。
 旧候选整体归档到 `z-Publish/history/<版本>/`。宿主部署脚本不会执行 Git commit、tag、push，
 也不会生成或推送 NuGet 包。
 

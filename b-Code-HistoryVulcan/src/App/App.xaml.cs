@@ -566,10 +566,16 @@ public partial class App : Application
                 Required = true,
                 Position = 0,
             }],
-            Handler = CommandDescriptor.Sync(ctx =>
-                IsLocalModuleMutationSource(ctx.Source)
-                    ? host.InstallPackage(ctx.RequireString("path"))
-                    : CommandResult.Fail("模块安装只允许认证的本机宿主通道。")),
+            Handler = async ctx =>
+            {
+                if (!IsLocalModuleMutationSource(ctx.Source))
+                    return CommandResult.Fail("模块安装只允许认证的本机宿主通道。");
+                return await InstallRuntimePackageAsync(
+                    host,
+                    bus,
+                    ctx.RequireString("path"),
+                    ctx.Cancellation).ConfigureAwait(false);
+            },
         }, "framework:service");
 
         registry.Register(new CommandDescriptor
@@ -587,10 +593,16 @@ public partial class App : Application
                 Required = true,
                 Position = 0,
             }],
-            Handler = CommandDescriptor.Sync(ctx =>
-                IsLocalModuleMutationSource(ctx.Source)
-                    ? host.RemovePackage(ctx.RequireString("name"))
-                    : CommandResult.Fail("模块移除只允许认证的本机宿主通道。")),
+            Handler = async ctx =>
+            {
+                if (!IsLocalModuleMutationSource(ctx.Source))
+                    return CommandResult.Fail("模块移除只允许认证的本机宿主通道。");
+                return await RemoveRuntimePackageAsync(
+                    host,
+                    bus,
+                    ctx.RequireString("name"),
+                    ctx.Cancellation).ConfigureAwait(false);
+            },
         }, "framework:service");
 
         registry.Register(new CommandDescriptor

@@ -98,7 +98,9 @@ MCP/Web 硬排除。命令集里不应再看到 `debug` 类。
 
 - 3.12.0 运行模块迁入 `%AppData%\HistoryVulcan\Modules`；独立宿主不再扫描项目库或 `z-*`。
   新增 `ModuleHost.InstallPackage/RemovePackage` 与本机命令 `vulcan.module.install/remove`，包含完整
-  manifest/SHA 校验、监视区外暂存、原子替换和失败回滚。`vulcan.module.roots` 只读兼容查询。
+  manifest/SHA 校验、监视区外暂存、前端 UI 快照预卸载、原子替换和失败回滚。后台确认后通过
+  module revision 驱动前端按新 manifest 重建，避免 UI 模块的 watcher/文件句柄阻塞目录替换。
+  `vulcan.module.roots` 只读兼容查询。
   宿主运行入口改为 `z-Publish/host/HistoryVulcan.exe`，当前候选直接位于 `z-Publish/` 根部。
 - 3.11.6 固定 MCP 端口：`mcp.port` 未设置时首次派生并写入；之后只监听这一端口。占用时失败，
   不再顺延到 `port+1` 并把新值写回设置。`mcp.portretries` 仍可迁移保留，但启动不再读取。

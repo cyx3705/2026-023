@@ -521,8 +521,8 @@ HistoryVulcan 自身只有一个域 `vulcan`，内置业务命令分为九类；
 | `vulcan.module.list` | 列出模块、版本、槽和命令数 |
 | `vulcan.module.reload` | 重新发现并装载模块 |
 | `vulcan.module.unload name=` | 从当前快照卸下一个已装载模块（命令、界面、ALC）；不改磁盘，reload 会装回 |
-| `vulcan.module.install path=` | 校验 manifest 与完整 SHA 后原子安装到 AppData 运行区并重载；仅本机宿主通道可用 |
-| `vulcan.module.remove name=` | 原子移出运行包、确认刷新后删除，失败恢复；仅本机宿主通道可用 |
+| `vulcan.module.install path=` | 校验 manifest 与完整 SHA，先卸前端同名 UI 快照，再原子安装到 AppData 运行区并按 revision 重建；仅本机宿主通道可用 |
+| `vulcan.module.remove name=` | 先卸前端同名 UI 快照，再原子移出运行包、确认刷新后删除，失败恢复；仅本机宿主通道可用 |
 | `vulcan.module.roots [paths=]` | 查询固定 AppData 运行目录；带 `paths` 一律拒绝，旧设置不生效 |
 | `vulcan.module.open` | 在资源管理器中打开固定 AppData 运行目录 |
 
