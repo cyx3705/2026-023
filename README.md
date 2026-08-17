@@ -1,9 +1,9 @@
-# HistoryVulcan 3.12.0
+# HistoryVulcan 3.12.1
 
 本仓库是 OneHistory HistoryVulcan（原 AppShell，3.2.0 起改名）的独立源码、合同与发布资产真值。
 `3.0.3` 是 V3 冻结基线，冻结标签为 `v3.0.3`；版本线不再与 HistoryJanus 对齐，`0.7.x` 仅保留用于回滚。
 
-当前源码为 `3.12.0`；`HistoryVulcan.Core` 公开面自 `3.9.0` 起冻结。
+当前源码为 `3.12.1`；`HistoryVulcan.Core` 公开面自 `3.9.0` 起冻结。
 独立宿主只从 `%AppData%\HistoryVulcan\Modules\<模块名>` 装载完整 manifest 包；项目库和任何
 `z-*` 都不再参与运行发现。`vulcan.module.install/remove` 负责原子安装、移除和失败回滚。
 3.11.3 取消模块的文档页注册路径：窗口只有工具窗口一种形态。声明 `DockSide.Center` 的模块窗口

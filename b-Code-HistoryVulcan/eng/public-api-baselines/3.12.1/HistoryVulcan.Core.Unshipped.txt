@@ -1,0 +1,217 @@
+﻿#nullable enable
+HistoryVulcan.Core.Commands.CommandDescriptor.CommandClass.get -> string?
+HistoryVulcan.Core.Commands.CommandDescriptor.CommandClass.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Domain.get -> string?
+HistoryVulcan.Core.Commands.CommandDescriptor.Domain.init -> void
+HistoryVulcan.Core.Commands.CommandRegistry.GetCommandClass(string! name) -> string!
+HistoryVulcan.Core.Commands.CommandRegistry.GetDomain(string! name) -> string!
+static HistoryVulcan.Core.Commands.CommandRegistry.GetMethod(string! name) -> string!
+static HistoryVulcan.Core.Commands.CommandRegistry.LegacyClass(string! name) -> string!
+static HistoryVulcan.Core.Commands.CommandRegistry.LegacyDomain(string! name) -> string!
+static HistoryVulcan.Core.Commands.CommandRegistry.LegacyMethod(string! name) -> string!
+HistoryVulcan.Core.Commands.FrontendCommandCapability.CommandClass.get -> string?
+HistoryVulcan.Core.Commands.FrontendCommandCapability.CommandClass.init -> void
+HistoryVulcan.Core.Commands.FrontendCommandCapability.Domain.get -> string?
+HistoryVulcan.Core.Commands.FrontendCommandCapability.Domain.init -> void
+HistoryVulcan.Core.Modules.IActivatableToolContent
+HistoryVulcan.Core.Modules.IActivatableToolContent.ActivateContent() -> void
+HistoryVulcan.Core.Modules.ModuleCommandAttribute.CommandClass.get -> string?
+HistoryVulcan.Core.Modules.ModuleCommandAttribute.CommandClass.init -> void
+HistoryVulcan.Core.Commands.ModuleDomainNaming
+static HistoryVulcan.Core.Commands.ModuleDomainNaming.ToDomain(string! moduleName) -> string!
+static HistoryVulcan.Core.Mcp.McpExposurePolicy.DiagnosticCommandNames.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+HistoryVulcan.Core.Commands.CommandRegistry.Domains() -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Core.Commands.CommandRegistry.IsRegisteredDomain(string? candidate) -> bool
+BaseVariable.ModuleInfoBase
+BaseVariable.ModuleInfoBase.ModuleInfoBase() -> void
+virtual BaseVariable.ModuleInfoBase.Author.get -> string!
+virtual BaseVariable.ModuleInfoBase.Description.get -> string!
+virtual BaseVariable.ModuleInfoBase.Enabled.get -> bool
+virtual BaseVariable.ModuleInfoBase.MainClassType.get -> System.Type?
+virtual BaseVariable.ModuleInfoBase.ModuleName.get -> string!
+virtual BaseVariable.ModuleInfoBase.Open.get -> bool
+virtual BaseVariable.ModuleInfoBase.Version.get -> string!
+HistoryVulcan.Core.Commands.CommandBus.InvokeAsync(string! text, string! source, System.Threading.CancellationToken cancellation = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
+HistoryVulcan.Core.Commands.FrontendCommandCapability.FrontendCommandCapability(string! Name, string! Summary, string? Example, System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Commands.CommandParameterCapability!>! Parameters, bool Readonly, bool Dangerous, bool RequiresUiThread, bool AllowUnspecifiedParameters, bool AllowMcpExecution, string! Source) -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutDescriptor
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutDescriptor.GlobalShortcutDescriptor(string! Id, System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Input.GlobalShortcutStroke!>! Strokes, string! CommandText, int MaxIntervalMilliseconds = 350) -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutDescriptor.CommandText.get -> string!
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutDescriptor.CommandText.init -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutDescriptor.Id.get -> string!
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutDescriptor.Id.init -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutDescriptor.MaxIntervalMilliseconds.get -> int
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutDescriptor.MaxIntervalMilliseconds.init -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutDescriptor.Strokes.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Input.GlobalShortcutStroke!>!
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutDescriptor.Strokes.init -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutModifiers
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutModifiers.Alt = 1 -> HistoryVulcan.Core.Input.GlobalShortcutModifiers
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutModifiers.Control = 2 -> HistoryVulcan.Core.Input.GlobalShortcutModifiers
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutModifiers.None = 0 -> HistoryVulcan.Core.Input.GlobalShortcutModifiers
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutModifiers.Shift = 4 -> HistoryVulcan.Core.Input.GlobalShortcutModifiers
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutModifiers.Windows = 8 -> HistoryVulcan.Core.Input.GlobalShortcutModifiers
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.CommandText.get -> string!
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.CommandText.init -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.Id.get -> string!
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.Id.init -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.MaxIntervalMilliseconds.get -> int
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.MaxIntervalMilliseconds.init -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.Owner.get -> string!
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.Owner.init -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.Strokes.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Input.GlobalShortcutStroke!>!
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.Strokes.init -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutRegistrationInfo.GlobalShortcutRegistrationInfo(string! Id, string! Owner, System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Input.GlobalShortcutStroke!>! Strokes, string! CommandText, int MaxIntervalMilliseconds) -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutStroke
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutStroke.GlobalShortcutStroke(int VirtualKey, HistoryVulcan.Core.Input.GlobalShortcutModifiers Modifiers = HistoryVulcan.Core.Input.GlobalShortcutModifiers.None) -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutStroke.Modifiers.get -> HistoryVulcan.Core.Input.GlobalShortcutModifiers
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutStroke.Modifiers.init -> void
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutStroke.VirtualKey.get -> int
+*REMOVED*HistoryVulcan.Core.Input.GlobalShortcutStroke.VirtualKey.init -> void
+*REMOVED*HistoryVulcan.Core.Input.IGlobalShortcutModule
+*REMOVED*HistoryVulcan.Core.Input.IGlobalShortcutModule.RegisterShortcuts(HistoryVulcan.Core.Input.IGlobalShortcutRegistrar! registrar) -> void
+*REMOVED*HistoryVulcan.Core.Input.IGlobalShortcutRegistrar
+*REMOVED*HistoryVulcan.Core.Input.IGlobalShortcutRegistrar.Register(HistoryVulcan.Core.Input.GlobalShortcutDescriptor! descriptor) -> System.IDisposable!
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Command.get -> string?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Command.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Default.get -> string?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Default.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Id.get -> string?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Id.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Items.get -> System.Collections.Generic.List<string!>?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Items.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Label.get -> string?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Label.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Max.get -> double?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Max.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Min.get -> double?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Min.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.PanelControl() -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Required.get -> bool
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Required.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Step.get -> double?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Step.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Style.get -> string?
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Style.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Type.get -> string!
+*REMOVED*HistoryVulcan.Core.Panels.PanelControl.Type.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Controls.get -> System.Collections.Generic.List<HistoryVulcan.Core.Panels.PanelControl!>!
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Controls.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Id.get -> string!
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Id.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.PanelDefinition() -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Ratio.get -> double
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Ratio.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Side.get -> string!
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Side.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Title.get -> string!
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Title.set -> void
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Visible.get -> bool
+*REMOVED*HistoryVulcan.Core.Panels.PanelDefinition.Visible.set -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Annotations.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+HistoryVulcan.Core.Commands.CommandDescriptor.Annotations.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Annotation(string! key) -> string?
+HistoryVulcan.Core.Commands.CommandDescriptor.HasAnnotation(string! key) -> bool
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualGenerator
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Applied.get -> bool
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Applied.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.CommandCount.get -> int
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.CommandCount.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.CommandManualPreview(string! Path, int CommandCount, string! Sha256, string! Markdown, bool Applied) -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Markdown.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Markdown.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Path.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Path.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Sha256.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.CommandManualPreview.Sha256.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandSchemaExporter
+*REMOVED*HistoryVulcan.Core.Mcp.CommandSchemaExporter.CommandSchemaExporter(HistoryVulcan.Core.Commands.CommandRegistry! registry) -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandSchemaExporter.DescriptionsProvider.get -> System.Func<System.Collections.Generic.IReadOnlyDictionary<string!, string!>!>?
+*REMOVED*HistoryVulcan.Core.Mcp.CommandSchemaExporter.DescriptionsProvider.set -> void
+*REMOVED*HistoryVulcan.Core.Mcp.CommandSchemaExporter.ExportTools() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Mcp.McpToolInfo!>!
+*REMOVED*HistoryVulcan.Core.Mcp.CommandSchemaExporter.Find(string! nameOrTool) -> HistoryVulcan.Core.Mcp.McpToolInfo?
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.CommandName.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.CommandName.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.Customized.get -> bool
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.Customized.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.Dangerous.get -> bool
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.Dangerous.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.DefaultDescription.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.DefaultDescription.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.Description.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.Description.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.InputSchema.get -> System.Text.Json.Nodes.JsonObject!
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.InputSchema.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.McpToolInfo(string! ToolName, string! CommandName, string! Description, System.Text.Json.Nodes.JsonObject! InputSchema, bool Dangerous, string! DefaultDescription = "", bool Customized = false) -> void
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.ToolName.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.McpToolInfo.ToolName.init -> void
+*REMOVED*static HistoryVulcan.Core.Mcp.CommandManualGenerator.Render(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Mcp.CommandSchemaExporter! exporter, string! policy) -> string!
+*REMOVED*static HistoryVulcan.Core.Mcp.CommandManualGenerator.Sha256(string! markdown) -> string!
+*REMOVED*static HistoryVulcan.Core.Mcp.CommandSchemaExporter.BuildCommandText(string! commandName, System.Text.Json.JsonElement? arguments) -> string!
+*REMOVED*static HistoryVulcan.Core.Mcp.CommandSchemaExporter.HardExclusionReason(string! commandName) -> string?
+*REMOVED*static HistoryVulcan.Core.Mcp.CommandSchemaExporter.IsHardExcluded(string! commandName) -> bool
+*REMOVED*static HistoryVulcan.Core.Mcp.CommandSchemaExporter.MakeToolName(string! commandName, System.Collections.Generic.HashSet<string!>! used) -> string!
+HistoryVulcan.Core.Clients.ClientKind
+HistoryVulcan.Core.Clients.ClientKind.Mcp = 0 -> HistoryVulcan.Core.Clients.ClientKind
+HistoryVulcan.Core.Clients.ClientKind.Shell = 1 -> HistoryVulcan.Core.Clients.ClientKind
+HistoryVulcan.Core.Clients.ClientKind.Web = 2 -> HistoryVulcan.Core.Clients.ClientKind
+HistoryVulcan.Core.Clients.ClientSession
+HistoryVulcan.Core.Clients.ClientSession.AuthSubject.get -> string?
+HistoryVulcan.Core.Clients.ClientSession.AuthSubject.init -> void
+HistoryVulcan.Core.Clients.ClientSession.ClientSession(string! Id, HistoryVulcan.Core.Clients.ClientKind Kind, string! Name, string! ProtocolVersion, System.DateTimeOffset ConnectedAt) -> void
+HistoryVulcan.Core.Clients.ClientSession.ConnectedAt.get -> System.DateTimeOffset
+HistoryVulcan.Core.Clients.ClientSession.ConnectedAt.init -> void
+HistoryVulcan.Core.Clients.ClientSession.DeviceId.get -> string?
+HistoryVulcan.Core.Clients.ClientSession.DeviceId.init -> void
+HistoryVulcan.Core.Clients.ClientSession.Id.get -> string!
+HistoryVulcan.Core.Clients.ClientSession.Id.init -> void
+HistoryVulcan.Core.Clients.ClientSession.IsLoopback.get -> bool
+HistoryVulcan.Core.Clients.ClientSession.IsLoopback.init -> void
+HistoryVulcan.Core.Clients.ClientSession.Kind.get -> HistoryVulcan.Core.Clients.ClientKind
+HistoryVulcan.Core.Clients.ClientSession.Kind.init -> void
+HistoryVulcan.Core.Clients.ClientSession.Name.get -> string!
+HistoryVulcan.Core.Clients.ClientSession.Name.init -> void
+HistoryVulcan.Core.Clients.ClientSession.ProtocolVersion.get -> string!
+HistoryVulcan.Core.Clients.ClientSession.ProtocolVersion.init -> void
+HistoryVulcan.Core.Clients.ClientSession.RemoteAddress.get -> string?
+HistoryVulcan.Core.Clients.ClientSession.RemoteAddress.init -> void
+HistoryVulcan.Core.Clients.ClientSession.Scopes.get -> System.Collections.Generic.IReadOnlySet<string!>!
+HistoryVulcan.Core.Clients.ClientSession.Scopes.init -> void
+HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(HistoryVulcan.Core.Clients.ClientSession! session, string! tool, string! arguments, string! result, long elapsedMs) -> void
+static HistoryVulcan.Core.Clients.ClientSession.Create(HistoryVulcan.Core.Clients.ClientKind kind, string! name, string! protocolVersion = "2025-03-26", string? id = null, string? remoteAddress = null, string? deviceId = null, string? authSubject = null, System.Collections.Generic.IEnumerable<string!>? scopes = null, bool isLoopback = false) -> HistoryVulcan.Core.Clients.ClientSession!
+*REMOVED*HistoryVulcan.Core.Mcp.ClientKind
+*REMOVED*HistoryVulcan.Core.Mcp.ClientKind.Mcp = 0 -> HistoryVulcan.Core.Mcp.ClientKind
+*REMOVED*HistoryVulcan.Core.Mcp.ClientKind.Shell = 1 -> HistoryVulcan.Core.Mcp.ClientKind
+*REMOVED*HistoryVulcan.Core.Mcp.ClientKind.Web = 2 -> HistoryVulcan.Core.Mcp.ClientKind
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.AuthSubject.get -> string?
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.AuthSubject.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.ClientSession(string! Id, HistoryVulcan.Core.Mcp.ClientKind Kind, string! Name, string! ProtocolVersion, System.DateTimeOffset ConnectedAt) -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.ConnectedAt.get -> System.DateTimeOffset
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.ConnectedAt.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.DeviceId.get -> string?
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.DeviceId.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Id.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Id.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.IsLoopback.get -> bool
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.IsLoopback.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Kind.get -> HistoryVulcan.Core.Mcp.ClientKind
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Kind.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Name.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Name.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.ProtocolVersion.get -> string!
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.ProtocolVersion.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.RemoteAddress.get -> string?
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.RemoteAddress.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Scopes.get -> System.Collections.Generic.IReadOnlySet<string!>!
+*REMOVED*HistoryVulcan.Core.Mcp.ClientSession.Scopes.init -> void
+*REMOVED*HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(HistoryVulcan.Core.Mcp.ClientSession! session, string! tool, string! arguments, string! result, long elapsedMs) -> void
+*REMOVED*static HistoryVulcan.Core.Mcp.ClientSession.Create(HistoryVulcan.Core.Mcp.ClientKind kind, string! name, string! protocolVersion = "2025-03-26", string? id = null, string? remoteAddress = null, string? deviceId = null, string? authSubject = null, System.Collections.Generic.IEnumerable<string!>? scopes = null, bool isLoopback = false) -> HistoryVulcan.Core.Mcp.ClientSession!
+*REMOVED*HistoryVulcan.Core.Commands.CommandDescriptor.SupportsUndo.get -> bool
+*REMOVED*HistoryVulcan.Core.Commands.CommandDescriptor.SupportsUndo.init -> void
+*REMOVED*HistoryVulcan.Core.Commands.FrontendCommandCapability.FrontendCommandCapability(string! Name, string! Summary, string? Example, System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Commands.CommandParameterCapability!>! Parameters, bool SupportsUndo, bool Readonly, bool Dangerous, bool RequiresUiThread, bool AllowUnspecifiedParameters, bool AllowMcpExecution, string! Source) -> void
+*REMOVED*HistoryVulcan.Core.Commands.FrontendCommandCapability.SupportsUndo.get -> bool
+*REMOVED*HistoryVulcan.Core.Commands.FrontendCommandCapability.SupportsUndo.init -> void

@@ -48,7 +48,6 @@ public sealed partial class ModuleHost : IDisposable
     private ISettingsService? _settings;
     private string? _dataDirectory;
     private Snapshot _current = Snapshot.Empty;
-    private readonly Dictionary<string, TrialUiSnapshot> _trialUi = new(StringComparer.OrdinalIgnoreCase);
     private readonly ModuleDirectoryWatcher _watcher;
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -211,101 +210,8 @@ public sealed partial class ModuleHost : IDisposable
     }
 
     /// <summary>
-    /// 在带 UI 的前端临时创建候选快照的界面,不进入正式模块快照。
-    ///
-    /// 界面只能长在有 <see cref="IShellUiRegistrar"/> 的进程里,而模块命令住在无窗的
-    /// <c>--service</c> 后台——后台自己创建不了界面,也不可能把 WPF 对象递过进程边界。
-    /// 因此候选程序集在前端再装一份(独立可卸载 ALC),后台侧经前端命令代理
-    /// (<see cref="CommandExecutionSite.Frontend"/>)中继到这里。
-    /// </summary>
-    public CommandResult LoadTrialUi(string packagePath, string owner)
-    {
-        if (!EnableUiModules || ShellUi == null || UiContext == null)
-        {
-            return CommandResult.Fail(
-                "当前宿主不承载界面(--service 后台进程没有 IShellUiRegistrar);" +
-                "试用界面须由 Vulcan 前端创建。");
-        }
-        if (string.IsNullOrWhiteSpace(packagePath))
-            return CommandResult.Fail("试用界面需要候选 z 快照目录。");
-        if (string.IsNullOrWhiteSpace(owner))
-            return CommandResult.Fail("试用界面需要 owner 别名。");
-
-        var key = owner.Trim();
-        if (_trialUi.ContainsKey(key))
-            return CommandResult.Fail($"试用界面别名已占用: {key};先卸载再重装。");
-
-        // owner 是 ShellUi 注销的粒度。别名撞上已装载模块时,卸载试用界面会顺带
-        // 注销正式模块的工具窗口,因此这里直接拒绝而不是事后补救。
-        if (_current.Modules.Any(module =>
-                module.ModuleName.Equals(key, StringComparison.OrdinalIgnoreCase)))
-        {
-            return CommandResult.Fail(
-                $"别名 {key} 与已装载模块同名;换一个别名,否则卸载时会连正式模块的界面一并注销。");
-        }
-
-        if (!ZModuleDiscoverySource.TryReadPackage(packagePath, out var candidate, out var error))
-            return CommandResult.Fail($"候选快照不可用: {error}");
-        if (!candidate.Ui)
-            return CommandResult.Fail($"{candidate.Name} 的清单声明 ui=false,没有可创建的界面。");
-
-        var snapshot = new Snapshot();
-        var alc = new ModuleLoadContext(candidate.PackagePath);
-        snapshot.Contexts.Add(alc);
-        var created = new List<IUiModule>();
-        try
-        {
-            var assembly = LoadAssembly(alc, candidate.ArtifactPath);
-            var types = LoadTypes(assembly);
-            AttachModuleContexts(snapshot, types, key);
-            var modules = types
-                .Where(type => type.IsPublic && !type.IsAbstract && typeof(IUiModule).IsAssignableFrom(type))
-                .Select(type => (IUiModule)snapshot.GetInstance(type))
-                .ToList();
-            if (modules.Count == 0)
-                throw new InvalidOperationException($"{candidate.Name} 里没有可创建的 IUiModule。");
-
-            foreach (var module in modules)
-            {
-                if (module is IShellUiAware aware)
-                    aware.ShellUi = ShellUi;
-                if (module is IShellCommandWorkbenchAware workbenchAware)
-                    workbenchAware.CommandWorkbench = CommandWorkbench;
-                module.CreateUi();
-                created.Add(module);
-            }
-
-            _trialUi.Add(key, new TrialUiSnapshot(alc, modules));
-            _log.Info("module",
-                $"✓ 试用界面 {candidate.Name} {candidate.Version}(别名 {key}," +
-                $"{modules.Count} 个 UI 模块) ← {candidate.PackagePath}");
-            return CommandResult.Ok(
-                $"已在前端创建试用界面: {candidate.Name} {candidate.Version}" +
-                $"(别名 {key},{modules.Count} 个 UI 模块)\n" +
-                $"来源: {candidate.PackagePath}\n" +
-                $"未进入正式模块快照;用 vulcan.module.trialui.unload alias={key} 卸载",
-                new
-                {
-                    Alias = key,
-                    Module = candidate.Name,
-                    Version = candidate.Version,
-                    Ui = modules.Count,
-                    Source = candidate.PackagePath,
-                });
-        }
-        catch (Exception ex)
-        {
-            // 已经建出来的界面必须按创建的逆序拆掉:半成品留在停靠管理器里,
-            // 下一次同名装载会撞 ToolWindow Id。
-            DestroyTrialUi(key, created);
-            alc.Unload();
-            return CommandResult.Fail($"创建试用界面失败: {ex.Message}");
-        }
-    }
-
-    /// <summary>
     /// 从当前快照卸下一个已装载模块（命令、界面、可卸载程序集），不扫描磁盘、不触发整体重载。
-    /// 文件监听仍指向原 z 目录；下次 <see cref="Reload"/> 或文件变化会把正式模块装回来。
+    /// 下次 <see cref="Reload"/> 或文件变化会按运行区当前包再装回来。
     /// </summary>
     public CommandResult Unload(string name)
     {
@@ -408,63 +314,6 @@ public sealed partial class ModuleHost : IDisposable
             }
         }
     }
-
-    /// <summary>卸载前端临时试用界面并回收其 owner 与可卸载程序集。</summary>
-    public CommandResult UnloadTrialUi(string owner)
-    {
-        if (string.IsNullOrWhiteSpace(owner))
-            return CommandResult.Fail("试用界面需要 owner 别名。");
-
-        var key = owner.Trim();
-        if (!_trialUi.Remove(key, out var trial))
-        {
-            return CommandResult.Fail(_trialUi.Count == 0
-                ? $"没有名为 {key} 的试用界面(当前没有任何试用界面)。"
-                : $"没有名为 {key} 的试用界面;当前有: {string.Join("、", _trialUi.Keys)}");
-        }
-
-        DestroyTrialUi(key, trial.Modules);
-        trial.LoadContext.Unload();
-        _log.Info("module", $"已卸载试用界面: {key}");
-        return CommandResult.Ok($"已卸载试用界面: {key}");
-    }
-
-    private void DestroyTrialUi(string owner, IEnumerable<IUiModule> modules)
-    {
-        foreach (var module in modules.Reverse())
-        {
-            try
-            {
-                module.DestroyUi();
-            }
-            catch (Exception ex)
-            {
-                _log.Warn("module", $"销毁试用 UI 模块 {module.GetType().FullName} 失败: {ex.Message}");
-            }
-        }
-
-        try
-        {
-            ShellUi?.UnregisterOwner(owner);
-        }
-        catch (Exception ex)
-        {
-            _log.Warn("module", $"注销试用 owner {owner} 失败: {ex.Message}");
-        }
-    }
-
-    /// <summary>退出时拆掉全部试用界面;它们不在 <c>_current</c> 里,不会被 DestroyUi 覆盖。</summary>
-    private void DestroyAllTrialUi()
-    {
-        foreach (var (owner, trial) in _trialUi.ToList())
-        {
-            DestroyTrialUi(owner, trial.Modules);
-            trial.LoadContext.Unload();
-        }
-
-        _trialUi.Clear();
-    }
-
 
     /// <summary>整体重载:构建新快照 → 注册表换血(UI 线程) → 卸载旧 ALC。</summary>
     public void Reload()
@@ -982,6 +831,4 @@ public sealed partial class ModuleHost : IDisposable
             }
         }
     }
-
-    private sealed record TrialUiSnapshot(ModuleLoadContext LoadContext, IReadOnlyList<IUiModule> Modules);
 }

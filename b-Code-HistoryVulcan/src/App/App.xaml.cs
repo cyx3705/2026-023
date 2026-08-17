@@ -655,7 +655,8 @@ public partial class App : Application
            || source.Equals("UI", StringComparison.OrdinalIgnoreCase)
            || source.Equals("手动", StringComparison.OrdinalIgnoreCase)
            || source.StartsWith("脚本:", StringComparison.OrdinalIgnoreCase)
-           || source.StartsWith("host:", StringComparison.OrdinalIgnoreCase);
+           || source.StartsWith("host:", StringComparison.OrdinalIgnoreCase)
+           || source.StartsWith("diana.", StringComparison.OrdinalIgnoreCase);
 
     private static async Task ReloadUiModulesFromServiceAsync(
         ShellServiceClient service,
