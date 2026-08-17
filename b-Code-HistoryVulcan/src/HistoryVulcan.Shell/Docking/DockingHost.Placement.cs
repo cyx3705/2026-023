@@ -123,7 +123,7 @@ public sealed partial class DockingHost
 
     private bool TryPlaceAtTabTarget(ToolWindowDescriptor descriptor, string targetId)
     {
-        if (FindCenterDocument(targetId) != null)
+        if (IsCenterTabTarget(targetId))
         {
             var anchorable = MoveToAnchorable(descriptor);
             var hidden = anchorable.IsHidden;

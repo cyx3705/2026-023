@@ -189,6 +189,47 @@ namespace HistoryVulcan.Tests
             }
         }
 
+        [Fact]
+        public void DisposedHostDoesNotReloadOrReattachCommands()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));
+            var modulesDirectory = Path.Combine(root, "modules");
+            var slotDirectory = Path.Combine(modulesDirectory, "context-fixture");
+            Directory.CreateDirectory(slotDirectory);
+            File.Copy(
+                typeof(ContextFixtureModuleInfo).Assembly.Location,
+                Path.Combine(slotDirectory, "ContextFixture.dll"));
+
+            var registry = new CommandRegistry();
+            var log = new TestLog();
+            var settings = new MemorySettings();
+            var bus = new CommandBus(registry, log);
+            var host = new ModuleHost(modulesDirectory, log)
+            {
+                EnableFileWatching = false,
+                EnableUiModules = false,
+            };
+
+            try
+            {
+                host.Attach(registry, bus, settings, Path.Combine(root, "data"));
+                host.Start();
+                Assert.True(registry.TryGet("contextfixture.context-probe", out _));
+
+                host.Dispose();
+                host.Reload();
+                host.Dispose();
+
+                Assert.False(registry.TryGet("contextfixture.context-probe", out _));
+                Assert.Empty(host.Modules);
+            }
+            finally
+            {
+                host.Dispose();
+                Directory.Delete(root, recursive: true);
+            }
+        }
+
 
         private sealed class MemorySettings : ISettingsService
         {

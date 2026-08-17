@@ -198,6 +198,14 @@ public sealed partial class ModuleHost
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public void Dispose()
     {
+        lock (_reloadLock)
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+        }
+
         _mcpPolicy.Unbind();
         _watcher.Dispose();
         var ui = UiContext;
@@ -221,6 +229,10 @@ public sealed partial class ModuleHost
         {
             UnregisterCommands(_current);
         }
+
+        foreach (var alc in _current.Contexts)
+            alc.Unload();
+        _current = Snapshot.Empty;
     }
 
 

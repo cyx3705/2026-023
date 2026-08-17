@@ -1,0 +1,123 @@
+using System.Reflection;
+using HistoryVulcan.Core.Logging;
+using HistoryVulcan.Core.Modules;
+
+namespace HistoryVulcan.Services.Modules;
+
+public sealed partial class ModuleHost
+{
+    /// <summary>取程序集的类型表;缺失依赖只丢掉受影响的类型,不让整个模块下线(MD-06)。</summary>
+    private static Type[] LoadTypes(Assembly assembly)
+    {
+        try
+        {
+            return assembly.GetTypes();
+        }
+        catch (ReflectionTypeLoadException ex)
+        {
+            return ex.Types.Where(type => type != null).ToArray()!;
+        }
+    }
+
+    private static Assembly LoadAssembly(ModuleLoadContext alc, string dll)
+    {
+        // 按程序集名加载可命中 ALC 缓存,避免同名程序集(被其他模块作为依赖引用过)二次加载
+        try
+        {
+            return alc.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(dll)));
+        }
+        catch
+        {
+            return alc.LoadFromStream(new MemoryStream(ReadFileWithRetry(dll)));
+        }
+    }
+
+    private void AttachModuleContexts(
+        Snapshot snap,
+        IReadOnlyList<Type> types,
+        string owner)
+    {
+        var contextTypes = types.Where(type =>
+            type.IsPublic && !type.IsAbstract
+            && typeof(IModuleContextAware).IsAssignableFrom(type));
+
+        foreach (var contextType in contextTypes)
+        {
+            if (_bus == null || _settings == null || string.IsNullOrWhiteSpace(_dataDirectory))
+            {
+                _log.Warn("module",
+                    $"模块 {owner} 请求宿主业务上下文，但当前装配点只提供了命令注册表；已跳过 {contextType.FullName}");
+                continue;
+            }
+
+            try
+            {
+                var module = (IModuleContextAware)snap.GetInstance(contextType);
+                module.Attach(new ModuleContext(
+                    snap,
+                    owner,
+                    _bus,
+                    _settings,
+                    _log,
+                    _dataDirectory));
+            }
+            catch (Exception ex)
+            {
+                _log.Warn("module", $"注入模块上下文失败 ({contextType.FullName}): {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>把一个业务类的公共方法收集为待注册指令(MD-03/04)。</summary>
+    private void CollectType(
+        Snapshot snap,
+        string moduleName,
+        string commandPrefix,
+        Type type,
+        XmlDocs? docs)
+    {
+        var ns = type.Namespace ?? "Global";
+        foreach (var method in type.GetMethods(
+                     BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly))
+        {
+            if (method.IsSpecialName || method.IsGenericMethodDefinition || IsModuleLifecycleMethod(type, method))
+                continue;
+
+            var commandName = $"{commandPrefix}.{method.Name}";
+            if (snap.PendingCommands.Any(pending =>
+                    pending.Descriptor.Name.Equals(commandName, StringComparison.OrdinalIgnoreCase)))
+            {
+                _log.Warn("module", $"模块 {moduleName} 内方法重名,跳过 {type.Name}.{method.Name}");
+                continue;
+            }
+
+            var (summary, paramDocs) = docs?.ForMethod(ns, type.Name, method.Name) ?? ("", EmptyDocs);
+            snap.PendingCommands.Add((
+                BuildDescriptor(snap, commandName, moduleName, type, method, summary, paramDocs),
+                moduleName));
+        }
+    }
+
+    private static readonly IReadOnlyDictionary<string, string> EmptyDocs = new Dictionary<string, string>();
+
+    private static bool IsModuleLifecycleMethod(Type type, MethodInfo method)
+    {
+        Type[] lifecycleContracts =
+        [
+            typeof(IModuleContextAware),
+            typeof(IUiModule),
+        ];
+
+        foreach (var contract in lifecycleContracts)
+        {
+            if (!contract.IsAssignableFrom(type))
+                continue;
+
+            var map = type.GetInterfaceMap(contract);
+            if (map.TargetMethods.Contains(method))
+                return true;
+        }
+
+        return false;
+    }
+}
