@@ -112,3 +112,296 @@
   抑制并重建基线,防再入回声。
 - **布局损坏回退(N-06)**:反序列化异常 → 删除损坏文件 → 构建默认布局 → Warn 告警
   (占位页横幅可见,M2 起进控制台)。
+
+## HistoryVulcan 3.11.4 and Earlier Validation Records (archived 2026-08-17)
+
+- 2026-08-15 本地（候选模块界面试用与后台中继，REQ-MOD-004，版本线推进到 3.11.4）：Debug 构建 0 error，
+  外置测试 **202/202 通过、3 跳过**（新增 `ModuleTrialUiTests` 6 个用例）；`dotnet format --verify-no-changes`、
+  质量门禁（0 抑制 / 0 热点）与公开 API 基线通过。
+  **版本线**：3.11.3 已发布到正式 z，本次新增了公开面与两条命令，因此推进到 3.11.4 而不是覆盖同号发布——
+  同号不同内容会让管线的身份对齐失去意义。`VulcanVersion.props`、`project.manifest.json`、AGENTS.md
+  与新的 `eng/public-api-baselines/3.11.4/` 一并对齐。
+  **API 门禁修正**：3.11.3 批准基线此前缺 `ZModuleDiscoverySource` 的
+  `AutomaticRootNotFound` / `DefaultLibraryRoot` / `LegacyVestaLibrary` / `CoerceConfiguredRoot` /
+  `ResolveAutomaticRoot` 五项——它们在 1cb6ada 进入 Unshipped 时未同步批准基线，门禁自那时起即为红；
+  本次连同新增的 `ModuleHost.LoadTrialUi` / `UnloadTrialUi` 一并补齐，基线改动纯追加。
+  **锁定还原修正**：入库的五份 net8.0 库 `packages.lock.json` 带有 `net8.0/win-x64` 节，
+  CI 首步 `dotnet restore --locked-mode`（不带 `-r`）因此以 NU1004 失败；该节由
+  `Build-HistoryVulcanPackage.ps1` 的 `-r win-x64 --force-evaluate` 在本机生成，不应入库。
+  移除后 `--locked-mode` 还原通过，候选构建仍按原方式自行 force-evaluate。
+- 2026-08-16（3.11.4 正式发布）：Diana 管线 `Publish-OneHistoryModule.ps1 -Module HistoryVulcan -Publish`
+  跑通全部宿主门禁——严格宿主合同、Release 单元测试 202/202（3 跳过）、质量门禁、3.11.4 公开 API 基线；
+  正式宿主进程按正式 EXE 绝对路径停止后原子提升 `z-HistoryVulcan`，旧 3.11.3 归档到
+  `b-Publish/history/HistoryVulcan/3.11.3-20260815-164759-4608b9f8`，登录启动项已按新正式路径修复。
+  快照 `manifest.json` 为 3.11.4、`host/HistoryVulcan.exe` 文件版本 3.11.4.0，
+  `SHA256SUMS` 46 条与磁盘 46 个文件逐项独立复算一致；已确认发布出去的
+  `host/HistoryVulcan.Shell.dll` 内含 `trialui` 命令名。`sourceDirty=true` 属先部署后提交的预期状态。
+  **发布链修正**：`eng/release/consumer-docs.json` 仍登记 ba25b01 删掉的
+  `HistoryVulcan_模块与MCP接入.md`，导致快照 `manifest.json` 的 `documents` 谎报一份并不存在的文档
+  （`docs/` 目录本身是照实拷的，两者对不上）；`project.manifest.json` 的 `documents.moduleAndMcp`
+  指向同一份已删文件，直接让严格宿主合同失败。两处一并移除后重新促级，manifest 现与 `docs/` 一致。
+  **z docs 入库（DEC-041）**：`z-HistoryVulcan/docs/` 由管线生成、被已入库的 `SHA256SUMS` 覆盖，
+  目录本身却自 c9d2e90 起不入库——新克隆的仓库里校验清单必然指向一批不存在的文件。
+  c9d2e90 的前提（Diana 集中托管消费文档）已随集中副本区退役而消失，本轮按决策回归把该目录重新入库，
+  与 `z-HistoryDiana/docs` 一致；跨项目读取仍走 `diana.docs.vulcan`。
+  **人工验收**：用户已在重启后的 Vulcan 3.11.4 上完成界面验收，消费文档同步到位。
+
+- 2026-08-12（3.11.2 参数补全正式发布）：Diana 正式管线完成候选重建、Release 构建与完整测试 196/196；
+  `FocusedConsoleCompletesDomainClassMethodAndParameter` 覆盖参数名 → 注册允许值 → 第二个参数名 → 第二个参数值并在末层关闭，
+  `PositionalParameterHintThatDoesNotChangeTextClosesWithoutRefreshing` 覆盖无文本/光标进展时关闭且不再次请求补全。
+  格式、严格项目合同、质量门禁与 3.11.2 四程序集公开 API 基线通过；API 基线与 3.11.1 同形，
+  Core、CommandBus、解析器和注册协议均未修改。3.11.2 候选 EXE 文件版本为 3.11.2.0，
+  正式 Z 的 `HistoryVulcan.exe` 文件版本为 3.11.2.0，`SHA256SUMS` 40/40 独立复验一致；
+  manifest 记录干净来源，旧 3.11.1 快照已归档，登录启动项已指向 3.11.2 正式路径。
+
+- 2026-08-12（3.11.1 正式发布）：Diana 以显式脏源授权重建宿主候选，宿主合同、Release 195/195 测试、质量门禁和 3.11.1 公开 API 基线全部通过；正式 Z 与消费文档镜像原子提升，40 条 `SHA256SUMS` 独立复验通过，旧 3.11.0 已归档。登录启动项按新正式路径修复；从 `z-HistoryVulcan/host/HistoryVulcan.exe --focus-console` 冷启动后，后台服务端点与带窗口前端均就绪并从同一正式路径运行。
+
+- 2026-08-12（3.11.1 源码候选）：项目合同、Release 构建（0 warning/error）、完整 Release 测试 195/195、格式、质量和 3.11.1 四程序集公开 API 基线通过。首次 API 门禁明确报告缺少 3.11.1 批准目录；新增同形版本基线后，Core/Services/ServiceHost 保持既有累计面，Shell 仅追加 `CommandCatalogDetail.Annotations` 两个访问器，重跑通过。普通布局不弹 Popup/不吞 Tab、聚焦控制台连续补全和 `vulcan.command.show` 注解回归均通过。候选宿主 manifest 为 3.11.1，40 条 `SHA256SUMS` 全部独立复验；Core 与 CommandBus 未修改。
+
+- 2026-08-11（3.10.1 正式发布）：项目合同、3.10.1 公开 API 基线、质量门禁、
+  `dotnet format --verify-no-changes` 与 `git diff --check` 通过；3.10.0/3.10.1 四份基线 SHA-256 完全一致。
+  隔离 Release 构建 0 warning/0 error，外置测试 193/193 通过，其中普通布局回归确认首字母保留控制台
+  焦点，Tab 连续推进域、类、方法和参数。候选宿主已生成到 `b-Publish/current`，版本 3.10.1；
+  Diana 正式管线随后通过 193/193 测试并原子提升 Z 与消费文档镜像；旧 3.10.0 已归档。
+  首次提升被运行中的正式宿主锁定，在移动前失败；精确停止前端与服务后完整重跑成功。
+
+- 2026-08-11 本地（3.5.0 候选部署审计）：`Build-HistoryVulcanPackage.ps1` 成功生成候选宿主（3.5.0.0、
+  41 个 manifest 载荷文件、5 份消费文档、SHA-256 覆盖 42 个文件），但 `sourceDirty=true`，未提升正式 Z。
+  候选后台注册 94 条指令；四模块 64 条（Diana 10、Janus 32、Mercury 19、Minerva 3）。真实 MCP
+  `standard` 目录 68 条（Vulcan 17、Diana 10、Janus 21、Mercury 17、Minerva 3），`readonly` 目录
+  47 条（Vulcan 11、Diana 9、Janus 21、Mercury 3、Minerva 3）。`diana_kit_now`、`janus_status`、
+  `mercury_app_status` 实调通过；`HistoryMinerva_Status` 进入模块但报告缺少 `HistoryMinerva.Worker.exe`，
+  因此本轮候选审计为**部分通过，Minerva 运行时阻塞**。`PackageSmoke` 因依赖未发布的本地 NuGet 包报 NU1101，
+  不纳入 3.5.0 宿主快照门禁。Codex CLI 临时 MCP 配置可识别，但因本机 API Key HTTP 401 未完成原生模型工具调用。
+
+- 2026-08-11 本地（3.5.0 MCP 双进程与命令总线健康专项）：定向 Debug 测试 **8/8**；Release 构建
+  0 warning、0 error，完整 Release 测试 **186/186**；`dotnet format --verify-no-changes`、公开 API
+  基线、项目合同（`-Instantiation`）、质量门禁和 `git diff --check` 均通过。使用一次性临时宿主加载当前
+  正式 Z 模块后，Diana、Janus、Mercury、Minerva 四模块成功装载，共登记 64 条模块指令；真实 HTTP
+  `tools/list` 返回 62 条可见工具，覆盖四个模块域，并以 `tools/call` 成功执行只读命令
+  `HistoryMinerva_Status`。模块注销/重载后工具目录动态变化且 MCP 监听实例和端口不变。当前正式
+  Minerva 快照的工具名仍为 `HistoryMinerva_*`，属于历史命名残留，不是注册缺失；本轮未改名、未更新
+  正式 Z、未提交或发布。
+
+- 2026-08-11 local (3.5.0 candidate): project contract, `dotnet format --verify-no-changes`,
+  `git diff --check`, and the 3.5.0 public API baseline gate passed. After the running Z host processes were
+  stopped, standard Release build completed with 0 warnings and 0 errors, and standard Release tests passed
+  **178/178**. During lock triage, an isolated `artifacts/hv-check1/bin` build/test also passed; the first temp
+  test run outside the repository had one expected path-discovery failure
+  (`ModulesViewUsesOneRefreshActionAndNoCommandDetailPane`) because it finds the repository root from
+  `AppContext.BaseDirectory`. The `win-x64` runtime sections were regenerated into package lock files with
+  `dotnet restore ... -r win-x64 --force-evaluate`, then `Build-HistoryVulcanPackage.ps1` created the 3.5.0 host
+  snapshot at `b-Publish/current` with manifest and SHA-256 inventory. No formal Z snapshot or publication was
+  performed.
+
+- 2026-08-10 本地（快捷键热重载生命周期与延迟标签目标修复）：Release 测试 **176/176**；新增
+  `ModuleHostContextTests.ReloadReplacesOwnedGlobalShortcutsWithoutConflictOrLeak` 和
+  `DockingContractTests.RuntimeRegistrationResolvesTabTargetDeclaredAfterFollower`，并通过格式、质量门禁、
+  项目合同和公开 API 基线。旧快照未重新正式发布，待 Diana 宿主发布流程批准后更新 Z。
+
+- 2026-08-10 本地（3.4.0 Diana 候选管线）：`Build-HistoryVulcanPackage.ps1` 先以
+  `NuGetAudit=false` 锁定还原 win-x64 资产，再生成宿主候选；递归 SHA 校验、Release 单元测试
+  174/174、零抑制/零热点质量门禁和 3.4.0 公共 API 基线全部通过。未执行 `-Publish`，未更新正式 z。
+
+- 2026-08-09 正式发布（3.3.0）：Publish-HistoryVulcanHost.ps1 -Version 3.3.0 -DeployToZ 已部署到 z-HistoryVulcan；HistoryVulcan.exe 3.3.0.0，sourceCommit=24f21976，sourceDirty=false；候选与正式 SHA-256 校验通过。
+
+- 2026-08-09 本地（3.3.0 指令三段式与快捷键/命令工作台外置）：内置命令硬切 `vulcan.<类>.<方法>`，
+  命令集列域|类|方法；`GlobalShortcutService` 与 CommandSurface 迁至 HistoryMercury 4.1.0；宿主保留
+  Core 合同与控制台日志面。Debug/Release 外置测试各 163/163；Public API 3.3.0 基线与项目合同通过；
+  Mercury Smoke PASS（含全局快捷键）。未生成候选，未执行 `-DeployToZ`。
+
+- 2026-08-08 本地（3.2.1 命令域与命令类收口）：锁定还原通过；Debug/Release 构建均 0 warning、0 error，
+  外置测试各 161/161。命令集已移除长期灰置的治理复选框和服务状态按钮，只保留域、类、MCP、刷新；
+  HistoryVulcan 内置命令统一属于 `HistoryVulcan` 域，模块 owner 强制域、显式/反射类、`core` 回退、
+  `command.list domain=HistoryVulcan class=win`、跨进程元数据和控制台域回显均有自动化覆盖。
+  `dotnet format --verify-no-changes`、3.2.1 精确 Unshipped API 基线、项目合同、零抑制/零热点质量门禁和
+  `git diff --check` 通过；未生成 `b-Publish/current` 候选，未更新 `z-HistoryVulcan`。
+
+- 2026-08-10 本地（3.3.2 诊断指令收口与测试套件重整 / DEC-024）：
+  Debug/Release 各 0 warning、0 error，测试各 **161/161**；format、项目合同、质量门禁与
+  公开 API 基线全部通过。
+  - **执行效率**：全量测试 42 秒 → **约 25 秒**（用例数由 159 增至 161）。
+    根因是 `PumpDispatcher` 无条件固定睡 300ms、43 个默认调用点；改为
+    `UiTestHost.Pump()` 排空即返回后，`DockingContractTests` 5.9 秒 → 1.1 秒、
+    `ShellChromeContractTests` 22.4 秒 → 14.4 秒。
+    3 个用例因此暴露出被盲等掩盖的真实时间依赖，已改用具名等待：
+    控制台 100ms 批量合并用 `PumpUntil`，`DockingHost` 200ms 缩放去抖用 `PumpFor(250)`。
+  - **功能内聚**：`RunSta` / `PumpDispatcher` 的三份拷贝收敛为唯一所有者 `UiTestHost`；
+    测试集合按争用资源分为 `ui-foreground` 与 `network-gateway`，取代程序集级
+    `DisableTestParallelization` 一刀切。**如实记录：分组本身未带来可测量的墙钟收益**
+    （VSTest 下两个重量级集合仍基本串行），本轮增益几乎全部来自 pump 修复；
+    保留分组是因为它记录了真实的资源约束，且移除了不必要的全局串行开关。
+  - **挂死可见性**：`UiTestHost.RunSta` 由裸 `Join()` 改为 60 秒硬上限并抛出具名
+    `TimeoutException`（已用临时探针验证其确实触发）；`xunit.runner.json` 开启
+    `diagnosticMessages` + `longRunningTestSeconds=30`；异步的
+    `ServiceHostWaitsForRestartingPredecessorToReleaseMutex` 加 `Timeout=30s`
+    （xUnit 的 `Timeout` 只对 async 用例生效，同步的端口用例改由长任务诊断兜底）。
+  - **诊断指令收口**：`vulcan.log.flood` 默认不注册（需 `diagnostics.commands=true`）、
+    标记 `Dangerous`、由 `McpExposurePolicy` 按名硬排除。
+    **本轮发现的自造回归**：3.3.2 把 `debug.logflood` 收编为 `vulcan.log.flood` 时，
+    原先按 `"debug."` 前缀生效的 MCP 硬排除失配，使承压注水一度可被 MCP/Web 远程触发
+    （`rate=100000 × seconds=600`）。已修复并由
+    `DiagnosticFloodCommandStaysOutOfReachOfRemoteClients` 加锁。
+  - **环境噪声**：一次 Release 构建因残留 `testhost` 占用 `obj/Release/.../ref/HistoryVulcan.Tests.dll`
+    报 MSB3883；`dotnet build-server shutdown` 后重建通过。非代码问题，如实记录。
+
+- 2026-08-10 本地（3.3.2 正式部署到 `z-HistoryVulcan`）：`Publish-HistoryVulcanHost.ps1 -Version 3.3.2`
+  生成候选（43 文件、`HistoryVulcan.exe` 3.3.2.0、5 份消费文档），审查后经 `-DeployToZ` 一次性部署；
+  Z 快照 manifest 为 product=HistoryVulcan、version=3.3.2，41 个受校验文件 SHA-256 全部匹配、
+  候选与 Z 逐文件差异为 0（`installer/` 按约定不计入快照校验）。
+  **首次 `-DeployToZ` 失败**：`Move-Item` 报拒绝访问，原因是 Z 快照里的 3.3.1 宿主正在运行
+  （前端 + 后台两个进程）占用目录。该运行实例同时解释了本轮两处测试异常——它持有 ServiceHost
+  全局 mutex 与 MCP/Web 端口，导致基线测试整轮挂死 25 分钟，以及 `McpGatewayPortTests` 偶发失败。
+  用户关闭前端后后台服务按设计仍在运行，停止后台进程后重跑部署成功。
+  **`sourceDirty=true`**：本轮改动尚未提交，快照 `sourceCommit` 仍指向上一提交 `037a1ef7`；
+  与 3.2.0 发布时的 `sourceDirty=false` 不同，提交后应重新生成快照以固定来源。
+  未生成或发布 NuGet 包，未执行 Git commit、tag 或 push。
+
+- 2026-08-10 本地（3.3.2 九类对齐、模块域去前缀、门禁解耦、旧债退役 / DEC-023）：
+  Debug 与 Release 构建均 0 warning、0 error；外置测试各 **159/159**（各 42–43 秒）；
+  `dotnet format --verify-no-changes`、项目合同（instantiation）、质量门禁（抑制标记 0、热点 0）
+  与公开 API 基线全部通过。
+  - 83 条指令完成 32 条改名，13 类 + 5 无类 + 1 影子域收敛为 9 类；新增
+    `CommandTaxonomyContractTests`（15 个用例）断言三段式、九类白名单、模块域归一化与退役类缺席。
+  - 拆除 `HistoryVulcan.Tests` 对 `../2026-021-HistoryMercury` 的跨仓库 `ProjectReference`
+    及全部 `extern alias mercury`：删除 `CommandCatalogSessionTests`（5 用例）、
+    `ConsoleCompletionTests`（9 用例）与 7 个依赖 Mercury 视图的 Shell 用例，交回 Mercury 仓库；
+    `DockingContractTests` / `ShellChromeContractTests` 的中央页断言改用本地替身描述符。
+    根解决方案与 CI 门禁自此只验 Vulcan 自身。
+  - **拆解过程中发现并修复的既有缺陷**：控制台的 `vulcan.log.source` / `vulcan.log.class`
+    此前完全委托给 Mercury 的目录会话，无 Mercury 的宿主上这两条自有指令永远失败
+    （`DeferredCommandCatalogSession` 对任何域都返回 false）。已让延迟会话在未挂接真实会话时
+    回退到本地 `CommandRegistry` 解析域/类，并保持「域为全部时类必须为全部」的严格两级语义。
+    该缺陷此前被"测试总是带 Mercury 运行"掩盖。
+  - **公开 API 门禁此前长期失效**：`Assert-PublicApiBaseline.ps1` 把基线目录硬编码为
+    `public-api-baselines\3.3.0`，自 3.3.1 起每个版本都静默回退到脚本内嵌的 3.2.x 列表，
+    门禁只能红不能过。已改为按 `VulcanVersion` 解析基线目录，并建立 3.3.2 基线
+    （Core 95 / Services 59 / Shell 12 / ServiceHost 0 条）。
+  - `vulcan.log.export` 省略 `path` 时不再弹 `SaveFileDialog`；新增
+    `ConsoleExportWithoutPathWritesDefaultFileWithoutDialog` 在无人值守下断言默认文件落盘并回报绝对路径。
+  - 退役：根 `eng/`（2 个无引用脚本）、`Unused/`（27 个模板 CAD 文件）、本地 `artifacts/`（56MB 旧名产物）、
+    `Publish-AppShell.ps1`、`b-Publish/history/0.5.0` 与 `0.7.2`、`z-HistoryVulcan/installer.7z` 游离副本、
+    `ShellWindow` 的 `Ctrl+反引号` 本地 KeyBinding；`App.TryCreateGlobalShortcutHost` 由硬编码
+    `HistoryMercury.dll` / `Mercury.Input.GlobalShortcutService` 改为按 `IGlobalShortcutHost` 合同发现。
+  - **偶发失败（如实记录）**：本轮首次全量 Debug 运行中
+    `McpGatewayPortTests.ExplicitPortRetryPersistsActualPortAndStopClearsRuntimePort` 失败一次，
+    定向复跑 4/4、完整复跑 159/159 通过，判定为端口占用导致的环境偶发，首次失败不因复跑通过而抹去。
+    另外本轮开始前的一次基线测试出现整轮挂死约 25 分钟（testhost 累计 CPU 仅 9.5 秒，纯阻塞），
+    杀进程后相同命令 64 秒通过。**套件缺少用例级超时，挂死时表现为静默无输出**，
+    已登记为待办：应为跨进程 mutex/端口类用例加 `[Fact(Timeout=…)]` 或 runsettings 级超时。
+
+- 2026-08-08 本地（3.2.2 源码收口）：严格域/类层级、`log.class`、Z 级显式 manifest 发现、相对路径/缺字段/重复模块
+  诊断和内建 `CommandSurfaceFeature` 完成；HistoryJanus 3.1.2、HistoryMinerva 4.2.1 及 Studio 三模块完成 Vulcan
+  引用迁移。Vulcan Debug 全量 165/165、0 warning、0 error；Release、格式、API、项目合同和五模块候选验证待本轮后续执行。
+
+- 2026-08-08 本地（3.2.0 正式发布到 `z-HistoryVulcan`）：正式快照目录由计划的 `z-Package-HistoryVulcan`
+  定为 `z-HistoryVulcan`，发布脚本、遗产脚本、manifest releaseRoots/排除项、质量门禁排除和全部现行/
+  消费文档同步对齐。旧 3.1.9 候选先整体归档到 `b-Publish/history/3.1.9/`（入库）；脚本重建 3.2.0
+  候选（`HistoryVulcan.exe` 3.2.0.0、5 份消费文档、manifest 与 SHA256SUMS），审查通过后经 `-DeployToZ`
+  一次性部署到 `z-HistoryVulcan/`；快照 manifest 为 product=HistoryVulcan、version=3.2.0、
+  sourceCommit=`c70706d1`、sourceDirty=false，候选与 Z 共 43 个文件 SHA-256 差异为 0。
+  旧名 `z-Package-AppShell/` 3.1.9 快照在验证通过后退役删除。未生成或发布 NuGet 包，未执行 Git 推送。
+- 2026-08-08 本地（3.2.0 产品改名 AppShell → HistoryVulcan）：命名空间、程序集、包 ID、宿主 EXE、
+  版本属性（`VulcanVersion`）、解决方案、源码目录与 CI 工作流统一改名为 HistoryVulcan；
+  package 消费文档改前缀为 `HistoryVulcan_` 并保留 `3.0_` 系列号；`Publish-AppShell.ps1` 保留为历史
+  包验证/回滚入口，其当前源码打包与候选审查路径改用 HistoryVulcan 包 ID 与文件名；当前 Z 快照保持
+  3.1.9 旧名 `z-Package-AppShell/`。锁定还原通过；清理全部 bin/obj 后 Release 干净重建产物
+  `HistoryVulcan.exe` 3.2.0.0 且无旧名残留，Debug/Release 构建均 0 warning、0 error，外置测试各
+  159/159；格式、四包公开 API、项目合同、质量门禁和 `git diff --check` 通过。首次干净 Release 构建
+  因机器无法访问 nuget.org 漏洞审计端点报 NU1900，仅在重试进程内 `-p:NuGetAudit=false` 后通过，
+  未修改仓库或机器配置。质量门禁保留既有 `ModuleHost.cs` 1013 行热点提示但未失败；本轮未生成候选、
+  未更新 Z 快照、未推送到远端。
+- 2026-08-08 本地（3.1.10 命令目录高内聚重构）：控制台候选、中央命令集和指令详情改为共享内部
+  `CommandCatalogSession`，统一经 `command.list` / `command.domains` 读取目录，并通过 `command.show` 延迟缓存详情；
+  前端本地注册表不存在的后台模块命令仍可检索并补全参数名和允许值。Debug/Release 构建均为 0 warning、0 error，
+  外置测试各 159/159；格式、四包公开 API、项目合同、质量门禁和 `git diff --check` 通过。首次在线还原受机器中
+  失效的 `127.0.0.1:7890` 代理阻断，仅在重试进程内清除代理变量后，强制更新锁文件和锁定还原均通过。
+  质量门禁保留既有 `ModuleHost.cs` 1013 行热点提示但未失败；本轮未生成候选、未更新 Z 快照、未提交或推送。
+- 2026-08-08 本地（3.1.9 命令集控制台检索收口）：命令集删除独立搜索框，普通布局由控制台输入实时过滤命令名、
+  说明和示例；`Shift+W/S` 循环选择列表，`Tab` 回填命令名但不执行，聚焦控制台继续独占候选 Popup。锁定还原通过；
+  Debug/Release 构建均为 0 warning、0 error，外置测试各 156/156；格式、公开 API、项目合同、质量门禁和
+  `git diff --check` 通过。首次 Debug 全量运行中，既有前台激活合同因 Windows 测试进程不拥有全局前台权出现
+  `Window.IsActive`/键盘焦点时序失败；单测独立通过后，将自动合同收敛为窗口可见、控制台键盘或逻辑焦点、
+  Topmost 复位及重复唤醒不改变布局，跨程序上浮继续由 Windows 人工冒烟验证。未生成宿主候选或更新 Z 快照。
+- 2026-08-07 本地（3.1.9 模块管理页修复）：模块管理页只读取 `module.list`，不再因 `command.list` 与模块摘要的
+  命令数量短暂不一致而清空已加载模块；页面移除模块指令明细，并将刷新与全部重载合并为单一“刷新模块”动作，
+  依次执行 `module.reload` 和 `module.list`。锁定还原通过；Debug/Release 构建均为 0 warning、0 error，外置测试
+  各 156/156；格式、公开 API、项目合同、质量门禁和 `git diff --check` 通过。未生成宿主候选，未更新 Z 快照，
+  未执行提交、标签或推送。首次连续 Release 全量运行时既有
+  `FrontendFocusConsoleRaisesTheWindowAndRefocusesExistingConsole` 出现一次激活时序失败；停止人工 Z 宿主后
+  单测复跑及完整 Release 复跑均通过，未发现与本轮模块页改动相关的回归。
+- 2026-08-07 本地（3.1.9 版本与模块公共合同接纳）：锁定还原通过；Debug/Release 构建均为 0 warning、
+  0 error，外置测试各 154/154（含模块上下文注入、禁用隔离和生命周期命令过滤）；格式、公开 API、项目合同、
+  质量门禁和 `git diff --check` 通过。
+  Core 8 条、Services 1 条、Shell 2 条模块宿主签名已从 Unshipped 提升到 3.1.9 Shipped 基线，四份
+  Unshipped 文件恢复为空。当前源码和消费合同标记 3.1.9 为未发布候选、3.1.8 为不受支持的内部过渡版本，
+  稳定消费者继续固定 3.1.7。未生成宿主候选，未执行正式部署、提交、标签或推送。
+- 2026-08-07 本地（3.1.8 W/S 候选与聚焦边界修补）：Debug/Release 构建均为 0 warning、0 error，外置测试
+  各 152/152，`ConsoleCompletionTests` 9/9；新增合同确认只有控制台聚焦态显示候选，`Shift+W/S` 上下循环，
+  普通布局首次输入不得切换中央命令集，控制台输入和键盘焦点保持不变。
+  格式、项目合同、质量门禁和 `git diff --check` 通过。首次 Release 构建因人工验收的源码 Release 前后台进程
+  锁定 DLL 而失败，精确停止这两个进程后复验通过。公开 API 门禁仍被工作树中并行存在的
+  模块宿主改动新增的 11 条 Unshipped API 阻断（Core 8、Services 1、Shell 2）；本轮候选修补未新增公开 API，
+  也未改写该并行改动。
+  未执行候选打包、正式发布或 Z 快照更新；125%/150% DPI 人工 GUI 冒烟仍待执行。
+- 2026-08-07 本地（3.1.8 “轻松指令”控制台）：锁定还原通过；Debug/Release 构建均为 0 warning、0 error，
+  外置测试最终各 150/150，新增控制台候选定向测试 8/8；格式、四包公开 API、项目合同、质量门禁和
+  `git diff --check` 均通过，抑制标记和超过 1000 行的生产热点文件均为 0。首次全量验证时，已有
+  `FrontendFocusConsoleRaisesTheWindowAndRefocusesExistingConsole` 因人工启动的 HistoryVulcan 前后台进程争夺
+  前台激活而出现一次时序失败；关闭该人工进程后，Debug/Release 全量复验均为 150/150。自动 WPF 合同已覆盖
+  Popup 上方定位、输入焦点、窄宽度、浅色/深色令牌、`Shift+Tab`/`Tab` 和注册表动态刷新；125%/150% DPI
+  人工 GUI 冒烟未执行。未执行候选打包、正式发布、Z 快照更新、提交或推送。
+- 2026-08-07 本地（现行文档与目录合同治理）：目录规则已合并到 `b-Office/文档中心.md`，独立
+  `current/目录规范.md` 已删除；manifest 与 `AGENTS.md` 的入口同步更新，活动范围内无失效引用。
+  六份 current 文档链接、manifest 文档路径、`Test-ProjectContract.ps1 -Instantiation`、四包公开 API 门禁和
+  `git diff --check` 均通过。本轮未修改产品源码，未重跑 WPF 测试，未执行候选打包、正式发布或 Z 快照更新。
+- 2026-08-07 本地（3.1.3 最终源码）：提交 `be49828a` 建立版本基线，提交 `6b56f529` 收口顶栏、
+  浮窗主题与双 `/` 前台聚焦。Debug/Release 构建均 0 warning、0 error，定向测试 6/6、外置测试各
+  135/135，格式、四包公开 API 和 `git diff --check` 通过；真实 Windows 快捷键人工审查确认前台上浮与
+  直接输入正常。未执行候选打包、正式发布或 Z 快照更新；跨显示器、125%/150% DPI 和多浮窗仍需 GUI 回归。
+- 2026-08-07 本地（3.1.4 控制台域与换行修复）：锁定还原在单次验证进程清除失效
+  `HTTP_PROXY/HTTPS_PROXY=127.0.0.1:7890` 后通过；Debug/Release 构建均 0 warning、0 error，外置测试各
+  142/142，覆盖控制台/命令集从 `command.domains` 取得同一候选、命令注册/注销同步、有效选择保留、
+  未注册日志类别归 `core`，以及文档浮窗最大化/还原经 `win.float-state` 进入命令总线；格式与四包公开 API
+  门禁通过。`Publish-AppShell.ps1 -Version 3.1.4`（不带 `-Publish`）
+  首次受同一失效代理阻断，清除本次进程代理后重跑通过，
+  基线合并后的候选首轮 Release 测试在 `FrontendFocusConsoleRaisesTheWindowAndRefocusesExistingConsole` 出现一次
+  前台激活时序失败（141/142）；同一候选产物定向复验 1/1、完整候选重跑 Debug/Release 各 142/142。四包/符号包
+  版本均为 3.1.4，PackageSmoke PASS；项目合同、格式和公开 API 门禁通过。用户人工审查确认
+  控制台/命令集域筛选与长文本宽度响应符合预期。未执行正式发布或 Z 快照更新。
+- 2026-08-07 本地（3.1.2 测试外置与顶栏手势）：根/组件解决方案锁定还原、Debug/Release 构建均
+  0 warning、0 error，外置测试各 115/115；格式、公开 API 门禁与候选包验证通过，PackageSmoke PASS。
+  首次在线还原受失效本地代理 `127.0.0.1:7890` 阻断；仅在重试进程中清除代理后通过，未修改仓库或机器配置。
+- 2026-08-06 本地（3.2 双进程、快捷键与 3.1.1 顶栏）：Debug/Release 构建均 0 warning、0 error，
+  测试各 108/108；格式与公开 API 门禁通过。Release 烟测确认 `--service` 端点、前端连接、后台
+  `app.frontend.focus-console` 转发和健康检查；Windows 双 `/`、浮窗拖动仍需人工确认。该方案现归档至 history。
+- 2026-08-07 本地（3.1.2 命令目录 JSON 解码）：Release 构建 0 warning、0 error；Debug/Release 测试各
+  109/109，命令/模块目录跨进程 JSON 回归通过；完整 Debug 构建因人工测试进程占用旧 DLL 未执行。
+- 2026-08-06 本地（3.1.1 顶栏与拖出规则收口）：Debug/Release 构建均 0 warning、0 error，测试各 99/99；
+  格式、公开 API 门禁与 3.1.1 候选发布验证通过，PackageSmoke PASS。`Test-ProjectContract.ps1 -Instantiation`
+  因根目录既有 `artifacts`、`eng`、`Unused` 不符合 a/b/z 前缀而失败；未删除或改名。人工 GUI 冒烟未执行。
+- 2026-07-30 本地：锁定还原通过；Debug/Release 均 0 warning、0 error、76/76；格式通过；
+  API 基线正向通过，伪条目反向测试按预期失败并已恢复。
+- GitHub Actions run `30469169167`：Debug/Release、格式、公开 API 与 TRX 上传全部通过，
+  总耗时 3m11s。前两轮分别暴露一次 WPF 测试偶发失败和 LF/CRLF 格式差异；未删除或排除测试，
+  通过失败注释和 C# CRLF 检出合同完成收口。
+
+- 2026-08-07 本地（3.1.5 质量更新）：Debug/Release 构建 0 warning、0 error；外置测试各 142/142；格式、公开 API、项目合同和抑制扫描通过。PackageSmoke 未单独运行，因候选包尚未生成，未触碰 b-Publish 或 z 快照。质量门禁确认抑制标记 0、超过 1000 行的生产热点文件 0。
+- 3.1.5 Release 首轮在 FrontendFocusConsoleRaisesTheWindowAndRefocusesExistingConsole 出现一次已知前台激活时序失败（141/142）；定向复验 1/1、完整复验 142/142 通过，首次失败证据不作为最终通过被删除。
+- 2026-08-07 本地（3.1.6 AvalonDock 瞬态异常与宿主部署）：锁定还原通过；Debug/Release 构建均
+  0 warning、0 error，外置测试各 142/142；格式、公开 API、项目合同和质量门禁通过。首次并行启动
+  Debug 构建与测试时，`testhost` 占用测试输出 DLL 导致构建失败；改为构建完成后再运行测试即通过。
+  旧 3.1.2 候选已整体归档到 `b-Publish/history/3.1.2`；3.1.6 宿主候选与正式 Z 宿主各 35 个文件，
+  SHA-256 差异为 0，`HistoryVulcan.exe` 文件版本为 3.1.6.0。未生成 NuGet 包，未执行 Git 提交、标签或推送。
+- 2026-08-07 本地（3.1.7 UI 风格合同与完整宿主快照）：锁定还原通过；Debug/Release 构建均 0 warning、
+  0 error，外置测试各 142/142；项目合同确认两份主题令牌的 Brush/Radius/Font/Space/Size 全部出现在
+  `HistoryVulcan_UI风格与嵌入页面规范.md`；格式、公开 API、质量门禁和 `git diff --check` 通过。候选包含宿主、
+  5 份消费文档、复用入口、README、manifest 和 SHA-256，共 43 个文件；与 `z-Package-AppShell` 差异为 0，
+  manifest sourceCommit 为 `78efd54a`、sourceDirty=false，`HistoryVulcan.exe` 文件版本为 3.1.7.0。未生成 NuGet 包。
+## 3.1.8 GUI 探针记录（2026-08-07）
+
+- 已确认普通布局中，控制台输入首字后中央工作区不切换，输入框保持文本与键盘焦点，并显示同源 Popup 候选。
+- 已确认控制台聚焦态视觉树存在 `CompletionList`，列表位于输入框上方，键盘焦点仍为 `Input`；候选列表由命令注册表快照生成。
+- W/S 候选循环、无修饰 `Tab` 确认和 `Enter` 执行已由 `ConsoleCompletionTests` 覆盖并通过；本轮 Windows 自动化探针未能稳定完成逐键人工确认，不能替代人工验收。
+- 探针期间前端曾因单实例启动/服务重连竞态退出；未修改用户设置、发布候选或正式 Z 快照。公共 API 门禁仍受并行模块宿主改动的 11 条 Unshipped 项阻塞，候选功能本身未新增公开 API。
+- 清理人工实例后重新执行 Debug/Release 外置测试均为 152/152；Debug/Release 构建均为 0 warning、0 error，格式门禁、项目合同和质量门禁通过。

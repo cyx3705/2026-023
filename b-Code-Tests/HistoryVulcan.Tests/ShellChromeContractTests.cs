@@ -628,7 +628,7 @@ public sealed class ShellChromeContractTests
     }
 
     [Fact]
-    public void FloatingDocumentWindowActionRoutesThroughItsOwnPaneBinding()
+    public void FloatingCenterToolWindowKeepsItsOwnPaneBinding()
     {
         Grid? content = null;
         RunShell(window =>
@@ -640,17 +640,11 @@ public sealed class ShellChromeContractTests
             var manager = Assert.Single(FindVisualDescendants<AvalonDock.DockingManager>(window));
             var floating = Assert.Single(manager.FloatingWindows.ToList());
             Assert.NotNull(content);
-            var pane = FindAncestor<LayoutDocumentPaneControl>(content!, _ => true);
+            var pane = FindAncestor<LayoutAnchorablePaneControl>(content!, _ => true);
             Assert.NotNull(pane);
-            var button = FindVisualDescendants<Button>(pane!)
-                .Single(item => item.Name == "FloatingDocumentMaxRestore");
-            Assert.Equal(Visibility.Visible, button.Visibility);
-            var command = Assert.IsType<RoutedCommand>(button.Command);
-
-            Assert.True(command.CanExecute(button.CommandParameter, button.CommandTarget));
-            command.Execute(button.CommandParameter, button.CommandTarget);
-            UiTestHost.Pump();
-            Assert.Equal(WindowState.Maximized, floating.WindowState);
+            Assert.DoesNotContain(
+                FindVisualDescendants<Button>(pane!),
+                item => item.Name == "FloatingDocumentMaxRestore");
         }, configure: config => config.ToolWindows.Add(new ToolWindowDescriptor
         {
             Id = "center.float.actions",

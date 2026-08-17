@@ -25,8 +25,8 @@ public sealed partial class DockingHost
         _hiddenCenterIds.Clear();
         var docPane = new LayoutDocumentPane();
 
-        // 中央主区使用 AvalonDock 原生文档窗格。命令集或消费方显式 Center 窗口
-        // 直接成为主文档，避免“空文档背景 + 横向工具窗”被 AvalonDock 重新分配宽度。
+        // 中央主区使用 AvalonDock 原生文档窗格。命令集保留文档身份；模块和消费方
+        // 的 Center 窗口以工具窗口身份挂入同一主区，避免退役的文档页注册语义回流。
         var centerColumn = new LayoutPanel(docPane) { Orientation = Orientation.Vertical };
         var rootPanel = new LayoutPanel(centerColumn) { Orientation = Orientation.Horizontal };
         var root = new LayoutRoot { RootPanel = rootPanel };
@@ -83,11 +83,22 @@ public sealed partial class DockingHost
                      .Where(d => d.DefaultSide == DockSide.Center)
                      .OrderByDescending(d => IsPrimaryCommandDocument(d.Id)))
         {
-            var document = CreateDocument(descriptor);
-            if (descriptor.DefaultVisible || IsPrimaryCommandDocument(descriptor.Id))
-                docPane.Children.Add(document);
+            if (UsesDocumentIdentity(descriptor))
+            {
+                var document = CreateDocument(descriptor);
+                if (descriptor.DefaultVisible)
+                    docPane.Children.Add(document);
+                else
+                    _hiddenCenterIds.Add(descriptor.Id);
+            }
             else
-                _hiddenCenterIds.Add(descriptor.Id);
+            {
+                var anchorable = CreateAnchorable(descriptor);
+                if (descriptor.DefaultVisible)
+                    docPane.Children.Add(anchorable);
+                else
+                    _hiddenCenterIds.Add(descriptor.Id);
+            }
         }
 
         centerColumn.DockWidth = Star(Math.Max(1 - leftRatio - rightRatio, 0.1));
@@ -181,7 +192,8 @@ public sealed partial class DockingHost
             {
                 // 3.0 早期候选把 Center 做成与空文档区并排的工具窗。取消该旧节点，
                 // EnsureRegisteredWindows 会把默认中央窗口迁入真正的文档主区。
-                if (d.DefaultSide == DockSide.Center || IsPrimaryCommandDocument(contentId))
+                if ((d.DefaultSide == DockSide.Center && !IsInsideFloatingWindow(anchorable)) ||
+                    IsPrimaryCommandDocument(contentId))
                 {
                     e.Cancel = true;
                     return;
@@ -268,8 +280,7 @@ public sealed partial class DockingHost
             }
         }
         else if (d.DefaultSide == DockSide.Center
-                 || (d.DefaultSide == DockSide.Tab && d.DefaultTabTarget != null &&
-                     FindCenterDocument(d.DefaultTabTarget) != null))
+                 || (d.DefaultSide == DockSide.Tab && IsCenterTabTarget(d.DefaultTabTarget)))
         {
             // 中央区的工具窗口：位置仍是中央，身份是 LayoutAnchorable。
             // 隐藏态与落位沿用中央页的既有语义，使它与此前的文档页在用户可见行为上一致。
@@ -291,11 +302,24 @@ public sealed partial class DockingHost
         else
         {
             var anchorable = CreateAnchorable(d);
-            PlaceAtSide(anchorable, d.DefaultSide, d.DefaultRatio, d.DefaultTabTarget);
+            var targetPending = d.DefaultSide == DockSide.Tab && d.DefaultTabTarget != null &&
+                                !IsCenterTabTarget(d.DefaultTabTarget) &&
+                                FindAnchorable(d.DefaultTabTarget)?.Parent is not LayoutAnchorablePane;
+            if (targetPending)
+            {
+                _pendingTabTargets[d.Id] = d.DefaultTabTarget!;
+                _log.Info(LayoutSource, $"窗口 {d.Id} 的标签组目标 {d.DefaultTabTarget} 尚未注册，暂时右侧停靠");
+            }
+            PlaceAtSide(
+                anchorable,
+                targetPending ? DockSide.Right : d.DefaultSide,
+                d.DefaultRatio,
+                targetPending ? null : d.DefaultTabTarget);
             if (!d.DefaultVisible)
                 anchorable.Hide();
         }
         _preserveDefaultRatioOnSeed.Add(d.Id);
+        ResolvePendingTabTargets(d.Id);
     }
 
     private bool LayoutHasMainDocumentPane()
@@ -435,6 +459,9 @@ public sealed partial class DockingHost
         => FindCenterDocument(id)?.Parent is LayoutDocumentPane ||
            FindAnchorable(id) is { } anchorable && IsHostedInDocumentPane(anchorable);
 
+    private bool IsCenterTabTarget(string? id)
+        => id != null && IsCenterContent(id);
+
     private static void NormalizeMainDocumentSizing(LayoutDocumentPane pane)
     {
         pane.DockWidth = Star(1);
@@ -536,7 +563,7 @@ public sealed partial class DockingHost
     {
         _centerDocuments.Clear();
         _hiddenCenterIds.Clear();
-        ILayoutPanelElement pane = _byId[id].DefaultSide == DockSide.Center
+        ILayoutPanelElement pane = UsesDocumentIdentity(_byId[id])
             ? new LayoutDocumentPane(CreateDocument(_byId[id]))
             : new LayoutAnchorablePane(CreateAnchorable(_byId[id]));
         var rootPanel = new LayoutPanel(pane) { Orientation = Orientation.Horizontal };
