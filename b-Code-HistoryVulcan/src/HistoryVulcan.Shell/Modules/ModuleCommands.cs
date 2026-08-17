@@ -19,6 +19,7 @@ public static class ModuleCommands
     public static void RegisterAll(
         CommandRegistry registry, ModuleHost host, ISettingsService settings, string source = "app")
     {
+        _ = settings;
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.module.list",
@@ -65,32 +66,70 @@ public static class ModuleCommands
 
         registry.Register(new CommandDescriptor
         {
+            Name = "vulcan.module.install",
+            Domain = "vulcan",
+            CommandClass = "module",
+            Summary = "从已校验候选包原子安装并重载运行时模块",
+            Example = "vulcan.module.install path=C:\\candidate\\HistoryJanus",
+            Dangerous = true,
+            Parameters = [new ParameterSpec
+            {
+                Name = "path",
+                Description = "含 module.manifest.json 与完整 SHA256SUMS 的绝对包目录",
+                Required = true,
+                Position = 0,
+            }],
+            Handler = CommandDescriptor.Sync(ctx =>
+                IsLocalMutationSource(ctx.Source)
+                    ? host.InstallPackage(ctx.RequireString("path"))
+                    : CommandResult.Fail("模块安装只允许本机宿主命令路径。")),
+        }, source);
+
+        registry.Register(new CommandDescriptor
+        {
+            Name = "vulcan.module.remove",
+            Domain = "vulcan",
+            CommandClass = "module",
+            Summary = "从运行区原子移除模块包并刷新运行快照",
+            Example = "vulcan.module.remove name=HistoryJanus",
+            Dangerous = true,
+            Parameters = [new ParameterSpec
+            {
+                Name = "name",
+                Description = "vulcan.module.list 中的模块名",
+                Required = true,
+                Position = 0,
+            }],
+            Handler = CommandDescriptor.Sync(ctx =>
+                IsLocalMutationSource(ctx.Source)
+                    ? host.RemovePackage(ctx.RequireString("name"))
+                    : CommandResult.Fail("模块移除只允许本机宿主命令路径。")),
+        }, source);
+
+        registry.Register(new CommandDescriptor
+        {
             Name = "vulcan.module.roots",
             Domain = "vulcan",
             CommandClass = "module",
-            Summary = "查看或设置 Z 模块发现根",
-            Example = "vulcan.module.roots paths=auto",
+            Summary = "查看固定的运行时模块目录（兼容查询）",
+            Example = "vulcan.module.roots",
             Parameters =
             [
                 new ParameterSpec
                 {
                     Name = "paths",
-                    Description = "分号分隔的绝对根；auto 恢复自动识别；省略时查询",
+                    Description = "兼容参数；3.12.0 起拒绝修改",
                     Position = 0,
                 },
             ],
-            Handler = async ctx =>
+            Handler = CommandDescriptor.Sync(ctx =>
             {
                 var paths = ctx.GetString("paths");
                 if (string.IsNullOrWhiteSpace(paths))
-                    return CommandResult.Ok($"当前模块发现根: {string.Join(";", host.DiscoveryRoots)}");
-                var roots = ResolveRoots(paths);
-                settings.Set(KeyModuleRoots, paths.Equals("auto", StringComparison.OrdinalIgnoreCase)
-                    ? "auto"
-                    : string.Join(';', roots));
-                await Task.Run(() => host.ChangeDiscoveryRoots(roots));
-                return CommandResult.Ok($"模块发现根已切换并重载: {string.Join(";", roots)}");
-            },
+                    return CommandResult.Ok($"固定运行时模块目录: {host.ModulesDirectory}");
+                return CommandResult.Fail(
+                    $"3.12.0 起模块目录固定为 {host.ModulesDirectory}；module.roots 设置不再生效。");
+            }),
         }, source);
 
         registry.Register(new CommandDescriptor
@@ -102,35 +141,22 @@ public static class ModuleCommands
             Example = "vulcan.module.open",
             Handler = CommandDescriptor.Sync(_ =>
             {
-                var root = host.DiscoveryRoots.FirstOrDefault();
-                if (root == null)
-                    return CommandResult.Fail("当前没有可打开的模块发现根");
+                var root = host.ModulesDirectory;
+                if (string.IsNullOrWhiteSpace(root))
+                    return CommandResult.Fail("当前没有可打开的运行时模块目录");
                 Process.Start(new ProcessStartInfo("explorer.exe", $"\"{root}\"")
                 {
                     UseShellExecute = true,
                 });
-                return CommandResult.Ok($"已打开模块发现根: {root}");
+                return CommandResult.Ok($"已打开运行时模块目录: {root}");
             }),
         }, source);
     }
 
-    private static IReadOnlyList<string> ResolveRoots(string paths)
-    {
-        if (paths.Equals("auto", StringComparison.OrdinalIgnoreCase))
-        {
-            var root = ZModuleDiscoverySource.ResolveAutomaticRoot()
-                       ?? throw new InvalidOperationException(ZModuleDiscoverySource.AutomaticRootNotFound);
-            return [root];
-        }
-
-        var values = paths.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (values.Length == 0 || values.Any(path => !Path.IsPathFullyQualified(path)))
-            throw new ArgumentException("vulcan.module.roots 只接受分号分隔的绝对路径或 auto。");
-        var roots = values
-            .Select(ZModuleDiscoverySource.CoerceConfiguredRoot)
-            .Where(Directory.Exists)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        return roots;
-    }
+    private static bool IsLocalMutationSource(string source)
+        => source.Equals("UI", StringComparison.OrdinalIgnoreCase)
+           || source.Equals("手动", StringComparison.OrdinalIgnoreCase)
+           || source.StartsWith("脚本:", StringComparison.OrdinalIgnoreCase)
+           || source.StartsWith("Shell:", StringComparison.OrdinalIgnoreCase)
+           || source.StartsWith("host:", StringComparison.OrdinalIgnoreCase);
 }

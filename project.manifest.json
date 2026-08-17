@@ -15,7 +15,7 @@
       "package"
     ],
     "status": "active",
-    "version": "3.11.6",
+    "version": "3.12.0",
     "branch": "main",
     "freezeTag": "v3.0.3"
   },
@@ -31,15 +31,15 @@
       "b-Code-HistoryVulcan/src"
     ],
     "generatedRoots": [
-      "z-Publish/current",
-      "z-Publish/virtual"
+      "z-Publish/host",
+      "z-Publish/docs"
     ],
     "archiveRoots": [
       "b-Office/history",
-      "z-Publish"
+      "z-Publish/history"
     ],
     "releaseRoots": [
-      "z-HistoryVulcan"
+      "z-Publish"
     ],
     "allowedRootDirectoryPrefixes": [
       "a-",
@@ -133,7 +133,7 @@
   "contextExclusions": [
     "b-Office/history/**",
     "z-Publish/**",
-    "z-HistoryVulcan/**",
+    "z-Publish/history/**",
     "**/bin/**",
     "**/obj/**",
     "**/.vs/**",

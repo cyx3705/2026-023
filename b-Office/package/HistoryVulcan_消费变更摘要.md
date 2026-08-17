@@ -1,13 +1,13 @@
 # HistoryVulcan 消费变更摘要
 
-适用版本：HistoryVulcan **3.11.6** 正式（已部署于 `z-HistoryVulcan`）。
+适用版本：HistoryVulcan **3.12.0**。
 
 本文按版本累积，不是单版本发布说明：下面的「破坏性变更」自 3.3.2 起逐条累加，每条都标注引入版本；
 「主要变化」是不需要改代码的增量。从 3.3.1 及更早升级的消费方需要通读破坏性变更全节。
 
 本文只记录会影响消费应用、模块作者和部署者的变化；源码施工、冻结审查、完整测试证据和发布操作不属于本文。
 
-> 本文抬头曾长期停留在「适用版本 3.3.2」，而正文早已累加到 3.4.x–3.11.x；当前 3.11.5 版本的新增变化列在本节顶部。
+> 本文抬头曾长期停留在旧版本；当前 3.12.0 变化列在本节顶部。
 > 版本线推进时必须同步本文抬头，这与同步 `project.manifest.json` 同等重要。
 
 ## 破坏性变更（升级必读；自 3.3.2 累积）
@@ -73,7 +73,7 @@ MCP/Web 硬排除。命令集里不应再看到 `debug` 类。
 
 ## 部署与引用方式
 
-- HistoryVulcan 自身以 `host/HistoryVulcan.exe` 部署；正式副本位于 `z-HistoryVulcan`，不生成 NuGet 包。
+- HistoryVulcan 自身以 `host/HistoryVulcan.exe` 部署；正式副本位于 `z-Publish`，不生成 NuGet 包。
 
 - 3.3.0（DEC-022）内置命令一次硬切为 `vulcan.<类>.<方法>`（全小写、无连字符、不留别名；旧别名 `cls` 已删除），Domain=`vulcan`；
   命令集表格列为域|类|方法。全局快捷键（含 `GlobalShortcutService`）与命令工作台（目录会话、补全、命令集/详情）迁至 HistoryMercury 4.1.0；
@@ -96,6 +96,10 @@ MCP/Web 硬排除。命令集里不应再看到 `debug` 类。
 
 ## 主要变化
 
+- 3.12.0 运行模块迁入 `%AppData%\HistoryVulcan\Modules`；独立宿主不再扫描项目库或 `z-*`。
+  新增 `ModuleHost.InstallPackage/RemovePackage` 与本机命令 `vulcan.module.install/remove`，包含完整
+  manifest/SHA 校验、监视区外暂存、原子替换和失败回滚。`vulcan.module.roots` 只读兼容查询。
+  宿主运行入口改为 `z-Publish/host/HistoryVulcan.exe`，当前候选直接位于 `z-Publish/` 根部。
 - 3.11.6 固定 MCP 端口：`mcp.port` 未设置时首次派生并写入；之后只监听这一端口。占用时失败，
   不再顺延到 `port+1` 并把新值写回设置。`mcp.portretries` 仍可迁移保留，但启动不再读取。
   Cursor 等客户端因此不会跟到一个已经不监听的端口。
@@ -117,7 +121,7 @@ MCP/Web 硬排除。命令集里不应再看到 `debug` 类。
   全局快捷键与命令工作台外置到 HistoryMercury 4.1.0（详见上文部署节与映射文件）。
 - 3.2.0 将产品从 AppShell 改名为 HistoryVulcan：包 ID 改为 `OneHistory.HistoryVulcan.*`，命名空间改为
   `HistoryVulcan.*`，宿主可执行文件为 `HistoryVulcan.exe`。公开 API 形状与命令语义不变；消费方升级时
-  需要把包引用和 `using` 命名空间整体换为新名。正式快照入口随之迁移到 `z-HistoryVulcan`。
+  需要把包引用和 `using` 命名空间整体换为新名。正式快照入口随之迁移到 `z-Publish`。
 - 3.1.10 不改变公开 API 或命令语义；控制台候选、中央命令集和指令详情改为共享目录会话，
   统一从曾用 `command.list` / `command.domains` → 现用 `vulcan.command.list` / `vulcan.command.domains` 取快照，
   并按需通过曾用 `command.show` → 现用 `vulcan.command.show` 缓存参数详情。双进程前端因此也能

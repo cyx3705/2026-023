@@ -9,32 +9,19 @@ namespace HistoryVulcan.Tests;
 public sealed class ModuleZHotReloadTests
 {
     [Fact]
-    public async Task DiscoveryHostReloadsWhenZPackageDllChanges()
+    public async Task RuntimeHostReloadsOnceWhenPackageDllChanges()
     {
         var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));
-        var library = Path.Combine(root, "library");
-        var package = Path.Combine(library, "2026-099-HistoryFixture", "z-HistoryFixture");
-        Directory.CreateDirectory(package);
+        var modules = Path.Combine(root, "Modules");
+        var package = RuntimeModulePackageTests.CreatePackage(
+            modules, "contextfixture", "contextfixture", "v1.0.0");
 
         var dllPath = Path.Combine(package, "ContextFixture.dll");
-        File.Copy(typeof(ContextFixtureModuleInfo).Assembly.Location, dllPath);
-        File.WriteAllText(Path.Combine(package, "module.manifest.json"),
-            """
-            {
-              "schemaVersion": 1,
-              "type": "HistoryVulcan.Module",
-              "name": "contextfixture",
-              "version": "v1.0.0",
-              "artifact": "ContextFixture.dll",
-              "ui": false
-            }
-            """);
-
         var registry = new CommandRegistry();
         var log = new TestLog();
         var settings = new MemorySettings();
         var bus = new CommandBus(registry, log);
-        using var host = new ModuleHost(new ZModuleDiscoverySource([library]), log)
+        using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modules), log)
         {
             EnableUiModules = false,
             EnableFileWatching = true,
@@ -49,11 +36,18 @@ public sealed class ModuleZHotReloadTests
                 entry.Message.Contains("正在监听模块目录", StringComparison.Ordinal));
 
             var pending = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            host.ReloadCompleted += () => pending.TrySetResult(true);
+            var reloads = 0;
+            host.ReloadCompleted += () =>
+            {
+                if (Interlocked.Increment(ref reloads) == 1)
+                    pending.TrySetResult(true);
+            };
             File.WriteAllBytes(dllPath, File.ReadAllBytes(dllPath));
 
             var completed = await Task.WhenAny(pending.Task, Task.Delay(TimeSpan.FromSeconds(10)));
-            Assert.True(completed == pending.Task, "Z package file change should hot-reload without restarting the host.");
+            Assert.True(completed == pending.Task, "Runtime package change should hot-reload without restarting the host.");
+            await Task.Delay(1200);
+            Assert.Equal(1, Volatile.Read(ref reloads));
             Assert.Equal("contextfixture", Assert.Single(host.Modules).ModuleName);
         }
         finally

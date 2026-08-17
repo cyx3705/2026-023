@@ -1,6 +1,6 @@
 ﻿# HistoryVulcan AI 工作合同
 
-本文件适用于整个仓库。**当前源码与正式 Z 部署均为 3.11.5**；`HistoryVulcan.Core`
+本文件适用于整个仓库。**当前源码为 3.12.0**；`HistoryVulcan.Core`
 公开面自 3.9.0 起冻结，Shell 与 Extensibility 仍可在不改变 Core 合同的前提下演进。进入项目后先确认现行合同和修改边界，
 再按任务读取最小必要上下文。
 
@@ -15,7 +15,7 @@
 2. 读取根目录 `README.md` 与 `b-Office/current/项目概览.md`。
 3. 根据任务读取 `技术合同.md`、`有效决策.md` 或 `验证合同.md`；涉及目录治理时读取
    `b-Office/文档中心.md`，涉及消费或跨项目复用时读取 `b-Office/package/复用说明.md`。
-4. 只进入 manifest 声明的活动目录。`z-Publish/`、`z-HistoryVulcan/`、`bin/`、`obj/`
+4. 只进入 manifest 声明的活动目录。`z-Publish/`、`bin/`、`obj/`
    和 `artifacts/` 默认不进入源码维护上下文。
 5. 跨项目说明书：先执行 `diana.docs.catalog`，把完整输出留在本对话中，再调用其中一条
    `diana.docs.<通道>`。不要打开邻接项目仓库的 `package`，也不要依赖手写文件表。
@@ -24,15 +24,15 @@
 
 - 用户当前指令决定任务范围，但不隐式授权提交、推送、正式发布或破坏性操作。
 - 现行行为以 `b-Office/current/`、四份 `PublicAPI.Shipped.txt`、测试和源码共同判断。
-- `b-Office/package/` 是消费合同编辑源；`z-HistoryVulcan/` 是当前正式消费快照，
-  `z-Publish/` 保存不可变发布归档。不得直接编辑生成副本。
+- `b-Office/package/` 是消费合同编辑源；`z-Publish/` 根部是当前候选，
+  `z-Publish/history/` 保存不可变发布归档。不得直接编辑生成副本。
 - `b-Office/history/` 不是常用读取范围。确需版本背景时读取最小必要文件，历史结论不得覆盖
   current、测试或运行事实。
 - 文档与实现冲突时必须指出冲突，不能静默选择一方并改写另一方。
 
 ## 版本线与冻结边界
 
-- 当前开发线是 **3.11.x**，候选版本 3.11.5。Core 不得新增公开 API；其他稳定程序集的公开面变化必须进入对应版本的
+- 当前开发线是 **3.12.x**，候选版本 3.12.0。Core 不得新增公开 API；其他稳定程序集的公开面变化必须进入对应版本的
   `PublicAPI.Unshipped.txt` 并通过 `Assert-PublicApiBaseline.ps1` 基线比对。
 - `v3.0.3` 是 V3 历史冻结标签，只对 3.0.x 维护分支有效：那条分支只接受致命崩溃、
   数据丢失或安全漏洞修复，且不新增公开 API。**不要把这条约束套用到 3.3.x。**
@@ -45,7 +45,7 @@
 ## 工作边界
 
 - 修改前后检查 Git 状态，保留用户已有改动，不回退无关文件。
-- 不直接编辑 `z-Publish/` 正式归档、`z-HistoryVulcan/` 正式快照或第三方依赖。
+- 不直接编辑 `z-Publish/` 候选/正式归档或第三方依赖。
 - 修改消费合同应先改 `b-Office/package/`，再由发布流程生成副本。
 - 不把密钥、令牌、个人路径或机器专用状态写入仓库。
 - 未经用户明确授权，不执行 Git commit、tag、push、正式发布或删除。

@@ -11,9 +11,9 @@ HistoryVulcan 是独立维护的通用桌面应用框架，也是框架源码的
 - `src/App`：框架演示宿主，用于独立构建和 GUI 验收。
 - `eng`：发布、公开 API 冻结、TRX 失败摘要和 AI-ready 项目合同检查。
 - `../b-Office/package`：消费文档编辑源；`../b-Office` 根目录保留冻结合同和内部设计记录。
-- `../z-Publish/current`：唯一一份当前候选和完整发布测试结果。
+- `../z-Publish`：唯一一份当前候选和完整发布测试结果。
 - `../z-Publish/history`：按版本保存的 Z 级最小正式历史副本。
-- `../z-HistoryVulcan/host`：当前正式 HistoryVulcan 宿主程序；Z 根目录同时保留精简复用说明和兼容消费资产。
+- `../z-Publish/host`：当前正式 HistoryVulcan 宿主程序；Z 根目录同时保留精简复用说明和兼容消费资产。
 
 ## 构建
 
@@ -32,8 +32,8 @@ dotnet build .\HistoryVulcan.sln -c Release --no-restore
 不得作为新消费基线。当前正式交付物是 win-x64、依赖 .NET 8 Desktop
 Runtime 的 HistoryVulcan 宿主，不生成 NuGet 包。兼容包合同继续保留，但必须从单独批准的同版本包源消费。
 
-宿主候选覆盖写入仓库内 `z-Publish/current`，同时包含运行程序和消费文档；审核通过后一次性更新
-整个 `z-HistoryVulcan`。宿主候选与部署入口：
+宿主候选覆盖写入仓库内 `z-Publish`，同时包含运行程序和消费文档；审核通过后一次性更新
+整个 `z-Publish`。宿主候选与部署入口：
 
 ```powershell
 # 可覆盖 current：生成 Release 宿主、UI/消费文档和 SHA-256 清单
@@ -46,10 +46,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ..\2026-019-HistoryDiana\b-C
 当前交付物是宿主程序，不生成 NuGet 包。旧 `Publish-AppShell.ps1` 已于 3.3.2 退役（DEC-023），
 `Build-HistoryVulcanPackage.ps1` 只生成候选；正式提升入口是 Diana 集中发布脚本。
 脚本不会执行 Git commit/tag/push，也不会推送 NuGet.org。包结构与许可边界见 `PACKAGE.md`。
-完整消费文档由 `../b-Office/package` 生成，候选位于 `../z-Publish/current/docs/`，正式历史位于
-`../z-Publish/history/<版本>/docs/`，并随当前正式快照写入 `../z-HistoryVulcan/docs/`；
+完整消费文档由 `../b-Office/package` 生成，候选位于 `../z-Publish/docs/`，正式历史位于
+`../z-Publish/history/<版本>/docs/`，并随当前正式快照写入 `../z-Publish/docs/`；
 其他项目和 AI 先读
-`../z-HistoryVulcan/HistoryVulcan.reuse.md`，再按需跟随其中的合同链接。
+`../z-Publish/manifest.json`，再按 `documents` 读取同一候选的消费合同。
 
 ## 维护门禁
 

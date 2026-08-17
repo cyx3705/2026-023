@@ -200,7 +200,7 @@ public sealed class ModuleTrialUiTests
         {
             var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));
             var modulesDirectory = Path.Combine(root, "modules");
-            var packagePath = Path.Combine(root, "candidate", "z-HistoryFixture");
+            var packagePath = Path.Combine(root, "module-package-fixture");
             var dataDirectory = Path.Combine(root, "data");
             Directory.CreateDirectory(modulesDirectory);
             Directory.CreateDirectory(packagePath);

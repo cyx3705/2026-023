@@ -18,9 +18,9 @@ Set-StrictMode -Version Latest
 
 $componentRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $componentRoot '..'))
-$publishRoot = Join-Path $repoRoot 'b-Publish'
+$publishRoot = Join-Path $repoRoot 'z-Publish'
 $candidateRoot = if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
-    Join-Path $publishRoot 'current'
+    $publishRoot
 } else {
     [IO.Path]::GetFullPath($OutputRoot)
 }
@@ -29,7 +29,6 @@ $project = Join-Path $componentRoot 'src\App\App.csproj'
 $documentRoot = Join-Path $repoRoot 'b-Office\package'
 $releaseRoot = Join-Path $componentRoot 'eng\release'
 $documentManifestPath = Join-Path $releaseRoot 'consumer-docs.json'
-$reuseTemplatePath = Join-Path $releaseRoot 'HistoryVulcan.reuse.template.md'
 $versionOutput = & dotnet msbuild $project -nologo -getProperty:VulcanVersion -getProperty:FileVersion
 if ($LASTEXITCODE -ne 0) {
     throw 'Unable to evaluate HistoryVulcan version source'
@@ -72,9 +71,11 @@ function Get-SnapshotFiles {
     param([string]$Path)
     $pathPrefix = [IO.Path]::GetFullPath($Path).TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
     $installerPrefix = $pathPrefix + 'installer' + [IO.Path]::DirectorySeparatorChar
+    $historyPrefix = $pathPrefix + 'history' + [IO.Path]::DirectorySeparatorChar
     return @(Get-ChildItem -LiteralPath $Path -Recurse -File |
         Where-Object {
             $_.Name -ne 'SHA256SUMS' -and
+            -not $_.FullName.StartsWith($historyPrefix, [StringComparison]::OrdinalIgnoreCase) -and
             -not $_.FullName.StartsWith($installerPrefix, [StringComparison]::OrdinalIgnoreCase)
         } |
         Sort-Object FullName)
@@ -84,7 +85,16 @@ function Assert-Snapshot {
     param([string]$Path)
 
     Assert-HostDirectory (Join-Path $Path 'host')
-    foreach ($required in @('HistoryVulcan.reuse.md', 'README.md', 'manifest.json', 'SHA256SUMS')) {
+    $docsRoot = Join-Path $Path 'docs'
+    if (-not (Test-Path -LiteralPath $docsRoot -PathType Container)) {
+        throw 'Snapshot is missing docs/'
+    }
+    foreach ($documentName in $documentNames) {
+        if (-not (Test-Path -LiteralPath (Join-Path $docsRoot $documentName) -PathType Leaf)) {
+            throw "Snapshot is missing docs/$documentName"
+        }
+    }
+    foreach ($required in @('manifest.json', 'SHA256SUMS')) {
         if (-not (Test-Path -LiteralPath (Join-Path $Path $required) -PathType Leaf)) {
             throw "Snapshot is missing $required"
         }
@@ -115,13 +125,15 @@ function Assert-Snapshot {
     }
 }
 
-New-Item -ItemType Directory -Force -Path $publishRoot | Out-Null
-$temporary = Join-Path $publishRoot ('.current-next-' + [Guid]::NewGuid().ToString('N'))
-$candidateBackup = Join-Path $publishRoot ('.current-previous-' + [Guid]::NewGuid().ToString('N'))
-$buildOutputRoot = Join-Path $publishRoot ('.build-' + [Guid]::NewGuid().ToString('N'))
+$transactionRoot = Join-Path ([IO.Path]::GetTempPath()) (
+    'HistoryVulcan.Package.' + [Guid]::NewGuid().ToString('N'))
+$temporary = Join-Path $transactionRoot 'candidate'
+$candidateBackup = Join-Path $transactionRoot 'previous'
+$buildOutputRoot = Join-Path $transactionRoot 'build'
 try {
     $temporaryHost = Join-Path $temporary 'host'
-    New-Item -ItemType Directory -Force -Path $temporaryHost | Out-Null
+    $temporaryDocs = Join-Path $temporary 'docs'
+    New-Item -ItemType Directory -Force -Path $temporaryHost, $temporaryDocs | Out-Null
 
     Invoke-Dotnet @(
         'restore', $solution, '--locked-mode', '--nologo',
@@ -136,30 +148,13 @@ try {
         '-p:NuGetAudit=false')
     Assert-HostDirectory $temporaryHost
 
-    $reuseTemplate = Get-Content -LiteralPath $reuseTemplatePath -Raw -Encoding UTF8
-    if ($reuseTemplate.IndexOf('{{VERSION}}', [StringComparison]::Ordinal) -lt 0) {
-        throw 'Reuse template is missing the {{VERSION}} placeholder'
+    foreach ($documentName in $documentNames) {
+        $documentSource = Join-Path $documentRoot $documentName
+        if (-not (Test-Path -LiteralPath $documentSource -PathType Leaf)) {
+            throw "Consumer document is missing: $documentSource"
+        }
+        Copy-Item -LiteralPath $documentSource -Destination (Join-Path $temporaryDocs $documentName)
     }
-    [IO.File]::WriteAllText(
-        (Join-Path $temporary 'HistoryVulcan.reuse.md'),
-        $reuseTemplate.Replace('{{VERSION}}', $Version),
-        [Text.UTF8Encoding]::new($false))
-
-    $readme = @"
-# HistoryVulcan $Version
-
-This is the current HistoryVulcan host snapshot.
-
-- `host/HistoryVulcan.exe`: win-x64, framework-dependent HistoryVulcan host.
-- `HistoryVulcan.reuse.md`: minimal entry point for projects and AI consumers.
-- `manifest.json` and `SHA256SUMS`: snapshot identity and integrity.
-
-Run `host/HistoryVulcan.exe`. Historical releases are stored under `b-Publish/history/`.
-"@
-    [IO.File]::WriteAllText(
-        (Join-Path $temporary 'README.md'),
-        $readme,
-        [Text.UTF8Encoding]::new($false))
 
     $sourceCommit = (& git -C $repoRoot rev-parse HEAD).Trim()
     $releaseInputs = @('b-Code-HistoryVulcan', 'b-Office/package', 'project.manifest.json')
@@ -176,7 +171,6 @@ Run `host/HistoryVulcan.exe`. Historical releases are stored under `b-Publish/hi
         selfContained = $false
         sourceCommit = $sourceCommit
         sourceDirty = $sourceDirty
-        # 消费 Markdown 由 Diana 发布管线写入 docs/ 并重写 SHA256SUMS；本构建只记录编辑源文件名。
         documents = @($documentNames)
         files = @($payloadFiles | ForEach-Object {
             $relative = $_.FullName.Substring($temporary.Length).TrimStart('\', '/').Replace('\', '/')
@@ -202,30 +196,39 @@ Run `host/HistoryVulcan.exe`. Historical releases are stored under `b-Publish/hi
         [Text.UTF8Encoding]::new($false))
     Assert-Snapshot $temporary
 
-    $candidateMoved = $false
+    New-Item -ItemType Directory -Force -Path $candidateRoot, $candidateBackup | Out-Null
+    $movedPrevious = [Collections.Generic.List[string]]::new()
+    $movedCandidate = [Collections.Generic.List[string]]::new()
     try {
-        if (Test-Path -LiteralPath $candidateRoot) {
-            Move-Item -LiteralPath $candidateRoot -Destination $candidateBackup
-            $candidateMoved = $true
+        foreach ($item in @(Get-ChildItem -LiteralPath $candidateRoot -Force |
+                Where-Object { $_.Name -ne 'history' })) {
+            Move-Item -LiteralPath $item.FullName -Destination $candidateBackup
+            $movedPrevious.Add($item.Name)
         }
-        Move-Item -LiteralPath $temporary -Destination $candidateRoot
-        if ($candidateMoved) {
-            Remove-Item -LiteralPath $candidateBackup -Recurse -Force
+        foreach ($item in @(Get-ChildItem -LiteralPath $temporary -Force)) {
+            Move-Item -LiteralPath $item.FullName -Destination $candidateRoot
+            $movedCandidate.Add($item.Name)
         }
     }
     catch {
-        if ($candidateMoved -and -not (Test-Path -LiteralPath $candidateRoot) -and
-            (Test-Path -LiteralPath $candidateBackup)) {
-            Move-Item -LiteralPath $candidateBackup -Destination $candidateRoot
+        foreach ($name in $movedCandidate) {
+            $path = Join-Path $candidateRoot $name
+            if (Test-Path -LiteralPath $path) {
+                Remove-Item -LiteralPath $path -Recurse -Force
+            }
+        }
+        foreach ($name in $movedPrevious) {
+            $path = Join-Path $candidateBackup $name
+            if (Test-Path -LiteralPath $path) {
+                Move-Item -LiteralPath $path -Destination $candidateRoot
+            }
         }
         throw
     }
     Write-Host "Prepared HistoryVulcan $Version host snapshot at $candidateRoot"
 }
 finally {
-    foreach ($path in @($temporary, $candidateBackup, $buildOutputRoot)) {
-        if (Test-Path -LiteralPath $path) {
-            Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction SilentlyContinue
-        }
+    if (Test-Path -LiteralPath $transactionRoot) {
+        Remove-Item -LiteralPath $transactionRoot -Recurse -Force -ErrorAction SilentlyContinue
     }
 }

@@ -325,8 +325,8 @@ foreach ($project in $projects) {
     }
     $approved[$project] = @(
         [System.IO.File]::ReadAllLines($baselinePath, [System.Text.UTF8Encoding]::new($false)) |
-            ForEach-Object { $_.Trim() } |
-            Where-Object { $_ -ne '' }
+            ForEach-Object { $_.Trim().TrimStart([char]0xFEFF) } |
+            Where-Object { $_ -ne '' -and $_ -ne '#nullable enable' }
     )
 }
 

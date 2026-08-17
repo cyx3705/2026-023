@@ -68,7 +68,7 @@ public sealed partial class ModuleHost : IDisposable
     {
         ArgumentNullException.ThrowIfNull(discoverySource);
         _discoverySource = discoverySource;
-        _dir = "";
+        _dir = discoverySource is RuntimeModuleDiscoverySource ? discoverySource.Roots[0] : "";
         _log = log;
         _watcher = new ModuleDirectoryWatcher(log, Reload);
         _mcpPolicy = new ModuleMcpPolicyBinder(ResolveModuleOfCommand, ResolveModuleExposure);
@@ -193,17 +193,20 @@ public sealed partial class ModuleHost : IDisposable
             Reload();
             return;
         }
-        var roots = manifests
-            .Select(path => Directory.GetParent(
-                Directory.GetParent(Directory.GetParent(path)!.FullName)!.FullName)!.FullName)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
-        var snapshot = new ZModuleDiscoverySource(roots).Discover();
-        var requested = manifests.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        _confirmedSources = snapshot.Modules
-            .Where(module => requested.Contains(module.ManifestPath))
-            .ToList();
-        _discoveryDiagnostics = snapshot.Diagnostics;
+        var entries = new List<ModuleDiscoveryEntry>();
+        var diagnostics = new List<ModuleDiscoveryDiagnostic>();
+        foreach (var manifest in manifests)
+        {
+            var package = Path.GetDirectoryName(manifest)!;
+            if (RuntimeModuleDiscoverySource.TryReadPackage(
+                    package, out var entry, out var code, out var error)
+                && entry.ManifestPath.Equals(manifest, StringComparison.OrdinalIgnoreCase))
+                entries.Add(entry);
+            else
+                diagnostics.Add(new ModuleDiscoveryDiagnostic(manifest, code, error));
+        }
+        _confirmedSources = entries;
+        _discoveryDiagnostics = diagnostics;
         Reload();
     }
 
@@ -526,13 +529,16 @@ public sealed partial class ModuleHost : IDisposable
         if (targets.Count == 1)
             _log.Info("module", $"正在监听模块目录: {targets[0]}");
         else if (targets.Count > 1)
-            _log.Info("module", $"正在监听 {targets.Count} 个 Z 模块目录");
+            _log.Info("module", $"正在监听 {targets.Count} 个模块目录");
     }
 
     private List<string> ListFileWatchTargets()
     {
         if (_discoverySource == null)
             return string.IsNullOrWhiteSpace(_dir) ? [] : [_dir];
+
+        if (_discoverySource is RuntimeModuleDiscoverySource)
+            return _discoverySource.Roots.Where(Directory.Exists).ToList();
 
         var targets = new List<string>();
         foreach (var root in _discoverySource.Roots)

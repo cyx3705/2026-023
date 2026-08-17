@@ -84,6 +84,9 @@ public static class McpExposurePolicy
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public static string? HardExclusionReason(string commandName)
     {
+        if (commandName.Equals("vulcan.module.install", StringComparison.OrdinalIgnoreCase)
+            || commandName.Equals("vulcan.module.remove", StringComparison.OrdinalIgnoreCase))
+            return "运行包变更只允许认证的本机宿主通道";
         if (commandName.Equals("vulcan.app.quit", StringComparison.OrdinalIgnoreCase))
             return "远程客户端不得退出宿主";
         if (commandName.StartsWith("debug.", StringComparison.OrdinalIgnoreCase)
