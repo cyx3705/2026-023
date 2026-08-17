@@ -31,12 +31,12 @@
       "b-Code-HistoryVulcan/src"
     ],
     "generatedRoots": [
-      "b-Publish/current",
-      "b-Publish/virtual"
+      "z-Publish/current",
+      "z-Publish/virtual"
     ],
     "archiveRoots": [
       "b-Office/history",
-      "b-Publish"
+      "z-Publish"
     ],
     "releaseRoots": [
       "z-HistoryVulcan"
@@ -132,7 +132,7 @@
   ],
   "contextExclusions": [
     "b-Office/history/**",
-    "b-Publish/**",
+    "z-Publish/**",
     "z-HistoryVulcan/**",
     "**/bin/**",
     "**/obj/**",

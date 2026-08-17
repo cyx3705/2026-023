@@ -41,14 +41,14 @@ TestResults/
 # Local package and deployment scratch
 *.tmp
 *.log
-b-Publish/current/
-b-Publish/virtual/
+z-Publish/current/
+z-Publish/virtual/
 
 # Deployment databases and rollback archives are machine-local recovery assets.
 b-Office/evidence/**/*.db
 b-Office/evidence/**/*.zip
 
-# b-Publish archives formal release evidence; rebuildable candidate and virtual workspaces are ignored.
+# z-Publish archives formal release evidence; rebuildable candidate and virtual workspaces are ignored.
 
 # Local Inno Setup bootstrap download (not a release artifact)
 b-Code-HistoryVulcan/eng/tools/

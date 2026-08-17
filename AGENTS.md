@@ -15,7 +15,7 @@
 2. 读取根目录 `README.md` 与 `b-Office/current/项目概览.md`。
 3. 根据任务读取 `技术合同.md`、`有效决策.md` 或 `验证合同.md`；涉及目录治理时读取
    `b-Office/文档中心.md`，涉及消费或跨项目复用时读取 `b-Office/package/复用说明.md`。
-4. 只进入 manifest 声明的活动目录。`b-Publish/`、`z-HistoryVulcan/`、`bin/`、`obj/`
+4. 只进入 manifest 声明的活动目录。`z-Publish/`、`z-HistoryVulcan/`、`bin/`、`obj/`
    和 `artifacts/` 默认不进入源码维护上下文。
 5. 跨项目说明书：先执行 `diana.docs.catalog`，把完整输出留在本对话中，再调用其中一条
    `diana.docs.<通道>`。不要打开邻接项目仓库的 `package`，也不要依赖手写文件表。
@@ -25,7 +25,7 @@
 - 用户当前指令决定任务范围，但不隐式授权提交、推送、正式发布或破坏性操作。
 - 现行行为以 `b-Office/current/`、四份 `PublicAPI.Shipped.txt`、测试和源码共同判断。
 - `b-Office/package/` 是消费合同编辑源；`z-HistoryVulcan/` 是当前正式消费快照，
-  `b-Publish/` 保存不可变发布归档。不得直接编辑生成副本。
+  `z-Publish/` 保存不可变发布归档。不得直接编辑生成副本。
 - `b-Office/history/` 不是常用读取范围。确需版本背景时读取最小必要文件，历史结论不得覆盖
   current、测试或运行事实。
 - 文档与实现冲突时必须指出冲突，不能静默选择一方并改写另一方。
@@ -45,7 +45,7 @@
 ## 工作边界
 
 - 修改前后检查 Git 状态，保留用户已有改动，不回退无关文件。
-- 不直接编辑 `b-Publish/` 正式归档、`z-HistoryVulcan/` 正式快照或第三方依赖。
+- 不直接编辑 `z-Publish/` 正式归档、`z-HistoryVulcan/` 正式快照或第三方依赖。
 - 修改消费合同应先改 `b-Office/package/`，再由发布流程生成副本。
 - 不把密钥、令牌、个人路径或机器专用状态写入仓库。
 - 未经用户明确授权，不执行 Git commit、tag、push、正式发布或删除。
