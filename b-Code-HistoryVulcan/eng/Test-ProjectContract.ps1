@@ -22,6 +22,13 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
+$manifestPath = Join-Path $repoRoot 'project.manifest.json'
+$manifestBytes = [IO.File]::ReadAllBytes($manifestPath)
+if ($manifestBytes.Length -ge 3 -and
+    $manifestBytes[0] -eq 0xEF -and $manifestBytes[1] -eq 0xBB -and $manifestBytes[2] -eq 0xBF) {
+    throw 'project.manifest.json must be UTF-8 without a BOM for Diana MCP compatibility.'
+}
+
 $dianaEntry = [IO.Path]::GetFullPath(
     (Join-Path $repoRoot '..\2026-019-HistoryDiana\b-Code\OneHistory.HostContract.ps1'))
 

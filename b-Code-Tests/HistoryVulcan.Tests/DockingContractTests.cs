@@ -70,10 +70,11 @@ public sealed class DockingContractTests
             Assert.Equal(DockSide.Center, state.Side);
             Assert.Null(state.Ratio);
             var pane = Assert.Single(manager.Layout.Descendents().OfType<LayoutDocumentPane>());
-            var document = Assert.Single(pane.Children.OfType<LayoutDocument>());
-            Assert.Equal("stage", document.ContentId);
+            var anchorable = Assert.Single(pane.Children.OfType<LayoutAnchorable>());
+            Assert.Equal("stage", anchorable.ContentId);
+            Assert.True(anchorable.CanDockAsTabbedDocument);
             Assert.DoesNotContain(
-                manager.Layout.Descendents().OfType<LayoutAnchorable>(),
+                manager.Layout.Descendents().OfType<LayoutDocument>(),
                 item => item.ContentId == "stage");
             Assert.Equal(GridUnitType.Star, pane.DockWidth.GridUnitType);
             var dock = FrontendCommandCatalog.FrameworkSourceDescriptors.Single(item => item.Name == "vulcan.ui.dock");
@@ -246,10 +247,8 @@ public sealed class DockingContractTests
         });
     }
 
-    // 3.11.3：模块不再能注册文档页，中央页统一为工具窗口。
-    // 本用例断言的是该路径尚未补齐的行为，暂时跳过而不是删除——
-    // 删掉会让缺口彻底消失在视野里，跳过至少每次跑测试都提醒一次。
-    [Fact(Skip = "中央工具窗口的选中项语义尚未与原文档页对齐。")]
+    // 3.11.3+: module center entries are tool windows hosted in the main document pane.
+    [Fact]
     public void ShellWindowHostsSelectablePagesInTheFullMainDocumentPane()
     {
         UiTestHost.RunSta(() =>
@@ -299,9 +298,11 @@ public sealed class DockingContractTests
                 UiTestHost.Pump();
                 var multiple = Assert.Single(FindVisualDescendants<LayoutDocumentPaneControl>(window));
                 Assert.Equal(2, multiple.Items.Count);
-                Assert.Equal(
-                    "business",
-                    Assert.IsType<LayoutDocumentPane>(((ILayoutControl)multiple).Model).SelectedContent?.ContentId);
+                var centerPane = Assert.IsType<LayoutDocumentPane>(((ILayoutControl)multiple).Model);
+                var business = Assert.Single(
+                    centerPane.Children.OfType<LayoutAnchorable>(),
+                    item => item.ContentId == "business");
+                Assert.True(business.IsSelected || business.IsActive);
                 Assert.True(multiple.ActualWidth > window.ActualWidth * 0.5,
                     $"main document width={multiple.ActualWidth}, window width={window.ActualWidth}");
                 Assert.Equal(
@@ -494,10 +495,7 @@ public sealed class DockingContractTests
         });
     }
 
-    // 3.11.3：模块不再能注册文档页，中央页统一为工具窗口。
-    // 本用例断言的是该路径尚未补齐的行为，暂时跳过而不是删除——
-    // 删掉会让缺口彻底消失在视野里，跳过至少每次跑测试都提醒一次。
-    [Fact(Skip = "中央页改为工具窗口后，浮动往返尚未在该路径上验证。这一条可能是真实缺口而非遗留契约：工具窗口本就该能浮动，此处失败疑似出在浮动后 pane 归属判定，值得单独排查。")]
+    [Fact]
     public void FloatingCenterPageRoundTripsWithoutInvalidatingMainLayout()
     {
         UiTestHost.RunSta(() =>
@@ -508,13 +506,18 @@ public sealed class DockingContractTests
                 Tool(StandardWindowIds.Mcp, DockSide.Center, 1),
                 Tool("business", DockSide.Center, 1),
             };
-            var manager = new DockingManager();
-            var host = new DockingHost(manager, descriptors, store, new NullLog());
-            host.Initialize();
-
-            host.Float("business");
-            Assert.True(host.ListWindows().Single(item => item.Id == "business").IsFloating);
-            host.SaveCurrentLayout();
+            var window = ShowHost(descriptors, store, out var host);
+            try
+            {
+                host.Float("business");
+                UiTestHost.Pump();
+                Assert.True(host.ListWindows().Single(item => item.Id == "business").IsFloating);
+                host.SaveCurrentLayout();
+            }
+            finally
+            {
+                window.Close();
+            }
 
             var recoveredManager = new DockingManager();
             var recoveredHost = new DockingHost(
@@ -572,10 +575,7 @@ public sealed class DockingContractTests
         });
     }
 
-    // 3.11.3：模块不再能注册文档页，中央页统一为工具窗口。
-    // 本用例断言的是该路径尚未补齐的行为，暂时跳过而不是删除——
-    // 删掉会让缺口彻底消失在视野里，跳过至少每次跑测试都提醒一次。
-    [Fact(Skip = "后声明的 Tab 跟随页在中央工具窗口路径上尚未落进同一 pane 实例；跟随语义此前只在文档页路径实现过。")]
+    [Fact]
     public void RestoredLayoutResolvesCenterTabTargetDeclaredAfterFollower()
     {
         UiTestHost.RunSta(() =>

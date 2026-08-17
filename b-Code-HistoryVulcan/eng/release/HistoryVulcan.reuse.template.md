@@ -73,7 +73,6 @@
 
 - [HistoryVulcan UI 风格与嵌入页面规范](docs/HistoryVulcan_UI风格与嵌入页面规范.md)
 - [HistoryVulcan API 与指令手册](docs/HistoryVulcan_API与指令手册.md)
-- [HistoryVulcan 模块与 MCP 接入](docs/HistoryVulcan_模块与MCP接入.md)
 - [HistoryVulcan 运行时约束与已知限制](docs/HistoryVulcan_运行时约束与已知限制.md)
 - [HistoryVulcan 消费变更摘要](docs/HistoryVulcan_消费变更摘要.md)
 

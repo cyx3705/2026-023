@@ -25,6 +25,7 @@ internal sealed class ModuleDirectoryWatcher : IDisposable
     private readonly List<FileSystemWatcher> _watchers = [];
     private string[] _watched = [];
     private Timer? _debounce;
+    private bool _stopped;
 
     internal ModuleDirectoryWatcher(IShellLog log, Action reload)
     {
@@ -56,6 +57,7 @@ internal sealed class ModuleDirectoryWatcher : IDisposable
                 return false;
             }
 
+            _stopped = false;
             DisposeWatchers();
             _watched = next;
             foreach (var directory in next)
@@ -83,6 +85,7 @@ internal sealed class ModuleDirectoryWatcher : IDisposable
     {
         lock (_gate)
         {
+            _stopped = true;
             DisposeWatchers();
             _watched = [];
             _debounce?.Dispose();
@@ -125,6 +128,12 @@ internal sealed class ModuleDirectoryWatcher : IDisposable
 
             _debounce ??= new Timer(_ =>
             {
+                lock (_gate)
+                {
+                    if (_stopped || _watchers.Count == 0)
+                        return;
+                }
+
                 try
                 {
                     _reload();
