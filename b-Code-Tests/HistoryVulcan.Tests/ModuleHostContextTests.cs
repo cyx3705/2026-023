@@ -266,8 +266,12 @@ namespace HistoryVulcan.Tests
     public sealed class ContextFixtureModuleInfo : BaseVariable.ModuleInfoBase
     {
         public const string EnabledVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_ENABLED";
+        public const string VersionVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_VERSION";
 
         public override string ModuleName => "contextfixture";
+
+        public override string Version
+            => Environment.GetEnvironmentVariable(VersionVariable) ?? "v1.0.0";
 
         public override Type MainClassType => typeof(ContextAwareFixture);
 

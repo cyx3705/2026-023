@@ -18,14 +18,14 @@ WPF shell and docking UI, local services, module hosting, and an MCP gateway.
 ```
 
 The references above describe the 3.3.0 source contract. The supported delivery is the formal
-`z-HistoryVulcan/host` application snapshot; NuGet generation remains a compatibility-only workflow.
+`z-Publish/host` application snapshot; NuGet generation remains a compatibility-only workflow.
 HistoryVulcan targets .NET 8.
 The Shell and ServiceHost packages require Windows and WPF. Packages in this
 repository-local feed are for OneHistory-owned projects; no public distribution license is granted
 by the package itself.
 
-The current z-level release snapshot includes `HistoryVulcan.reuse.md` beside the feed directory and the
-version-matched consumer contracts under `docs/`. Consumers and AI tools should start with the reuse
-document and follow its links to the API/command, module/MCP, runtime-limit, and change-summary contracts.
+The current `z-Publish` snapshot includes `manifest.json`, the runnable `host/`, and version-matched
+consumer contracts under `docs/`. Consumers and AI tools should start with the manifest and follow its
+`documents` list to the API/command, module/MCP, runtime-limit, and change-summary contracts.
 Release evidence and maintenance documents remain outside the runtime packages. XML API documentation
 stays beside each assembly under `lib/<TFM>/` for IntelliSense and precise API lookup.

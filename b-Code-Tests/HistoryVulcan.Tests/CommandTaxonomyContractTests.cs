@@ -109,6 +109,14 @@ public sealed class CommandTaxonomyContractTests
     }
 
     [Fact]
+    public void RuntimePackageMutationCommandsStayOutOfReachOfRemoteClients()
+    {
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("vulcan.module.install"));
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("vulcan.module.remove"));
+        Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.module.reload"));
+    }
+
+    [Fact]
     public void FloodIsNotPartOfTheShippedBuiltinCatalog()
     {
         // 诊断指令不属于正式命令集：只有把 diagnostics.commands 显式置真的宿主才注册它。

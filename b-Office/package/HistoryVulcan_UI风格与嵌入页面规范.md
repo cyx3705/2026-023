@@ -1,6 +1,6 @@
 ﻿# HistoryVulcan UI 风格与嵌入页面规范
 
-> 适用版本：HistoryVulcan **3.11.5** 正式（已部署于 `z-HistoryVulcan`；3.1.8 不受支持）
+> 适用版本：HistoryVulcan **3.12.0**（宿主位于 `z-Publish/host`；3.1.8 不受支持）
 >
 > 3.3.0（DEC-022）：内置命令硬切为 `vulcan.<类>.<方法>`；全局快捷键与命令工作台由 HistoryMercury 4.1.0 拥有。
 > 3.3.2（DEC-023）：类收敛为九类，窗口/布局/面板指令统一为 `vulcan.ui.*`。

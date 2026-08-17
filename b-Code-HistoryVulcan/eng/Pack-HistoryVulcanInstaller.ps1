@@ -13,7 +13,7 @@ Set-StrictMode -Version Latest
 $componentRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $componentRoot '..'))
 $issPath = Join-Path $PSScriptRoot 'release\HistoryVulcan.iss'
-$formalRoot = Join-Path $repoRoot 'z-HistoryVulcan'
+$formalRoot = Join-Path $repoRoot 'z-Publish'
 
 if (-not $SnapshotRoot) {
     $SnapshotRoot = $formalRoot
@@ -120,8 +120,8 @@ if (-not (Test-Path -LiteralPath $setupExe -PathType Leaf)) {
 $readme = @"
 # HistoryVulcan $Version installer package
 
-Built from formal host snapshot ``z-HistoryVulcan`` (win-x64, framework-dependent).
-Delivered under ``z-HistoryVulcan/installer/``.
+Built from formal host snapshot ``z-Publish`` (win-x64, framework-dependent).
+Delivered under ``z-Publish/installer/``.
 
 ## Artifacts
 
@@ -169,7 +169,7 @@ $packageManifest = [ordered]@{
     channel = 'installer'
     runtime = [string]$manifest.runtime
     selfContained = [bool]$manifest.selfContained
-    sourceSnapshot = 'z-HistoryVulcan'
+    sourceSnapshot = 'z-Publish'
     sourceCommit = [string]$manifest.sourceCommit
     artifacts = @($artifactFiles | ForEach-Object {
         [ordered]@{

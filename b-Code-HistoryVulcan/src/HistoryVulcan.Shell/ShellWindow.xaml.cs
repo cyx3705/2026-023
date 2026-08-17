@@ -266,6 +266,10 @@ public partial class ShellWindow : Window, IShellCommandWorkbenchHost
             _modules = config.ModuleDiscoveryRoots.Count > 0
                 ? new Services.Modules.ModuleHost(
                     new Services.Modules.ZModuleDiscoverySource(config.ModuleDiscoveryRoots), log)
+                : config.RequireConfirmedModuleSources
+                    ? new Services.Modules.ModuleHost(
+                        new Services.Modules.RuntimeModuleDiscoverySource(
+                            config.ModuleDirectory ?? Services.AppPaths.GetModulesDir(dataDirectory)), log)
                 : new Services.Modules.ModuleHost(
                     config.ModuleDirectory ?? Services.AppPaths.GetModulesDir(dataDirectory), log);
             _modules.EnableCommands = config.EnableModules;
@@ -289,7 +293,7 @@ public partial class ShellWindow : Window, IShellCommandWorkbenchHost
                     Domain = "vulcan",
                     CommandClass = "module",
                     Summary = "在前端临时创建候选模块界面(不进入正式模块快照)",
-                    Example = "vulcan.module.trialui.load path=C:\\candidate\\z-HistoryJanus alias=janus",
+                    Example = "vulcan.module.trialui.load path=C:\\candidate\\z-Publish alias=janus",
                     RequiresUiThread = true,
                     Parameters =
                     [
