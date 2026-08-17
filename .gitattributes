@@ -237,3 +237,6 @@
 *.stp filter=lfs diff=lfs merge=lfs -text
 *.nupkg filter=lfs diff=lfs merge=lfs -text
 *.snupkg filter=lfs diff=lfs merge=lfs -text
+
+# Published package hashes cover exact bytes; Git must not normalize package content.
+z-Publish/** binary
