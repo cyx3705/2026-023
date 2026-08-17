@@ -7,7 +7,7 @@ using HistoryVulcan.Core.Storage;
 
 namespace HistoryVulcan.Shell.Modules;
 
-/// <summary>module.* 管理指令(MD-05):list / reload / roots / open。</summary>
+/// <summary>module.* 管理指令：list / reload / install / remove / roots / open。</summary>
 public static class ModuleCommands
 {
     /// <summary>Legacy settings key retained for binary compatibility; standalone hosts ignore it.</summary>
@@ -70,7 +70,7 @@ public static class ModuleCommands
             Domain = "vulcan",
             CommandClass = "module",
             Summary = "从已校验候选包原子安装并重载运行时模块",
-            Example = "vulcan.module.install path=C:\\candidate\\HistoryJanus",
+            Example = "vulcan.module.install path=C:\\OneHistory\\HistoryClio\\2026-020-HistoryJanus\\z-Publish\\HistoryJanus-v5.0.0",
             Dangerous = true,
             Parameters = [new ParameterSpec
             {
@@ -158,5 +158,6 @@ public static class ModuleCommands
            || source.Equals("手动", StringComparison.OrdinalIgnoreCase)
            || source.StartsWith("脚本:", StringComparison.OrdinalIgnoreCase)
            || source.StartsWith("Shell:", StringComparison.OrdinalIgnoreCase)
-           || source.StartsWith("host:", StringComparison.OrdinalIgnoreCase);
+           || source.StartsWith("host:", StringComparison.OrdinalIgnoreCase)
+           || source.StartsWith("diana.", StringComparison.OrdinalIgnoreCase);
 }

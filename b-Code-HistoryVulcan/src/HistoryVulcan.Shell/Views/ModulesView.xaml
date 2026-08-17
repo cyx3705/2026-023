@@ -14,11 +14,11 @@
     <DockPanel Margin="8">
         <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
             <Button x:Name="RefreshButton" Content="刷新模块" Click="OnReloadClick" />
+            <Button x:Name="HotReloadButton" Content="热重载" Margin="8,0,0,0" Click="OnHotReloadClick" />
             <Button x:Name="OpenDirButton" Content="打开发现根" Margin="8,0,0,0" Click="OnOpenDirClick" />
-            <TextBlock x:Name="DirText" VerticalAlignment="Center" Margin="12,0,0,0" Foreground="{DynamicResource Shell.Brush.TextSecondary}" />
         </StackPanel>
         <TextBlock DockPanel.Dock="Bottom" x:Name="StatusText" Foreground="{DynamicResource Shell.Brush.TextSecondary}" Margin="0,6,0,0"
-                   Text="模块由项目库各编号项目下的 z-* 根级 manifest 显式发现" />
+                   Text="模块来自 %AppData%\HistoryVulcan\Modules；热重载安装候选或历史包" />
 
         <Grid>
             <ListView x:Name="ModuleList">

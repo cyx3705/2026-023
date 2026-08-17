@@ -108,7 +108,7 @@ public sealed class ModuleCatalogSnapshotTests
     }
 
     [Fact]
-    public void ModulesViewUsesOneRefreshActionAndNoCommandDetailPane()
+    public void ModulesViewAddsHotReloadWithoutCommandDetailPane()
     {
         var path = Path.Combine(
             RepositoryRoot(),
@@ -117,6 +117,7 @@ public sealed class ModuleCatalogSnapshotTests
             "HistoryVulcan.Shell",
             "Views",
             "ModulesView.xaml");
+        var code = File.ReadAllText(path + ".cs");
         var document = XDocument.Load(path);
         XNamespace presentation = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
         XNamespace x = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -124,11 +125,19 @@ public sealed class ModuleCatalogSnapshotTests
         var buttons = elements.Where(element => element.Name == presentation + "Button").ToList();
 
         Assert.Single(buttons, button => (string?)button.Attribute("Click") == "OnReloadClick");
+        Assert.Single(buttons, button => (string?)button.Attribute("Click") == "OnHotReloadClick");
         Assert.Contains(buttons, button => (string?)button.Attribute("Content") == "刷新模块");
+        Assert.Contains(buttons, button => (string?)button.Attribute("Content") == "热重载");
+        Assert.Contains(buttons, button => (string?)button.Attribute("Content") == "打开发现根");
         Assert.DoesNotContain(buttons, button => (string?)button.Attribute("Click") == "OnRefreshClick");
         Assert.DoesNotContain(elements, element => (string?)element.Attribute(x + "Name") == "CommandList");
         Assert.DoesNotContain(elements, element => (string?)element.Attribute(x + "Name") == "CommandsTitle");
+        Assert.Contains(buttons, button => (string?)button.Attribute(x + "Name") == "HotReloadButton");
         Assert.Contains(buttons, button => (string?)button.Attribute(x + "Name") == "OpenDirButton");
+        Assert.Contains("vulcan.ui.selectdirectory", code, StringComparison.Ordinal);
+        Assert.Contains("vulcan.module.install path=", code, StringComparison.Ordinal);
+        Assert.DoesNotContain("OpenFolderDialog", code, StringComparison.Ordinal);
+        Assert.DoesNotContain("OpenFileDialog", code, StringComparison.Ordinal);
     }
 
     private static string RepositoryRoot()

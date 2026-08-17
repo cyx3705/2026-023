@@ -1,4 +1,3 @@
-using HistoryVulcan.Core;
 using HistoryVulcan.Services.Modules;
 using System.Windows.Controls;
 using HistoryVulcan.Core.Commands;
@@ -8,7 +7,7 @@ namespace HistoryVulcan.Shell.Views;
 /// <summary>
 /// 模块管理页(V2.1.1):已装载模块清单。
 /// 数据经 vulcan.module.list 消费(Data = ModuleMeta 列表);动作按钮全部经总线
-/// (vulcan.module.reload / vulcan.module.open)。命令详情统一由命令集页面提供。
+/// (vulcan.module.reload / vulcan.module.install / vulcan.module.open)。命令详情统一由命令集页面提供。
 /// </summary>
 public partial class ModulesView : UserControl
 {
@@ -33,8 +32,6 @@ public partial class ModulesView : UserControl
         string ModuleName, string Version, string Mode, int CommandCount,
         string AssemblyFile, string Description);
 
-    public sealed record CommandRow(string Name, string Summary, string Example);
-
     private async void OnReloadClick(object sender, System.Windows.RoutedEventArgs e)
     {
         var bus = _busAccessor();
@@ -54,6 +51,51 @@ public partial class ModulesView : UserControl
         finally
         {
             RefreshButton.IsEnabled = true;
+        }
+    }
+
+    private async void OnHotReloadClick(object sender, System.Windows.RoutedEventArgs e)
+    {
+        var bus = _busAccessor();
+        if (bus == null)
+        {
+            StatusText.Text = "命令总线尚未就绪";
+            return;
+        }
+
+        HotReloadButton.IsEnabled = false;
+        try
+        {
+            var picked = await bus.ExecuteAsync("vulcan.ui.selectdirectory", "UI");
+            if (!picked.Success)
+            {
+                StatusText.Text = FirstLine(picked.Message);
+                return;
+            }
+
+            if (!CommandResultData.TryRead<string>(picked.Data, out var path)
+                || string.IsNullOrWhiteSpace(path))
+            {
+                StatusText.Text = "已取消热重载";
+                return;
+            }
+
+            var result = await bus.ExecuteAsync(
+                $"vulcan.module.install path={CommandParser.QuoteArg(path)}",
+                "UI");
+            if (!result.Success)
+            {
+                StatusText.Text = "热重载失败: " + FirstLine(result.Message)
+                    + "。请再选主树候选或 z-Publish/history/HistoryX-vX.Y.Z，不会自动恢复。";
+                return;
+            }
+
+            await RefreshAsync();
+            StatusText.Text = FirstLine(result.Message);
+        }
+        finally
+        {
+            HotReloadButton.IsEnabled = true;
         }
     }
 
@@ -89,7 +131,7 @@ public partial class ModulesView : UserControl
         }
 
         RefreshButton.IsEnabled = false;
-        ClearModules("正在扫描 Z 模块...");
+        ClearModules("正在读取运行区模块...");
         try
         {
             var result = await ModuleCatalogReader.LoadModulesAsync(bus);
@@ -101,7 +143,7 @@ public partial class ModulesView : UserControl
                     .ToList();
                 ModuleList.ItemsSource = rows;
                 StatusText.Text = rows.Count == 0
-                    ? "当前无已装载模块；请检查 vulcan.module.roots 与 Z manifest 诊断"
+                    ? "当前无已装载模块；运行区为空或包未通过校验"
                     : $"已装载 {rows.Count} 个模块,共 {snapshot.Modules.Sum(module => module.CommandCount)} 条模块指令";
             }
             else

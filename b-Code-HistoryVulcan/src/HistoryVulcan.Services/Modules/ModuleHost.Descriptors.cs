@@ -215,7 +215,6 @@ public sealed partial class ModuleHost
             {
                 ui.Send(_ =>
                 {
-                    DestroyAllTrialUi();
                     DestroyUi(_current);
                     UnregisterCommands(_current);
                 }, null);
