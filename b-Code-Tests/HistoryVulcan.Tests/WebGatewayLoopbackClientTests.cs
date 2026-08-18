@@ -11,10 +11,15 @@ using Xunit;
 namespace HistoryVulcan.Tests;
 
 [Collection(TestCollections.Gateway)]
-public sealed class WebGatewayRateLimitTests
+public sealed class WebGatewayLoopbackClientTests
 {
+    /// <summary>
+    /// 3.13.0 前这条用例叫 AuthenticatedLoopbackShellDoesNotConsumePublicWebQuota，
+    /// 守的是"前端不吃公共 Web 配额"。限流随局域网面删除后不再有配额可言，
+    /// 但"前端可以连续高频调用而不被任何中间层拦下"仍然是要守的行为，故保留。
+    /// </summary>
     [Fact]
-    public async Task AuthenticatedLoopbackShellDoesNotConsumePublicWebQuota()
+    public async Task LoopbackShellSustainsRapidSequentialCommands()
     {
         var registry = new CommandRegistry();
         registry.Register(new CommandDescriptor
@@ -25,12 +30,11 @@ public sealed class WebGatewayRateLimitTests
             Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("pong")),
         });
         var settings = new MemorySettings();
-        settings.Set(WebGateway.KeyRateLimit, "10");
         var bus = new CommandBus(registry, new NullLog());
         using var gateway = new WebGateway(() => bus, settings, new NullLog());
         Assert.True(gateway.Start(FreePort()).Success);
         using var client = new ShellServiceClient(
-            new Uri($"http://127.0.0.1:{gateway.Port}/"), "RateLimitFrontend");
+            ConnectedProfile(gateway), "RateLimitFrontend");
 
         for (var attempt = 0; attempt < 25; attempt++)
         {
@@ -39,45 +43,10 @@ public sealed class WebGatewayRateLimitTests
         }
     }
 
-    [Fact]
-    public async Task AuthenticatedWebSessionRemainsLimitedAndReportsRetryWindow()
-    {
-        var registry = new CommandRegistry();
-        registry.Register(new CommandDescriptor
-        {
-            Name = "health.ping",
-            Summary = "ping",
-            Readonly = true,
-            Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("pong")),
-        });
-        var settings = new MemorySettings();
-        settings.Set(WebGateway.KeyToken, "web-secret");
-        settings.Set(WebGateway.KeyRateLimit, "10");
-        var bus = new CommandBus(registry, new NullLog());
-        using var gateway = new WebGateway(() => bus, settings, new NullLog());
-        Assert.True(gateway.Start(FreePort()).Success);
-        using var client = new HttpClient
-        {
-            BaseAddress = new Uri($"http://127.0.0.1:{gateway.Port}/"),
-        };
-        client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "web-secret");
-        client.DefaultRequestHeaders.Add("X-Session-Id", Guid.NewGuid().ToString("N"));
-
-        for (var attempt = 0; attempt < 10; attempt++)
-        {
-            using var accepted = await PostCommandAsync(client);
-            Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
-        }
-
-        using var limited = await PostCommandAsync(client);
-        Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
-        Assert.NotNull(limited.Headers.RetryAfter?.Delta);
-        using var payload = JsonDocument.Parse(await limited.Content.ReadAsStringAsync());
-        Assert.Equal("rate limit exceeded", payload.RootElement.GetProperty("error").GetString());
-        Assert.InRange(payload.RootElement.GetProperty("retryAfterSeconds").GetInt32(), 1, 60);
-    }
-
+    // 3.13.0 退役 AuthenticatedWebSessionRemainsLimitedAndReportsRetryWindow：
+    // 令牌鉴权的 Web 会话已无法建立（见 FreezeBlockerTests.GatewayAcceptsOnlyTheLoopbackShellSession），
+    // 网关自身也不再产生 429。下面这条保留：它验证的是**客户端**遇到 429 时的解释能力，
+    // 用的是独立的假监听器，与网关是否限流无关——反向代理等中间层仍可能返回 429。
     [Fact]
     public async Task ShellClientExplainsHttp429RetryWindow()
     {
@@ -115,6 +84,13 @@ public sealed class WebGatewayRateLimitTests
             "api/command",
             new StringContent(json, Encoding.UTF8, "application/json"));
     }
+
+    /// <summary>构造一个持有本次监听 IPC 凭据的前端配置（3.13.0 起前端必须持券）。</summary>
+    internal static ShellEndpointProfile ConnectedProfile(WebGateway gateway)
+        => new(
+            new Uri($"http://127.0.0.1:{gateway.Port}/"),
+            Guid.NewGuid().ToString("N"),
+            AccessTokenProvider: () => gateway.AccessToken);
 
     private static int FreePort()
     {

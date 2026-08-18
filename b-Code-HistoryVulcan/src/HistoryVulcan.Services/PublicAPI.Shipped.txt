@@ -200,36 +200,6 @@ HistoryVulcan.Services.ShellLog.EntryAdded -> System.EventHandler<HistoryVulcan.
 HistoryVulcan.Services.ShellLog.Log(HistoryVulcan.Core.Logging.ShellLogLevel level, string! category, string! message) -> void
 HistoryVulcan.Services.ShellLog.ShellLog(HistoryVulcan.Services.AppPaths! paths, int retainDays = 30) -> void
 HistoryVulcan.Services.ShellLog.Snapshot() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Logging.ShellLogEntry!>!
-HistoryVulcan.Services.Web.DeviceAuthenticationResult
-HistoryVulcan.Services.Web.DeviceAuthenticationResult.DeviceAuthenticationResult(bool Success, string? DeviceId, string? Subject, System.Collections.Generic.IReadOnlySet<string!>! Scopes, string? Failure = null) -> void
-HistoryVulcan.Services.Web.DeviceAuthenticationResult.DeviceId.get -> string?
-HistoryVulcan.Services.Web.DeviceAuthenticationResult.DeviceId.init -> void
-HistoryVulcan.Services.Web.DeviceAuthenticationResult.Failure.get -> string?
-HistoryVulcan.Services.Web.DeviceAuthenticationResult.Failure.init -> void
-HistoryVulcan.Services.Web.DeviceAuthenticationResult.Scopes.get -> System.Collections.Generic.IReadOnlySet<string!>!
-HistoryVulcan.Services.Web.DeviceAuthenticationResult.Scopes.init -> void
-HistoryVulcan.Services.Web.DeviceAuthenticationResult.Subject.get -> string?
-HistoryVulcan.Services.Web.DeviceAuthenticationResult.Subject.init -> void
-HistoryVulcan.Services.Web.DeviceAuthenticationResult.Success.get -> bool
-HistoryVulcan.Services.Web.DeviceAuthenticationResult.Success.init -> void
-HistoryVulcan.Services.Web.DevicePairingResult
-HistoryVulcan.Services.Web.DevicePairingResult.AccessToken.get -> string?
-HistoryVulcan.Services.Web.DevicePairingResult.AccessToken.init -> void
-HistoryVulcan.Services.Web.DevicePairingResult.DeviceId.get -> string?
-HistoryVulcan.Services.Web.DevicePairingResult.DeviceId.init -> void
-HistoryVulcan.Services.Web.DevicePairingResult.DevicePairingResult(bool Success, string? ServerId, string? DeviceId, string? AccessToken, System.Collections.Generic.IReadOnlySet<string!>! Scopes, string? Failure = null) -> void
-HistoryVulcan.Services.Web.DevicePairingResult.Failure.get -> string?
-HistoryVulcan.Services.Web.DevicePairingResult.Failure.init -> void
-HistoryVulcan.Services.Web.DevicePairingResult.Scopes.get -> System.Collections.Generic.IReadOnlySet<string!>!
-HistoryVulcan.Services.Web.DevicePairingResult.Scopes.init -> void
-HistoryVulcan.Services.Web.DevicePairingResult.ServerId.get -> string?
-HistoryVulcan.Services.Web.DevicePairingResult.ServerId.init -> void
-HistoryVulcan.Services.Web.DevicePairingResult.Success.get -> bool
-HistoryVulcan.Services.Web.DevicePairingResult.Success.init -> void
-HistoryVulcan.Services.Web.IDeviceAuthenticationProvider
-HistoryVulcan.Services.Web.IDeviceAuthenticationProvider.Authenticate(string! deviceId, string! token, string? remoteAddress) -> HistoryVulcan.Services.Web.DeviceAuthenticationResult!
-HistoryVulcan.Services.Web.IDevicePairingProvider
-HistoryVulcan.Services.Web.IDevicePairingProvider.Pair(string! code, string! deviceId, string! deviceName, string? remoteAddress) -> HistoryVulcan.Services.Web.DevicePairingResult!
 HistoryVulcan.Services.Web.ShellConnectionState
 HistoryVulcan.Services.Web.ShellConnectionState.Connecting = 1 -> HistoryVulcan.Services.Web.ShellConnectionState
 HistoryVulcan.Services.Web.ShellConnectionState.Disconnected = 0 -> HistoryVulcan.Services.Web.ShellConnectionState
@@ -260,7 +230,6 @@ HistoryVulcan.Services.Web.ShellServiceClient.Dispose() -> void
 HistoryVulcan.Services.Web.ShellServiceClient.ExecuteAsync(string! text, string! source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
 HistoryVulcan.Services.Web.ShellServiceClient.LogReceived -> System.EventHandler<HistoryVulcan.Core.Logging.ShellLogEntry!>?
 HistoryVulcan.Services.Web.ShellServiceClient.ModuleRevisionReceived -> System.Action<long>?
-HistoryVulcan.Services.Web.ShellServiceClient.PairAsync(string! code, string! deviceName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<HistoryVulcan.Services.Web.DevicePairingResult!>!
 HistoryVulcan.Services.Web.ShellServiceClient.ReconnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
 HistoryVulcan.Services.Web.ShellServiceClient.RunEventLoopAsync(HistoryVulcan.Core.Commands.CommandBus! localBus, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 HistoryVulcan.Services.Web.ShellServiceClient.ShellServiceClient(HistoryVulcan.Services.Web.ShellEndpointProfile! profile, string! name) -> void
@@ -268,17 +237,9 @@ HistoryVulcan.Services.Web.ShellServiceClient.ShellServiceClient(System.Uri! bas
 HistoryVulcan.Services.Web.ShellServiceClient.State.get -> HistoryVulcan.Services.Web.ShellConnectionState
 HistoryVulcan.Services.Web.ShellServiceClient.StateChanged -> System.Action<HistoryVulcan.Services.Web.ShellConnectionState>?
 HistoryVulcan.Services.Web.ShellServiceClient.WaitForReadyAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
-HistoryVulcan.Services.Web.WebCommands
 HistoryVulcan.Services.Web.WebGateway
-HistoryVulcan.Services.Web.WebGateway.ActiveBindAddress.get -> string!
-HistoryVulcan.Services.Web.WebGateway.BindAddress.get -> string!
 HistoryVulcan.Services.Web.WebGateway.ConnectedClients.get -> int
 HistoryVulcan.Services.Web.WebGateway.ConnectedShells.get -> int
-HistoryVulcan.Services.Web.WebGateway.DeviceAuthentication.get -> HistoryVulcan.Services.Web.IDeviceAuthenticationProvider?
-HistoryVulcan.Services.Web.WebGateway.DeviceAuthentication.set -> void
-HistoryVulcan.Services.Web.WebGateway.DevicePairing.get -> HistoryVulcan.Services.Web.IDevicePairingProvider?
-HistoryVulcan.Services.Web.WebGateway.DevicePairing.set -> void
-HistoryVulcan.Services.Web.WebGateway.DisconnectDevice(string! deviceId) -> int
 HistoryVulcan.Services.Web.WebGateway.Dispose() -> void
 HistoryVulcan.Services.Web.WebGateway.IsRunning.get -> bool
 HistoryVulcan.Services.Web.WebGateway.Port.get -> int
@@ -301,23 +262,14 @@ const HistoryVulcan.Services.Mcp.McpGateway.KeyTimeout = "mcp.timeout" -> string
 const HistoryVulcan.Services.Mcp.McpGateway.KeyToken = "mcp.token" -> string!
 const HistoryVulcan.Services.Mcp.PromptGovernanceStore.TableDescriptions = "mcp_descriptions" -> string!
 const HistoryVulcan.Services.Mcp.PromptGovernanceStore.TableProposals = "mcp_prompt_proposals" -> string!
-const HistoryVulcan.Services.Web.WebGateway.KeyBind = "web.bind" -> string!
-const HistoryVulcan.Services.Web.WebGateway.KeyConfirm = "web.confirm" -> string!
-const HistoryVulcan.Services.Web.WebGateway.KeyCors = "web.cors" -> string!
 const HistoryVulcan.Services.Web.WebGateway.KeyFrontendCatalog = "web.frontendcatalog" -> string!
 const HistoryVulcan.Services.Web.WebGateway.KeyFrontendCatalogLimit = "web.frontendcataloglimit" -> string!
 const HistoryVulcan.Services.Web.WebGateway.KeyPort = "web.port" -> string!
 const HistoryVulcan.Services.Web.WebGateway.KeyPortRetries = "web.portretries" -> string!
-const HistoryVulcan.Services.Web.WebGateway.KeyRateLimit = "web.ratelimit" -> string!
-const HistoryVulcan.Services.Web.WebGateway.KeyRateWindowLimit = "web.ratewindowlimit" -> string!
-const HistoryVulcan.Services.Web.WebGateway.KeyToken = "web.token" -> string!
 static HistoryVulcan.Services.AppPaths.GetDataDir(string! root) -> string!
 static HistoryVulcan.Services.AppPaths.GetModulesDir(string! root) -> string!
 static HistoryVulcan.Services.AppPaths.GetPanelsDir(string! root) -> string!
 static HistoryVulcan.Services.Modules.ModuleHost.FindModuleDomainConflicts(System.Collections.Generic.IEnumerable<string!>! reservedCommandNames, System.Collections.Generic.IEnumerable<string!>! moduleCommandNames) -> System.Collections.Generic.IReadOnlySet<string!>!
 static HistoryVulcan.Services.Modules.ModulePanelSync.SyncFiles(string! modulesDir, string! panelsDir, HistoryVulcan.Core.Logging.IShellLog! log) -> bool
-static HistoryVulcan.Services.Web.DeviceAuthenticationResult.Accept(string! deviceId, string! subject, System.Collections.Generic.IEnumerable<string!>! scopes) -> HistoryVulcan.Services.Web.DeviceAuthenticationResult!
-static HistoryVulcan.Services.Web.DeviceAuthenticationResult.Reject(string! failure = "unauthorized") -> HistoryVulcan.Services.Web.DeviceAuthenticationResult!
 static HistoryVulcan.Services.Web.ShellEndpointProfile.NormalizeFingerprint(string? value) -> string!
-static HistoryVulcan.Services.Web.WebCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Services.Web.WebGateway! gateway, HistoryVulcan.Core.Storage.ISettingsService! settings, string! source = "framework:web") -> void
 static readonly HistoryVulcan.Services.Mcp.McpGateway.SupportedProtocols -> System.Collections.Generic.IReadOnlyList<string!>!
