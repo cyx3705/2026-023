@@ -7,7 +7,7 @@ using HistoryVulcan.Extensibility.Mcp;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.ServiceHost;
 using HistoryVulcan.Services.Web;
-using HistoryVulcan.Shell.Mcp;
+using HistoryVulcan.Services.Mcp;
 using Xunit;
 
 namespace HistoryVulcan.Tests;
@@ -341,7 +341,7 @@ public sealed class FrontendCommandCatalogTests
             registry.Register(descriptor, "app:frontend");
             var localBus = new CommandBus(registry, new NullLog());
             var client = new ShellServiceClient(
-                new Uri($"http://127.0.0.1:{Gateway.Port}/"), frontendName);
+                WebGatewayLoopbackClientTests.ConnectedProfile(Gateway), frontendName);
             var cancellation = new CancellationTokenSource();
             var loop = client.RunEventLoopAsync(localBus, cancellation.Token);
             var handle = new ClientHandle(client, cancellation, loop);

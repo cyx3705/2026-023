@@ -1,7 +1,7 @@
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Services.Modules;
-using HistoryVulcan.Shell.Mcp;
+using HistoryVulcan.Services.Mcp;
 using HistoryVulcan.Shell.Views;
 using System.Text.Json;
 using System.Xml.Linq;
