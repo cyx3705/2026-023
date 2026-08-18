@@ -1,14 +1,31 @@
 ﻿using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Extensibility.Mcp;
-using HistoryVulcan.Services.Mcp;
 using System.IO;
 using System.Text;
 using System.Text.Json;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Extensibility.Commands;
 
-namespace HistoryVulcan.Shell.Mcp;
+namespace HistoryVulcan.Services.Mcp;
 
+/// <summary>目录中的一行：一条指令的注册事实与 MCP 投影状态。</summary>
+/// <param name="CommandName">完整指令名。</param>
+/// <param name="Domain">所属指令域。</param>
+/// <param name="Summary">一句话说明。</param>
+/// <param name="Example">示例调用；无示例为 null。</param>
+/// <param name="ParameterCount">参数个数。</param>
+/// <param name="Source">注册方，如 framework:service 或 frontend:*。</param>
+/// <param name="SourceDetail">注册方补充信息；无则为 null。</param>
+/// <param name="Dangerous">是否为危险指令（需要确认）。</param>
+/// <param name="RequiresUiThread">是否必须在 UI 线程执行。</param>
+/// <param name="McpToolName">投影后的 MCP 工具名；未投影为 null。</param>
+/// <param name="McpState">MCP 投影状态：readonly / standard / dangerous / hidden。</param>
+/// <param name="PolicyVisible">按当前策略是否对远程可见。</param>
+/// <param name="Customized">工具描述是否已被治理修订覆盖。</param>
+/// <param name="CurrentRevision">当前生效的描述修订号；无则为 null。</param>
+/// <param name="OpenProposals">待审核的描述提案数。</param>
+/// <param name="IncidentCount">已记录的事故数。</param>
+/// <param name="HardExclusionReason">硬排除原因；未被硬排除为 null。</param>
 public sealed record CommandCatalogRow(
     string CommandName,
     string Domain,
@@ -35,6 +52,14 @@ public sealed record CommandCatalogRow(
     public string Method { get; init; } = "";
 }
 
+/// <summary>一条指令的单个参数说明。</summary>
+/// <param name="Name">参数名。</param>
+/// <param name="Type">参数类型。</param>
+/// <param name="Required">是否必填。</param>
+/// <param name="Default">默认值；无默认为 null。</param>
+/// <param name="Position">位置参数序号；仅具名时为 null。</param>
+/// <param name="AllowedValues">允许值枚举；不限时为空。</param>
+/// <param name="Description">参数说明。</param>
 public sealed record CommandParameterInfo(
     string Name,
     string Type,
@@ -44,6 +69,10 @@ public sealed record CommandParameterInfo(
     IReadOnlyList<string> AllowedValues,
     string Description);
 
+/// <summary>单条指令的完整详情：目录行、参数表与 MCP 输入 schema。</summary>
+/// <param name="Command">该指令的目录行。</param>
+/// <param name="Parameters">参数表。</param>
+/// <param name="McpInputSchema">MCP 工具的输入 JSON Schema；未投影为 null。</param>
 public sealed record CommandCatalogDetail(
     CommandCatalogRow Command,
     IReadOnlyList<CommandParameterInfo> Parameters,
@@ -54,6 +83,9 @@ public sealed record CommandCatalogDetail(
         = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 }
 
+/// <summary>一个指令域及其注册数量。</summary>
+/// <param name="Domain">域名。</param>
+/// <param name="Count">该域下的指令数。</param>
 public sealed record CommandDomainInfo(string Domain, int Count);
 
 /// <summary>V2.1.3 全指令结构化目录，注册表是唯一上游。</summary>
@@ -65,12 +97,20 @@ public static class CommandCatalogCommands
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    internal static void RegisterCore(CommandRegistry registry, string source = "app")
+    /// <summary>
+    /// 注册不依赖提示词治理的核心目录指令，供只要命令目录、不承载 MCP 治理的宿主使用。
+    ///
+    /// 4.0.0 从 internal 提为 public：本类型随 REQ-A1 从 Shell 迁入 Services 后，其调用方
+    /// （前端）将在 REQ-A3 成为独立仓的独立应用，跨程序集的 internal 不再可达；
+    /// InternalsVisibleTo 绑定具体程序集名，对外部消费方不成立。
+    /// </summary>
+    public static void RegisterCore(CommandRegistry registry, string source = "app")
     {
         var exporter = new CommandSchemaExporter(registry);
         RegisterCatalog(registry, exporter, prompts: null, static () => null, source);
     }
 
+    /// <summary>把目录查询指令注册进指定注册表。</summary>
     public static void RegisterAll(
         CommandRegistry registry,
         CommandSchemaExporter exporter,
@@ -92,6 +132,7 @@ public static class CommandCatalogCommands
         registry.Register(BuildManual(registry, exporter, gateway), source);
     }
 
+    /// <summary>按当前注册表与 MCP 投影生成目录快照。</summary>
     public static IReadOnlyList<CommandCatalogRow> Snapshot(
         CommandRegistry registry,
         CommandSchemaExporter exporter,

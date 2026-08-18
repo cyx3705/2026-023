@@ -298,7 +298,7 @@ public partial class App : Application
             prompts,
             identity,
             confirmation.ConfirmRemote);
-        HistoryVulcan.Shell.Mcp.McpCommands.RegisterAll(
+        HistoryVulcan.Services.Mcp.McpCommands.RegisterAll(
             registry,
             () => bus,
             () => mcp,

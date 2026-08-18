@@ -4,7 +4,6 @@ using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Extensibility.Mcp;
 using HistoryVulcan.Services;
 using HistoryVulcan.Services.Mcp;
-using HistoryVulcan.Shell.Mcp;
 using System.Collections.Concurrent;
 using System.IO;
 using Xunit;

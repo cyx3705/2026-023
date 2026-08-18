@@ -1,11 +1,17 @@
 ﻿using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Extensibility.Mcp;
-using HistoryVulcan.Services.Mcp;
 using System.Text;
 using HistoryVulcan.Core.Commands;
 
-namespace HistoryVulcan.Shell.Mcp;
+namespace HistoryVulcan.Services.Mcp;
 
+/// <summary>一个 MCP 工具的描述治理现状。</summary>
+/// <param name="ToolName">MCP 工具名。</param>
+/// <param name="CommandName">对应的完整指令名。</param>
+/// <param name="DefaultDescription">代码内置的默认描述。</param>
+/// <param name="EffectiveDescription">当前实际生效的描述。</param>
+/// <param name="CurrentRevision">当前生效的修订；未被修订过为 null。</param>
+/// <param name="OpenProposals">待审核的提案数。</param>
 public sealed record PromptStatus(
     string ToolName,
     string CommandName,
@@ -14,11 +20,15 @@ public sealed record PromptStatus(
     PromptRevision? CurrentRevision,
     int OpenProposals);
 
+/// <summary>一份提案及其与生效描述的文本差异。</summary>
+/// <param name="Proposal">提案本体。</param>
+/// <param name="Diff">相对生效描述的差异文本。</param>
 public sealed record PromptProposalDiff(PromptProposal Proposal, string Diff);
 
 /// <summary>V2.1.2 提示词修订、提案、勘误和事故指令。</summary>
 public static class PromptGovernanceCommands
 {
+    /// <summary>把提示词治理指令注册进指定注册表。</summary>
     public static void RegisterAll(
         CommandRegistry registry, CommandSchemaExporter exporter, PromptGovernanceStore store,
         string source = "app")

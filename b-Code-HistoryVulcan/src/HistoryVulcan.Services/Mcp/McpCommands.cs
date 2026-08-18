@@ -1,11 +1,10 @@
 ﻿using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Extensibility.Mcp;
-using HistoryVulcan.Services.Mcp;
 using System.Text;
 using System.Text.Json;
 using HistoryVulcan.Core.Commands;
 
-namespace HistoryVulcan.Shell.Mcp;
+namespace HistoryVulcan.Services.Mcp;
 
 /// <summary>
 /// mcp.* 指令域：Schema、网关生命周期与 V2.1.2 本地提示词审核入口。
@@ -18,6 +17,7 @@ public static class McpCommands
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
+    /// <summary>把 MCP 服务管理指令注册进指定注册表。</summary>
     public static void RegisterAll(
         CommandRegistry registry, Func<CommandBus?> busAccessor,
         Func<McpGateway?> gateway, HistoryVulcan.Core.Storage.ISettingsService settings,

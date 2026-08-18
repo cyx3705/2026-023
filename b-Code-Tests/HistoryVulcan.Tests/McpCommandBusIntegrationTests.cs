@@ -8,7 +8,6 @@ using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.Services.Mcp;
-using HistoryVulcan.Shell.Mcp;
 using Xunit;
 
 namespace HistoryVulcan.Tests;

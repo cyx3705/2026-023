@@ -1,6 +1,6 @@
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Services.Modules;
-using HistoryVulcan.Shell.Mcp;
+using HistoryVulcan.Services.Mcp;
 
 namespace HistoryVulcan.Shell.Views;
 

@@ -331,7 +331,7 @@ public partial class ShellWindow : Window, IShellCommandWorkbenchHost
             // command.*(命令目录),不可在此重复调用 CommandCatalogCommands/PromptGovernanceCommands,
             // 否则 vulcan.command.list 等会二次注册,CommandRegistry 冲突即抛(§5.3)。
             // 全限定:本类的 Mcp 只读属性会遮蔽 HistoryVulcan.Shell.Mcp 命名空间。
-            HistoryVulcan.Shell.Mcp.McpCommands.RegisterAll(registry, () => _bus, () => _mcp, settings, _prompts);
+            Services.Mcp.McpCommands.RegisterAll(registry, () => _bus, () => _mcp, settings, _prompts);
 
             // CX-03:MCP 中继预批准的执行直接放行,其余仍走 Shell 交互确认
             _bus.Confirmation = new Core.Mcp.GatewayAwareConfirmation(_bus.Confirmation);
@@ -339,7 +339,7 @@ public partial class ShellWindow : Window, IShellCommandWorkbenchHost
         else
         {
             // command.* 与中央命令集不需要网关、提示词存储或审计器。
-            HistoryVulcan.Shell.Mcp.CommandCatalogCommands.RegisterCore(registry);
+            Services.Mcp.CommandCatalogCommands.RegisterCore(registry);
         }
 
         config.ConfigureCommands?.Invoke(registry);

@@ -16,7 +16,7 @@ using HistoryVulcan.Extensibility.CommandSurface;
 using HistoryVulcan.Services;
 using HistoryVulcan.Shell;
 using HistoryVulcan.Shell.Console;
-using HistoryVulcan.Shell.Mcp;
+using HistoryVulcan.Services.Mcp;
 using AvalonDock.Controls;
 using Xunit;
 

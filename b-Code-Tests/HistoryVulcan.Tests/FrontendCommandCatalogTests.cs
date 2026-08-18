@@ -7,7 +7,7 @@ using HistoryVulcan.Extensibility.Mcp;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.ServiceHost;
 using HistoryVulcan.Services.Web;
-using HistoryVulcan.Shell.Mcp;
+using HistoryVulcan.Services.Mcp;
 using Xunit;
 
 namespace HistoryVulcan.Tests;
