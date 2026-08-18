@@ -231,3 +231,113 @@ static HistoryVulcan.Services.Mcp.McpCommands.RegisterAll(HistoryVulcan.Core.Com
 static HistoryVulcan.Services.Mcp.PromptGovernanceCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter! exporter, HistoryVulcan.Services.Mcp.PromptGovernanceStore! store, string! source = "app") -> void
 static HistoryVulcan.Services.Mcp.CommandCatalogCommands.RegisterCore(HistoryVulcan.Core.Commands.CommandRegistry! registry, string! source = "app") -> void
 HistoryVulcan.Services.Web.WebGateway.RequestShellConfirmation(string! prompt, System.TimeSpan timeout) -> bool
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Claim.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Claim.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Command.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Command.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Correction.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Correction.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Created.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Created.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Evidence.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Evidence.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Id.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Id.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.LinkedProposal.get -> string?
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.LinkedProposal.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.PromptCorrection(string! Id, string! Command, string! Claim, string! Correction, string! Evidence, string! SourceClient, string! Created, string! Status, string? LinkedProposal) -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.SourceClient.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.SourceClient.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Status.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptCorrection.Status.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Actual.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Actual.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Command.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Command.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Created.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Created.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Evidence.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Evidence.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Expected.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Expected.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Id.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Id.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.LinkedCorrection.get -> string?
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.LinkedCorrection.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.PromptIncident(string! Id, string! Command, string! Symptom, string! Expected, string! Actual, string! Evidence, string! SourceClient, string! Created, string? Resolution, string? LinkedCorrection) -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Resolution.get -> string?
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Resolution.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.SourceClient.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.SourceClient.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Symptom.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptIncident.Symptom.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.AppliedRevision.get -> string?
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.AppliedRevision.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.BaseRevision.get -> string?
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.BaseRevision.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Command.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Command.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Created.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Created.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Evidence.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Evidence.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Id.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Id.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.OldText.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.OldText.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.PromptProposal(string! Id, string! Command, string? BaseRevision, string! OldText, string! ProposedText, string! Reason, string! Evidence, string! SourceClient, string! Created, string! Status, string? Reviewer, string? Reviewed, string? ReviewNote, string? AppliedRevision) -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.ProposedText.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.ProposedText.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Reason.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Reason.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Reviewed.get -> string?
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Reviewed.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Reviewer.get -> string?
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Reviewer.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.ReviewNote.get -> string?
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.ReviewNote.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.SourceClient.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.SourceClient.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Status.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposal.Status.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceCommands
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposalDiff
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposalDiff.Diff.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposalDiff.Diff.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposalDiff.PromptProposalDiff(HistoryVulcan.Services.Mcp.PromptProposal! Proposal, string! Diff) -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposalDiff.Proposal.get -> HistoryVulcan.Services.Mcp.PromptProposal!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptProposalDiff.Proposal.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus.CommandName.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus.CommandName.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus.CurrentRevision.get -> HistoryVulcan.Services.Mcp.PromptRevision?
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus.CurrentRevision.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus.DefaultDescription.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus.DefaultDescription.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus.EffectiveDescription.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus.EffectiveDescription.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus.OpenProposals.get -> int
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus.OpenProposals.init -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus.PromptStatus(string! ToolName, string! CommandName, string! DefaultDescription, string! EffectiveDescription, HistoryVulcan.Services.Mcp.PromptRevision? CurrentRevision, int OpenProposals) -> void
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus.ToolName.get -> string!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptStatus.ToolName.init -> void
+*REMOVED*static HistoryVulcan.Services.Mcp.PromptGovernanceCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter! exporter, HistoryVulcan.Services.Mcp.PromptGovernanceStore! store, string! source = "app") -> void
+HistoryVulcan.Services.Mcp.IEffectivePromptDescriptionReader
+HistoryVulcan.Services.Mcp.IEffectivePromptDescriptionReader.AllEffectiveDescriptions() -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.ApplyDirect(string! command, string? description, string! source, string! reason, string? revertedFrom = null, string? createdBy = null) -> HistoryVulcan.Services.Mcp.PromptRevision!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.ApplyProposal(string! id, string! reviewer) -> HistoryVulcan.Services.Mcp.PromptRevision!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.ApproveProposal(string! id, string! reviewer) -> HistoryVulcan.Services.Mcp.PromptProposal!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.CreateCorrection(string! command, string! claim, string! correction, string! evidence, string! sourceClient, string? linkedProposal = null) -> HistoryVulcan.Services.Mcp.PromptCorrection!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.CreateIncident(string! command, string! symptom, string! expected, string! actual, string! evidence, string! sourceClient, string? linkedCorrection = null) -> HistoryVulcan.Services.Mcp.PromptIncident!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.CreateProposal(string! command, string! oldText, string! proposedText, string! reason, string! evidence, string! sourceClient) -> HistoryVulcan.Services.Mcp.PromptProposal!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetCorrection(string! id) -> HistoryVulcan.Services.Mcp.PromptCorrection?
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetProposal(string! id) -> HistoryVulcan.Services.Mcp.PromptProposal?
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetRevision(string! id) -> HistoryVulcan.Services.Mcp.PromptRevision?
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.ListCorrections(string? command = null, int limit = 100) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Mcp.PromptCorrection!>!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.ListIncidents(string? command = null, int limit = 100) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Mcp.PromptIncident!>!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.ListProposals(string? command = null, bool openOnly = false, int limit = 100) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Mcp.PromptProposal!>!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.RejectProposal(string! id, string! reviewer, string! reason) -> HistoryVulcan.Services.Mcp.PromptProposal!
+*REMOVED*HistoryVulcan.Services.Mcp.PromptGovernanceStore.RevertToRevision(string! revisionId, string! reviewer, string! reason) -> HistoryVulcan.Services.Mcp.PromptRevision!

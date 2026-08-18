@@ -7,7 +7,7 @@ using HistoryVulcan.Core.Commands;
 namespace HistoryVulcan.Services.Mcp;
 
 /// <summary>
-/// mcp.* 指令域：Schema、网关生命周期与 V2.1.2 本地提示词审核入口。
+/// mcp.* 指令域：Schema、网关生命周期与命令目录入口。
 /// </summary>
 public static class McpCommands
 {
@@ -29,7 +29,6 @@ public static class McpCommands
         };
         registry.Register(BuildSchema(exporter, registry), source);
         registry.Register(BuildParse(busAccessor), source);
-        PromptGovernanceCommands.RegisterAll(registry, exporter, prompts, source);
         registry.Register(BuildStart(gateway), source);
         registry.Register(BuildStop(gateway), source);
         registry.Register(BuildStatus(gateway, settings), source);
