@@ -773,9 +773,13 @@ public partial class App : Application
 
     private static ShellServiceClient CreateServiceClient(ServiceEndpoint endpoint)
     {
+        // 凭据每次从 endpoint.json 现取：后台重启会换发新令牌并重写该文件，
+        // 闭包捕获旧值会让前端在后台重启后静默 401。
+        var token = endpoint.AccessToken;
         var profile = new ShellEndpointProfile(
             new Uri($"http://127.0.0.1:{endpoint.Port}/"),
             Guid.NewGuid().ToString("N"),
+            AccessTokenProvider: () => token,
             ServerId: endpoint.ServerId,
             ConnectTimeout: TimeSpan.FromSeconds(5));
         return new ShellServiceClient(profile, "HistoryVulcan.Frontend");
@@ -828,7 +832,11 @@ public partial class App : Application
         }
     }
 
-    private sealed record ServiceEndpoint(int Port, string ServerId, int ProcessId);
+    private sealed record ServiceEndpoint(
+        int Port,
+        string ServerId,
+        int ProcessId,
+        string? AccessToken = null);
 
     private static void RemoveLegacyDemoPanel(AppPaths paths, IShellLog log)
     {

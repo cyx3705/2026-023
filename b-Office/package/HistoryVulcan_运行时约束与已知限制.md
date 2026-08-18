@@ -1,6 +1,6 @@
 # HistoryVulcan 运行时约束与已知限制
 
-适用版本：HistoryVulcan **3.12.1**；宿主从 `z-Publish/host` 运行，模块只从
+适用版本：HistoryVulcan **3.13.0**；宿主从 `z-Publish/host` 运行，模块只从
 `%AppData%\HistoryVulcan\Modules` 装载。`3.1.8` 是不受支持的内部过渡版本。
 3.3.0（DEC-022）：内置命令硬切为 `vulcan.<类>.<方法>`；全局快捷键（含 `GlobalShortcutService`）与命令工作台由 HistoryMercury 4.1.0 拥有。
 旧→新映射见 `../history/3.3.0-vulcan-command-rename.md`。

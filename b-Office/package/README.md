@@ -4,7 +4,7 @@
 
 本目录只保存面向消费方的 HistoryVulcan 合同文档编辑源。它是 023 内部源目录，不是消费者运行时目录；发布副本不得直接修改。
 
-本目录维护 HistoryVulcan **3.12.1** 消费合同（3.2.0 起产品由 AppShell 改名为 HistoryVulcan，包 ID 为
+本目录维护 HistoryVulcan **3.13.0** 消费合同（3.2.0 起产品由 AppShell 改名为 HistoryVulcan，包 ID 为
 `OneHistory.HistoryVulcan.*`）。3.3.0（DEC-022）内置命令硬切为 `vulcan.<类>.<方法>`，命令集列为域|类|方法，
 全局快捷键与命令工作台由 HistoryMercury 4.1.0 拥有。3.1.8 是不受支持的内部过渡版本。
 当前候选与运行宿主位于 `../../z-Publish/`，运行入口为 `host/HistoryVulcan.exe`。

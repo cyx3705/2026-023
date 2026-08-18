@@ -215,47 +215,6 @@ public sealed class ShellServiceClient : IDisposable
     }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public async Task<DevicePairingResult> PairAsync(
-        string code,
-        string deviceName,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            using var request = new HttpRequestMessage(HttpMethod.Post, "api/pair")
-            {
-                Content = JsonContent.Create(new
-                {
-                    code,
-                    deviceId = _profile.DeviceId,
-                    deviceName,
-                }, options: JsonOptions),
-            };
-            using var response = await _http.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            var result = await response.Content.ReadFromJsonAsync<DevicePairingResult>(
-                JsonOptions, cancellationToken).ConfigureAwait(false);
-            return result ?? new DevicePairingResult(
-                false, null, null, null,
-                new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-                "empty pairing response");
-        }
-        catch (HttpRequestException)
-        {
-            return new DevicePairingResult(
-                false, null, null, null,
-                new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-                "pairing connection failed");
-        }
-        catch (JsonException)
-        {
-            return new DevicePairingResult(
-                false, null, null, null,
-                new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-                "invalid pairing response");
-        }
-    }
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public async Task<bool> ReconnectAsync(CancellationToken cancellationToken = default)
     {
         try { _events?.Abort(); } catch (WebSocketException) { }

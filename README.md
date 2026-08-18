@@ -1,9 +1,17 @@
-# HistoryVulcan 3.12.1
+# HistoryVulcan 3.13.0
 
 本仓库是 OneHistory HistoryVulcan（原 AppShell，3.2.0 起改名）的独立源码、合同与发布资产真值。
 `3.0.3` 是 V3 冻结基线，冻结标签为 `v3.0.3`；版本线不再与 HistoryJanus 对齐，`0.7.x` 仅保留用于回滚。
 
-当前源码为 `3.12.1`；`HistoryVulcan.Core` 公开面自 `3.9.0` 起冻结。
+当前源码为 `3.13.0`；`HistoryVulcan.Core` 公开面自 `3.9.0` 起冻结。
+3.13.0（DEC-045）删除 Web 网关的局域网面：`WebGateway` 退回纯本机 IPC，固定监听 `127.0.0.1`，
+只接受同机前端 Shell，其余一律 401。设备鉴权与配对、令牌鉴权、绑定地址、CORS、限流，以及
+从未被注册过的 `WebCommands`（`vulcan.web.*` 五条命令）一并移除，共 48 项公开签名退役。
+删除依据是这套机制没有任何生产装配点——鉴权入口只在测试里被赋值过，确认档读的是一个没人写入的
+`lan.confirm` 键。MCP 网关自身的鉴权与会话限制不受影响。
+同版本（DEC-046）给本机 IPC 通道补上一次性凭据：`WebGateway.Start` 换发 `AccessToken`，经
+`endpoint.json` 的 `accessToken` 传给前端，`Authenticate` 要求回环 + Shell + 持券三者同时成立。
+在此之前，任何本机进程只要伪造一个请求头就能在权威总线上执行任意命令，MCP 的硬排除因此形同虚设。
 独立宿主只从 `%AppData%\HistoryVulcan\Modules\<模块名>` 装载完整 manifest 包；项目库和任何
 `z-*` 都不再参与运行发现。`vulcan.module.install/remove` 负责原子安装、移除和失败回滚。
 3.11.3 取消模块的文档页注册路径：窗口只有工具窗口一种形态。声明 `DockSide.Center` 的模块窗口

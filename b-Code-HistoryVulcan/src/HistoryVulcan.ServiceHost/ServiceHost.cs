@@ -41,37 +41,15 @@ public static class ServiceHost
         var confirmation = new ServiceConfirmation();
         var gatewayAwareConfirmation = new GatewayAwareConfirmation(confirmation);
         composition.Bus.Confirmation = gatewayAwareConfirmation;
-        composition.Bus.ConfirmationRouter = (context, prompt) =>
-        {
-            if (composition.Web?.TryGetSession(context.Source, out var session) == true
-                && !session.IsLoopback)
-            {
-                if (!session.Scopes.Contains("operate") && !session.Scopes.Contains("admin"))
-                    return false;
-                if (!string.Equals(
-                        composition.Settings.Get("lan.confirm"),
-                        "client",
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    return false;
-                }
-                return composition.Web.RequestWebConfirmation(
-                    prompt, context.Source, TimeSpan.FromSeconds(60));
-            }
-            if (!context.Source.StartsWith("Web:", StringComparison.OrdinalIgnoreCase))
-                return gatewayAwareConfirmation.Confirm(prompt);
-            if (!string.Equals(
-                    composition.Settings.Get(WebGateway.KeyConfirm),
-                    "web",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-            return composition.Web?.RequestWebConfirmation(
-                prompt,
-                context.Source,
-                TimeSpan.FromSeconds(60)) == true;
-        };
+        // 3.13.0 删除局域网面后，网关只接受同机前端 Shell（源形如 "Shell:v1.…"），
+        // 因此原先的两条远程分支都已不可达，一并退役：
+        //   - 非回环会话按 scope + lan.confirm 决定是否回问客户端。`lan.confirm` 这个键
+        //     从来没有任何代码写入过（唯一能写确认档的 WebCommands 写的是 web.confirm，
+        //     且它自己从未被注册），所以这条分支在任何配置下都只会返回 false。
+        //   - "Web:" 源按 web.confirm 回问 Web 客户端；ClientKind.Web 会话现在无法通过鉴权。
+        // 剩下的唯一语义就是本机确认。
+        composition.Bus.ConfirmationRouter =
+            (_, prompt) => gatewayAwareConfirmation.Confirm(prompt);
         ServiceCommands.RegisterAll(
             composition.Registry,
             composition,
@@ -197,11 +175,15 @@ public static class ServiceHost
         var temporary = path + ".tmp." + Guid.NewGuid().ToString("N");
         try
         {
+            // accessToken 是本次监听的一次性 IPC 凭据（见 WebGateway.AccessToken）。
+            // 它使 endpoint.json 从"端口通告"变成凭据载体：文件位于用户 AppData 下，
+            // 其读取权限就是这条边界的实际强度。宿主停止时该文件被删除，令牌随之作废。
             File.WriteAllText(temporary, JsonSerializer.Serialize(new
             {
                 port = composition.Web?.Port ?? 0,
                 serverId = composition.Web?.ServerId ?? composition.ServiceName,
                 processId = Environment.ProcessId,
+                accessToken = composition.Web?.AccessToken ?? "",
             }));
             File.Move(temporary, path, overwrite: true);
         }

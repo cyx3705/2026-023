@@ -1,16 +1,55 @@
 # HistoryVulcan 消费变更摘要
 
-适用版本：HistoryVulcan **3.12.1**。
+适用版本：HistoryVulcan **3.13.0**。
 
 本文按版本累积，不是单版本发布说明：下面的「破坏性变更」自 3.3.2 起逐条累加，每条都标注引入版本；
 「主要变化」是不需要改代码的增量。从 3.3.1 及更早升级的消费方需要通读破坏性变更全节。
 
 本文只记录会影响消费应用、模块作者和部署者的变化；源码施工、冻结审查、完整测试证据和发布操作不属于本文。
 
-> 本文抬头曾长期停留在旧版本；当前 3.12.1 变化列在本节顶部。
+> 本文抬头曾长期停留在旧版本；当前 3.13.0 变化列在本节顶部。
 > 版本线推进时必须同步本文抬头，这与同步 `project.manifest.json` 同等重要。
 
 ## 破坏性变更（升级必读；自 3.3.2 累积）
+
+**零、删除 Web 网关的局域网面（3.13.0，DEC-045）。** `WebGateway` 退回纯本机 IPC：固定监听
+`127.0.0.1`，只接受声明 `X-HistoryVulcan-Client: Shell` 的同机前端，其余一律 401。
+
+删除的公开类型与成员（`OneHistory.HistoryVulcan.Services`，共 48 项签名）：
+
+| 类别 | 删除项 |
+|---|---|
+| 设备鉴权 | `IDeviceAuthenticationProvider`、`DeviceAuthenticationResult`（含 `Accept`/`Reject`） |
+| 设备配对 | `IDevicePairingProvider`、`DevicePairingResult`、`ShellServiceClient.PairAsync` |
+| 网关成员 | `WebGateway.DeviceAuthentication`、`.DevicePairing`、`.DisconnectDevice`、`.BindAddress`、`.ActiveBindAddress` |
+| 命令注册 | `WebCommands`（含 `RegisterAll`）——原本就从未被任何组合根调用 |
+| 设置键常量 | `KeyBind`、`KeyToken`、`KeyCors`、`KeyConfirm`、`KeyRateLimit`、`KeyRateWindowLimit` |
+
+新增：`WebGateway.LoopbackAddress`（常量 `"127.0.0.1"`）。保留：`KeyPort`、`KeyPortRetries`、
+`KeyFrontendCatalog`、`KeyFrontendCatalogLimit`。
+
+同时消失的运行时能力：HTTP 端点 `/api/pair`；命令 `vulcan.web.bind` / `confirm` / `cors` /
+`status` / `token`（这五条在 3.12.1 及更早也从未真正注册进运行时注册表，实测 `vulcan` 域 81 条
+命令中没有 `web` 类，因此对绝大多数消费方是纸面删除）；设置键 `web.bind`、`web.token`、
+`web.cors`、`web.confirm`、`web.ratelimit`、`web.ratewindowlimit`、`lan.confirm` 不再被读取。
+
+**升级动作**：桌面消费方通常无需改动——这些成员没有已知生产调用方。若你的代码引用了上表任一
+类型，编译会直接失败；局域网访问需求请等待网关合并后的新协议，不要自行复活旧机制。
+
+**零之二、本机 IPC 通道改为必须持券（3.13.0，DEC-046）。** `WebGateway` 现在要求回环 +
+`X-HistoryVulcan-Client: Shell` + 本次监听的一次性令牌三者同时成立，缺一返回 401。
+
+变更前，任何本机进程只要加一个 `X-HistoryVulcan-Client: Shell` 头就能在权威总线上执行任意命令，
+包括 MCP 侧硬排除的 `vulcan.app.quit`、`vulcan.module.install/remove` 和全部 `vulcan.mcp.*`。
+这一点已实测确认，属于 3.12.1 及更早的既有状况。
+
+- 新增公开成员：`WebGateway.AccessToken`（只读，`Start` 换发、`Stop` 清空）。
+- `endpoint.json` 新增字段 `accessToken`；`port` / `serverId` / `processId` 不变。
+- 前端凭据通道沿用既有的 `ShellEndpointProfile.AccessTokenProvider`，签名未变。
+
+**升级动作**：随宿主一同发布的前端无需改动。**若你有自建工具直接连过 Web 端口，必须改为从
+`endpoint.json` 读取 `accessToken` 并以 `Authorization: Bearer <token>` 发送**，否则一律 401。
+该令牌随宿主重启换发，不要缓存。
 
 **一、83 条内置指令中 32 条改名，必须逐条替换（3.3.2）。** 类从 13 个收敛为 9 个：
 

@@ -16,24 +16,21 @@ using HistoryVulcan.Core.Storage;
 
 namespace HistoryVulcan.Services.Web;
 
-/// <summary>命令总线的 HTTP/WS 接入点，供本机 Shell 与受鉴权 Web 客户端共用。</summary>
+/// <summary>
+/// 命令总线的本机 HTTP/WS 接入点，只服务同机前端 Shell。
+///
+/// 3.13.0 删除局域网面（DEC-045）：绑定地址、设备鉴权/配对、令牌、CORS 与限流一并移除。
+/// 那套机制两年内没有任何生产装配点——<c>IDeviceAuthenticationProvider</c> 只在测试里被赋值，
+/// <c>WebCommands</c> 从未被注册，确认档甚至读的是一个没人写入的 <c>lan.confirm</c> 键。
+/// 保留它只会让每次公开面评审背着一份不可达的安全边界。真要局域网访问时，
+/// 基于合并后的单网关重写，而不是复活这一套。
+/// </summary>
 public sealed partial class WebGateway : IDisposable
 {
-    private const string LanProtocolVersion = "3.0.0";
+    /// <summary>网关线协议版本；健康检查回报，前端据此拒绝不兼容的后台。</summary>
+    private const string GatewayProtocolVersion = "3.0.0";
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public const string KeyPort = "web.port";
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public const string KeyBind = "web.bind";
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public const string KeyToken = "web.token";
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public const string KeyCors = "web.cors";
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public const string KeyConfirm = "web.confirm";
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public const string KeyRateLimit = "web.ratelimit";
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public const string KeyRateWindowLimit = "web.ratewindowlimit";
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public const string KeyPortRetries = "web.portretries";
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -44,7 +41,6 @@ public sealed partial class WebGateway : IDisposable
     private const int DefaultPortBase = 8938;
     private const int DefaultPortSpan = 200;
     private const int DefaultPortRetries = 20;
-    private const int DefaultRateWindowLimit = 4096;
     private const int DefaultFrontendCatalogLimit = 32;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -60,7 +56,6 @@ public sealed partial class WebGateway : IDisposable
     private readonly ConcurrentDictionary<string, EventClient> _clients = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, PendingCommand> _pending = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, PendingConfirmation> _pendingConfirmations = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, RateWindow> _rateWindows = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, FrontendCapabilityCatalog> _sessionCatalogs = new(StringComparer.Ordinal);
     private readonly Dictionary<string, FrontendCapabilityCatalog> _cachedCatalogs = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _catalogLock = new();
@@ -81,22 +76,25 @@ public sealed partial class WebGateway : IDisposable
     public bool IsRunning => _listener is { IsListening: true };
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public IDeviceAuthenticationProvider? DeviceAuthentication { get; set; }
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public IDevicePairingProvider? DevicePairing { get; set; }
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public string ServerId { get; set; } = AppIdentity.Current.Name;
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public int Port { get; private set; }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public string BindAddress => NormalizeBind(_settings.Get(KeyBind));
+    /// <summary>网关固定绑定的本机地址；3.13.0 起不可配置。</summary>
+    public const string LoopbackAddress = "127.0.0.1";
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public string ActiveBindAddress { get; private set; } = "";
+    /// <summary>
+    /// 本次监听的一次性凭据，由 <see cref="Start"/> 用密码学随机数生成，`Stop` 后作废。
+    ///
+    /// 存在的理由：回环本身不构成边界。删除局域网面前后，只要带上
+    /// <c>X-HistoryVulcan-Client: Shell</c> 头，任何本机进程都能在权威总线上执行任意命令——
+    /// 包括 MCP 侧硬排除的 `vulcan.app.quit`、`vulcan.module.install/remove` 和全部
+    /// `vulcan.mcp.*`。也就是说 MCP 的策略、隐藏与危险确认在同机范围内可被整体绕过。
+    /// 令牌把"我们自己启动的前端"和"任意本机进程"区分开：它只写进
+    /// `%AppData%\HistoryVulcan\service\endpoint.json`，随进程生存，不落设置、不可配置、不回显。
+    /// </summary>
+    public string AccessToken { get; private set; } = "";
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public int ConnectedClients => _clients.Count;
@@ -114,27 +112,6 @@ public sealed partial class WebGateway : IDisposable
         };
         foreach (var client in _clients.Values.Where(client => client.Session.Kind == ClientKind.Shell))
             client.TryQueueLog(payload);
-    }
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public int DisconnectDevice(string deviceId)
-    {
-        if (string.IsNullOrWhiteSpace(deviceId))
-            return 0;
-        var disconnected = 0;
-        foreach (var item in _clients.Where(item =>
-                     item.Value.Session.DeviceId?.Equals(
-                         deviceId, StringComparison.Ordinal) == true).ToList())
-        {
-            if (!_clients.TryRemove(item.Key, out var client))
-                continue;
-            _sessionCatalogs.TryRemove(client.Session.Id, out _);
-            _rateWindows.TryRemove(client.Session.Id, out _);
-            CompletePendingForSession(client.Session.Id);
-            client.Dispose();
-            disconnected++;
-        }
-        return disconnected;
     }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -169,12 +146,6 @@ public sealed partial class WebGateway : IDisposable
             if (initialPort is < 1024 or > 65535)
                 return (false, $"端口无效: {initialPort}(允许 1024~65535)");
 
-            var bind = BindAddress;
-            var token = _settings.Get(KeyToken);
-            if (!IsLoopback(bind) && string.IsNullOrWhiteSpace(token)
-                                  && DeviceAuthentication == null)
-                return (false, "非 localhost 绑定必须配置设备鉴权或非空 web.token");
-
             var retries = Math.Clamp(
                 _settings.GetInt(KeyPortRetries, DefaultPortRetries), 0, 100);
             Exception? lastError = null;
@@ -186,14 +157,10 @@ public sealed partial class WebGateway : IDisposable
                 try
                 {
                     var listener = new HttpListener();
-                    var scheme = IsLoopback(bind) ? "http" : "https";
-                    listener.Prefixes.Add($"{scheme}://{bind}:{candidate}/");
-                    if (!IsLoopback(bind))
-                        listener.Prefixes.Add($"http://127.0.0.1:{candidate}/");
+                    listener.Prefixes.Add($"http://{LoopbackAddress}:{candidate}/");
                     listener.Start();
                     _listener = listener;
                     Port = candidate;
-                    ActiveBindAddress = bind;
                     break;
                 }
                 catch (Exception ex)
@@ -211,11 +178,15 @@ public sealed partial class WebGateway : IDisposable
             if (port.HasValue || configured.HasValue)
                 _settings.Set(KeyPort, Port.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
+            // 每次监听换一枚新凭据：宿主重启后旧 endpoint.json 的残留值立即失效。
+            AccessToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+                .TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
             _cts = new CancellationTokenSource();
             _ = AcceptLoopAsync(_listener, _cts.Token);
-            var publicScheme = IsLoopback(bind) ? "http" : "https";
-            _log.Info("web", $"Web 服务已启动: {publicScheme}://{bind}:{Port}/");
-            return (true, $"Web 服务已启动: {publicScheme}://{bind}:{Port}/");
+            var endpoint = $"http://{LoopbackAddress}:{Port}/";
+            _log.Info("web", $"Web 服务已启动: {endpoint}");
+            return (true, $"Web 服务已启动: {endpoint}");
         }
     }
 
@@ -233,7 +204,7 @@ public sealed partial class WebGateway : IDisposable
             _listener = null;
             _cts?.Dispose();
             _cts = null;
-            ActiveBindAddress = "";
+            AccessToken = "";
             foreach (var client in _clients.Values)
                 client.Dispose();
             _clients.Clear();
@@ -244,7 +215,6 @@ public sealed partial class WebGateway : IDisposable
                 confirmation.Completion.TrySetResult(false);
             _pendingConfirmations.Clear();
             _sessionCatalogs.Clear();
-            _rateWindows.Clear();
             Port = 0;
             _log.Info("web", "Web 服务已停止");
             return (true, $"Web 服务已停止(端口 {releasedPort} 已释放)");
@@ -404,52 +374,12 @@ public sealed partial class WebGateway : IDisposable
     {
         try
         {
-            ApplyCors(context);
-            if (context.Request.HttpMethod == "OPTIONS")
-            {
-                context.Response.StatusCode = 204;
-                context.Response.Close();
-                return;
-            }
-
             var path = context.Request.Url?.AbsolutePath.TrimEnd('/') ?? "";
-            var remoteRateKey = "remote:" + (context.Request.RemoteEndPoint?.Address.ToString() ?? "unknown");
-            if (path.Equals("/api/pair", StringComparison.OrdinalIgnoreCase)
-                && context.Request.HttpMethod == "POST")
-            {
-                if (!AllowRequest(remoteRateKey))
-                {
-                    await WriteRateLimitAsync(context, remoteRateKey).ConfigureAwait(false);
-                    return;
-                }
-                await HandlePairingAsync(context).ConfigureAwait(false);
-                return;
-            }
-
-            if (IsRateLimitReached(remoteRateKey))
-            {
-                await WriteRateLimitAsync(context, remoteRateKey).ConfigureAwait(false);
-                return;
-            }
             var requestedSession = CreateSession(context.Request);
             var session = Authenticate(context.Request, requestedSession);
             if (session == null)
             {
-                if (!AllowRequest(remoteRateKey))
-                {
-                    await WriteRateLimitAsync(context, remoteRateKey).ConfigureAwait(false);
-                    return;
-                }
                 await WriteJsonAsync(context, new { error = "unauthorized" }, 401).ConfigureAwait(false);
-                return;
-            }
-
-            // The authenticated loopback Shell is the standalone host's control plane. Its
-            // catalog refreshes and user commands must not consume the public Web quota.
-            // Remote Shell/Web sessions and failed authentication remain rate limited.
-            if (!IsTrustedLoopbackShell(session) && !AllowRequest(session.Id))
-            {
-                await WriteRateLimitAsync(context, session.Id).ConfigureAwait(false);
                 return;
             }
 
@@ -467,14 +397,14 @@ public sealed partial class WebGateway : IDisposable
                 {
                     status = "ok",
                     port = Port,
-                    bind = BindAddress,
+                    bind = LoopbackAddress,
                     clients = ConnectedClients,
                     shells = ConnectedShells,
                     serverId = ServerId,
                     productVersion = AppIdentity.Current.Version,
-                    historyVulcanProtocolVersion = LanProtocolVersion,
-                    minClientVersion = LanProtocolVersion,
-                    capabilities = new[] { "device-auth", "session-affine-ui", "single-exe" },
+                    historyVulcanProtocolVersion = GatewayProtocolVersion,
+                    minClientVersion = GatewayProtocolVersion,
+                    capabilities = new[] { "session-affine-ui", "single-exe" },
                 }, 200).ConfigureAwait(false);
                 return;
             }
@@ -524,12 +454,8 @@ public sealed partial class WebGateway : IDisposable
                     return;
                 }
 
-                if (!CanExecute(session, bus.Registry, request.Text, out var denial))
-                {
-                    await WriteJsonAsync(context, CommandResult.Fail(denial), 403).ConfigureAwait(false);
-                    return;
-                }
-
+                // 3.13.0 起唯一能到达这里的会话是同机前端 Shell（见 Authenticate），
+                // 它天然持有 admin。原先按 scope 逐条判断只读性的 CanExecute 因此退役。
                 var result = await bus.ExecuteAsync(
                     request.Text,
                     SessionSource(session),
@@ -693,7 +619,6 @@ public sealed partial class WebGateway : IDisposable
             if (removed)
             {
                 _sessionCatalogs.TryRemove(session.Id, out _);
-                _rateWindows.TryRemove(session.Id, out _);
                 CompletePendingForSession(session.Id);
             }
             client.Dispose();
@@ -834,50 +759,31 @@ public sealed partial class WebGateway : IDisposable
             isLoopback: address != null && IPAddress.IsLoopback(address));
     }
 
+    /// <summary>
+    /// 3.13.0 起唯一的接受条件：同机回环上的前端 Shell。
+    ///
+    /// 删除局域网面后这里不再有"部分授权"的中间态——要么是本机前端（read/operate/admin
+    /// 全给），要么直接 401。<c>ClientSession.Scopes</c> 仍然填齐是因为它属于冻结的 Core
+    /// 公开面，消费方仍可能读取；本网关只是不再产生任何低于 admin 的会话。
+    ///
+    /// 三个条件缺一不可：回环、声明为 Shell、持有本次监听的 <see cref="AccessToken"/>。
+    /// 前两条只是形状检查（任何本机进程都能伪造），真正的边界是第三条。
+    /// </summary>
     private ClientSession? Authenticate(HttpListenerRequest request, ClientSession requested)
     {
-        if (!requested.IsLoopback && !request.IsSecureConnection)
+        if (!requested.IsLoopback || requested.Kind != ClientKind.Shell)
             return null;
 
-        if (requested.Kind == ClientKind.Shell && requested.IsLoopback)
-        {
-            return requested with
-            {
-                AuthSubject = "loopback-shell",
-                Scopes = new HashSet<string>(
-                    ["read", "operate", "admin"], StringComparer.OrdinalIgnoreCase),
-            };
-        }
-
-        var bearer = ReadBearer(request);
-        var deviceId = request.Headers["X-Device-Id"];
-        if (!string.IsNullOrWhiteSpace(bearer)
-            && !string.IsNullOrWhiteSpace(deviceId)
-            && DeviceAuthentication != null)
-        {
-            var authenticated = DeviceAuthentication.Authenticate(
-                deviceId, bearer, requested.RemoteAddress);
-            if (authenticated.Success)
-            {
-                return requested with
-                {
-                    DeviceId = authenticated.DeviceId,
-                    AuthSubject = authenticated.Subject,
-                    Scopes = authenticated.Scopes,
-                };
-            }
-        }
-
-        var token = _settings.Get(KeyToken);
-        if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(bearer)
-            || !FixedEquals(token, bearer))
+        var token = AccessToken;
+        var supplied = ReadBearer(request);
+        if (string.IsNullOrEmpty(token) || supplied == null || !FixedEquals(token, supplied))
             return null;
 
         return requested with
         {
-            Kind = ClientKind.Web,
-            AuthSubject = "legacy-web-token",
-            Scopes = new HashSet<string>(["read", "operate"], StringComparer.OrdinalIgnoreCase),
+            AuthSubject = "loopback-shell",
+            Scopes = new HashSet<string>(
+                ["read", "operate", "admin"], StringComparer.OrdinalIgnoreCase),
         };
     }
 
