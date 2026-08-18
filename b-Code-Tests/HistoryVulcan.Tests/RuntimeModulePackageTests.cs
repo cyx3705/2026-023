@@ -5,6 +5,7 @@ using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.Services.Modules;
 using StandaloneApp = HistoryVulcan.App.App;
+using HistoryVulcan.ServiceHost;
 using Xunit;
 
 namespace HistoryVulcan.Tests;
@@ -209,7 +210,7 @@ public sealed class RuntimeModulePackageTests
             };
 
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v2.0.0");
-            var result = await StandaloneApp.InstallRuntimePackageAsync(host, bus, second);
+            var result = await ServiceComposer.InstallRuntimePackageAsync(host, bus, second);
 
             Assert.True(result.Success, result.Message);
             Assert.Equal(["vulcan.module.unload name=contextfixture"], calls);

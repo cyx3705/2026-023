@@ -1,11 +1,18 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Services.Modules;
 
-namespace HistoryVulcan.App;
+namespace HistoryVulcan.ServiceHost;
 
-public partial class App
+/// <summary>
+/// 运行包安装/移除的服务侧事务（4.0.0，REQ-A3 随组合根一并迁出）。
+///
+/// 原文件是 <c>App.ModulePackages.cs</c>，作为 WPF <c>App</c> 的 partial 存在，
+/// 但通篇不含任何 WPF 代码：它做的是"先中继到前端卸载同名快照释放文件锁，
+/// 再执行后台磁盘事务，失败则恢复重载"（DEC-043 的生命周期要求）。
+/// </summary>
+public static partial class ServiceComposer
 {
     internal static async Task<CommandResult> InstallRuntimePackageAsync(
         ModuleHost host,

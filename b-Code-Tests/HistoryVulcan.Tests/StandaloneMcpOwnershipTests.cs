@@ -3,6 +3,7 @@ using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Storage;
 using Xunit;
 using StandaloneApp = HistoryVulcan.App.App;
+using HistoryVulcan.ServiceHost;
 
 namespace HistoryVulcan.Tests;
 
@@ -19,11 +20,24 @@ public sealed class StandaloneMcpOwnershipTests
         Assert.True(config.EnableRemoteManagementViews);
         Assert.False(config.EnableModules);
 
+        // REQ-MCP-002：后台自己装配 MCP（治理库、审计、网关、完整 RegisterAll），
+        // 前端不得再持第二套。这里只能做源码级检查——真正跑一次 ServiceComposer.Build
+        // 会在 %AppData%\HistoryVulcan 下建目录、迁移设置并占用端口，不适合放进单元测试。
+        //
+        // 4.0.0（REQ-A3）：装配代码已从 App.xaml.cs 迁到 ServiceHost/ServiceComposer.cs。
+        // 断言随之改指向新文件——**这正是本用例要守的东西**：装配必须留在服务侧，
+        // 若哪天又漂回前端工程，这里会失配。
         var source = File.ReadAllText(Path.Combine(
-            RepositoryRoot(), "b-Code-HistoryVulcan", "src", "App", "App.xaml.cs"));
+            RepositoryRoot(), "b-Code-HistoryVulcan", "src",
+            "HistoryVulcan.ServiceHost", "ServiceComposer.cs"));
         Assert.Contains("new Services.Mcp.McpGateway(", source, StringComparison.Ordinal);
         Assert.Contains("McpCommands.RegisterAll(", source, StringComparison.Ordinal);
         Assert.Contains("Mcp = mcp", source, StringComparison.Ordinal);
+
+        // 反向断言：前端工程里不得再出现后台 MCP 装配。
+        var frontend = File.ReadAllText(Path.Combine(
+            RepositoryRoot(), "b-Code-HistoryVulcan", "src", "App", "App.xaml.cs"));
+        Assert.DoesNotContain("new Services.Mcp.McpGateway(", frontend, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -31,7 +45,7 @@ public sealed class StandaloneMcpOwnershipTests
     {
         var registry = new CommandRegistry();
         var settings = new MemorySettings();
-        StandaloneApp.RegisterServiceMcpSettingCommands(registry, settings);
+        ServiceComposer.RegisterServiceMcpSettingCommands(registry, settings);
         var bus = new CommandBus(registry, new NullLog());
 
         var rejected = await bus.ExecuteAsync(
@@ -64,7 +78,7 @@ public sealed class StandaloneMcpOwnershipTests
         var service = new MemorySettings();
         service.Set("mcp.policy", "readonly");
 
-        StandaloneApp.MigrateLegacyMcpSettings(legacy, service, new NullLog());
+        ServiceComposer.MigrateLegacyMcpSettings(legacy, service, new NullLog());
 
         Assert.Equal("8737", service.Get("mcp.port"));
         Assert.Equal("readonly", service.Get("mcp.policy"));
