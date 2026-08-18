@@ -38,7 +38,9 @@ public static class ServiceHost
                           ?? throw new InvalidOperationException("无法确定服务可执行文件路径");
         serviceArguments ??= [];
 
-        var confirmation = new ServiceConfirmation();
+        // 4.0.0（REQ-A2）：确认中继到前端，服务进程不再自己弹框。
+        // 前端未连接时拒绝而非放行——没有人可问就等于没得到批准。
+        var confirmation = new ShellRelayConfirmation(() => composition.Web, composition.Log);
         var gatewayAwareConfirmation = new GatewayAwareConfirmation(confirmation);
         composition.Bus.Confirmation = gatewayAwareConfirmation;
         // 3.13.0 删除局域网面后，网关只接受同机前端 Shell（源形如 "Shell:v1.…"），

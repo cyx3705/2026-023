@@ -1,3 +1,11 @@
 ﻿#nullable enable
 *REMOVED*HistoryVulcan.ServiceHost.ServiceComposition.GlobalShortcuts.get -> HistoryVulcan.Core.Input.IGlobalShortcutHost?
 *REMOVED*HistoryVulcan.ServiceHost.ServiceComposition.GlobalShortcuts.init -> void
+*REMOVED*HistoryVulcan.ServiceHost.ServiceConfirmation
+*REMOVED*HistoryVulcan.ServiceHost.ServiceConfirmation.Confirm(string! prompt) -> bool
+*REMOVED*HistoryVulcan.ServiceHost.ServiceConfirmation.ConfirmRemote(string! client, string! prompt, int timeoutSeconds) -> bool?
+*REMOVED*HistoryVulcan.ServiceHost.ServiceConfirmation.ServiceConfirmation() -> void
+HistoryVulcan.ServiceHost.ShellRelayConfirmation
+HistoryVulcan.ServiceHost.ShellRelayConfirmation.ShellRelayConfirmation(System.Func<HistoryVulcan.Services.Web.WebGateway?>! gateway, HistoryVulcan.Core.Logging.IShellLog! log, System.TimeSpan? timeout = null) -> void
+HistoryVulcan.ServiceHost.ShellRelayConfirmation.Confirm(string! prompt) -> bool
+HistoryVulcan.ServiceHost.ShellRelayConfirmation.ConfirmRemote(string! client, string! prompt, int timeoutSeconds) -> bool?

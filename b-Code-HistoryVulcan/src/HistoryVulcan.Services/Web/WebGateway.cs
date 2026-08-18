@@ -314,6 +314,24 @@ public sealed partial class WebGateway : IDisposable
         }
     }
 
+    /// <summary>
+    /// 把确认请求送到当前连接的前端 Shell，与请求来源无关。
+    ///
+    /// 4.0.0 新增（REQ-A2）。<see cref="RequestWebConfirmation"/> 按 <c>source</c> 反查会话，
+    /// 只适用于"谁发起就问谁"；而 MCP 来的危险命令，其来源是 MCP 客户端，映射不到任何前端会话。
+    /// 宿主无头化后这类确认必须问人，唯一有人看着的进程就是前端。
+    ///
+    /// **没有前端连接时返回 false（拒绝），绝不放行。** 调用方应记录一条可见日志——
+    /// 静默拒绝会让用户以为命令没执行，而静默放行会让"危险命令需确认"这条约束形同虚设。
+    /// </summary>
+    public bool RequestShellConfirmation(string prompt, TimeSpan timeout)
+    {
+        var shell = _clients.Values.FirstOrDefault(client =>
+            client.Session.Kind == ClientKind.Shell
+            && client.Socket.State == WebSocketState.Open);
+        return shell != null && AskClient(shell, shell.Session.Id, prompt, "Service:Confirm", timeout);
+    }
+
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public bool RequestWebConfirmation(string prompt, string source, TimeSpan timeout)
     {
@@ -322,6 +340,11 @@ public sealed partial class WebGateway : IDisposable
             || client.Socket.State != WebSocketState.Open)
             return false;
 
+        return AskClient(client, sessionId, prompt, source, timeout);
+    }
+
+    private bool AskClient(EventClient client, string sessionId, string prompt, string source, TimeSpan timeout)
+    {
         var id = Guid.NewGuid().ToString("N");
         var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         if (!_pendingConfirmations.TryAdd(id, new PendingConfirmation(sessionId, completion)))

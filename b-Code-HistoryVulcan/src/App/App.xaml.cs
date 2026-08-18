@@ -288,7 +288,9 @@ public partial class App : Application
         // orphan existing governance revisions or call history.
         var prompts = new Services.Mcp.PromptGovernanceStore(paths.Root, log);
         var audit = new Services.Mcp.McpAuditRecorder(paths.Root, log);
-        var confirmation = new ServiceConfirmation();
+        // 4.0.0（REQ-A2）：MCP 的危险命令确认同样中继到前端。服务进程无人值守，
+        // 在这里弹模态框只会阻塞到超时；前端未连接时拒绝，不放行。
+        var confirmation = new ShellRelayConfirmation(() => web, log);
         Services.Mcp.McpGateway? mcp = null;
         mcp = new Services.Mcp.McpGateway(
             () => bus,
