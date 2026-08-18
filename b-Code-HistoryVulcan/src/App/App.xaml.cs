@@ -727,34 +727,40 @@ public partial class App : Application
             var endpoint = ReadEndpoint(endpointPath);
             if (endpoint is { Port: > 0 })
             {
-                var existing = CreateServiceClient(endpoint);
+                var existing = CreateServiceClient(endpoint, endpointPath);
                 if (existing.WaitForReadyAsync(TimeSpan.FromSeconds(2)).GetAwaiter().GetResult())
                     return existing;
                 existing.Dispose();
             }
 
-            endpoint = null;
-            if (endpoint == null)
-            {
-                var start = new ProcessStartInfo(executablePath, "--service")
-                {
-                    UseShellExecute = true,
-                    CreateNoWindow = true,
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                };
-                Process.Start(start);
-                var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(8);
-                while (DateTime.UtcNow < deadline && (endpoint = ReadEndpoint(endpointPath)) == null)
-                    Thread.Sleep(100);
-            }
+            // 走到这里说明记录里的后台连不上。必须先删掉这份记录再派生新服务：
+            // 服务被强杀（或崩溃）时来不及清理 endpoint.json，残留文件会让下面的等待循环
+            // 第一轮就读到旧记录并立即退出，前端于是拿着旧端口和空 accessToken 去连新服务，
+            // 稳定 401 后转本地模式。3.13.0 前这个缺陷是潜伏的——端口恰好相同且不校验令牌，
+            // 连上了就看不出来；补上凭据校验后它变成硬失败。
+            try { File.Delete(endpointPath); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
 
-            if (endpoint == null || endpoint.Port <= 0)
+            endpoint = null;
+            var start = new ProcessStartInfo(executablePath, "--service")
+            {
+                UseShellExecute = true,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+            };
+            Process.Start(start);
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(8);
+            while (DateTime.UtcNow < deadline && !IsUsableEndpoint(endpoint = ReadEndpoint(endpointPath)))
+                Thread.Sleep(100);
+
+            if (!IsUsableEndpoint(endpoint))
             {
                 log.Warn("service", "后台服务端点不可用，前端以本地模式继续运行");
                 return null;
             }
 
-            var client = CreateServiceClient(endpoint);
+            var client = CreateServiceClient(endpoint!, endpointPath);
             if (!client.WaitForReadyAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult())
             {
                 client.Dispose();
@@ -771,15 +777,26 @@ public partial class App : Application
         }
     }
 
-    private static ShellServiceClient CreateServiceClient(ServiceEndpoint endpoint)
+    /// <summary>
+    /// 端点必须同时给出端口和凭据；缺一都连不上 3.13.0 起的后台。
+    ///
+    /// 派生服务后的等待循环用它判断"记录是否已刷新"。只判 <c>null</c> 是不够的：
+    /// 服务被强杀时来不及删除 endpoint.json，残留记录端口有效、accessToken 为空，
+    /// 会让循环第一轮就误判为就绪。
+    /// </summary>
+    internal static bool IsUsableEndpoint(ServiceEndpoint? endpoint)
+        => endpoint is { Port: > 0 } && !string.IsNullOrEmpty(endpoint.AccessToken);
+
+    private static ShellServiceClient CreateServiceClient(ServiceEndpoint endpoint, string endpointPath)
     {
-        // 凭据每次从 endpoint.json 现取：后台重启会换发新令牌并重写该文件，
-        // 闭包捕获旧值会让前端在后台重启后静默 401。
-        var token = endpoint.AccessToken;
+        // 凭据每次调用时从 endpoint.json 现取，不捕获快照：后台重启会换发新令牌并重写该文件，
+        // 而客户端的重连是长期存活的。捕获初次读到的值会让前端在后台重启后静默 401。
+        // 文件读不到时回退到初次值，避免瞬时 IO 抖动把一个本来有效的会话打掉。
+        var initial = endpoint.AccessToken;
         var profile = new ShellEndpointProfile(
             new Uri($"http://127.0.0.1:{endpoint.Port}/"),
             Guid.NewGuid().ToString("N"),
-            AccessTokenProvider: () => token,
+            AccessTokenProvider: () => ReadEndpoint(endpointPath)?.AccessToken ?? initial,
             ServerId: endpoint.ServerId,
             ConnectTimeout: TimeSpan.FromSeconds(5));
         return new ShellServiceClient(profile, "HistoryVulcan.Frontend");
@@ -832,7 +849,7 @@ public partial class App : Application
         }
     }
 
-    private sealed record ServiceEndpoint(
+    internal sealed record ServiceEndpoint(
         int Port,
         string ServerId,
         int ProcessId,
