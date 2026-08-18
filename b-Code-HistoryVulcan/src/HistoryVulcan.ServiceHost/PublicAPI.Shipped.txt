@@ -34,10 +34,6 @@ HistoryVulcan.ServiceHost.ServiceComposition.Settings.get -> HistoryVulcan.Core.
 HistoryVulcan.ServiceHost.ServiceComposition.Settings.init -> void
 HistoryVulcan.ServiceHost.ServiceComposition.Web.get -> HistoryVulcan.Services.Web.WebGateway?
 HistoryVulcan.ServiceHost.ServiceComposition.Web.init -> void
-HistoryVulcan.ServiceHost.ServiceConfirmation
-HistoryVulcan.ServiceHost.ServiceConfirmation.Confirm(string! prompt) -> bool
-HistoryVulcan.ServiceHost.ServiceConfirmation.ConfirmRemote(string! client, string! prompt, int timeoutSeconds) -> bool?
-HistoryVulcan.ServiceHost.ServiceConfirmation.ServiceConfirmation() -> void
 HistoryVulcan.ServiceHost.ServiceHost
 HistoryVulcan.ServiceHost.WindowsRunAutostartManager
 HistoryVulcan.ServiceHost.WindowsRunAutostartManager.IsEnabled(string! name) -> bool
