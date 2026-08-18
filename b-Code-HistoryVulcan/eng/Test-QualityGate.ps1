@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param()
 
 $ErrorActionPreference = 'Stop'
@@ -18,6 +18,32 @@ foreach ($relativeRoot in $activeRoots) {
         if ($text -match $suppressionPattern) {
             $violations.Add("Suppression token: $($file.FullName)")
         }
+    }
+}
+
+# ---- 候选快照形状 --------------------------------------------------------
+# 当前候选必须是扁平的 z-Publish/host + docs + manifest.json（技术合同 REQ-PKG-001、
+# DEC-041）。全部模块仓的工程按 $(HistoryVulcanPackageRoot)\host 解析宿主运行库，
+# 相对路径落在仓库根之外，因此这个形状是跨仓构建的硬契约，不只是本仓的整洁问题。
+#
+# 2026-08-18 曾被破坏一次：一次发布把 36 个文件从 z-Publish/host/* 改名到
+# z-Publish/HistoryVulcan-v3.12.1/host/*（提交 2559bf1，套用了模块的快照形状）。
+# 契约没改，磁盘改了，于是 Janus / Aurora 等模块仓从干净状态一律构建失败，而本仓
+# 自身的构建与测试全绿——没有任何门禁会响。本检查就是补上那声警报。
+$candidateRoot = Join-Path $root 'z-Publish'
+if (Test-Path -LiteralPath $candidateRoot) {
+    $hostExecutable = Join-Path $candidateRoot 'host\HistoryVulcan.exe'
+    if (-not (Test-Path -LiteralPath $hostExecutable)) {
+        $violations.Add(
+            'Candidate snapshot is not flat: z-Publish\host\HistoryVulcan.exe is missing. ' +
+            'Module repositories resolve host assemblies through $(HistoryVulcanPackageRoot)\host ' +
+            'and will fail to build. Regenerate with eng\Build-HistoryVulcanPackage.ps1.')
+    }
+    foreach ($stray in @(Get-ChildItem -LiteralPath $candidateRoot -Directory -Force |
+            Where-Object { $_.Name -like 'HistoryVulcan-v*' })) {
+        $violations.Add(
+            "Versioned directory at the candidate root: $($stray.Name). " +
+            'The current candidate lives flat at z-Publish\; versioned packages belong in z-Publish\history\.')
     }
 }
 
