@@ -285,48 +285,21 @@ public sealed partial class McpGateway : IDisposable
     }
 
     private static int DeriveDefaultPort(string appName)
-    {
-        var hash = 2166136261u;
-        foreach (var character in appName.Trim().ToUpperInvariant())
-            hash = (hash ^ character) * 16777619u;
-        return DefaultPortBase + (int)(hash % DefaultPortSpan);
-    }
+        => LoopbackHttpTransport.DerivePort(appName, DefaultPortBase, DefaultPortSpan);
 
     // ---------------------------------------------------------------- 请求处理
 
-    private async Task AcceptLoopAsync(HttpListener listener, CancellationToken ct)
-    {
-        while (!ct.IsCancellationRequested)
-        {
-            HttpListenerContext context;
-            try
+    private Task AcceptLoopAsync(HttpListener listener, CancellationToken ct)
+        => LoopbackHttpTransport.AcceptLoopAsync(
+            listener,
+            ct,
+            HandleRequestAsync,
+            failure => _log.Warn("mcp", $"接收请求失败: {failure}"),
+            (context, ex) =>
             {
-                context = await listener.GetContextAsync().ConfigureAwait(false);
-            }
-            catch (Exception) when (ct.IsCancellationRequested || !listener.IsListening)
-            {
-                return; // 正常停机
-            }
-            catch (Exception ex)
-            {
-                _log.Warn("mcp", $"接收请求失败: {ex.GetType().Name}");
-                continue;
-            }
-
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await HandleRequestAsync(context).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    _log.Error("mcp", $"请求处理异常: {ex.GetType().Name}");
-                    TryClose(context, 500);
-                }
-            }, CancellationToken.None);
-        }
-    }
+                _log.Error("mcp", $"请求处理异常: {ex.GetType().Name}");
+                TryClose(context, 500);
+            });
 
     private async Task HandleRequestAsync(HttpListenerContext context)
     {

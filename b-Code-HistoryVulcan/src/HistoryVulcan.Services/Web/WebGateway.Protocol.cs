@@ -64,33 +64,13 @@ public sealed partial class WebGateway : IDisposable
     }
 
     private static string? ReadBearer(HttpListenerRequest request)
-    {
-        const string prefix = "Bearer ";
-        var header = request.Headers["Authorization"];
-        return header?.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) == true
-            ? header[prefix.Length..].Trim()
-            : null;
-    }
+        => LoopbackHttpTransport.ReadBearer(request);
 
     private static bool FixedEquals(string left, string right)
-    {
-        var leftBytes = Encoding.UTF8.GetBytes(left);
-        var rightBytes = Encoding.UTF8.GetBytes(right);
-        try { return CryptographicOperations.FixedTimeEquals(leftBytes, rightBytes); }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(leftBytes);
-            CryptographicOperations.ZeroMemory(rightBytes);
-        }
-    }
+        => LoopbackHttpTransport.FixedEquals(left, right);
 
     private static int DeriveDefaultPort(string appName)
-    {
-        var hash = 2166136261u;
-        foreach (var character in appName.Trim().ToUpperInvariant())
-            hash = (hash ^ character) * 16777619u;
-        return DefaultPortBase + (int)(hash % DefaultPortSpan);
-    }
+        => LoopbackHttpTransport.DerivePort(appName, DefaultPortBase, DefaultPortSpan);
 
     private void OnLogEntry(object? sender, ShellLogEntry entry)
     {
@@ -159,16 +139,7 @@ public sealed partial class WebGateway : IDisposable
     }
 
     private static void TryClose(HttpListenerContext context, int status)
-    {
-        try
-        {
-            context.Response.StatusCode = status;
-            context.Response.Close();
-        }
-        catch (ObjectDisposedException)
-        {
-        }
-    }
+        => LoopbackHttpTransport.TryClose(context, status);
 
     private sealed class EventClient : IDisposable
     {

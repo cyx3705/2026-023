@@ -352,23 +352,21 @@ public sealed partial class WebGateway : IDisposable
             Stop();
     }
 
-    private async Task AcceptLoopAsync(HttpListener listener, CancellationToken cancellationToken)
-    {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            HttpListenerContext context;
-            try
+    /// <summary>
+    /// 共用实现后顺带获得 MCP 侧原有的健壮性：单次接受失败只记警告并继续，
+    /// 不再让一个坏连接冒泡出循环、悄悄终结整条监听。
+    /// </summary>
+    private Task AcceptLoopAsync(HttpListener listener, CancellationToken cancellationToken)
+        => LoopbackHttpTransport.AcceptLoopAsync(
+            listener,
+            cancellationToken,
+            context => HandleAsync(context, cancellationToken),
+            failure => _log.Warn("web", $"接收请求失败: {failure}"),
+            (context, ex) =>
             {
-                context = await listener.GetContextAsync().ConfigureAwait(false);
-            }
-            catch (Exception) when (cancellationToken.IsCancellationRequested || !listener.IsListening)
-            {
-                return;
-            }
-
-            _ = Task.Run(() => HandleAsync(context, cancellationToken), CancellationToken.None);
-        }
-    }
+                _log.Error("web", $"请求处理异常: {ex.GetType().Name}");
+                TryClose(context, 500);
+            });
 
     private async Task HandleAsync(HttpListenerContext context, CancellationToken cancellationToken)
     {

@@ -18,28 +18,10 @@ namespace HistoryVulcan.Services.Mcp;
 public sealed partial class McpGateway : IDisposable
 {
     private static string? ReadBearer(HttpListenerRequest request)
-    {
-        const string prefix = "Bearer ";
-        var header = request.Headers["Authorization"];
-        return header?.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) == true
-            ? header[prefix.Length..].Trim()
-            : null;
-    }
+        => LoopbackHttpTransport.ReadBearer(request);
 
     private static bool FixedEquals(string left, string right)
-    {
-        var leftBytes = Encoding.UTF8.GetBytes(left);
-        var rightBytes = Encoding.UTF8.GetBytes(right);
-        try
-        {
-            return CryptographicOperations.FixedTimeEquals(leftBytes, rightBytes);
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(leftBytes);
-            CryptographicOperations.ZeroMemory(rightBytes);
-        }
-    }
+        => LoopbackHttpTransport.FixedEquals(left, right);
 
     private static string NormalizeClientName(string? value, string fallback)
     {
@@ -170,16 +152,6 @@ public sealed partial class McpGateway : IDisposable
     }
 
     private static void TryClose(HttpListenerContext context, int status)
-    {
-        try
-        {
-            context.Response.StatusCode = status;
-            context.Response.Close();
-        }
-        catch (Exception)
-        {
-            // 客户端已断开等,忽略
-        }
-    }
+        => LoopbackHttpTransport.TryClose(context, status);
 }
 
