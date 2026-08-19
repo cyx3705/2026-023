@@ -17,8 +17,8 @@ public sealed record PromptRevision(
     bool Applied,
     string? RevertedFrom);
 
-/// <summary>Provides this HistoryVulcan public contract member.</summary>
-public sealed record PromptProposal(
+/// <summary>Legacy proposal data retained for compatibility with existing governance state.</summary>
+internal sealed record PromptProposal(
     string Id,
     string Command,
     string? BaseRevision,
@@ -34,8 +34,8 @@ public sealed record PromptProposal(
     string? ReviewNote,
     string? AppliedRevision);
 
-/// <summary>Provides this HistoryVulcan public contract member.</summary>
-public sealed record PromptCorrection(
+/// <summary>Legacy correction data retained for compatibility with existing governance state.</summary>
+internal sealed record PromptCorrection(
     string Id,
     string Command,
     string Claim,
@@ -46,8 +46,8 @@ public sealed record PromptCorrection(
     string Status,
     string? LinkedProposal);
 
-/// <summary>Provides this HistoryVulcan public contract member.</summary>
-public sealed record PromptIncident(
+/// <summary>Legacy incident data retained for compatibility with existing governance state.</summary>
+internal sealed record PromptIncident(
     string Id,
     string Command,
     string Symptom,
@@ -63,7 +63,7 @@ public sealed record PromptIncident(
 /// MCP 提示词治理的文件存储。所有关联状态在同一份 JSON 文档内原子替换，
 /// 因而批准、应用、回滚仍保持单进程事务语义，但不再要求关系数据库。
 /// </summary>
-public sealed class PromptGovernanceStore
+public sealed class PromptGovernanceStore : IEffectivePromptDescriptionReader
 {
     // 仅保留常量名供旧调用方/迁移测试识别；运行时不再创建这些表。
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -108,8 +108,8 @@ public sealed class PromptGovernanceStore
             return CurrentRevision(command);
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public PromptRevision? GetRevision(string id)
+    /// <summary>Looks up a legacy revision by identifier.</summary>
+    internal PromptRevision? GetRevision(string id)
     {
         lock (_writeGate)
             return _state.Revisions.FirstOrDefault(item => item.Id == id);
@@ -127,8 +127,8 @@ public sealed class PromptGovernanceStore
                 .ToList();
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public PromptRevision ApplyDirect(
+    /// <summary>Applies a description directly for compatibility with internal migration paths.</summary>
+    internal PromptRevision ApplyDirect(
         string command, string? description, string source, string reason,
         string? revertedFrom = null, string? createdBy = null)
     {
@@ -148,8 +148,8 @@ public sealed class PromptGovernanceStore
         }
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public PromptProposal CreateProposal(
+    /// <summary>Creates a legacy governance proposal.</summary>
+    internal PromptProposal CreateProposal(
         string command, string oldText, string proposedText, string reason,
         string evidence, string sourceClient)
     {
@@ -166,15 +166,15 @@ public sealed class PromptGovernanceStore
         }
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public PromptProposal? GetProposal(string id)
+    /// <summary>Looks up a legacy governance proposal.</summary>
+    internal PromptProposal? GetProposal(string id)
     {
         lock (_writeGate)
             return FindProposal(id);
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public IReadOnlyList<PromptProposal> ListProposals(
+    /// <summary>Lists legacy governance proposals.</summary>
+    internal IReadOnlyList<PromptProposal> ListProposals(
         string? command = null, bool openOnly = false, int limit = 100)
     {
         lock (_writeGate)
@@ -188,8 +188,8 @@ public sealed class PromptGovernanceStore
                 .ToList();
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public PromptProposal ApproveProposal(string id, string reviewer)
+    /// <summary>Approves a legacy governance proposal.</summary>
+    internal PromptProposal ApproveProposal(string id, string reviewer)
     {
         lock (_writeGate)
         {
@@ -204,8 +204,8 @@ public sealed class PromptGovernanceStore
         }
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public PromptProposal RejectProposal(string id, string reviewer, string reason)
+    /// <summary>Rejects a legacy governance proposal.</summary>
+    internal PromptProposal RejectProposal(string id, string reviewer, string reason)
     {
         lock (_writeGate)
         {
@@ -225,8 +225,8 @@ public sealed class PromptGovernanceStore
         }
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public PromptRevision ApplyProposal(string id, string reviewer)
+    /// <summary>Applies an approved legacy governance proposal.</summary>
+    internal PromptRevision ApplyProposal(string id, string reviewer)
     {
         lock (_writeGate)
         {
@@ -256,8 +256,8 @@ public sealed class PromptGovernanceStore
         }
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public PromptRevision RevertToRevision(string revisionId, string reviewer, string reason)
+    /// <summary>Creates a new revision from a previous legacy revision.</summary>
+    internal PromptRevision RevertToRevision(string revisionId, string reviewer, string reason)
     {
         PromptRevision target;
         lock (_writeGate)
@@ -266,8 +266,8 @@ public sealed class PromptGovernanceStore
         return ApplyDirect(target.Command, target.Description, "revert", reason, target.Id, reviewer);
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public PromptCorrection CreateCorrection(
+    /// <summary>Creates a legacy correction record.</summary>
+    internal PromptCorrection CreateCorrection(
         string command, string claim, string correction, string evidence, string sourceClient,
         string? linkedProposal = null)
     {
@@ -282,15 +282,15 @@ public sealed class PromptGovernanceStore
         }
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public PromptCorrection? GetCorrection(string id)
+    /// <summary>Looks up a legacy correction record.</summary>
+    internal PromptCorrection? GetCorrection(string id)
     {
         lock (_writeGate)
             return _state.Corrections.FirstOrDefault(item => item.Id == id);
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public IReadOnlyList<PromptCorrection> ListCorrections(string? command = null, int limit = 100)
+    /// <summary>Lists legacy correction records.</summary>
+    internal IReadOnlyList<PromptCorrection> ListCorrections(string? command = null, int limit = 100)
     {
         lock (_writeGate)
             return _state.Corrections
@@ -302,8 +302,8 @@ public sealed class PromptGovernanceStore
                 .ToList();
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public PromptIncident CreateIncident(
+    /// <summary>Creates a legacy incident record.</summary>
+    internal PromptIncident CreateIncident(
         string command, string symptom, string expected, string actual, string evidence,
         string sourceClient, string? linkedCorrection = null)
     {
@@ -318,8 +318,8 @@ public sealed class PromptGovernanceStore
         }
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public IReadOnlyList<PromptIncident> ListIncidents(string? command = null, int limit = 100)
+    /// <summary>Lists legacy incident records.</summary>
+    internal IReadOnlyList<PromptIncident> ListIncidents(string? command = null, int limit = 100)
     {
         lock (_writeGate)
             return _state.Incidents
