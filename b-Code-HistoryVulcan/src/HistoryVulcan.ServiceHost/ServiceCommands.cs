@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.IO;
-using System.Windows;
 using HistoryVulcan.Core.Commands;
 
 namespace HistoryVulcan.ServiceHost;
@@ -112,7 +111,7 @@ public static class ServiceCommands
             ConfirmPrompt = _ => "确认停止后台服务？前端和远程客户端会断开。",
             Handler = CommandDescriptor.Sync(_ =>
             {
-                Application.Current.Dispatcher.BeginInvoke(requestStop);
+                requestStop();
                 return CommandResult.Ok("服务正在停止");
             }),
         }, source);
@@ -130,7 +129,7 @@ public static class ServiceCommands
                     ? await composition.Web.RelayFrontendCommandAsync(
                         "vulcan.app.close", ctx.Source, ctx.Cancellation).ConfigureAwait(false)
                     : CommandResult.Ok("前端未连接");
-                _ = Application.Current.Dispatcher.BeginInvoke(requestStop);
+                requestStop();
                 return frontend.Success
                     ? CommandResult.Ok("HistoryVulcan 正在退出")
                     : CommandResult.Ok($"后台正在退出，前端回执: {frontend.Message}");
@@ -153,7 +152,7 @@ public static class ServiceCommands
                 foreach (var argument in serviceArguments)
                     start.ArgumentList.Add(argument);
                 Process.Start(start);
-                Application.Current.Dispatcher.BeginInvoke(requestStop);
+                requestStop();
                 return CommandResult.Ok("服务正在重启");
             }),
         }, source);

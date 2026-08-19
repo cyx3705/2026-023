@@ -89,6 +89,16 @@ public static class McpExposurePolicy
             return "运行包变更只允许认证的本机宿主通道";
         if (commandName.Equals("vulcan.app.quit", StringComparison.OrdinalIgnoreCase))
             return "远程客户端不得退出宿主";
+        if (commandName.Equals("vulcan.command.run", StringComparison.OrdinalIgnoreCase))
+        {
+            // 4.0.0（REQ-A6）：这条命令从前端搬到服务侧。搬迁本身是对的（它无 UI 依赖），
+            // 但副作用是暴露面扩大——此前由前端注册，PolicyVisible=false，MCP 看不见；
+            // 搬到服务侧后自动成为可见工具（真机实测确认它一度出现在可见清单里）。
+            // 它按路径读本地脚本并逐行经总线执行任意命令，等于给远程一条绕过逐条工具
+            // 投影的通道：只要磁盘上存在一个脚本文件，就能一次性执行其中任意命令，
+            // 包括本表其他条目明确排除的那些。因此按名硬排除。
+            return "脚本批量执行不对远程暴露，否则可绕过逐条工具排除";
+        }
         if (commandName.StartsWith("debug.", StringComparison.OrdinalIgnoreCase)
             || DiagnosticCommands.Contains(commandName))
         {

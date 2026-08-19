@@ -1,12 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!--
+      4.0.0（REQ-A4）：移除 UseWPF。服务进程从来没有窗口，此前依赖 WPF 只是为了拿一个
+      Dispatcher 当「排到主线程」的队列，代价是拖入整套 UI 程序集。现由 ServiceRunLoop 承担。
+      TargetFramework 保留 net8.0-windows —— 自启动注册表等 Windows API 仍需要它，
+      这与是否 UseWPF 是两件事。
+    -->
     <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWPF>true</UseWPF>
     <RootNamespace>HistoryVulcan.ServiceHost</RootNamespace>
     <PackageId>OneHistory.HistoryVulcan.ServiceHost</PackageId>
     <Title>OneHistory HistoryVulcan Service Host</Title>
-    <Description>Headless WPF service host, lifecycle commands, and desktop confirmation for OneHistory HistoryVulcan.</Description>
-    <PackageTags>onehistory;HistoryVulcan;service;wpf</PackageTags>
+    <Description>Headless service host and lifecycle commands for OneHistory HistoryVulcan.</Description>
+    <PackageTags>onehistory;HistoryVulcan;service;headless</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\HistoryVulcan.Core\HistoryVulcan.Core.csproj" />

@@ -116,6 +116,22 @@ public sealed class CommandTaxonomyContractTests
         Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.module.reload"));
     }
 
+    /// <summary>
+    /// REQ-A6 的连带约束。`vulcan.command.run` 从前端搬到服务侧后自动变成 MCP 可见工具
+    /// （真机实测确认过），而它按路径读本地脚本并逐行执行任意命令——只要磁盘上存在一个
+    /// 脚本文件，远程就能一次性执行其中任意命令，包括本表其他条目明确排除的那些。
+    /// 这条断言守的是"批量执行入口不得成为逐条排除的旁路"。
+    /// </summary>
+    [Fact]
+    public void ScriptBatchExecutionCannotBypassPerCommandExclusions()
+    {
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("vulcan.command.run"));
+
+        // 对照：同属 command 类的只读查询命令不受影响。
+        Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.command.list"));
+        Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.command.show"));
+    }
+
     [Fact]
     public void FloodIsNotPartOfTheShippedBuiltinCatalog()
     {
