@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using HistoryVulcan.Core.Commands;
 
@@ -15,6 +16,76 @@ public static class ServiceCommands
         IReadOnlyList<string>? serviceArguments = null)
     {
         serviceArguments ??= [];
+
+        // REQ-A6：从前端搬回服务侧。它逐行把脚本喂给总线，只依赖 Bus 与数据根，
+        // 没有任何 UI 依赖（原实现连 RequiresUiThread 都没标）。留在前端只会让
+        // 一条纯总线能力随前端一起被切出去，还得为此在 aurora 域下重新命名。
+        registry.Register(new CommandDescriptor
+        {
+            Name = "vulcan.command.run",
+            Domain = "vulcan",
+            CommandClass = "command",
+            Summary = "逐行执行指令脚本文件(# 注释与空行忽略)",
+            Example = "vulcan.command.run file=每日巡检.txt continue=true",
+            Parameters =
+            [
+                new ParameterSpec
+                {
+                    Name = "file",
+                    Description = "脚本路径;相对路径基于应用数据目录",
+                    Required = true,
+                    Position = 0,
+                },
+                new ParameterSpec
+                {
+                    Name = "continue",
+                    Description = "出错时跳过继续(默认中断并报告行号)",
+                    Type = ParamType.Bool,
+                    Default = "false",
+                },
+            ],
+            Handler = async ctx =>
+            {
+                var raw = ctx.RequireString("file");
+                var root = composition.DataDirectory;
+                if (!Path.IsPathRooted(raw) && string.IsNullOrEmpty(root))
+                    return CommandResult.Fail("未配置应用数据根，无法解析相对脚本路径");
+
+                var path = Path.IsPathRooted(raw) ? raw : Path.Combine(root!, raw);
+                if (!File.Exists(path))
+                    return CommandResult.Fail($"脚本不存在: {path}");
+
+                var scriptSource = $"脚本:{Path.GetFileName(path)}";
+                var keepGoing = ctx.GetBool("continue");
+                var ok = 0;
+                var failed = 0;
+
+                var lines = await File.ReadAllLinesAsync(path);
+                for (var i = 0; i < lines.Length; i++)
+                {
+                    if (CommandParser.IsBlankOrComment(lines[i]))
+                        continue;
+
+                    var result = await composition.Bus.ExecuteAsync(lines[i], scriptSource);
+                    if (result.Success)
+                    {
+                        ok++;
+                    }
+                    else
+                    {
+                        failed++;
+                        if (!keepGoing)
+                            return CommandResult.Fail(
+                                $"第 {i + 1} 行失败,脚本已中断(continue=true 可跳过错误): {lines[i]}");
+                    }
+                }
+
+                return failed == 0
+                    ? CommandResult.Ok($"脚本执行完成: {ok} 条成功")
+                    : CommandResult.Ok($"脚本执行完成: {ok} 条成功,{failed} 条失败(已跳过)");
+            },
+        }, source);
+
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.svc.status",

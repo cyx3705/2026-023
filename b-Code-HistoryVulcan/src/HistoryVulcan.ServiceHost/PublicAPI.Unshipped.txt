@@ -16,3 +16,5 @@ static HistoryVulcan.ServiceHost.ServiceComposer.ExportCommandManual(string! out
 static HistoryVulcan.ServiceHost.ServiceComposer.RepairAutostart(string! executablePath, System.Reflection.Assembly! identityAssembly) -> int
 static HistoryVulcan.ServiceHost.ServiceComposer.RegisterServiceMcpSettingCommands(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Storage.ISettingsService! settings) -> void
 static HistoryVulcan.ServiceHost.ServiceComposer.MigrateLegacyMcpSettings(HistoryVulcan.Core.Storage.ISettingsService! legacy, HistoryVulcan.Core.Storage.ISettingsService! service, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+HistoryVulcan.ServiceHost.ServiceComposition.DataDirectory.get -> string?
+HistoryVulcan.ServiceHost.ServiceComposition.DataDirectory.init -> void

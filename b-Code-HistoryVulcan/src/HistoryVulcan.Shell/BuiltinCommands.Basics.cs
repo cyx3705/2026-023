@@ -89,69 +89,6 @@ public static partial class BuiltinCommands
                 return CommandResult.Ok(sb.ToString());
             }),
         });
-
-        RegisterFrontend(r, new CommandDescriptor
-        {
-            Name = "vulcan.command.run",
-            Domain = "vulcan",
-            CommandClass = "command",
-            Summary = "逐行执行指令脚本文件(# 注释与空行忽略)",
-            Example = "vulcan.command.run file=每日巡检.txt continue=true",
-            Parameters =
-            [
-                new ParameterSpec
-                {
-                    Name = "file",
-                    Description = "脚本路径;相对路径基于应用数据目录",
-                    Required = true,
-                    Position = 0,
-                },
-                new ParameterSpec
-                {
-                    Name = "continue",
-                    Description = "出错时跳过继续(默认中断并报告行号)",
-                    Type = ParamType.Bool,
-                    Default = "false",
-                },
-            ],
-            Handler = async ctx =>
-            {
-                var raw = ctx.RequireString("file");
-                var path = Path.IsPathRooted(raw)
-                    ? raw
-                    : Path.Combine(s.DataDirectory, raw);
-                if (!File.Exists(path))
-                    return CommandResult.Fail($"脚本不存在: {path}");
-
-                var source = $"脚本:{Path.GetFileName(path)}";
-                var keepGoing = ctx.GetBool("continue");
-                var ok = 0;
-                var failed = 0;
-
-                var lines = await File.ReadAllLinesAsync(path);
-                for (var i = 0; i < lines.Length; i++)
-                {
-                    if (CommandParser.IsBlankOrComment(lines[i]))
-                        continue;
-
-                    var result = await s.Bus.ExecuteAsync(lines[i], source);
-                    if (result.Success)
-                    {
-                        ok++;
-                    }
-                    else
-                    {
-                        failed++;
-                        if (!keepGoing)
-                            return CommandResult.Fail($"第 {i + 1} 行失败,脚本已中断(continue=true 可跳过错误): {lines[i]}");
-                    }
-                }
-
-                return failed == 0
-                    ? CommandResult.Ok($"脚本执行完成: {ok} 条成功")
-                    : CommandResult.Ok($"脚本执行完成: {ok} 条成功,{failed} 条失败(已跳过)");
-            },
-        });
     }
 
     private static CommandResult HelpList(CommandRegistry registry)

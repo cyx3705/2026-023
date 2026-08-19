@@ -152,6 +152,8 @@ public static partial class ServiceComposer
             Mcp = mcp,
             Web = web,
             EndpointFile = Path.Combine(servicePaths.Root, "endpoint.json"),
+            // 与前端此前的 DataDirectory 同值：脚本相对路径基准不变（REQ-A6）。
+            DataDirectory = paths.Root,
             RegisterAutostartOnFirstRun = true,
             Autostart = new WindowsRunAutostartManager(),
         };
