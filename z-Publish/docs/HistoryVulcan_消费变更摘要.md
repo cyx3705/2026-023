@@ -1,16 +1,34 @@
 # HistoryVulcan 消费变更摘要
 
-适用版本：HistoryVulcan **3.13.0**。
+适用版本：HistoryVulcan **4.0.0**。
 
 本文按版本累积，不是单版本发布说明：下面的「破坏性变更」自 3.3.2 起逐条累加，每条都标注引入版本；
 「主要变化」是不需要改代码的增量。从 3.3.1 及更早升级的消费方需要通读破坏性变更全节。
 
 本文只记录会影响消费应用、模块作者和部署者的变化；源码施工、冻结审查、完整测试证据和发布操作不属于本文。
 
-> 本文抬头曾长期停留在旧版本；当前 3.13.0 变化列在本节顶部。
+> 本文抬头曾长期停留在旧版本；当前 4.0.0 变化列在本节顶部。
 > 版本线推进时必须同步本文抬头，这与同步 `project.manifest.json` 同等重要。
 
 ## 破坏性变更（升级必读；自 3.3.2 累积）
+
+**〇之零、MCP 与命令目录三个类型换程序集（4.0.0，DEC-049 / REQ-A1）。**
+`McpCommands`、`CommandCatalogCommands`、`PromptGovernanceCommands` 及其携带的记录类型
+（`CommandCatalogRow`、`CommandParameterInfo`、`CommandCatalogDetail`、`CommandDomainInfo`、
+`PromptStatus`、`PromptProposalDiff`）从 `OneHistory.HistoryVulcan.Shell` 迁入
+`OneHistory.HistoryVulcan.Services`，命名空间由 `HistoryVulcan.Shell.Mcp` 改为
+`HistoryVulcan.Services.Mcp`。共 102 项签名换家，**类型名、成员签名与行为全部不变**。
+
+- 升级动作：把 `using HistoryVulcan.Shell.Mcp;` 改为 `using HistoryVulcan.Services.Mcp;`。
+  若你只引用 `OneHistory.HistoryVulcan.Shell`，现在还需引用 `OneHistory.HistoryVulcan.Services`。
+- 新增：`CommandCatalogCommands.RegisterCore` 由 internal 提为 public——它的调用方（前端）
+  将成为独立仓的独立应用，跨程序集 internal 不再可达。
+- 原因：这三个类型不含任何 WPF 代码，却住在 WPF 程序集里，使无头服务进程被迫依赖 `Shell`。
+  搬走后 `Services` 与 `ServiceHost` 对 `Shell` 的引用降为 0，宿主才可能无头化。
+- 留在 Shell 的只有 `RemoteConfirmDialog`（86 行，唯一碰 WPF 的部分）。
+
+**说明：4.0 解除了 Core 自 3.9.0 起的公开面冻结**（DEC-049），以便把前端整体切出并收口模块
+契约。解冻不代表可以随意改动：每一处删除仍必须列进本文并走主版本号。
 
 **零、删除 Web 网关的局域网面（3.13.0，DEC-045）。** `WebGateway` 退回纯本机 IPC：固定监听
 `127.0.0.1`，只接受声明 `X-HistoryVulcan-Client: Shell` 的同机前端，其余一律 401。

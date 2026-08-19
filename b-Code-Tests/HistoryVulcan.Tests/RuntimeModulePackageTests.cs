@@ -3,9 +3,8 @@ using System.Text.Json;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Storage;
-using HistoryVulcan.Services.Modules;
-using StandaloneApp = HistoryVulcan.App.App;
 using HistoryVulcan.ServiceHost;
+using HistoryVulcan.Services.Modules;
 using Xunit;
 
 namespace HistoryVulcan.Tests;

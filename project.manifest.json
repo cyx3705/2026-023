@@ -65,8 +65,7 @@
     "servicePlan32": "b-Office/history/V3.2后台服务化方案.md",
     "apiManual": "b-Office/package/HistoryVulcan_API与指令手册.md",
     "runtimeLimits": "b-Office/package/HistoryVulcan_运行时约束与已知限制.md",
-    "consumerChanges": "b-Office/package/HistoryVulcan_消费变更摘要.md",
-    "uiStyle": "b-Office/package/HistoryVulcan_UI风格与嵌入页面规范.md"
+    "consumerChanges": "b-Office/package/HistoryVulcan_消费变更摘要.md"
   },
   "contract": {
     "requiredFiles": [
@@ -96,15 +95,7 @@
         "name": "HistoryVulcan"
       },
       "versionProps": "b-Code-HistoryVulcan/VulcanVersion.props",
-      "versionProperty": "VulcanVersion",
-      "uiStyle": {
-        "document": "b-Office/package/HistoryVulcan_UI风格与嵌入页面规范.md",
-        "themeDirectory": "b-Code-HistoryVulcan/src/HistoryVulcan.Shell/Themes",
-        "tokenFiles": [
-          "ShellTokens.xaml",
-          "ShellTokens.Dark.xaml"
-        ]
-      }
+      "versionProperty": "VulcanVersion"
     }
   },
   "commands": {

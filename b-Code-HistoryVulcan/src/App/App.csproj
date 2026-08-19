@@ -1,11 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!--
+      REQ-A8：宿主只剩服务角色，工程不再引用 WPF。
+      OutputType 保留 WinExe 而不是 Exe：无头服务由登录启动拉起，
+      Exe 会在每次启动时闪一个控制台窗口。WinExe 只是"不附带控制台"，
+      与是否有界面无关——本进程确实没有任何窗口。
+    -->
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
     <RootNamespace>HistoryVulcan.App</RootNamespace>
     <AssemblyName>HistoryVulcan</AssemblyName>
     <Product>HistoryVulcan</Product>
@@ -14,19 +19,13 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <!-- N-01:每显示器 DPI 感知(Per-Monitor V2) -->
-    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <StartupObject>HistoryVulcan.App.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\HistoryVulcan.Core\HistoryVulcan.Core.csproj" />
     <ProjectReference Include="..\HistoryVulcan.Services\HistoryVulcan.Services.csproj" />
     <ProjectReference Include="..\HistoryVulcan.ServiceHost\HistoryVulcan.ServiceHost.csproj" />
-    <ProjectReference Include="..\HistoryVulcan.Shell\HistoryVulcan.Shell.csproj" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <StartupObject>HistoryVulcan.App.Program</StartupObject>
-  </PropertyGroup>
 
 </Project>

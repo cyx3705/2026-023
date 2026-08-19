@@ -1,13 +1,14 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# REQ-A8：HistoryVulcan.Shell 已随前端整体迁往 2026-026-HistoryAurora，宿主不再有该工程。
+# 它的公开面基线随之退出本门禁——Aurora 是独立应用，其公开面由它自己的仓库负责。
 $projects = @(
     'HistoryVulcan.Core'
     'HistoryVulcan.Services'
     'HistoryVulcan.ServiceHost'
-    'HistoryVulcan.Shell'
 )
 
 $componentRoot = Split-Path -Parent $PSScriptRoot

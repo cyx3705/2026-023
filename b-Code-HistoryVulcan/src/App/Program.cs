@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Windows;
 using HistoryVulcan.ServiceHost;
 
 namespace HistoryVulcan.App;
@@ -25,7 +24,6 @@ internal static class Program
     /// </summary>
     private static Assembly IdentityAssembly => typeof(Program).Assembly;
 
-    [STAThread]
     private static int Main(string[] args)
     {
         var exportIndex = Array.FindIndex(
@@ -48,19 +46,17 @@ internal static class Program
             return ServiceComposer.RepairAutostart(executable, IdentityAssembly);
         }
 
-        if (args.Any(argument => argument.Equals("--service", StringComparison.OrdinalIgnoreCase)))
-        {
-            var executable = Environment.ProcessPath
-                             ?? throw new InvalidOperationException("无法确定 HistoryVulcan 可执行文件路径");
-            return global::HistoryVulcan.ServiceHost.ServiceHost.Run(
-                ServiceComposer.Build(executable, IdentityAssembly),
-                executable,
-                ["--service"]);
-        }
-
-        var app = new App();
-        app.InitializeComponent();
-        app.Run();
-        return 0;
+        // REQ-A8：宿主只剩服务这一个角色。
+        //
+        // 迁出前 `--service` 是「双角色 exe」的分支开关：不带它就起 WPF 前端。
+        // 前端已整体成为 HistoryAurora.exe（REQ-A7），此处不再有第二条路径，
+        // 因此该参数退化为**兼容开关**——自启动项、既有快捷方式和 `vulcan.svc.restart`
+        // 都还带着它，静默忽略即可，报错只会让升级过程平白失败。
+        var servicePath = Environment.ProcessPath
+                          ?? throw new InvalidOperationException("无法确定 HistoryVulcan 可执行文件路径");
+        return global::HistoryVulcan.ServiceHost.ServiceHost.Run(
+            ServiceComposer.Build(servicePath, IdentityAssembly),
+            servicePath,
+            ["--service"]);
     }
 }
