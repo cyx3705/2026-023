@@ -65,7 +65,12 @@
     "servicePlan32": "b-Office/history/V3.2后台服务化方案.md",
     "apiManual": "b-Office/package/HistoryVulcan_API与指令手册.md",
     "runtimeLimits": "b-Office/package/HistoryVulcan_运行时约束与已知限制.md",
-    "consumerChanges": "b-Office/package/HistoryVulcan_消费变更摘要.md"
+    "consumerChanges": "b-Office/package/HistoryVulcan_消费变更摘要.md",
+    "upgradeGuideIndex": "b-Office/package/升级指南-总纲.md",
+    "upgradeGuideDiana": "b-Office/package/升级指南-HistoryDiana.md",
+    "upgradeGuideJanus": "b-Office/package/升级指南-HistoryJanus.md",
+    "upgradeGuideMercury": "b-Office/package/升级指南-HistoryMercury.md",
+    "upgradeGuideMinerva": "b-Office/package/升级指南-HistoryMinerva.md"
   },
   "contract": {
     "requiredFiles": [
