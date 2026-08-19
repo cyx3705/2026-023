@@ -1,4 +1,4 @@
-using System.Windows;
+using System.Reflection;
 using HistoryVulcan.ServiceHost;
 
 namespace HistoryVulcan.App;
@@ -15,7 +15,15 @@ internal static class Program
     private const string ExportManualSwitch = "--export-command-manual";
     private const string RepairAutostartSwitch = "--repair-autostart";
 
-    [STAThread]
+    /// <summary>
+    /// 供 <see cref="ServiceComposer"/> 确定 <c>AppIdentity</c> 的程序集。
+    ///
+    /// 4.0.0（REQ-A3）起服务组合根住在 ServiceHost，那边取不到 WPF 的 <c>App</c> 类型，
+    /// 因此由入口点显式传入。A4 把服务拆成独立 exe 后，这里换成那个 exe 的程序集即可，
+    /// 身份（数据根目录名、端口派生、服务名）随之保持一致。
+    /// </summary>
+    private static Assembly IdentityAssembly => typeof(Program).Assembly;
+
     private static int Main(string[] args)
     {
         var exportIndex = Array.FindIndex(
@@ -28,29 +36,27 @@ internal static class Program
                 return 2;
             }
 
-            return App.ExportCommandManual(args[exportIndex + 1]);
+            return ServiceComposer.ExportCommandManual(args[exportIndex + 1], IdentityAssembly);
         }
 
         if (args.Any(argument => argument.Equals(RepairAutostartSwitch, StringComparison.OrdinalIgnoreCase)))
         {
             var executable = Environment.ProcessPath
                              ?? throw new InvalidOperationException("无法确定 HistoryVulcan 可执行文件路径");
-            return App.RepairAutostart(executable);
+            return ServiceComposer.RepairAutostart(executable, IdentityAssembly);
         }
 
-        if (args.Any(argument => argument.Equals("--service", StringComparison.OrdinalIgnoreCase)))
-        {
-            var executable = Environment.ProcessPath
-                             ?? throw new InvalidOperationException("无法确定 HistoryVulcan 可执行文件路径");
-            return global::HistoryVulcan.ServiceHost.ServiceHost.Run(
-                App.BuildServiceComposition(executable),
-                executable,
-                ["--service"]);
-        }
-
-        var app = new App();
-        app.InitializeComponent();
-        app.Run();
-        return 0;
+        // REQ-A8：宿主只剩服务这一个角色。
+        //
+        // 迁出前 `--service` 是「双角色 exe」的分支开关：不带它就起 WPF 前端。
+        // 前端已整体成为 HistoryAurora.exe（REQ-A7），此处不再有第二条路径，
+        // 因此该参数退化为**兼容开关**——自启动项、既有快捷方式和 `vulcan.svc.restart`
+        // 都还带着它，静默忽略即可，报错只会让升级过程平白失败。
+        var servicePath = Environment.ProcessPath
+                          ?? throw new InvalidOperationException("无法确定 HistoryVulcan 可执行文件路径");
+        return global::HistoryVulcan.ServiceHost.ServiceHost.Run(
+            ServiceComposer.Build(servicePath, IdentityAssembly),
+            servicePath,
+            ["--service"]);
     }
 }

@@ -104,10 +104,9 @@
       "HistoryVulcan": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[3.6.1, )",
-          "OneHistory.HistoryVulcan.ServiceHost": "[3.6.1, )",
-          "OneHistory.HistoryVulcan.Services": "[3.6.1, )",
-          "OneHistory.HistoryVulcan.Shell": "[3.6.1, )"
+          "OneHistory.HistoryVulcan.Core": "[4.0.0, )",
+          "OneHistory.HistoryVulcan.ServiceHost": "[4.0.0, )",
+          "OneHistory.HistoryVulcan.Services": "[4.0.0, )"
         }
       },
       "OneHistory.HistoryVulcan.Core": {
@@ -116,47 +115,22 @@
       "OneHistory.HistoryVulcan.Extensibility": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[3.6.1, )"
+          "OneHistory.HistoryVulcan.Core": "[4.0.0, )"
         }
       },
       "OneHistory.HistoryVulcan.ServiceHost": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[3.6.1, )",
-          "OneHistory.HistoryVulcan.Extensibility": "[3.6.1, )",
-          "OneHistory.HistoryVulcan.Services": "[3.6.1, )"
+          "OneHistory.HistoryVulcan.Core": "[4.0.0, )",
+          "OneHistory.HistoryVulcan.Extensibility": "[4.0.0, )",
+          "OneHistory.HistoryVulcan.Services": "[4.0.0, )"
         }
       },
       "OneHistory.HistoryVulcan.Services": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[3.6.1, )",
-          "OneHistory.HistoryVulcan.Extensibility": "[3.6.1, )"
-        }
-      },
-      "OneHistory.HistoryVulcan.Shell": {
-        "type": "Project",
-        "dependencies": {
-          "Dirkster.AvalonDock": "[4.72.1, )",
-          "Dirkster.AvalonDock.Themes.VS2013": "[4.72.1, )",
-          "OneHistory.HistoryVulcan.Core": "[3.6.1, )",
-          "OneHistory.HistoryVulcan.Extensibility": "[3.6.1, )",
-          "OneHistory.HistoryVulcan.Services": "[3.6.1, )"
-        }
-      },
-      "Dirkster.AvalonDock": {
-        "type": "CentralTransitive",
-        "requested": "[4.72.1, )",
-        "resolved": "4.72.1",
-        "contentHash": "m5J03HVntDM3eu7GyzLWlNdr2c2TTBAoD33Pq1yCID7vEtk13VVngtlmegp67WUvpL5JUC8G2xU8n+ThZKKz0Q=="
-      },
-      "Dirkster.AvalonDock.Themes.VS2013": {
-        "type": "CentralTransitive",
-        "requested": "[4.72.1, )",
-        "resolved": "4.72.1",
-        "contentHash": "g+hcHokgRFSvznqsVWxHxPCrUMxe18MTJjXMRVQJTVNo/Kwx8krdNiRnCSUDkuVtr2z29EtC4QofZhwUB7FS+w==",
-        "dependencies": {
-          "Dirkster.AvalonDock": "4.72.1"
+          "OneHistory.HistoryVulcan.Core": "[4.0.0, )",
+          "OneHistory.HistoryVulcan.Extensibility": "[4.0.0, )"
         }
       }
     }

@@ -6,15 +6,13 @@ using System.Net.WebSockets;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
-using System.Windows.Controls;
-using System.Windows.Threading;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Clients;
 using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Core.Storage;
+using HistoryVulcan.ServiceHost;
 using HistoryVulcan.Services.Web;
-using HistoryVulcan.Shell;
 using Xunit;
 
 namespace HistoryVulcan.Tests;
@@ -89,58 +87,6 @@ public sealed class FreezeBlockerTests
         Assert.True(log.Snapshot().Count(entry => entry.Message.Contains("[REDACTED]", StringComparison.Ordinal)) >= 9);
     }
 
-    [Fact]
-    public async Task SecretSettingValuesAreMaskedInCommandResultsNotOnlyInLogs()
-    {
-        // 回归 FZR-01 的读路径:vulcan.app.get 声明 Readonly,对 scope=read 的远程设备放行,
-        // 并在默认 readonly 策略下作为 MCP 工具可见。结果对象会原样序列化进 HTTP 响应体
-        // 与 tools/call 载荷,因此断言必须落在 CommandResult.Message 上,而不只是日志。
-        var settings = new MemorySettings();
-        settings.Set("web.token", "delta-secret");
-        settings.Set("database.connectionString", "connection-secret");
-        settings.Set("signing.private_key", "private-secret");
-        settings.Set("code", "code-setting-secret");
-        settings.Set("console.history", "500");
-        var log = new MemoryLog();
-        var registry = new CommandRegistry();
-        var bus = new CommandBus(registry, log);
-        BuiltinCommands.Register(registry, new ShellCommandServices
-        {
-            Window = null!,
-            Docking = null!,
-            Console = null!,
-            History = null!,
-            Settings = settings,
-            Log = log,
-            Bus = bus,
-            DataDirectory = "",
-        });
-
-        var single = await bus.ExecuteAsync("vulcan.app.get key=web.token", "Test");
-        var code = await bus.ExecuteAsync("vulcan.app.get key=code", "Test");
-        var listing = await bus.ExecuteAsync("vulcan.app.get", "Test");
-        var write = await bus.ExecuteAsync("vulcan.app.set key=web.token value=echo-secret", "Test");
-
-        Assert.DoesNotContain("delta-secret", single.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("code-setting-secret", code.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("code-setting-secret", listing.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("delta-secret", listing.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("connection-secret", listing.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("private-secret", listing.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("echo-secret", write.Message, StringComparison.Ordinal);
-        Assert.Contains("(已配置)", single.Message, StringComparison.Ordinal);
-        Assert.Contains("(已配置)", code.Message, StringComparison.Ordinal);
-
-        // 非敏感键不受影响,vulcan.app.get 仍是可用的排查工具
-        Assert.Contains("console.history = 500", listing.Message, StringComparison.Ordinal);
-
-        var written = string.Join('\n', log.Snapshot().Select(entry => entry.Message));
-        Assert.DoesNotContain("delta-secret", written, StringComparison.Ordinal);
-        Assert.DoesNotContain("connection-secret", written, StringComparison.Ordinal);
-        Assert.DoesNotContain("private-secret", written, StringComparison.Ordinal);
-        Assert.DoesNotContain("code-setting-secret", written, StringComparison.Ordinal);
-        Assert.DoesNotContain("echo-secret", written, StringComparison.Ordinal);
-    }
 
     [Fact]
     public async Task CommandExceptionsDoNotExposeSensitiveValues()
@@ -377,151 +323,6 @@ public sealed class FreezeBlockerTests
     }
 
 
-    [Fact]
-    public void CommandHistoryMigratesLegacySecretsAndStoresOnlyRedactedManualEchoes()
-    {
-        var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan-history-security-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(root);
-        var historyPath = Path.Combine(root, "history.txt");
-        try
-        {
-            File.WriteAllText(historyPath, "vulcan.web.token legacy-history-secret\n");
-            var history = new CommandHistory(historyPath);
-            Assert.Empty(history.Snapshot());
-            Assert.DoesNotContain(
-                "legacy-history-secret", File.ReadAllText(historyPath), StringComparison.Ordinal);
-
-            Exception? failure = null;
-            using var finished = new ManualResetEventSlim();
-            var thread = new Thread(() =>
-            {
-                try
-                {
-                    var registry = new CommandRegistry();
-                    registry.Register(SecretDescriptor("vulcan.web.token", "value", position: 0));
-                    registry.Register(SecretDescriptor("secure.position", "clientSecret", position: 0));
-                    registry.Register(new CommandDescriptor
-                    {
-                        Name = "vulcan.app.set",
-                        Summary = "set",
-                        Parameters =
-                        [
-                            new ParameterSpec
-                            {
-                                Name = "key",
-                                Description = "key",
-                                Required = true,
-                                Position = 0,
-                            },
-                            new ParameterSpec
-                            {
-                                Name = "value",
-                                Description = "value",
-                                Required = true,
-                                Position = 1,
-                            },
-                        ],
-                        Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("set")),
-                    });
-                    registry.Register(new CommandDescriptor
-                    {
-                        Name = "safe.read",
-                        Summary = "safe",
-                        Parameters =
-                        [
-                            new ParameterSpec
-                            {
-                                Name = "value",
-                                Description = "value",
-                                Required = true,
-                                Position = 0,
-                            },
-                        ],
-                        Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("safe")),
-                    });
-                    var log = new MemoryLog();
-                    var bus = new CommandBus(registry, log);
-                    _ = new HistoryVulcan.Shell.Console.ConsoleView(
-                        log,
-                        bus,
-                        history,
-                        new HistoryVulcan.Shell.CommandSurface.DeferredCommandCatalogSession());
-
-                    bus.ExecuteAsync("vulcan.web.token console-history-secret", "手动").GetAwaiter().GetResult();
-                    bus.ExecuteAsync("vulcan.app.set mcp.token setting-history-secret", "手动")
-                        .GetAwaiter().GetResult();
-                    bus.ExecuteAsync("vulcan.web.token \"malformed-token-history-secret", "手动")
-                        .GetAwaiter().GetResult();
-                    bus.ExecuteAsync("vulcan.app.set mcp.token \"malformed-setting-history-secret", "手动")
-                        .GetAwaiter().GetResult();
-                    bus.ExecuteAsync("secure.position \"derived-history-secret", "手动")
-                        .GetAwaiter().GetResult();
-                    bus.ExecuteAsync("safe.read visible-value", "手动").GetAwaiter().GetResult();
-                    history.Save();
-
-                    var historyRegistry = new CommandRegistry();
-                    var historyBus = new CommandBus(historyRegistry, new MemoryLog());
-                    BuiltinCommands.Register(historyRegistry, new ShellCommandServices
-                    {
-                        Window = null!,
-                        Docking = null!,
-                        Console = null!,
-                        History = history,
-                        Settings = new MemorySettings(),
-                        Log = new MemoryLog(),
-                        Bus = historyBus,
-                        DataDirectory = root,
-                    });
-                    var historyResult = historyBus.ExecuteAsync("vulcan.command.history count=20", "Web:read")
-                        .GetAwaiter().GetResult();
-                    Assert.True(historyResult.Success, historyResult.Message);
-                    Assert.DoesNotContain("console-history-secret", historyResult.Message, StringComparison.Ordinal);
-                    Assert.DoesNotContain("setting-history-secret", historyResult.Message, StringComparison.Ordinal);
-                    Assert.DoesNotContain("malformed-token-history-secret", historyResult.Message, StringComparison.Ordinal);
-                    Assert.DoesNotContain("malformed-setting-history-secret", historyResult.Message, StringComparison.Ordinal);
-                    Assert.DoesNotContain("derived-history-secret", historyResult.Message, StringComparison.Ordinal);
-                }
-                catch (Exception ex)
-                {
-                    failure = ex;
-                }
-                finally
-                {
-                    finished.Set();
-                }
-            });
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            Assert.True(finished.Wait(TimeSpan.FromSeconds(5)));
-            thread.Join();
-            if (failure != null)
-                throw failure;
-
-            Assert.Equal(
-                [
-                    "vulcan.web.token [REDACTED]",
-                    "vulcan.app.set mcp.token [REDACTED]",
-                    "vulcan.web.token [REDACTED]",
-                    "vulcan.app.set [REDACTED]",
-                    "secure.position [REDACTED]",
-                    "safe.read visible-value",
-                ],
-                history.Snapshot());
-            var persisted = File.ReadAllText(historyPath);
-            Assert.Contains("# HistoryVulcan.CommandHistory.v2:redacted", persisted, StringComparison.Ordinal);
-            Assert.DoesNotContain("console-history-secret", persisted, StringComparison.Ordinal);
-            Assert.DoesNotContain("setting-history-secret", persisted, StringComparison.Ordinal);
-            Assert.DoesNotContain("malformed-token-history-secret", persisted, StringComparison.Ordinal);
-            Assert.DoesNotContain("malformed-setting-history-secret", persisted, StringComparison.Ordinal);
-            Assert.DoesNotContain("derived-history-secret", persisted, StringComparison.Ordinal);
-            Assert.Contains("visible-value", persisted, StringComparison.Ordinal);
-            Assert.Equal(history.Snapshot(), new CommandHistory(historyPath).Snapshot());
-        }
-        finally
-        {
-            Directory.Delete(root, recursive: true);
-        }
-    }
 
 
     [Fact]

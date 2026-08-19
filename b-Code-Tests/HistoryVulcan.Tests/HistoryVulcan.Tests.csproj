@@ -25,7 +25,6 @@
     <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.Core\HistoryVulcan.Core.csproj" />
     <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.ServiceHost\HistoryVulcan.ServiceHost.csproj" />
     <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.Services\HistoryVulcan.Services.csproj" />
-    <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.Shell\HistoryVulcan.Shell.csproj" />
     <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.Extensibility\HistoryVulcan.Extensibility.csproj" />
     <!--
       DEC-023:此处曾有一条指向邻接项目 ..\..\..\2026-021-HistoryMercury 的 ProjectReference。

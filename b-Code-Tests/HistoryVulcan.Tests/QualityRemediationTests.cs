@@ -1,28 +1,12 @@
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Services;
-using HistoryVulcan.Shell;
 using Xunit;
 
 namespace HistoryVulcan.Tests;
 
 public sealed class QualityRemediationTests
 {
-    [Fact]
-    public void ShellConfigDefaultsToMinimalOptionalCapabilities()
-    {
-        var config = new ShellConfig
-        {
-            AppName = "Minimal",
-            AppVersion = "3.0.1",
-        };
-
-        Assert.False(config.EnableModules);
-        Assert.False(config.EnableUiModules);
-        Assert.False(config.EnableMcp);
-        Assert.False(config.EnableRemoteManagementViews);
-        Assert.Empty(config.Panels);
-    }
 
     [Fact]
     public void CorruptedSettingsArePreservedAndSubsequentWritesAreAtomic()
@@ -47,31 +31,6 @@ public sealed class QualityRemediationTests
             if (Directory.Exists(paths.Root))
                 Directory.Delete(paths.Root, recursive: true);
         }
-    }
-
-    [Fact]
-    public void FrontendProxyFactoriesUseTheSameGovernanceMetadata()
-    {
-        var source = new CommandDescriptor
-        {
-            Name = "ui.dangerous",
-            Summary = "dangerous",
-            Dangerous = true,
-            RequiresUiThread = true,
-            AllowUnspecifiedParameters = true,
-            AllowMcpExecution = true,
-            Handler = CommandDescriptor.Sync(_ => CommandResult.Ok()),
-        };
-
-        var frameworkProxy = FrontendCommandCatalog.CreateProxy(source);
-        var capabilityProxy = FrontendCommandCapability.From(
-            source, FrontendCommandCatalog.Source).CreateProxy();
-
-        Assert.Equal(capabilityProxy.IsDangerous, frameworkProxy.IsDangerous);
-        Assert.Equal(capabilityProxy.RequiresUiThread, frameworkProxy.RequiresUiThread);
-        Assert.Equal(capabilityProxy.AllowUnspecifiedParameters, frameworkProxy.AllowUnspecifiedParameters);
-        Assert.Equal(capabilityProxy.AllowMcpExecution, frameworkProxy.AllowMcpExecution);
-        Assert.NotNull(frameworkProxy.ConfirmPrompt);
     }
 
     [Fact]
