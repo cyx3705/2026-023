@@ -37,6 +37,14 @@ public sealed class CommandBus
     /// <summary>
     /// Validates a command text against the current registry without routing, logging, confirmation, or execution.
     /// UI surfaces use this to reject stale menu references at construction time.
+    ///
+    /// 配置了 <see cref="RemoteExecutor"/> 时，本地查不到的指令判为**无法在本进程判定**
+    /// 而不是无效：权威注册表在服务进程，<see cref="ExecuteAsync"/> 也会把这类指令中继过去。
+    /// 4.0.0 前两者口径不一致——`ExecuteAsync` 中继、`Validate` 报"未知指令"——
+    /// 因此一条命令从前端搬到服务侧后，引用它的菜单会在构建期直接抛异常，
+    /// 尽管点下去其实能正常执行。
+    ///
+    /// 嵌入模式（无远端）下仍然硬报错：那时本地注册表就是权威，笔误必须当场暴露。
     /// </summary>
     public string? Validate(string text)
     {
@@ -51,7 +59,7 @@ public sealed class CommandBus
         }
 
         if (!_registry.TryGet(parsed.Name, out var descriptor))
-            return $"未知指令: {parsed.Name}";
+            return RemoteExecutor != null ? null : $"未知指令: {parsed.Name}";
 
         return BindArguments(descriptor, parsed, out _);
     }

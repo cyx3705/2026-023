@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO;
+using System.Text;
 using HistoryVulcan.Core.Commands;
 
 namespace HistoryVulcan.ServiceHost;
@@ -84,6 +85,20 @@ public static class ServiceCommands
                     : CommandResult.Ok($"脚本执行完成: {ok} 条成功,{failed} 条失败(已跳过)");
             },
         }, source);
+
+        // REQ-A6 / DEC-006：与 command.run 同类——只查注册表并拼文本，无任何 UI 依赖。
+        // 留在前端会让"查指令帮助"这种基础能力依赖界面进程在线，且它与服务侧已有的
+        // command.list / show / domains 本属同一族（都是注册表查询），分处两个进程没有道理。
+        // 服务侧注册表含前端投影的能力目录，因此这里的输出比前端版本更完整。
+        registry.Register(BuiltinCommandDefinitions.Bind(
+            "vulcan.command.help",
+            CommandDescriptor.Sync(ctx =>
+            {
+                var name = ctx.GetString("command");
+                return name == null
+                    ? HelpList(composition.Registry)
+                    : HelpDetail(composition.Registry, name);
+            })), source);
 
         registry.Register(new CommandDescriptor
         {
@@ -194,6 +209,67 @@ public static class ServiceCommands
                 return CommandResult.Ok($"服务登录启动已{(enabled ? "开启" : "关闭")}");
             }),
         }, source);
+    }
+
+    private static CommandResult HelpList(CommandRegistry registry)
+    {
+        var all = registry.All();
+        var sb = new StringBuilder($"共 {all.Count} 条指令,vulcan.command.help <指令名> 查看详情:");
+        foreach (var group in all.GroupBy(d =>
+                 {
+                     var dot = d.Name.IndexOf('.');
+                     return dot > 0 ? d.Name[..dot] : "基础";
+                 }, StringComparer.OrdinalIgnoreCase))
+        {
+            sb.Append($"\n[{group.Key}] ({group.Count()})");
+            foreach (var d in group)
+                sb.Append($"\n  {d.Name,-24} {d.Summary}");
+        }
+
+        return CommandResult.Ok(sb.ToString());
+    }
+
+    private static CommandResult HelpDetail(CommandRegistry registry, string name)
+    {
+        if (!registry.TryGet(name, out var d))
+        {
+            var suggestions = registry.Suggest(name);
+            var hint = suggestions.Count > 0 ? $"\n相近指令: {string.Join(" / ", suggestions)}" : "";
+            return CommandResult.Fail($"未知指令: {name}{hint}");
+        }
+
+        var sb = new StringBuilder($"{d.Name} —— {d.Summary}");
+
+        if (d.Parameters.Count == 0)
+        {
+            sb.Append("\n参数: (无)");
+        }
+        else
+        {
+            sb.Append("\n参数:");
+            foreach (var p in d.Parameters)
+            {
+                var attrs = new List<string>();
+                if (p.Required)
+                    attrs.Add("必填");
+                if (p.AllowedValues is { Length: > 0 })
+                    attrs.Add(string.Join("/", p.AllowedValues));
+                if (p.Default != null)
+                    attrs.Add($"默认{p.Default}");
+                attrs.Add(p.Type.ToString().ToLowerInvariant());
+                var suffix = attrs.Count > 0 ? $"({string.Join(",", attrs)})" : "";
+                sb.Append($"\n  {p.Name + suffix,-28} {p.Description}");
+            }
+        }
+
+        sb.Append($"\n{CommandBus.FormatUsage(d)}");
+        if (d.Example != null)
+            sb.Append($"\n示例: {d.Example}");
+        if (d.IsDangerous)
+            sb.Append("\n安全: 执行动作可能要求本地二次确认");
+        if (d.RequiresUiThread)
+            sb.Append("\n线程: UI");
+        return CommandResult.Ok(sb.ToString());
     }
 
     private static bool IsAutostartEnabled(ServiceComposition composition)
