@@ -661,9 +661,6 @@
             下次 <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.Reload"/> 或文件变化会按运行区当前包再装回来。
             </summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Reload">
-            <summary>整体重载:构建新快照 → 注册表换血(UI 线程) → 卸载旧 ALC。</summary>
-        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.FindModuleDomainConflicts(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String})">
             <summary>
             返回按旧命令名前缀计算的冲突集合。仅保留给旧消费方诊断；
@@ -674,23 +671,10 @@
              <summary>
              钉住模块的包目录。
             
-             钉住的模块装进 <see cref="P:System.Runtime.Loader.AssemblyLoadContext.Default"/> 而不是自定义上下文——
-             这不只是为了不卸载，更是 WPF 的硬要求：XAML 的类型引用形如
-             <c>{clr-namespace:…;assembly=AvalonDock.Themes.VS2013}</c>，解析时按**程序集简单名**
-             走默认上下文。依赖装在自定义上下文里时，BAML 会在
-             <c>ResourceDictionary.DeferrableContent</c> 上抛"类型引用无法找到"，
-             而这一步发生在 InitializeComponent 内部，编译期毫无征兆。
-            
-             代价是钉住模块与宿主共享程序集名字空间，不再有槽内隔离。这是"界面住进宿主进程"
-             的一部分代价，与不可卸载一并记在 Aurora DEC-008。
-             </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ResolvePinnedDependency(System.Runtime.Loader.AssemblyLoadContext,System.Reflection.AssemblyName)">
-             <summary>
-             把钉住模块的依赖解析到它自己的包目录。
-            
-             默认上下文只探测宿主目录，不认识模块包；没有这个钩子，模块主程序集能装上，
-             它引用的 AvalonDock 却找不到。
+             <c>pinned: true</c> 仍装进 <see cref="P:System.Runtime.Loader.AssemblyLoadContext.Default"/>，不可卸载。
+             可热重载的 WPF 模块走另一条路：装进可回收 ALC，默认上下文的 Resolving 只
+             返回该 ALC 里已经装好的程序集，绝不 <c>LoadFromAssemblyPath</c> 进 Default。
+             后一条才能让 XAML 的 <c>assembly=AvalonDock.Themes.VS2013</c> 解析成功，同时允许 Unload。
              </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.IsModuleArtifactDirectory(System.String)">
@@ -747,6 +731,28 @@
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.RemovePackage(System.String)">
             <summary>Atomically removes a named manifest package from the runtime module directory.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Reload">
+            <summary>
+            整体重载：先拆旧界面并卸载可回收 ALC，再装新包。
+            WPF 模块（例如 HistoryAurora）若先 Build 再卸旧包，进程里会同时存在两份同名
+            程序集；默认上下文的 Resolving 钩子会命中旧的那份，新窗口的 XAML 随即解析失败。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ResolveFromModuleContexts(System.Runtime.Loader.AssemblyLoadContext,System.Reflection.AssemblyName)">
+            <summary>
+            XAML 按程序集简单名走默认上下文。把可回收 ALC 里已装载的同名程序集交回去，
+            不要装进 Default——装进去就卸不掉，也锁住磁盘上的 DLL。
+            本方法不得取 <c>_reloadLock</c>：Attach / InitializeComponent 就在那把锁里。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ResolvePinnedDependency(System.Runtime.Loader.AssemblyLoadContext,System.Reflection.AssemblyName)">
+             <summary>
+             把钉住模块的依赖解析到它自己的包目录。
+            
+             默认上下文只探测宿主目录，不认识模块包；没有这个钩子，模块主程序集能装上，
+             它引用的 AvalonDock 却找不到。只用于 <c>pinned: true</c>。
+             </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.LoadTypes(System.Reflection.Assembly)">
             <summary>取程序集的类型表;缺失依赖只丢掉受影响的类型,不让整个模块下线(MD-06)。</summary>

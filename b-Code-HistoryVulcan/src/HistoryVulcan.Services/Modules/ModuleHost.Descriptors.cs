@@ -216,6 +216,7 @@ public sealed partial class ModuleHost
                 ui.Send(_ =>
                 {
                     DestroyUi(_current);
+                    ShellUi = null;
                     UnregisterCommands(_current);
                 }, null);
             }
@@ -226,12 +227,26 @@ public sealed partial class ModuleHost
         }
         else
         {
+            DestroyUi(_current);
+            ShellUi = null;
             UnregisterCommands(_current);
         }
 
         foreach (var alc in _current.Contexts)
             alc.Unload();
         _current = Snapshot.Empty;
+        PublishXamlContexts();
+        if (_xamlResolverInstalled)
+        {
+            AssemblyLoadContext.Default.Resolving -= ResolveFromModuleContexts;
+            _xamlResolverInstalled = false;
+        }
+
+        if (_pinnedResolverInstalled)
+        {
+            AssemblyLoadContext.Default.Resolving -= ResolvePinnedDependency;
+            _pinnedResolverInstalled = false;
+        }
     }
 
 

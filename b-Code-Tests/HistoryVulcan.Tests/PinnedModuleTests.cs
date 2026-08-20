@@ -8,15 +8,8 @@ namespace HistoryVulcan.Tests;
 
 /// <summary>
 /// 钉住模块（manifest 的 <c>pinned: true</c>）：装进不可回收的装载上下文，重载时不卸载、
-/// 不重建上下文。
-///
-/// 为什么需要这条：模块缺省装进可回收上下文，重载末尾逐个 <c>Unload()</c>；而实测一次冷启动
-/// 就会重载 2–3 次（初次装载 + 宿主 moduleRevision 通知引发的确认源重载）。
-/// 对初始化了**进程级状态**的模块——例如把 WPF 界面开在宿主进程内的模块——
-/// 这等于每次启动都要把类型解析器、Dispatcher 和资源程序集拆掉重来，必然崩在第二次。
-///
-/// 复用同一个上下文还有一个被依赖的副作用：同名程序集只装载一次，模块的**静态字段跨重载
-/// 存活**，模块因此能自己做幂等守卫，宿主不必替它记住"已经初始化过了"。
+/// 不重建上下文。缺省模块仍走可回收 ALC；WPF 壳（HistoryAurora）已改为先拆界面再装新包，
+/// 不再使用本标志。本机制留给真正不能拆进程级状态的模块。
 /// </summary>
 // 与 RuntimeModulePackageTests 共用同一串行集合：这些用例都往同一个临时模块目录写包，
 // 且 ContextFixture 带进程级静态状态，并行跑会互相看到对方的模块。
@@ -81,6 +74,15 @@ public sealed class PinnedModuleTests
             // 缺省仍是可回收上下文：钉住是显式声明的例外，不能因为加了这条机制就悄悄改变缺省。
             Assert.DoesNotContain(log.Entries, entry => entry.Message.Contains("钉住模块", StringComparison.Ordinal));
             Assert.Equal("contextfixture", Assert.Single(host.Modules).ModuleName);
+
+            log.Entries.Clear();
+            host.Reload();
+            var teardown = log.Entries.FindIndex(entry =>
+                entry.Message.Contains("先拆除旧界面", StringComparison.Ordinal));
+            var loaded = log.Entries.FindIndex(entry =>
+                entry.Message.Contains("模块装载完成", StringComparison.Ordinal));
+            Assert.True(teardown >= 0, "可回收模块重载必须先拆旧包");
+            Assert.True(loaded > teardown, "拆完旧包之后才能装新包");
         }
         finally
         {
