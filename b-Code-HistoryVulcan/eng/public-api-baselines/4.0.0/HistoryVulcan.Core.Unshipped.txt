@@ -1,1 +1,3 @@
 ﻿#nullable enable
+HistoryVulcan.Core.Modules.IShellUiProvider
+HistoryVulcan.Core.Modules.IShellUiProvider.ShellUi.get -> HistoryVulcan.Core.Modules.IShellUiRegistrar?

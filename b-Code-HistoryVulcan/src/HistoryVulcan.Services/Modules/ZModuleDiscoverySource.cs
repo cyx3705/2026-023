@@ -402,5 +402,6 @@ public sealed class ZModuleDiscoverySource : IModuleDiscoverySource
         public string? Docs { get; init; }
         public IReadOnlyList<string>? Deps { get; init; }
         public string? McpExposure { get; init; }
+
     }
 }
