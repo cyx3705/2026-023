@@ -724,6 +724,11 @@
         <member name="T:HistoryVulcan.Services.Modules.ModuleHost.ModuleLoadContext">
             <summary>可回收的加载上下文:模块及其依赖全部从内存流加载,不锁磁盘文件。</summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ModuleLoadContext.TryLoadFromPackage(System.Reflection.AssemblyName,System.Reflection.Assembly@)">
+            <summary>
+            只从本包目录装载。找不到就返回 false，绝不回落到 Default。
+            </summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.InstallPackage(System.String)">
             <summary>
             Validates and atomically installs a manifest package into the fixed runtime module directory.
@@ -741,9 +746,12 @@
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ResolveFromModuleContexts(System.Runtime.Loader.AssemblyLoadContext,System.Reflection.AssemblyName)">
             <summary>
-            XAML 按程序集简单名走默认上下文。把可回收 ALC 里已装载的同名程序集交回去，
+            XAML 按程序集简单名走默认上下文。把可回收 ALC 里已装载的同名程序集交回去；
+            尚未装载的，只从该 ALC 的模块包目录装进<strong>那个</strong>可回收上下文。
             不要装进 Default——装进去就卸不掉，也锁住磁盘上的 DLL。
             本方法不得取 <c>_reloadLock</c>：Attach / InitializeComponent 就在那把锁里。
+            也不得对可回收 ALC 调用 <c>LoadFromAssemblyName</c>：包里没有的程序集会回落到
+            Default，再进本钩子，无限递归。
             </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ResolvePinnedDependency(System.Runtime.Loader.AssemblyLoadContext,System.Reflection.AssemblyName)">

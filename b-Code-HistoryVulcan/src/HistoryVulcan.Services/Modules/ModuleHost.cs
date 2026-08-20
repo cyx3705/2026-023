@@ -576,6 +576,10 @@ public sealed partial class ModuleHost : IDisposable
                 var owned = new ModuleLoadContext(module.PackagePath);
                 TrackContext(snap, owned);
                 alc = owned;
+                // XAML 的 assembly= 简单名走默认上下文。必须先把包内依赖装进
+                // 这个可回收 ALC，Resolving 才能交回已装载的程序集。
+                foreach (var dependency in module.DependencyPaths)
+                    LoadAssembly(owned, dependency);
                 assembly = LoadAssembly(owned, module.ArtifactPath);
             }
 

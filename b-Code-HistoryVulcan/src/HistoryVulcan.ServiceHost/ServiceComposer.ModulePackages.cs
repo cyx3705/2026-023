@@ -22,6 +22,7 @@ public static partial class ServiceComposer
     {
         var moduleName = TryReadPackageName(path);
         var frontend = await UnloadFrontendModuleAsync(
+            host,
             bus,
             moduleName,
             cancellationToken).ConfigureAwait(false);
@@ -37,6 +38,7 @@ public static partial class ServiceComposer
         CancellationToken cancellationToken = default)
     {
         var frontend = await UnloadFrontendModuleAsync(
+            host,
             bus,
             name,
             cancellationToken).ConfigureAwait(false);
@@ -46,11 +48,13 @@ public static partial class ServiceComposer
     }
 
     private static async Task<FrontendUnloadResult> UnloadFrontendModuleAsync(
+        ModuleHost host,
         CommandBus bus,
         string? moduleName,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(moduleName)
+            || host.ShellUi != null
             || bus.FrontendExecutor is not { } frontend)
             return new FrontendUnloadResult(false, null);
 

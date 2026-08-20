@@ -59,25 +59,22 @@ public sealed partial class ModuleHost
 
     private void CommitSnapshot(Snapshot old, Snapshot next)
     {
-        var ui = UiContext;
-        if (ui == null)
+        // 先 FinalizeMetas / 切 _current，再 CreateUi。界面模块（Aurora）若在
+        // Attach 阶段就 Show，模块页 Loaded 会读到 Snapshot.Empty，而且只读一次。
+        void Commit()
         {
             SwapRegistrations(old, next);
             _current = next;
             PublishXamlContexts();
-            _log.Info("module",
-                $"模块装载完成(无 UI): {next.Modules.Count} 个模块/{next.RegisteredNames.Count} 条指令");
-            return;
+            CreateUi(next);
         }
 
-        ui.Send(_ =>
-        {
-            SwapRegistrations(old, next);
-            CreateUi(next);
-        }, null);
+        var ui = UiContext;
+        if (ui == null)
+            Commit();
+        else
+            ui.Send(_ => Commit(), null);
 
-        _current = next;
-        PublishXamlContexts();
         _log.Info("module",
             $"模块装载完成: {next.Modules.Count} 个模块,{next.RegisteredNames.Count} 条指令");
     }
@@ -114,9 +111,12 @@ public sealed partial class ModuleHost
     }
 
     /// <summary>
-    /// XAML 按程序集简单名走默认上下文。把可回收 ALC 里已装载的同名程序集交回去，
+    /// XAML 按程序集简单名走默认上下文。把可回收 ALC 里已装载的同名程序集交回去；
+    /// 尚未装载的，只从该 ALC 的模块包目录装进<strong>那个</strong>可回收上下文。
     /// 不要装进 Default——装进去就卸不掉，也锁住磁盘上的 DLL。
     /// 本方法不得取 <c>_reloadLock</c>：Attach / InitializeComponent 就在那把锁里。
+    /// 也不得对可回收 ALC 调用 <c>LoadFromAssemblyName</c>：包里没有的程序集会回落到
+    /// Default，再进本钩子，无限递归。
     /// </summary>
     private Assembly? ResolveFromModuleContexts(AssemblyLoadContext _, AssemblyName name)
     {
@@ -131,6 +131,13 @@ public sealed partial class ModuleHost
                 if (string.Equals(loaded.GetName().Name, name.Name, StringComparison.OrdinalIgnoreCase))
                     return loaded;
             }
+        }
+
+        foreach (var alc in contexts)
+        {
+            if (alc is ModuleLoadContext local
+                && local.TryLoadFromPackage(name, out var loaded))
+                return loaded;
         }
 
         return null;
@@ -190,21 +197,25 @@ public sealed partial class ModuleHost
         if (ShellUi == null)
             return;
 
-        foreach (var (module, _) in snapshot.UiModules)
+        // 提供方最后 CreateUi：Aurora 在这里才 Show 主窗口。先让其余模块把页面
+        // 注册进停靠布局，模块管理页 Loaded 时清单已经定稿。
+        var others = snapshot.UiModules.Where(item => item.Module is not IShellUiProvider);
+        var providers = snapshot.UiModules.Where(item => item.Module is IShellUiProvider);
+        foreach (var item in others.Concat(providers))
         {
             try
             {
-                if (module is IShellUiAware aware)
+                if (item.Module is IShellUiAware aware)
                     aware.ShellUi = ShellUi;
 
                 // 必须编组到界面线程。宿主自己的循环不是 STA，模块一建控件就抛
                 // "调用线程必须为 STA"——而这条异常被按模块吞掉，表现为某个模块的页面
                 // 悄悄少了一个，别的模块照常。注册器知道界面线程在哪，交给它。
-                ShellUi.Invoke(module.CreateUi);
+                ShellUi.Invoke(item.Module.CreateUi);
             }
             catch (Exception ex)
             {
-                _log.Warn("module", $"创建 UI 模块 {module.GetType().FullName} 失败: {ex.Message}");
+                _log.Warn("module", $"创建 UI 模块 {item.Module.GetType().FullName} 失败: {ex.Message}");
             }
         }
     }

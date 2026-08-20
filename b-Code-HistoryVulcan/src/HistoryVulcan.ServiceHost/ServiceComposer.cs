@@ -339,7 +339,10 @@ public static partial class ServiceComposer
             {
                 var name = ctx.RequireString("name");
                 string? frontendNote = null;
-                if (bus.FrontendExecutor is { } frontend)
+                // 进程内界面（IShellUiProvider）把 FrontendExecutor 指回本总线。
+                // 再中继 vulcan.module.unload 会在同一条命令上无限递归，直到进程崩掉。
+                // 双进程时代才需要先卸另一边的文件锁。
+                if (host.ShellUi == null && bus.FrontendExecutor is { } frontend)
                 {
                     var remote = await frontend(
                         $"vulcan.module.unload name={CommandParser.QuoteArg(name)}",
