@@ -108,6 +108,29 @@ public sealed class CommandTaxonomyContractTests
         Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.log.level"));
     }
 
+    /// <summary>
+    /// Aurora REQ-UI-003 的连带约束。页面注册协议的内部通道此刻本来就不可见，但那只是
+    /// 因为它们走前端注册路径而 PolicyVisible=false——那是**策略**结果，网关策略一改就可能
+    /// 翻转。`vulcan.command.run` 正是这样从前端搬到服务侧后自动变成可见工具的。
+    /// 按名硬排除才是结构性保证，这里锁住它。
+    /// </summary>
+    [Fact]
+    public void PageProtocolChannelsStayOutOfReachOfRemoteClients()
+    {
+        // 描述与取数：模块以自己的域注册，因此按后缀而非全名排除。
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("mercury.ui.describe"));
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("janus.ui.data"));
+
+        // 驱动前端重建界面的三条。
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.reloadpages"));
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.invalidate"));
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.missing"));
+
+        // 别的 ui.* 指令不受牵连——排除的是这条协议，不是整个 ui 类。
+        Assert.Null(McpExposurePolicy.HardExclusionReason("aurora.ui.show"));
+        Assert.Null(McpExposurePolicy.HardExclusionReason("aurora.ui.layout"));
+    }
+
     [Fact]
     public void RuntimePackageMutationCommandsStayOutOfReachOfRemoteClients()
     {
