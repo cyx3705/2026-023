@@ -73,15 +73,20 @@ AssemblyView.xaml:13
 > 「禁止模块自建组件」这条禁令要等 `Aurora.Segment.Toggle` 落地才生效，
 > 且 `DataGrid` 场景本就是例外。本轮不用为它做任何取舍。
 
-## 四、命令改域
+## 四、命令改域：确认 0 处（2026-08-20 重扫）
 
-Minerva 未硬编码前端命令名（扫描无命中）。检查文档：
+> 本篇初版的扫描命令模式漏了 `vulcan.command.*` 且只搜 `*.md`，结论不足为凭。
+> 用覆盖全部 37 条改域命令、且搜代码的模式重扫后：**Minerva 确实 0 处命中**，
+> 代码与文档都干净。
+
+### 重扫命令
 
 ```bash
-grep -rn "vulcan\.\(ui\|log\)\." 2026-024-HistoryMinerva --include=*.md
+grep -rnE "vulcan\.(ui|log)\.|vulcan\.app\.(about|opendata|theme|window)|vulcan\.command\.(copyexample|history)" 2026-024-HistoryMinerva --include=*.cs --include=*.xaml --include=*.md --include=*.json --include=*.ps1 | grep -v "/obj/\|/bin/"
 ```
 
-Minerva 自己的 `minerva.*` 命令不受影响。
+Minerva 自己的 `minerva.*` 命令不受影响；`vulcan.command.list` 等**保留不改**
+（宿主实现，见总纲第三节）。
 
 ## 五、验收
 

@@ -11,8 +11,10 @@
 | 用到的样式键 | **28 个不同键**（四个模块里最多）|
 | 自建样式 / 模板 | **0** |
 | 宿主 API 破坏 | **有，4 个文件**（见第一节，必须先修）|
+| 硬编码的旧命令名 | **4 处**（3 处活代码 + 1 处测试夹具，见第四节）|
 
-Mercury 用键最多但**零自建**——它是组件库的模范消费方。真正的工作量在 API 那一处。
+Mercury 用键最多但**零自建**——它是组件库的模范消费方。工作量集中在第一节的 API
+与第四节的命令改域，两处都是不改就出事的硬破坏。
 
 ## 一、编译会直接失败：`HistoryVulcan.Shell.Mcp` 不存在了（先修这个）
 
@@ -82,15 +84,40 @@ Shell.Text.Body             Shell.Text.Caption
 改名后确认扩展坞（dock.manager 窗口）在浅色深色下都正常——它不像业务页那样显眼，
 容易漏看。
 
-## 四、命令改域
+## 四、命令改域：有 3 处活代码要改（2026-08-20 更正）
 
-Mercury 未硬编码前端命令名（扫描无命中）。检查文档：
+> **本篇初版写的是「Mercury 未硬编码前端命令名（扫描无命中）」，那是错的。**
+> 当时给的扫描命令模式漏了 `vulcan.command.*`，且只搜 `*.md` 不搜代码，
+> 根本找不到下面这些。重扫结果：
+
+| 文件 | 行 | 旧名 | 改为 |
+|---|---|---|---|
+| `b-Code-MercuryDock/CommandSurface/CommandDetailView.xaml.cs` | 141 | `vulcan.command.copyexample` | `aurora.command.copyexample` |
+| `b-Code-MercuryDock/CommandSurface/McpToolsView.xaml.cs` | 200 | `vulcan.log.source` | `aurora.log.source` |
+| `b-Code-MercuryDock/CommandSurface/McpToolsView.xaml.cs` | 208 | `vulcan.log.class` | `aurora.log.class` |
+| `b-Code-Tests/HistoryMercury.Smoke/Program.cs` | 501 | `vulcan.ui.reset` | `aurora.ui.reset` |
+
+前三处是**运行时真会执行的**：命令详情页的「复制示例」按钮、命令集页按域与按类的
+日志过滤。第四处在测试夹具的命令名单里。
+
+### 为什么它们现在还能用——别被这一点骗过去
+
+这三条**目前都解析得通**，但宿主源码里 `copyexample` / `log.source` / `log.class`
+**一处都没有**。它们能解析，是因为 `web.frontendcatalog` 这个按客户端名做键、
+不做存活性回收的缓存，把退役的旧名字复活了。同一个 bug 让 `vulcan` 域至今虚报
+66 条（实际 30）。
+
+**该缓存是已知待办。清理的那一刻，这三个按钮同时变「未知指令」。**
+所以不要用"点下去还能用"作为判据。
+
+### 重扫命令
 
 ```bash
-grep -rn "vulcan\.\(ui\|log\)\." 2026-021-HistoryMercury --include=*.md
+grep -rnE "vulcan\.(ui|log)\.|vulcan\.app\.(about|opendata|theme|window)|vulcan\.command\.(copyexample|history)" 2026-021-HistoryMercury --include=*.cs --include=*.xaml --include=*.md --include=*.json --include=*.ps1 | grep -v "/obj/\|/bin/"
 ```
 
-Mercury 自己的 `mercury.*` 命令不受影响。
+改完应返回空。Mercury 自己的 `mercury.*` 命令不受影响；
+`vulcan.command.list` / `show` / `domains` 等**保留不改**（宿主实现，见总纲第三节）。
 
 ## 五、全局快捷键：已经是对的，不用动
 
@@ -102,6 +129,7 @@ Mercury 已按 `<域>.hotkey.*` 命令自持快捷键，本轮无需改动。
 
 - [ ] 4 处 `HistoryVulcan.Shell.Mcp` 已改为 `HistoryVulcan.Services.Mcp`，编译通过
 - [ ] `grep -rn "Shell\.[A-Za-z.]*"` 返回空
+- [ ] 第四节的 4 处旧命令名已改域，重扫返回空
 - [ ] Mercury 自己的构建与 Smoke 全绿
 - [ ] 在 Aurora 里打开命令集与命令详情页，**浅色深色各看一次**
 - [ ] 扩展坞（dock.manager）外观正常

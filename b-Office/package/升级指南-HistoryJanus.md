@@ -63,15 +63,33 @@ Aurora 的组件计划把它列为 P0，且是「禁止模块自建」这条禁�
 `OverviewView` 的 `ListViewItem` 模板要看 `Aurora.Item.Base` 能否覆盖你的触发器需求；
 若不能，那是另一个缺件，请提给 Aurora 而不是继续自造。
 
-## 三、命令改域
+## 三、命令改域：代码 0 处，文档 2 处（2026-08-20 重扫）
 
-Janus 未硬编码前端命令名（扫描无命中）。但**检查一遍文档与说明书**：
+> 本篇初版的扫描命令模式漏了 `vulcan.command.*` 且只搜 `*.md`。用正确模式重扫后，
+> **Janus 的代码依然是干净的**——初版结论碰巧没错，但当时的扫描不足以支撑它。
 
-```bash
-grep -rn "vulcan\.\(ui\|log\)\." 2026-020-HistoryJanus --include=*.md
+重扫命中 2 处，都在决策记录里：
+
+```
+b-Office/current/有效决策.md:375   `vulcan.ui.layoutreset`
+b-Office/current/有效决策.md:406   `vulcan.ui.show name=github`
 ```
 
-若命中，按总纲第三节改域。Janus 自己的 `janus.*` 命令不受影响。
+**建议不要改这两处。** 它们是已接受决策的历史记录，记的是当时的事实；
+按仓库合同，`b-Office/current/有效决策.md` 里的既往条目不因外部改名而重写。
+若担心有人照着敲，可在该条目下补一行"4.0.0 起该命令为 `aurora.ui.*`"，
+而不是修改原文。
+
+Janus 自己的 `janus.*` 命令不受影响；`vulcan.command.list` 等**保留不改**
+（宿主实现，见总纲第三节）。
+
+### 重扫命令
+
+```bash
+grep -rnE "vulcan\.(ui|log)\.|vulcan\.app\.(about|opendata|theme|window)|vulcan\.command\.(copyexample|history)" 2026-020-HistoryJanus --include=*.cs --include=*.xaml --include=*.md --include=*.json --include=*.ps1 | grep -v "/obj/\|/bin/"
+```
+
+代码部分应返回空。
 
 ## 四、宿主 API：无需改动
 
