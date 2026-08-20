@@ -216,6 +216,7 @@ public sealed partial class ModuleHost
                 ui.Send(_ =>
                 {
                     DestroyUi(_current);
+                    ShellUi = null;
                     UnregisterCommands(_current);
                 }, null);
             }
@@ -226,12 +227,26 @@ public sealed partial class ModuleHost
         }
         else
         {
+            DestroyUi(_current);
+            ShellUi = null;
             UnregisterCommands(_current);
         }
 
         foreach (var alc in _current.Contexts)
             alc.Unload();
         _current = Snapshot.Empty;
+        PublishXamlContexts();
+        if (_xamlResolverInstalled)
+        {
+            AssemblyLoadContext.Default.Resolving -= ResolveFromModuleContexts;
+            _xamlResolverInstalled = false;
+        }
+
+        if (_pinnedResolverInstalled)
+        {
+            AssemblyLoadContext.Default.Resolving -= ResolvePinnedDependency;
+            _pinnedResolverInstalled = false;
+        }
     }
 
 
@@ -364,15 +379,46 @@ public sealed partial class ModuleHost
         private readonly string _dir;
 
         public ModuleLoadContext(string dir)
-            : base($"Modules-{DateTime.Now:HHmmssfff}", isCollectible: true) => _dir = dir;
+            : this(dir, collectible: true)
+        {
+        }
+
+        public ModuleLoadContext(string dir, bool collectible)
+            : base(
+                (collectible ? "Modules-" : "ModulesPinned-") + DateTime.Now.ToString("HHmmssfff"),
+                isCollectible: collectible)
+            => _dir = dir;
 
         protected override Assembly? Load(AssemblyName name)
         {
             // 模块目录里有同名 DLL 就从内存加载;否则返回 null 回落到默认上下文(框架程序集)
+            return TryLoadFromPackage(name, out var loaded) ? loaded : null;
+        }
+
+        /// <summary>
+        /// 只从本包目录装载。找不到就返回 false，绝不回落到 Default。
+        /// </summary>
+        internal bool TryLoadFromPackage(AssemblyName name, out Assembly? assembly)
+        {
+            assembly = null;
+            if (string.IsNullOrEmpty(name.Name))
+                return false;
+
+            foreach (var loaded in Assemblies)
+            {
+                if (string.Equals(loaded.GetName().Name, name.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    assembly = loaded;
+                    return true;
+                }
+            }
+
             var path = Path.Combine(_dir, name.Name + ".dll");
-            if (File.Exists(path))
-                return LoadFromStream(new MemoryStream(ReadFileWithRetry(path)));
-            return null;
+            if (!File.Exists(path))
+                return false;
+
+            assembly = LoadFromStream(new MemoryStream(ReadFileWithRetry(path)));
+            return true;
         }
     }
 }

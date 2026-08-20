@@ -661,20 +661,35 @@
             下次 <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.Reload"/> 或文件变化会按运行区当前包再装回来。
             </summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Reload">
-            <summary>整体重载:构建新快照 → 注册表换血(UI 线程) → 卸载旧 ALC。</summary>
-        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.FindModuleDomainConflicts(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String})">
             <summary>
             返回按旧命令名前缀计算的冲突集合。仅保留给旧消费方诊断；
             3.2.1 起模块实际域由 module owner 决定，装载路径不再调用本方法。
             </summary>
         </member>
+        <member name="F:HistoryVulcan.Services.Modules.ModuleHost._pinnedPackages">
+             <summary>
+             钉住模块的包目录。
+            
+             <c>pinned: true</c> 仍装进 <see cref="P:System.Runtime.Loader.AssemblyLoadContext.Default"/>，不可卸载。
+             可热重载的 WPF 模块走另一条路：装进可回收 ALC，默认上下文的 Resolving 只
+             返回该 ALC 里已经装好的程序集，绝不 <c>LoadFromAssemblyPath</c> 进 Default。
+             后一条才能让 XAML 的 <c>assembly=AvalonDock.Themes.VS2013</c> 解析成功，同时允许 Unload。
+             </summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.IsModuleArtifactDirectory(System.String)">
             <summary>
             模块目录同时承载热重载和发布工具的暂存内容。回滚/备份目录仍然包含
             DLL 和 manifest，但不是活动模块，不能被扫描成第二个同名模块。
             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ReadPinnedFlag(System.String)">
+             <summary>
+             读 manifest 的 <c>pinned</c> 标志：声明本模块**不可热重载**。
+            
+             不走 <see cref="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry"/>：那是已冻结的公开记录，为一个标志改它的
+             构造函数是破坏性变更。与 <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.ReadUiFlag(System.String)"/> 同一模式——宿主自己读文件。
+             </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.IsModuleInfo(System.Type)">
             <summary>按基类全名判断,模块编译时引用哪个版本的 BaseVariable.dll 都能识别。</summary>
@@ -709,6 +724,11 @@
         <member name="T:HistoryVulcan.Services.Modules.ModuleHost.ModuleLoadContext">
             <summary>可回收的加载上下文:模块及其依赖全部从内存流加载,不锁磁盘文件。</summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ModuleLoadContext.TryLoadFromPackage(System.Reflection.AssemblyName,System.Reflection.Assembly@)">
+            <summary>
+            只从本包目录装载。找不到就返回 false，绝不回落到 Default。
+            </summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.InstallPackage(System.String)">
             <summary>
             Validates and atomically installs a manifest package into the fixed runtime module directory.
@@ -716,6 +736,31 @@
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.RemovePackage(System.String)">
             <summary>Atomically removes a named manifest package from the runtime module directory.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Reload">
+            <summary>
+            整体重载：先拆旧界面并卸载可回收 ALC，再装新包。
+            WPF 模块（例如 HistoryAurora）若先 Build 再卸旧包，进程里会同时存在两份同名
+            程序集；默认上下文的 Resolving 钩子会命中旧的那份，新窗口的 XAML 随即解析失败。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ResolveFromModuleContexts(System.Runtime.Loader.AssemblyLoadContext,System.Reflection.AssemblyName)">
+            <summary>
+            XAML 按程序集简单名走默认上下文。把可回收 ALC 里已装载的同名程序集交回去；
+            尚未装载的，只从该 ALC 的模块包目录装进<strong>那个</strong>可回收上下文。
+            不要装进 Default——装进去就卸不掉，也锁住磁盘上的 DLL。
+            本方法不得取 <c>_reloadLock</c>：Attach / InitializeComponent 就在那把锁里。
+            也不得对可回收 ALC 调用 <c>LoadFromAssemblyName</c>：包里没有的程序集会回落到
+            Default，再进本钩子，无限递归。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ResolvePinnedDependency(System.Runtime.Loader.AssemblyLoadContext,System.Reflection.AssemblyName)">
+             <summary>
+             把钉住模块的依赖解析到它自己的包目录。
+            
+             默认上下文只探测宿主目录，不认识模块包；没有这个钩子，模块主程序集能装上，
+             它引用的 AvalonDock 却找不到。只用于 <c>pinned: true</c>。
+             </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.LoadTypes(System.Reflection.Assembly)">
             <summary>取程序集的类型表;缺失依赖只丢掉受影响的类型,不让整个模块下线(MD-06)。</summary>
@@ -1093,6 +1138,26 @@
             共用实现后顺带获得 MCP 侧原有的健壮性：单次接受失败只记警告并继续，
             不再让一个坏连接冒泡出循环、悄悄终结整条监听。
             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Web.WebGateway.ForgetFrontendCatalog(System.String)">
+             <summary>
+             忘掉某个前端的缓存能力目录，并撤掉它留在注册表里的代理指令。
+            
+             缓存按**前端名**做键，本意是前端离线时命令仍可查；代价是被弃用的名字永远不会消失。
+             4.0.0 把前端从 HistoryVulcan.Frontend 改名为 HistoryAurora 之后，旧名下的 37 条
+             （含全部 21 条 vulcan.ui.*）就一直以幽灵身份留在 vulcan 域里——它们在宿主源码中
+             一处都不存在，却查得到、还能被"成功"解析，直到真去执行才发现无人接手。
+            
+             <see cref="M:HistoryVulcan.Services.Web.WebGateway.TrimCatalogCache(System.String)"/> 只在条目数超过上限（缺省 32）时才淘汰，
+             两三个前端名根本触不到，因此需要一个显式入口。
+            
+             不做自动淘汰是有意的：断开与退役在协议上无法区分，按"离线即忘"会把
+             前端重启期间的命令查询也一并打断，那正是这份缓存最初要解决的问题。
+             </summary>
+             <returns>从注册表撤掉的指令条数；该前端本就没有缓存时返回 -1。</returns>
+        </member>
+        <member name="M:HistoryVulcan.Services.Web.WebGateway.CachedFrontendCatalogs">
+            <summary>当前缓存了哪些前端名及其条数,供清理前核对。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Web.WebGateway.Authenticate(System.Net.HttpListenerRequest,HistoryVulcan.Core.Clients.ClientSession)">
              <summary>

@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
+using System.Threading;
 using System.Xml.Linq;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
@@ -48,6 +49,9 @@ public sealed partial class ModuleHost : IDisposable
     private ISettingsService? _settings;
     private string? _dataDirectory;
     private Snapshot _current = Snapshot.Empty;
+    private Snapshot? _building;
+    private AssemblyLoadContext[] _xamlContexts = [];
+    private bool _xamlResolverInstalled;
     private readonly ModuleDirectoryWatcher _watcher;
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -60,6 +64,7 @@ public sealed partial class ModuleHost : IDisposable
         _log = log;
         _watcher = new ModuleDirectoryWatcher(log, Reload);
         _mcpPolicy = new ModuleMcpPolicyBinder(ResolveModuleOfCommand, ResolveModuleExposure);
+        EnsureXamlResolver();
     }
 
     /// <summary>Creates a module host backed by explicit Z-level manifest discovery.</summary>
@@ -71,6 +76,7 @@ public sealed partial class ModuleHost : IDisposable
         _log = log;
         _watcher = new ModuleDirectoryWatcher(log, Reload);
         _mcpPolicy = new ModuleMcpPolicyBinder(ResolveModuleOfCommand, ResolveModuleExposure);
+        EnsureXamlResolver();
     }
 
     /// <summary>
@@ -269,9 +275,18 @@ public sealed partial class ModuleHost : IDisposable
         if (snap.ContextsByOwner.Remove(owner, out var alc)
             && snap.ContextsByOwner.Values.All(remaining => !ReferenceEquals(remaining, alc)))
         {
-            snap.DropInstancesFrom(alc);
-            snap.Contexts.Remove(alc);
-            alc.Unload();
+            // 钉住的上下文不可回收，卸载会抛；它的实例也要留着——模块正持有进程级状态
+            // （例如一条还在跑的 UI 线程），丢掉实例等于把那条线程变成孤儿。
+            if (ReferenceEquals(alc, AssemblyLoadContext.Default))
+            {
+                _log.Info("module", $"{owner} 是钉住模块：已撤销指令，进程内状态保留至宿主重启");
+            }
+            else
+            {
+                snap.DropInstancesFrom(alc);
+                snap.Contexts.Remove(alc);
+                alc.Unload();
+            }
         }
 
         snap.FinalizeMetas();
@@ -293,75 +308,26 @@ public sealed partial class ModuleHost : IDisposable
 
         var doomed = snap.UiModules.Where(item => owners.Contains(item.Owner)).ToList();
         snap.UiModules.RemoveAll(item => owners.Contains(item.Owner));
-        foreach (var (module, uiOwner) in doomed)
+        var others = doomed.Where(item => item.Module is not IShellUiProvider).ToList();
+        var providers = doomed.Where(item => item.Module is IShellUiProvider).ToList();
+        foreach (var item in others)
+            DestroyUiModule(item.Module, item.Owner, marshalToShell: true);
+        foreach (var item in providers)
         {
             try
             {
-                module.DestroyUi();
+                ShellUi?.UnregisterOwner(item.Owner);
             }
             catch (Exception ex)
             {
-                _log.Warn("module", $"销毁 UI 模块 {module.GetType().FullName} 失败: {ex.Message}");
+                _log.Warn("module", $"回收模块界面失败 ({item.Owner}): {ex.Message}");
             }
 
-            try
-            {
-                ShellUi?.UnregisterOwner(uiOwner);
-            }
-            catch (Exception ex)
-            {
-                _log.Warn("module", $"回收模块界面失败 ({uiOwner}): {ex.Message}");
-            }
-        }
-    }
-
-    /// <summary>整体重载:构建新快照 → 注册表换血(UI 线程) → 卸载旧 ALC。</summary>
-    public void Reload()
-    {
-        lock (_reloadLock)
-        {
-            if (_disposed)
-                return;
-
-            var next = Build();
-
-            // 注册表是 UI 线程消费的普通字典,变更必须编组到 UI 线程序列化。
-            // Send 是同步编组,与原 Dispatcher.Invoke 等价。
-            var ui = UiContext;
-            if (ui == null)
-            {
-                // ServiceHost has no WPF synchronization context. It still owns
-                // the command snapshot, so commit it directly on the service thread.
-                SwapRegistrations(_current, next);
-                var old = _current;
-                _current = next;
-                foreach (var alc in old.Contexts)
-                    alc.Unload();
-                _log.Info("module",
-                    $"模块装载完成(无 UI): {next.Modules.Count} 个模块/{next.RegisteredNames.Count} 条指令");
-            }
-            else
-            {
-                ui.Send(_ =>
-                {
-                    DestroyUi(_current);
-                    SwapRegistrations(_current, next);
-                    CreateUi(next);
-                }, null);
-
-                var old = _current;
-                _current = next;
-                foreach (var alc in old.Contexts)
-                    alc.Unload();
-
-                _log.Info("module",
-                    $"模块装载完成: {next.Modules.Count} 个模块,{next.RegisteredNames.Count} 条指令");
-            }
-
-            SyncFileWatching();
+            DestroyUiModule(item.Module, item.Owner, marshalToShell: false);
         }
 
-        ReloadCompleted?.Invoke();
+        if (providers.Count > 0)
+            ShellUi = null;
     }
 
     private void SyncFileWatching()
@@ -531,54 +497,92 @@ public sealed partial class ModuleHost : IDisposable
     private Snapshot Build()
     {
         var snap = new Snapshot();
-        if (_discoverySource != null)
+        _building = snap;
+        try
         {
-            if (RequireConfirmedSources && _confirmedSources == null)
-                return snap;
-            var discovery = _confirmedSources == null
-                ? _discoverySource.Discover()
-                : new ModuleDiscoverySnapshot(
-                    _discoverySource.Roots,
-                    _confirmedSources,
-                    _discoveryDiagnostics);
-            _discoveryDiagnostics = discovery.Diagnostics;
-            foreach (var diagnostic in discovery.Diagnostics)
-                _log.Warn("module.discovery", $"[{diagnostic.Code}] {diagnostic.Path}: {diagnostic.Message}");
-            foreach (var module in discovery.Modules)
-                LoadDiscoveredModule(snap, module);
-            return snap;
-        }
-
-        if (!Directory.Exists(_dir))
-            return snap;
-
-        // 根目录平铺 DLL(V2-M3 既有行为):共享一个 ALC
-        LoadGroup(snap, _dir, slot: "", ReadUiFlag(_dir));
-
-        // 模块槽(V2.2 MH-01):每个一级子目录一个独立可回收 ALC,
-        // 槽内依赖只在槽内解析(MH-02),槽间同名依赖不同版互不冲突
-        foreach (var slotDir in Directory.GetDirectories(_dir))
-        {
-            var slot = Path.GetFileName(slotDir);
-            if (IsModuleArtifactDirectory(slot))
+            PublishXamlContexts();
+            if (_discoverySource != null)
             {
-                _log.Log(ShellLogLevel.Debug, "module", $"忽略模块目录产物: {slot}");
-                continue;
+                if (RequireConfirmedSources && _confirmedSources == null)
+                    return snap;
+                var discovery = _confirmedSources == null
+                    ? _discoverySource.Discover()
+                    : new ModuleDiscoverySnapshot(
+                        _discoverySource.Roots,
+                        _confirmedSources,
+                        _discoveryDiagnostics);
+                _discoveryDiagnostics = discovery.Diagnostics;
+                foreach (var diagnostic in discovery.Diagnostics)
+                    _log.Warn("module.discovery", $"[{diagnostic.Code}] {diagnostic.Path}: {diagnostic.Message}");
+                foreach (var module in discovery.Modules)
+                    LoadDiscoveredModule(snap, module);
+                return snap;
             }
 
-            LoadGroup(snap, slotDir, slot, ReadUiFlag(slotDir));
-        }
+            if (!Directory.Exists(_dir))
+                return snap;
 
-        return snap;
+            // 根目录平铺 DLL(V2-M3 既有行为):共享一个 ALC
+            LoadGroup(snap, _dir, slot: "", ReadUiFlag(_dir));
+
+            // 模块槽(V2.2 MH-01):每个一级子目录一个独立可回收 ALC,
+            // 槽内依赖只在槽内解析(MH-02),槽间同名依赖不同版互不冲突
+            foreach (var slotDir in Directory.GetDirectories(_dir))
+            {
+                var slot = Path.GetFileName(slotDir);
+                if (IsModuleArtifactDirectory(slot))
+                {
+                    _log.Log(ShellLogLevel.Debug, "module", $"忽略模块目录产物: {slot}");
+                    continue;
+                }
+
+                LoadGroup(snap, slotDir, slot, ReadUiFlag(slotDir));
+            }
+
+            return snap;
+        }
+        finally
+        {
+            _building = null;
+            PublishXamlContexts();
+        }
     }
+
+    /// <summary>
+    /// 钉住模块的包目录。
+    ///
+    /// <c>pinned: true</c> 仍装进 <see cref="AssemblyLoadContext.Default"/>，不可卸载。
+    /// 可热重载的 WPF 模块走另一条路：装进可回收 ALC，默认上下文的 Resolving 只
+    /// 返回该 ALC 里已经装好的程序集，绝不 <c>LoadFromAssemblyPath</c> 进 Default。
+    /// 后一条才能让 XAML 的 <c>assembly=AvalonDock.Themes.VS2013</c> 解析成功，同时允许 Unload。
+    /// </summary>
+    private readonly HashSet<string> _pinnedPackages = new(StringComparer.OrdinalIgnoreCase);
+
+    private bool _pinnedResolverInstalled;
 
     private void LoadDiscoveredModule(Snapshot snap, ModuleDiscoveryEntry module)
     {
-        var alc = new ModuleLoadContext(module.PackagePath);
-        snap.Contexts.Add(alc);
+        AssemblyLoadContext alc;
+        Assembly assembly;
         try
         {
-            var assembly = LoadAssembly(alc, module.ArtifactPath);
+            if (ReadPinnedFlag(module.ManifestPath))
+            {
+                alc = AssemblyLoadContext.Default;
+                assembly = LoadPinned(module);
+            }
+            else
+            {
+                var owned = new ModuleLoadContext(module.PackagePath);
+                TrackContext(snap, owned);
+                alc = owned;
+                // XAML 的 assembly= 简单名走默认上下文。必须先把包内依赖装进
+                // 这个可回收 ALC，Resolving 才能交回已装载的程序集。
+                foreach (var dependency in module.DependencyPaths)
+                    LoadAssembly(owned, dependency);
+                assembly = LoadAssembly(owned, module.ArtifactPath);
+            }
+
             ScanAssembly(
                 snap,
                 assembly,
@@ -619,7 +623,7 @@ public sealed partial class ModuleHost : IDisposable
             return;
 
         var alc = new ModuleLoadContext(dir);
-        snap.Contexts.Add(alc);
+        TrackContext(snap, alc);
 
         foreach (var dll in dlls)
         {
@@ -777,6 +781,28 @@ public sealed partial class ModuleHost : IDisposable
         }
     }
 
+    /// <summary>
+    /// 读 manifest 的 <c>pinned</c> 标志：声明本模块**不可热重载**。
+    ///
+    /// 不走 <see cref="ModuleDiscoveryEntry"/>：那是已冻结的公开记录，为一个标志改它的
+    /// 构造函数是破坏性变更。与 <see cref="ReadUiFlag"/> 同一模式——宿主自己读文件。
+    /// </summary>
+    private static bool ReadPinnedFlag(string manifestPath)
+    {
+        if (!File.Exists(manifestPath))
+            return false;
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
+            return doc.RootElement.TryGetProperty("pinned", out var value)
+                   && value.ValueKind == JsonValueKind.True;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
     private static bool ReadUiFlag(string directory)
     {
         var path = Path.Combine(directory, "module.manifest.json");
@@ -790,45 +816,6 @@ public sealed partial class ModuleHost : IDisposable
         catch (Exception)
         {
             return false;
-        }
-    }
-
-    private void CreateUi(Snapshot snapshot)
-    {
-        foreach (var (module, _) in snapshot.UiModules)
-        {
-            try
-            {
-                module.CreateUi();
-            }
-            catch (Exception ex)
-            {
-                _log.Warn("module", $"创建 UI 模块 {module.GetType().FullName} 失败: {ex.Message}");
-            }
-        }
-    }
-
-    private void DestroyUi(Snapshot snapshot)
-    {
-        foreach (var (module, owner) in snapshot.UiModules)
-        {
-            try
-            {
-                module.DestroyUi();
-            }
-            catch (Exception ex)
-            {
-                _log.Warn("module", $"销毁 UI 模块 {module.GetType().FullName} 失败: {ex.Message}");
-            }
-
-            try
-            {
-                ShellUi?.UnregisterOwner(owner);
-            }
-            catch (Exception ex)
-            {
-                _log.Warn("module", $"回收模块界面失败 ({owner}): {ex.Message}");
-            }
         }
     }
 }
