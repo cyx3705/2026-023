@@ -1,15 +1,13 @@
 ﻿using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
-using System.Windows;
-using System.Windows.Threading;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Services.Web;
 
 namespace HistoryVulcan.ServiceHost;
 
-/// <summary>无主窗口的用户会话 WPF 服务宿主。</summary>
+/// <summary>无界面的用户会话服务宿主（4.0.0 起不再依赖 WPF，见 REQ-A4）。</summary>
 public static class ServiceHost
 {
     private static readonly TimeSpan RestartMutexWait = TimeSpan.FromSeconds(10);
@@ -25,9 +23,8 @@ public static class ServiceHost
         if (!WaitForSingleInstance(mutex, RestartMutexWait))
             return 2;
 
-        var app = Application.Current ?? new Application();
-        app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-        SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(app.Dispatcher));
+        using var loop = new ServiceRunLoop();
+        SynchronizationContext.SetSynchronizationContext(new ServiceRunLoopSynchronizationContext(loop));
         composition.Bus.UiContext = SynchronizationContext.Current;
         if (composition.Modules != null)
             composition.Modules.UiContext = SynchronizationContext.Current;
@@ -55,7 +52,9 @@ public static class ServiceHost
         ServiceCommands.RegisterAll(
             composition.Registry,
             composition,
-            () => app.Shutdown(),
+            // requestStop 自带"排到循环上再关"的语义：命令处理器跑在线程池上，
+            // 同步关停会让循环在响应写回之前就排空退出。
+            () => loop.Post(() => loop.Shutdown()),
             servicePath,
             serviceArguments: serviceArguments);
 
@@ -74,7 +73,11 @@ public static class ServiceHost
 
         if (composition.Web != null)
         {
-            composition.Bus.FrontendExecutor = composition.Web.RelayFrontendCommandAsync;
+            // 只在没人认领时才装网关中继。进程内界面（Aurora DEC-008）在**模块装载阶段**
+            // 就把自己登记成了前端执行器，那比这里早；无条件覆盖的症状是界面明明开着，
+            // vulcan.app.* 却一律答"前端不可用"——因为网关那边确实没有连接的 shell。
+            // 外部前端不受影响：它走的是 ConnectedShells > 0 那条显式分支。
+            composition.Bus.FrontendExecutor ??= composition.Web.RelayFrontendCommandAsync;
             var (started, message) = composition.Web.Start();
             LogResult(composition.Log, "web", started, message);
             if (started && composition.EndpointFile != null)
@@ -113,15 +116,17 @@ public static class ServiceHost
             }
         }
 
-        app.Dispatcher.BeginInvoke(() =>
+        // 原先排在 DispatcherPriority.ApplicationIdle，意图是"排在已入队的启动工作之后"。
+        // FIFO 队列天然满足该次序，无需优先级概念。
+        loop.Post(() =>
         {
             foreach (var work in composition.DeferredWork)
                 _ = Task.Run(() => RunDeferredAsync(work, composition.Log));
-        }, DispatcherPriority.ApplicationIdle);
+        });
 
         try
         {
-            return app.Run();
+            return loop.Run(ex => composition.Log.Error("svc", $"服务循环回调异常: {ex.GetType().Name}: {ex.Message}"));
         }
         finally
         {
