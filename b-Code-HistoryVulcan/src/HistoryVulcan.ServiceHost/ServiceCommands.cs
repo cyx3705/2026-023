@@ -205,7 +205,7 @@ public static class ServiceCommands
             },
         }, source);
 
-        RegisterFrontendLifecycle(registry, composition, executablePath, source);
+        RegisterFrontendLifecycle(registry, composition, source);
 
 
         registry.Register(new CommandDescriptor
@@ -334,130 +334,51 @@ public static class ServiceCommands
     private static void RegisterFrontendLifecycle(
         CommandRegistry registry,
         ServiceComposition composition,
-        string executablePath,
         string source)
     {
-        registry.Register(new CommandDescriptor
-        {
-            Name = "vulcan.app.focusconsole",
-            Domain = "vulcan",
-            CommandClass = "app",
-            Summary = "显示并聚焦控制台；必要时冷启动前端",
-            Handler = ctx => RelayOrStartAsync(
-                composition,
-                executablePath,
-                "vulcan.app.focusconsole",
-                "--focus-console",
-                ctx),
-        }, source);
+        registry.Register(Lifecycle(composition, "vulcan.app.focusconsole", "显示并聚焦控制台"), source);
+        registry.Register(Lifecycle(composition, "vulcan.app.show", "显示并激活界面窗口"), source);
+        registry.Register(Lifecycle(composition, "vulcan.app.hide", "隐藏界面窗口并保持后台运行"), source);
+        registry.Register(Lifecycle(composition, "vulcan.app.close", "关闭界面窗口"), source);
+    }
 
-        registry.Register(new CommandDescriptor
+    /// <summary>
+    /// 界面生命周期命令：一律**中继**，绝不派生进程。
+    ///
+    /// 4.0.0 之前这里会在前端未连接时 <c>Process.Start(executablePath, "--show")</c>，
+    /// 而 <c>executablePath</c> 是**宿主自己**。宿主无头化后 <c>--show</c> 是未知参数被静默忽略，
+    /// 于是那条路径变成"再起一个无头服务"——真机上确实留下过一个多余的宿主进程，
+    /// 而用户看到的是"点了没反应"。
+    ///
+    /// Aurora DEC-008 之后界面是宿主装载的模块，跟宿主同生共死，本就没有"冷启动前端"这回事：
+    /// 界面不在，就是模块没装，派生任何进程都不会让它出现。因此这里只剩两条出路——
+    /// 有前端就中继，没有就明确失败。
+    ///
+    /// 两个中继口都不针对具体产品：外部前端走网关，进程内界面走
+    /// <see cref="CommandBus.FrontendExecutor"/>——谁登记了自己是前端就转给谁。
+    /// </summary>
+    private static CommandDescriptor Lifecycle(
+        ServiceComposition composition,
+        string name,
+        string summary)
+        => new()
         {
-            Name = "vulcan.app.show",
+            Name = name,
             Domain = "vulcan",
             CommandClass = "app",
-            Summary = "显示并激活前端窗口",
-            Parameters =
-            [
-                new ParameterSpec
-                {
-                    Name = "startup",
-                    Description = "冷启动参数：--show（默认）或 --focus-console",
-                    Required = false,
-                },
-            ],
-            Handler = ctx =>
-            {
-                if (!TryNormalizeFrontendStartup(ctx.GetString("startup"), out var startup, out var error))
-                    return Task.FromResult(CommandResult.Fail(error));
-                // 已连接时只中继裸指令，避免把 startup 传到前端（前端 show 无此参数）。
-                return RelayOrStartAsync(
-                    composition,
-                    executablePath,
-                    "vulcan.app.show",
-                    startup,
-                    ctx);
-            },
-        }, source);
-
-        registry.Register(new CommandDescriptor
-        {
-            Name = "vulcan.app.hide",
-            Domain = "vulcan",
-            CommandClass = "app",
-            Summary = "隐藏前端窗口并保持后台运行",
-            Handler = ctx => RelayOrStartAsync(composition, executablePath, "vulcan.app.hide", null, ctx),
-        }, source);
-
-        registry.Register(new CommandDescriptor
-        {
-            Name = "vulcan.app.close",
-            Domain = "vulcan",
-            CommandClass = "app",
-            Summary = "退出前端进程",
-            Handler = async ctx =>
+            Summary = summary,
+            Handler = async context =>
             {
                 var web = composition.Web;
-                if (web == null || web.ConnectedShells <= 0)
-                    return CommandResult.Ok("前端未连接");
-                return await web.RelayFrontendCommandAsync(
-                    "vulcan.app.close", ctx.Source, ctx.Cancellation).ConfigureAwait(false);
+                if (web != null && web.ConnectedShells > 0)
+                    return await web.RelayFrontendCommandAsync(
+                        name, context.Source, context.Cancellation).ConfigureAwait(false);
+
+                if (composition.Bus.FrontendExecutor is { } frontend)
+                    return await frontend(name, context.Source, context.Cancellation).ConfigureAwait(false);
+
+                return CommandResult.Fail("界面未装载：未发现进程内界面，也没有已连接的外部前端");
             },
-        }, source);
-    }
+        };
 
-    private static async Task<CommandResult> RelayOrStartAsync(
-        ServiceComposition composition,
-        string executablePath,
-        string command,
-        string? startupArgument,
-        CommandContext context)
-    {
-        if (composition.Web?.ConnectedShells > 0)
-            return await composition.Web.RelayFrontendCommandAsync(
-                command, context.Source, context.Cancellation).ConfigureAwait(false);
-
-        if (startupArgument == null)
-            return CommandResult.Fail("前端未连接");
-
-        try
-        {
-            Process.Start(new ProcessStartInfo(executablePath, startupArgument)
-            {
-                UseShellExecute = true,
-                CreateNoWindow = true,
-                WindowStyle = ProcessWindowStyle.Hidden,
-            });
-            return CommandResult.Ok("前端正在启动");
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
-        {
-            return CommandResult.Fail($"前端启动失败: {ex.Message}");
-        }
-    }
-
-    private static bool TryNormalizeFrontendStartup(
-        string? startup,
-        out string normalized,
-        out string error)
-    {
-        if (string.IsNullOrWhiteSpace(startup)
-            || startup.Equals("--show", StringComparison.OrdinalIgnoreCase))
-        {
-            normalized = "--show";
-            error = "";
-            return true;
-        }
-
-        if (startup.Equals("--focus-console", StringComparison.OrdinalIgnoreCase))
-        {
-            normalized = "--focus-console";
-            error = "";
-            return true;
-        }
-
-        normalized = "--show";
-        error = "startup 仅允许 --show 或 --focus-console。";
-        return false;
-    }
 }

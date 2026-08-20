@@ -73,7 +73,11 @@ public static class ServiceHost
 
         if (composition.Web != null)
         {
-            composition.Bus.FrontendExecutor = composition.Web.RelayFrontendCommandAsync;
+            // 只在没人认领时才装网关中继。进程内界面（Aurora DEC-008）在**模块装载阶段**
+            // 就把自己登记成了前端执行器，那比这里早；无条件覆盖的症状是界面明明开着，
+            // vulcan.app.* 却一律答"前端不可用"——因为网关那边确实没有连接的 shell。
+            // 外部前端不受影响：它走的是 ConnectedShells > 0 那条显式分支。
+            composition.Bus.FrontendExecutor ??= composition.Web.RelayFrontendCommandAsync;
             var (started, message) = composition.Web.Start();
             LogResult(composition.Log, "web", started, message);
             if (started && composition.EndpointFile != null)
