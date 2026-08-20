@@ -6,6 +6,9 @@ using Xunit;
 
 namespace HistoryVulcan.Tests;
 
+// 与 RuntimeModulePackageTests 共用同一串行集合：这些用例都往同一个临时模块目录写包，
+// 且 ContextFixture 带进程级静态状态，并行跑会互相看到对方的模块。
+[Collection(RuntimeModulePackageCollection.Name)]
 public sealed class ModuleZHotReloadTests
 {
     [Fact]

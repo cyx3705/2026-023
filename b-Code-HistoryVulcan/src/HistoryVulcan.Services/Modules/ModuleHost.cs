@@ -269,9 +269,18 @@ public sealed partial class ModuleHost : IDisposable
         if (snap.ContextsByOwner.Remove(owner, out var alc)
             && snap.ContextsByOwner.Values.All(remaining => !ReferenceEquals(remaining, alc)))
         {
-            snap.DropInstancesFrom(alc);
-            snap.Contexts.Remove(alc);
-            alc.Unload();
+            // 钉住的上下文不可回收，卸载会抛；它的实例也要留着——模块正持有进程级状态
+            // （例如一条还在跑的 UI 线程），丢掉实例等于把那条线程变成孤儿。
+            if (_pinnedContexts.Values.Any(pinned => ReferenceEquals(pinned, alc)))
+            {
+                _log.Info("module", $"{owner} 是钉住模块：已撤销指令，进程内状态保留至宿主重启");
+            }
+            else
+            {
+                snap.DropInstancesFrom(alc);
+                snap.Contexts.Remove(alc);
+                alc.Unload();
+            }
         }
 
         snap.FinalizeMetas();
@@ -572,10 +581,37 @@ public sealed partial class ModuleHost : IDisposable
         return snap;
     }
 
+    /// <summary>
+    /// 钉住模块的装载上下文，按包路径缓存并跨重载复用。
+    ///
+    /// 不放进 <c>Snapshot.Contexts</c>：那个集合在每次重载末尾被逐个 <c>Unload()</c>，
+    /// 而钉住的前提就是不卸载。复用同一个上下文还有一个必需的副作用——
+    /// 同名程序集只装载一次，模块的静态字段跨重载存活，模块因此可以自己做幂等守卫，
+    /// 宿主不必替它记住"已经初始化过了"。
+    /// </summary>
+    private readonly Dictionary<string, ModuleLoadContext> _pinnedContexts =
+        new(StringComparer.OrdinalIgnoreCase);
+
     private void LoadDiscoveredModule(Snapshot snap, ModuleDiscoveryEntry module)
     {
-        var alc = new ModuleLoadContext(module.PackagePath);
-        snap.Contexts.Add(alc);
+        ModuleLoadContext alc;
+        if (ReadPinnedFlag(module.ManifestPath))
+        {
+            if (!_pinnedContexts.TryGetValue(module.PackagePath, out var pinned))
+            {
+                pinned = new ModuleLoadContext(module.PackagePath, collectible: false);
+                _pinnedContexts[module.PackagePath] = pinned;
+                _log.Info("module", $"钉住模块 {module.Name}：不可回收上下文，重载不卸载");
+            }
+
+            alc = pinned;
+        }
+        else
+        {
+            alc = new ModuleLoadContext(module.PackagePath);
+            snap.Contexts.Add(alc);
+        }
+
         try
         {
             var assembly = LoadAssembly(alc, module.ArtifactPath);
@@ -777,6 +813,28 @@ public sealed partial class ModuleHost : IDisposable
         }
     }
 
+    /// <summary>
+    /// 读 manifest 的 <c>pinned</c> 标志：声明本模块**不可热重载**。
+    ///
+    /// 不走 <see cref="ModuleDiscoveryEntry"/>：那是已冻结的公开记录，为一个标志改它的
+    /// 构造函数是破坏性变更。与 <see cref="ReadUiFlag"/> 同一模式——宿主自己读文件。
+    /// </summary>
+    private static bool ReadPinnedFlag(string manifestPath)
+    {
+        if (!File.Exists(manifestPath))
+            return false;
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
+            return doc.RootElement.TryGetProperty("pinned", out var value)
+                   && value.ValueKind == JsonValueKind.True;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
     private static bool ReadUiFlag(string directory)
     {
         var path = Path.Combine(directory, "module.manifest.json");
@@ -795,10 +853,28 @@ public sealed partial class ModuleHost : IDisposable
 
     private void CreateUi(Snapshot snapshot)
     {
+        // 第一遍只取提供方。模块装载顺序不可控，不能指望承载界面的那个恰好排在前面。
+        foreach (var (module, _) in snapshot.UiModules)
+        {
+            if (module is IShellUiProvider provider && provider.ShellUi != null)
+            {
+                ShellUi = provider.ShellUi;
+                _log.Info("module", $"界面注册器由 {module.GetType().Assembly.GetName().Name} 提供");
+                break;
+            }
+        }
+
+        // 没有注册器就没有可注册的地方：跳过而不是让每个模块各自撞空引用。
+        // 这也保持了「未安装界面模块时宿主纯无头」的行为不变。
+        if (ShellUi == null)
+            return;
+
         foreach (var (module, _) in snapshot.UiModules)
         {
             try
             {
+                if (module is IShellUiAware aware)
+                    aware.ShellUi = ShellUi;
                 module.CreateUi();
             }
             catch (Exception ex)

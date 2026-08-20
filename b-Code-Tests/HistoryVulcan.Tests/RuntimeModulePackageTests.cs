@@ -227,7 +227,8 @@ public sealed class RuntimeModulePackageTests
         string name,
         string version,
         bool includeHistory = false,
-        bool validAssembly = true)
+        bool validAssembly = true,
+        bool pinned = false)
     {
         var package = Directory.CreateDirectory(Path.Combine(parent, directoryName)).FullName;
         var artifact = Path.Combine(package, "ContextFixture.dll");
@@ -235,7 +236,7 @@ public sealed class RuntimeModulePackageTests
             File.Copy(typeof(ContextFixtureModuleInfo).Assembly.Location, artifact);
         else
             File.WriteAllText(artifact, "not a managed assembly");
-        WriteManifest(package, name, version, "ContextFixture.dll");
+        WriteManifest(package, name, version, "ContextFixture.dll", pinned);
         Directory.CreateDirectory(Path.Combine(package, "docs"));
         File.WriteAllText(Path.Combine(package, "docs", "README.md"), $"# {name} {version}");
         if (includeHistory)
@@ -260,7 +261,12 @@ public sealed class RuntimeModulePackageTests
         File.WriteAllLines(Path.Combine(package, "SHA256SUMS"), files);
     }
 
-    private static void WriteManifest(string package, string name, string version, string artifact)
+    private static void WriteManifest(
+        string package,
+        string name,
+        string version,
+        string artifact,
+        bool pinned = false)
         => File.WriteAllText(
             Path.Combine(package, "module.manifest.json"),
             JsonSerializer.Serialize(new
@@ -271,6 +277,7 @@ public sealed class RuntimeModulePackageTests
                 version,
                 artifact,
                 ui = false,
+                pinned,
             }));
 
     private sealed class MemorySettings : ISettingsService

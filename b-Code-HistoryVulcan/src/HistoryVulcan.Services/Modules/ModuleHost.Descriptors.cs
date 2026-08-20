@@ -364,7 +364,15 @@ public sealed partial class ModuleHost
         private readonly string _dir;
 
         public ModuleLoadContext(string dir)
-            : base($"Modules-{DateTime.Now:HHmmssfff}", isCollectible: true) => _dir = dir;
+            : this(dir, collectible: true)
+        {
+        }
+
+        public ModuleLoadContext(string dir, bool collectible)
+            : base(
+                (collectible ? "Modules-" : "ModulesPinned-") + DateTime.Now.ToString("HHmmssfff"),
+                isCollectible: collectible)
+            => _dir = dir;
 
         protected override Assembly? Load(AssemblyName name)
         {

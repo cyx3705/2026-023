@@ -102,7 +102,10 @@ public static partial class ServiceComposer
             new RuntimeModuleDiscoverySource(paths.ModulesDir), log)
         {
             EnableCommands = true,
-            EnableUiModules = false,
+            // 4.0.0 起宿主自己不含任何界面实现；打开这个开关只是允许**模块**提供界面
+            // （Aurora DEC-008）。没有模块实现 IShellUiProvider 时 ShellUi 保持 null，
+            // ModuleHost 会整段跳过 UI 生命周期，进程仍然是纯无头的。
+            EnableUiModules = true,
         };
         var web = new WebGateway(() => bus, settings, log)
         {
