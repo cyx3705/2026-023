@@ -1,11 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!--
+      REQ-A8：宿主只剩服务角色，工程不再引用 WPF。
+      OutputType 保留 WinExe 而不是 Exe：无头服务由登录启动拉起，
+      Exe 会在每次启动时闪一个控制台窗口。WinExe 只是"不附带控制台"，
+      与是否有界面无关——本进程确实没有任何窗口。
+    -->
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
     <RootNamespace>HistoryVulcan.App</RootNamespace>
     <AssemblyName>HistoryVulcan</AssemblyName>
     <Product>HistoryVulcan</Product>
@@ -14,19 +19,24 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>false</SelfContained>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <!-- N-01:每显示器 DPI 感知(Per-Monitor V2) -->
-    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <StartupObject>HistoryVulcan.App.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
+    <!--
+      DEC-008：界面回归模块形态后要在**本进程内**开窗，而 WPF 是共享框架——
+      模块无法自带 PresentationFramework，进程的 runtimeconfig 里没有
+      Microsoft.WindowsDesktop.App 就直接 FileNotFoundException。
+
+      这里只加**框架引用**，不开 UseWPF：宿主工程仍然零界面代码、零 XAML 编译、
+      没有 App.xaml，REQ-A8「宿主不引用 WPF」在源码层面继续成立。
+      变的是运行时前提——本进程从此要求机器装有 WindowsDesktop 运行时。
+      这是"界面可以住进宿主"的必要代价，取舍记在 Aurora DEC-008。
+    -->
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WPF" />
     <ProjectReference Include="..\HistoryVulcan.Core\HistoryVulcan.Core.csproj" />
     <ProjectReference Include="..\HistoryVulcan.Services\HistoryVulcan.Services.csproj" />
     <ProjectReference Include="..\HistoryVulcan.ServiceHost\HistoryVulcan.ServiceHost.csproj" />
-    <ProjectReference Include="..\HistoryVulcan.Shell\HistoryVulcan.Shell.csproj" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <StartupObject>HistoryVulcan.App.Program</StartupObject>
-  </PropertyGroup>
 
 </Project>
