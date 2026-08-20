@@ -114,7 +114,9 @@ public static class McpExposurePolicy
             || commandName.EndsWith(".ui.data", StringComparison.OrdinalIgnoreCase)
             || commandName.Equals("aurora.ui.reloadpages", StringComparison.OrdinalIgnoreCase)
             || commandName.Equals("aurora.ui.invalidate", StringComparison.OrdinalIgnoreCase)
-            || commandName.Equals("aurora.ui.missing", StringComparison.OrdinalIgnoreCase))
+            || commandName.Equals("aurora.ui.missing", StringComparison.OrdinalIgnoreCase)
+            || commandName.Equals("aurora.ui.request", StringComparison.OrdinalIgnoreCase)
+            || commandName.Equals("aurora.ui.requests", StringComparison.OrdinalIgnoreCase))
         {
             // 页面注册协议（Aurora REQ-UI-003）的内部通道：<域>.ui.describe 返回界面结构，
             // <域>.ui.data 是表格取数泵，其余三条驱动前端重建界面。对模型没有语义价值，

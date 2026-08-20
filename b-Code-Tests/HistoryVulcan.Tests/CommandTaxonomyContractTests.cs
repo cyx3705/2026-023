@@ -141,6 +141,10 @@ public sealed class CommandTaxonomyContractTests
         Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.invalidate"));
         Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.missing"));
 
+        // 组件申请台账：request 写账、requests 读账，都属于界面内部协议。
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.request"));
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.requests"));
+
         // 别的 ui.* 指令不受牵连——排除的是这条协议，不是整个 ui 类。
         Assert.Null(McpExposurePolicy.HardExclusionReason("aurora.ui.show"));
         Assert.Null(McpExposurePolicy.HardExclusionReason("aurora.ui.layout"));
