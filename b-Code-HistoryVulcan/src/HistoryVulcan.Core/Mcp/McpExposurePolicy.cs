@@ -89,6 +89,18 @@ public static class McpExposurePolicy
             return "运行包变更只允许认证的本机宿主通道";
         if (commandName.Equals("vulcan.app.quit", StringComparison.OrdinalIgnoreCase))
             return "远程客户端不得退出宿主";
+        if (commandName.Equals("vulcan.svc.forgetfrontend", StringComparison.OrdinalIgnoreCase))
+            return "注册表清理只允许认证的本机宿主通道";
+        if (commandName.Equals("vulcan.command.run", StringComparison.OrdinalIgnoreCase))
+        {
+            // 4.0.0（REQ-A6）：这条命令从前端搬到服务侧。搬迁本身是对的（它无 UI 依赖），
+            // 但副作用是暴露面扩大——此前由前端注册，PolicyVisible=false，MCP 看不见；
+            // 搬到服务侧后自动成为可见工具（真机实测确认它一度出现在可见清单里）。
+            // 它按路径读本地脚本并逐行经总线执行任意命令，等于给远程一条绕过逐条工具
+            // 投影的通道：只要磁盘上存在一个脚本文件，就能一次性执行其中任意命令，
+            // 包括本表其他条目明确排除的那些。因此按名硬排除。
+            return "脚本批量执行不对远程暴露，否则可绕过逐条工具排除";
+        }
         if (commandName.StartsWith("debug.", StringComparison.OrdinalIgnoreCase)
             || DiagnosticCommands.Contains(commandName))
         {
@@ -98,6 +110,24 @@ public static class McpExposurePolicy
             // 未迁移的模块调试指令,收编后的诊断指令改为按名登记。
             return "调试与承压指令不对远程暴露";
         }
+        if (commandName.EndsWith(".ui.describe", StringComparison.OrdinalIgnoreCase)
+            || commandName.EndsWith(".ui.data", StringComparison.OrdinalIgnoreCase)
+            || commandName.Equals("aurora.ui.reloadpages", StringComparison.OrdinalIgnoreCase)
+            || commandName.Equals("aurora.ui.invalidate", StringComparison.OrdinalIgnoreCase)
+            || commandName.Equals("aurora.ui.missing", StringComparison.OrdinalIgnoreCase)
+            || commandName.Equals("aurora.ui.request", StringComparison.OrdinalIgnoreCase)
+            || commandName.Equals("aurora.ui.requests", StringComparison.OrdinalIgnoreCase))
+        {
+            // 页面注册协议（Aurora REQ-UI-003）的内部通道：<域>.ui.describe 返回界面结构，
+            // <域>.ui.data 是表格取数泵，其余三条驱动前端重建界面。对模型没有语义价值，
+            // 而 ui.data 的返回量随行数增长。
+            //
+            // 这三类此刻本来就不可见，但那只是因为它们经前端注册路径而 PolicyVisible=false
+            // ——那是**策略**结果，网关策略一改就可能翻转。vulcan.command.run 正是这样
+            // 从前端搬到服务侧后自动变成可见工具的。按名硬排除才是结构性保证。
+            return "界面内部协议不对远程暴露";
+        }
+
         if (commandName.StartsWith("vulcan.mcp.", StringComparison.OrdinalIgnoreCase))
             return "防止远程递归管理或关闭 MCP 服务";
         if (string.Equals(ExposureOf(commandName), "hidden", StringComparison.OrdinalIgnoreCase))

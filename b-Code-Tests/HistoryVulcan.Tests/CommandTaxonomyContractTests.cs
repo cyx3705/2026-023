@@ -108,12 +108,70 @@ public sealed class CommandTaxonomyContractTests
         Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.log.level"));
     }
 
+    /// <summary>
+    /// 前端能力目录按**前端名**做键，本意是前端离线时命令仍可查，代价是被弃用的名字
+    /// 永远不会消失：4.0.0 把前端改名为 HistoryAurora 后，旧名 HistoryVulcan.Frontend 下的
+    /// 37 条（含全部 21 条 vulcan.ui.*）一直以幽灵身份留在 vulcan 域里。
+    /// 清理入口会撤销注册表条目，因此与 module.install/remove 同级，不对远程开放。
+    /// </summary>
+    [Fact]
+    public void FrontendCatalogCleanupStaysOutOfReachOfRemoteClients()
+    {
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("vulcan.svc.forgetfrontend"));
+
+        // 只读的列举不受限制——它不改任何状态。
+        Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.svc.frontends"));
+    }
+
+    /// <summary>
+    /// Aurora REQ-UI-003 的连带约束。页面注册协议的内部通道此刻本来就不可见，但那只是
+    /// 因为它们走前端注册路径而 PolicyVisible=false——那是**策略**结果，网关策略一改就可能
+    /// 翻转。`vulcan.command.run` 正是这样从前端搬到服务侧后自动变成可见工具的。
+    /// 按名硬排除才是结构性保证，这里锁住它。
+    /// </summary>
+    [Fact]
+    public void PageProtocolChannelsStayOutOfReachOfRemoteClients()
+    {
+        // 描述与取数：模块以自己的域注册，因此按后缀而非全名排除。
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("mercury.ui.describe"));
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("janus.ui.data"));
+
+        // 驱动前端重建界面的三条。
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.reloadpages"));
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.invalidate"));
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.missing"));
+
+        // 组件申请台账：request 写账、requests 读账，都属于界面内部协议。
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.request"));
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.requests"));
+
+        // 别的 ui.* 指令不受牵连——排除的是这条协议，不是整个 ui 类。
+        Assert.Null(McpExposurePolicy.HardExclusionReason("aurora.ui.show"));
+        Assert.Null(McpExposurePolicy.HardExclusionReason("aurora.ui.layout"));
+    }
+
     [Fact]
     public void RuntimePackageMutationCommandsStayOutOfReachOfRemoteClients()
     {
         Assert.NotNull(McpExposurePolicy.HardExclusionReason("vulcan.module.install"));
         Assert.NotNull(McpExposurePolicy.HardExclusionReason("vulcan.module.remove"));
         Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.module.reload"));
+    }
+
+    /// <summary>
+    /// REQ-A6 的连带约束。`vulcan.command.run` 从前端搬到服务侧后自动变成 MCP 可见工具
+    /// （真机实测确认过），而它按路径读本地脚本并逐行执行任意命令——只要磁盘上存在一个
+    /// 脚本文件，远程就能一次性执行其中任意命令，包括本表其他条目明确排除的那些。
+    /// 这条断言守的是"批量执行入口不得成为逐条排除的旁路"。
+    /// </summary>
+    [Fact]
+    public void ScriptBatchExecutionCannotBypassPerCommandExclusions()
+    {
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("vulcan.command.run"));
+
+        // 对照：同属 command 类的只读查询命令不受影响。
+        Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.command.list"));
+        Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.command.show"));
     }
 
     [Fact]
