@@ -109,6 +109,21 @@ public sealed class CommandTaxonomyContractTests
     }
 
     /// <summary>
+    /// 前端能力目录按**前端名**做键，本意是前端离线时命令仍可查，代价是被弃用的名字
+    /// 永远不会消失：4.0.0 把前端改名为 HistoryAurora 后，旧名 HistoryVulcan.Frontend 下的
+    /// 37 条（含全部 21 条 vulcan.ui.*）一直以幽灵身份留在 vulcan 域里。
+    /// 清理入口会撤销注册表条目，因此与 module.install/remove 同级，不对远程开放。
+    /// </summary>
+    [Fact]
+    public void FrontendCatalogCleanupStaysOutOfReachOfRemoteClients()
+    {
+        Assert.NotNull(McpExposurePolicy.HardExclusionReason("vulcan.svc.forgetfrontend"));
+
+        // 只读的列举不受限制——它不改任何状态。
+        Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.svc.frontends"));
+    }
+
+    /// <summary>
     /// Aurora REQ-UI-003 的连带约束。页面注册协议的内部通道此刻本来就不可见，但那只是
     /// 因为它们走前端注册路径而 PolicyVisible=false——那是**策略**结果，网关策略一改就可能
     /// 翻转。`vulcan.command.run` 正是这样从前端搬到服务侧后自动变成可见工具的。

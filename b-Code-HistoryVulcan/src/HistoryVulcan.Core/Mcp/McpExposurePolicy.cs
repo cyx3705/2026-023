@@ -89,6 +89,8 @@ public static class McpExposurePolicy
             return "运行包变更只允许认证的本机宿主通道";
         if (commandName.Equals("vulcan.app.quit", StringComparison.OrdinalIgnoreCase))
             return "远程客户端不得退出宿主";
+        if (commandName.Equals("vulcan.svc.forgetfrontend", StringComparison.OrdinalIgnoreCase))
+            return "注册表清理只允许认证的本机宿主通道";
         if (commandName.Equals("vulcan.command.run", StringComparison.OrdinalIgnoreCase))
         {
             // 4.0.0（REQ-A6）：这条命令从前端搬到服务侧。搬迁本身是对的（它无 UI 依赖），

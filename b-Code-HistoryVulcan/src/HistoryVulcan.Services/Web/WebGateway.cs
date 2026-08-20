@@ -714,6 +714,67 @@ public sealed partial class WebGateway : IDisposable
         }
     }
 
+    /// <summary>
+    /// 忘掉某个前端的缓存能力目录，并撤掉它留在注册表里的代理指令。
+    ///
+    /// 缓存按**前端名**做键，本意是前端离线时命令仍可查；代价是被弃用的名字永远不会消失。
+    /// 4.0.0 把前端从 HistoryVulcan.Frontend 改名为 HistoryAurora 之后，旧名下的 37 条
+    /// （含全部 21 条 vulcan.ui.*）就一直以幽灵身份留在 vulcan 域里——它们在宿主源码中
+    /// 一处都不存在，却查得到、还能被"成功"解析，直到真去执行才发现无人接手。
+    ///
+    /// <see cref="TrimCatalogCache"/> 只在条目数超过上限（缺省 32）时才淘汰，
+    /// 两三个前端名根本触不到，因此需要一个显式入口。
+    ///
+    /// 不做自动淘汰是有意的：断开与退役在协议上无法区分，按"离线即忘"会把
+    /// 前端重启期间的命令查询也一并打断，那正是这份缓存最初要解决的问题。
+    /// </summary>
+    /// <returns>从注册表撤掉的指令条数；该前端本就没有缓存时返回 -1。</returns>
+    public int ForgetFrontendCatalog(string frontendName)
+    {
+        if (string.IsNullOrWhiteSpace(frontendName))
+            return -1;
+
+        var registry = _busAccessor()?.Registry;
+        lock (_catalogLock)
+        {
+            if (!_cachedCatalogs.TryGetValue(frontendName, out var catalog))
+                return -1;
+
+            _cachedCatalogs.Remove(frontendName);
+            var source = "frontend:" + catalog.FrontendName;
+            var removed = 0;
+            if (registry != null)
+            {
+                foreach (var command in catalog.Commands)
+                {
+                    // 只撤仍归该前端所有的条目：同名指令若已被在线前端重新注册，
+                    // 撤掉它等于把活着的能力也一起删了。
+                    if (registry.TryGet(command.Name, out _)
+                        && string.Equals(registry.GetSource(command.Name), source, StringComparison.Ordinal)
+                        && registry.Unregister(command.Name))
+                        removed++;
+                }
+            }
+
+            _settings.Set(KeyFrontendCatalog, JsonSerializer.Serialize(
+                _cachedCatalogs.Values.OrderBy(item => item.FrontendName).ToList(), JsonOptions));
+            _log.Info("web", $"已忘掉前端命令目录: {catalog.FrontendName}，撤销 {removed} 条");
+            return removed;
+        }
+    }
+
+    /// <summary>当前缓存了哪些前端名及其条数,供清理前核对。</summary>
+    public IReadOnlyDictionary<string, int> CachedFrontendCatalogs()
+    {
+        lock (_catalogLock)
+        {
+            return _cachedCatalogs.Values.ToDictionary(
+                item => item.FrontendName,
+                item => item.Commands.Count,
+                StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
     private void TrimCatalogCache(string keepName)
     {
         var limit = Math.Clamp(

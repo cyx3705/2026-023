@@ -119,6 +119,60 @@ public static class ServiceCommands
 
         registry.Register(new CommandDescriptor
         {
+            Name = "vulcan.svc.frontends",
+            Domain = "vulcan",
+            CommandClass = "svc",
+            Summary = "列出仍被缓存的前端能力目录",
+            Readonly = true,
+            Handler = CommandDescriptor.Sync(_ =>
+            {
+                var web = composition.Web;
+                if (web == null)
+                    return CommandResult.Fail("网关未启用");
+                var cached = web.CachedFrontendCatalogs();
+                if (cached.Count == 0)
+                    return CommandResult.Ok("无缓存的前端目录");
+                return CommandResult.Ok(string.Join(
+                    Environment.NewLine,
+                    cached.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
+                        .Select(pair => $"{pair.Key}  {pair.Value} 条")));
+            }),
+        }, source);
+
+        registry.Register(new CommandDescriptor
+        {
+            Name = "vulcan.svc.forgetfrontend",
+            Domain = "vulcan",
+            CommandClass = "svc",
+            Summary = "忘掉某个前端的缓存目录并撤销其代理指令",
+            Example = "vulcan.svc.forgetfrontend name=HistoryVulcan.Frontend",
+            Parameters =
+            [
+                new ParameterSpec
+                {
+                    Name = "name",
+                    Description = "vulcan.svc.frontends 中列出的前端名",
+                    Required = true,
+                    Position = 0,
+                },
+            ],
+            Handler = CommandDescriptor.Sync(ctx =>
+            {
+                var web = composition.Web;
+                if (web == null)
+                    return CommandResult.Fail("网关未启用");
+                var name = ctx.GetString("name")?.Trim();
+                if (string.IsNullOrWhiteSpace(name))
+                    return CommandResult.Fail("缺少 name");
+                var removed = web.ForgetFrontendCatalog(name);
+                return removed < 0
+                    ? CommandResult.Fail($"没有名为 {name} 的缓存目录")
+                    : CommandResult.Ok($"已忘掉 {name}，撤销 {removed} 条指令");
+            }),
+        }, source);
+
+        registry.Register(new CommandDescriptor
+        {
             Name = "vulcan.svc.stop",
             Domain = "vulcan",
             CommandClass = "svc",
