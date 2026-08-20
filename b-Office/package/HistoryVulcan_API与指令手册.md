@@ -364,7 +364,7 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 |---|---|---|
 | `PanelDefinition` | `Id`、`Title`、`Side`、`Ratio`、`Visible`、`Controls` | JSON 面板模型 |
 | `PanelManager` | `Definitions`、`Reload`、`TrySetValue` | 面板发现和运行时值更新 |
-| `ModuleHost` | `Attach`、`Start`、`Reload`、`ChangeDirectory`、`Modules` | 隔离装载命令/UI 模块；使用后 `Dispose` |
+| `ModuleHost` | `Attach`、`Start`、`Reload`、`ChangeDirectory`、`Modules` | 隔离装载命令/UI 模块；`Reload` 先拆旧界面再装新包；使用后 `Dispose` |
 | `IUiModule` | `CreateUi`、`DestroyUi` | UI 模块生命周期 |
 | `IShellUiAware` | `ShellUi` | 注入宿主 UI 注册器 |
 

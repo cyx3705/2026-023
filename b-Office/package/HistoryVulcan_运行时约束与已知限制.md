@@ -33,7 +33,7 @@
 | 硬编码 | MCP/Web 默认端口按稳定应用名派生并可显式覆盖；端口重试、限流、缓存容量、命令历史、控制台容量、MCP 执行/确认超时均可配置。协议报文 1 MiB 上限和 Web 前端中继 15 秒超时是 3.0 安全契约，不作为业务调优项。 |
 | 跨应用共享资源 | `%AppData%/<应用名>/`、ServiceHost 本地互斥体、MCP/Web 默认端口均按稳定应用名隔离；端口冲突自动顺延。相同 `ServiceName` 的 ServiceHost 仍为有意的单实例服务。 |
 | null 降级路径 | `CommandSelection=null` 时 Shell 创建本地状态；MCP/提示词治理不依赖数据库；前端离线时前端目录仍可查阅，执行返回明确失败。无 Mercury 时命令集/详情与双 `/` 不可用，但不影响本地 `vulcan.command.*`。 |
-| 线程亲和 | 窗口、布局、面板、对话框和控制台命令均声明 `RequiresUiThread`；CommandBus 统一编组到 `UiContext`。ModuleHost 只通过注入的 `SynchronizationContext` 创建/销毁 UI，无窗服务保持 null。 |
+| 线程亲和 | 窗口、布局、面板、对话框和控制台命令均声明 `RequiresUiThread`；CommandBus 统一编组到 `UiContext`。ModuleHost 只通过注入的 `SynchronizationContext` 创建/销毁普通 UI 模块。承载 Shell 的 `IShellUiProvider` 在服务线程上 DestroyUi，以便 Join 它自己的 STA 线程；其它 UI 模块仍经 `IShellUiRegistrar.Invoke`。无窗服务保持 null。 |
 
 ## 默认值
 

@@ -156,6 +156,9 @@ MCP/Web 硬排除。命令集里不应再看到 `debug` 类。
 
 ## 主要变化
 
+- 4.0.0 可回收 WPF 模块热重载：整体 `Reload` 先拆界面并卸载旧可回收 ALC，再装新包。
+  默认上下文的 Resolving 只返回模块 ALC 里已装载的程序集，不把它们装进 Default。
+  `pinned: true` 仍走 Default，不可卸载。`IShellUiProvider` 最后销毁。公开 API 不变。
 - 3.12.1 删除试用界面。模块页增加「热重载」：选目录后执行 `vulcan.module.install`。
   `vulcan.module.unload` 只为安装替换释放同名快照。
 - 3.12.0 运行模块迁入 `%AppData%\HistoryVulcan\Modules`；独立宿主不再扫描项目库或 `z-*`。
