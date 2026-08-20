@@ -23,6 +23,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--
+      DEC-008：界面回归模块形态后要在**本进程内**开窗，而 WPF 是共享框架——
+      模块无法自带 PresentationFramework，进程的 runtimeconfig 里没有
+      Microsoft.WindowsDesktop.App 就直接 FileNotFoundException。
+
+      这里只加**框架引用**，不开 UseWPF：宿主工程仍然零界面代码、零 XAML 编译、
+      没有 App.xaml，REQ-A8「宿主不引用 WPF」在源码层面继续成立。
+      变的是运行时前提——本进程从此要求机器装有 WindowsDesktop 运行时。
+      这是"界面可以住进宿主"的必要代价，取舍记在 Aurora DEC-008。
+    -->
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WPF" />
     <ProjectReference Include="..\HistoryVulcan.Core\HistoryVulcan.Core.csproj" />
     <ProjectReference Include="..\HistoryVulcan.Services\HistoryVulcan.Services.csproj" />
     <ProjectReference Include="..\HistoryVulcan.ServiceHost\HistoryVulcan.ServiceHost.csproj" />

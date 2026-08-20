@@ -271,7 +271,7 @@ public sealed partial class ModuleHost : IDisposable
         {
             // 钉住的上下文不可回收，卸载会抛；它的实例也要留着——模块正持有进程级状态
             // （例如一条还在跑的 UI 线程），丢掉实例等于把那条线程变成孤儿。
-            if (_pinnedContexts.Values.Any(pinned => ReferenceEquals(pinned, alc)))
+            if (ReferenceEquals(alc, AssemblyLoadContext.Default))
             {
                 _log.Info("module", $"{owner} 是钉住模块：已撤销指令，进程内状态保留至宿主重启");
             }
@@ -306,7 +306,10 @@ public sealed partial class ModuleHost : IDisposable
         {
             try
             {
-                module.DestroyUi();
+                if (ShellUi != null)
+                    ShellUi.Invoke(module.DestroyUi);
+                else
+                    module.DestroyUi();
             }
             catch (Exception ex)
             {
@@ -582,39 +585,77 @@ public sealed partial class ModuleHost : IDisposable
     }
 
     /// <summary>
-    /// 钉住模块的装载上下文，按包路径缓存并跨重载复用。
+    /// 钉住模块的包目录。
     ///
-    /// 不放进 <c>Snapshot.Contexts</c>：那个集合在每次重载末尾被逐个 <c>Unload()</c>，
-    /// 而钉住的前提就是不卸载。复用同一个上下文还有一个必需的副作用——
-    /// 同名程序集只装载一次，模块的静态字段跨重载存活，模块因此可以自己做幂等守卫，
-    /// 宿主不必替它记住"已经初始化过了"。
+    /// 钉住的模块装进 <see cref="AssemblyLoadContext.Default"/> 而不是自定义上下文——
+    /// 这不只是为了不卸载，更是 WPF 的硬要求：XAML 的类型引用形如
+    /// <c>{clr-namespace:…;assembly=AvalonDock.Themes.VS2013}</c>，解析时按**程序集简单名**
+    /// 走默认上下文。依赖装在自定义上下文里时，BAML 会在
+    /// <c>ResourceDictionary.DeferrableContent</c> 上抛"类型引用无法找到"，
+    /// 而这一步发生在 InitializeComponent 内部，编译期毫无征兆。
+    ///
+    /// 代价是钉住模块与宿主共享程序集名字空间，不再有槽内隔离。这是"界面住进宿主进程"
+    /// 的一部分代价，与不可卸载一并记在 Aurora DEC-008。
     /// </summary>
-    private readonly Dictionary<string, ModuleLoadContext> _pinnedContexts =
-        new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _pinnedPackages = new(StringComparer.OrdinalIgnoreCase);
+
+    private bool _pinnedResolverInstalled;
+
+    /// <summary>
+    /// 把钉住模块的依赖解析到它自己的包目录。
+    ///
+    /// 默认上下文只探测宿主目录，不认识模块包；没有这个钩子，模块主程序集能装上，
+    /// 它引用的 AvalonDock 却找不到。
+    /// </summary>
+    private Assembly? ResolvePinnedDependency(AssemblyLoadContext context, AssemblyName name)
+    {
+        if (string.IsNullOrEmpty(name.Name))
+            return null;
+        foreach (var package in _pinnedPackages)
+        {
+            var path = Path.Combine(package, name.Name + ".dll");
+            if (File.Exists(path))
+                return context.LoadFromAssemblyPath(path);
+        }
+
+        return null;
+    }
+
+    private Assembly LoadPinned(ModuleDiscoveryEntry module)
+    {
+        if (_pinnedPackages.Add(module.PackagePath))
+        {
+            if (!_pinnedResolverInstalled)
+            {
+                _pinnedResolverInstalled = true;
+                AssemblyLoadContext.Default.Resolving += ResolvePinnedDependency;
+            }
+
+            _log.Info("module", $"钉住模块 {module.Name}：装入默认上下文，重载不卸载");
+        }
+
+        return AssemblyLoadContext.Default.LoadFromAssemblyPath(module.ArtifactPath);
+    }
 
     private void LoadDiscoveredModule(Snapshot snap, ModuleDiscoveryEntry module)
     {
-        ModuleLoadContext alc;
-        if (ReadPinnedFlag(module.ManifestPath))
-        {
-            if (!_pinnedContexts.TryGetValue(module.PackagePath, out var pinned))
-            {
-                pinned = new ModuleLoadContext(module.PackagePath, collectible: false);
-                _pinnedContexts[module.PackagePath] = pinned;
-                _log.Info("module", $"钉住模块 {module.Name}：不可回收上下文，重载不卸载");
-            }
-
-            alc = pinned;
-        }
-        else
-        {
-            alc = new ModuleLoadContext(module.PackagePath);
-            snap.Contexts.Add(alc);
-        }
-
+        AssemblyLoadContext alc;
+        Assembly assembly;
         try
         {
-            var assembly = LoadAssembly(alc, module.ArtifactPath);
+            if (ReadPinnedFlag(module.ManifestPath))
+            {
+                alc = AssemblyLoadContext.Default;
+                assembly = LoadPinned(module);
+            }
+            else
+            {
+                var owned = new ModuleLoadContext(module.PackagePath);
+                snap.Contexts.Add(owned);
+                alc = owned;
+                assembly = LoadAssembly(owned, module.ArtifactPath);
+            }
+
             ScanAssembly(
                 snap,
                 assembly,
@@ -875,7 +916,11 @@ public sealed partial class ModuleHost : IDisposable
             {
                 if (module is IShellUiAware aware)
                     aware.ShellUi = ShellUi;
-                module.CreateUi();
+
+                // 必须编组到界面线程。宿主自己的循环不是 STA，模块一建控件就抛
+                // "调用线程必须为 STA"——而这条异常被按模块吞掉，表现为某个模块的页面
+                // 悄悄少了一个，别的模块照常。注册器知道界面线程在哪，交给它。
+                ShellUi.Invoke(module.CreateUi);
             }
             catch (Exception ex)
             {
