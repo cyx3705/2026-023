@@ -39,6 +39,20 @@ public sealed class ServiceComposition : IDisposable
 
     public Action? DisposeApplicationServices { get; init; }
 
+    /// <summary>
+    /// 请求停止服务循环。仅在 <see cref="ServiceHost.Run"/> 里被赋值。
+    /// </summary>
+    /// <remarks>
+    /// 服务指令（<c>vulcan.svc.stop</c> / <c>vulcan.app.quit</c> / <c>vulcan.svc.restart</c>）
+    /// 随 4.5.0 从 <c>Run</c> 移进 <c>Build</c>，好让命令行入口也能看见它们。
+    /// 但「停机」这件事只有真正跑着循环的那个进程做得到，因此挂钩留空是**常态**而不是异常：
+    /// <c>--cli</c> 进程没有循环，那几条指令会明确失败，而不是假装停了一个不存在的服务。
+    ///
+    /// 语义上自带「排到循环上再关」：命令处理器跑在线程池上，同步关停会让循环
+    /// 在响应写回之前就排空退出。
+    /// </remarks>
+    public Action? RequestStop { get; set; }
+
     public void Dispose()
     {
         Modules?.Dispose();

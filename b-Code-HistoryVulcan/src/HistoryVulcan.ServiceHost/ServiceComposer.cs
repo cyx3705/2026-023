@@ -122,6 +122,13 @@ public static partial class ServiceComposer
             DescriptionsProvider = () => bus.McpGovernance?.EffectiveDescriptions()
                                          ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
         };
+        // 模块开发路线（4.6.0 从 HistoryDiana 迁入）：工作区、发布、装机。
+        //
+        // 它此前住在模块里，于是每一轮模块开发都依赖那个模块装载成功——而它自己也要
+        // 走这条路线来改。放在宿主则相反：只要宿主活着，任何一个模块坏掉都能被单独修好。
+        HistoryVulcan.Services.Development.DevelopmentCommands.RegisterAll(
+            registry, bus, settings, paths.Root);
+
         HistoryVulcan.Services.Commands.CommandCatalogCommands.RegisterAll(
             registry,
             catalogExporter,
@@ -129,7 +136,7 @@ public static partial class ServiceComposer
             policy: () => McpSettingKeys.ResolvePolicy(settings),
             source: "framework:service");
 
-        return new ServiceComposition
+        var composition = new ServiceComposition
         {
             ServiceName = identity.Name + ".Backend",
             Registry = registry,
@@ -142,6 +149,21 @@ public static partial class ServiceComposer
             RegisterAutostartOnFirstRun = true,
             Autostart = new WindowsRunAutostartManager(),
         };
+
+        // 服务指令（vulcan.svc.* / vulcan.app.*）在这里注册而不是在 Run 里（4.5.0）。
+        //
+        // 它们此前跟着 Run 走，于是任何不跑循环的入口都看不到它们——`--cli` 里
+        // vulcan 域只剩一半，而「查服务状态」恰恰是命令行最常问的事。
+        // 真正只有循环才做得到的是「停机」一件，那一件经 composition.RequestStop 接进来，
+        // 未接上时相关指令明确失败，而不是假装停了一个不存在的服务。
+        ServiceCommands.RegisterAll(
+            registry,
+            composition,
+            () => composition.RequestStop?.Invoke(),
+            executablePath,
+            serviceArguments: [HostArgumentParser.LegacyServiceSwitch]);
+
+        return composition;
     }
 
     public static int RepairAutostart(string executablePath, Assembly identityAssembly)

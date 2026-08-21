@@ -47,14 +47,9 @@ public static class ServiceHost
         // 剩下的唯一语义就是本机确认。
         composition.Bus.ConfirmationRouter =
             (_, prompt) => gatewayAwareConfirmation.Confirm(prompt);
-        ServiceCommands.RegisterAll(
-            composition.Registry,
-            composition,
-            // requestStop 自带"排到循环上再关"的语义：命令处理器跑在线程池上，
-            // 同步关停会让循环在响应写回之前就排空退出。
-            () => loop.Post(() => loop.Shutdown()),
-            servicePath,
-            serviceArguments: serviceArguments);
+        // 服务指令已在 Build 时注册（4.5.0），这里只把「停机」这件唯一做不到的事接上。
+        // 排到循环上再关：命令处理器跑在线程池上，同步关停会让循环在响应写回之前就排空退出。
+        composition.RequestStop = () => loop.Post(() => loop.Shutdown());
 
         // The module registry is authoritative for every gateway. Complete the first
         // synchronous load before any listener is opened so the first remote catalog

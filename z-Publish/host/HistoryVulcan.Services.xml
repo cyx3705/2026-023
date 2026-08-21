@@ -239,6 +239,213 @@
         <member name="M:HistoryVulcan.Services.Commands.CommandCatalogCommands.Snapshot(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter,HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView,System.String)">
             <summary>按当前注册表与 MCP 投影生成目录快照。</summary>
         </member>
+        <member name="T:HistoryVulcan.Services.Development.DevelopmentCommands">
+             <summary>
+             模块开发路线的指令面：从主分支拉出工作区，到改完合并回去、发布、装机。
+             </summary>
+             <remarks>
+             **为什么这条路线住在宿主里。**
+            
+             它此前住在 HistoryDiana。那样的话，每一轮模块开发都依赖 Diana 装载成功——
+             而 Diana 自己也是模块，也要走这条路线来改。一旦 Diana 坏了，修复就退化成
+             直接改主分支救急，整条路线跟着塌掉。
+            
+             放在宿主则相反：宿主坏了，所有模块本来就跑不起来，开发本来就该谨慎且少量；
+             而只要宿主活着，**任何一个模块坏掉都能用这条路线单独修好**，
+             包括承载对外传输的 HistoryPortunus 和承载界面的 HistoryAurora。
+            
+             这也是它整条都声明了命令行暴露的原因（<c>AllowCliExecution</c>）：
+             走 MCP 要 agent 会话活着，走 Web 要 Portunus 装载成功，而需要修模块的时刻
+             恰恰是这些前提不成立的时刻。<c>--cli</c> 在本进程内执行，一样都不需要。
+            
+             本类只是注册入口，唯一的公开面。具体实现按阶段分文件，都保持 internal：
+             工作区（<see cref="T:HistoryVulcan.Services.Development.WorktreeCommands"/>）与发布（<see cref="T:HistoryVulcan.Services.Development.ReleaseCommands"/>）。
+             </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.DevelopmentCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Core.Storage.ISettingsService,System.String)">
+            <summary>把开发路线的全部指令注册进宿主注册表。</summary>
+            <param name="registry">宿主注册表。</param>
+            <param name="bus">权威指令总线；装包经它走，与模块管理页的热重载按钮同一条路径。</param>
+            <param name="settings">宿主设置；项目库根与工作区根可配。</param>
+            <param name="dataDirectory">应用数据根；发布日志以它为基准。</param>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.DevelopmentContext">
+             <summary>
+             开发路线指令所需的宿主服务。
+             </summary>
+             <remarks>
+             这条路线迁入宿主前住在 HistoryDiana 里，参数类型是 <c>IModuleContext</c>——
+             那是**宿主提供给模块**的契约。留着它，等于让宿主自己去实现一份「模块视角」
+             才能调用自己的代码，方向是反的。
+            
+             所以换成这个只含实际用到的三样的类型：指令总线（装包要经它走）、
+             设置（项目库根与工作区根可配）、数据根（发布日志落盘）。
+             少一样都跑不了，多一样就是给这条路线开了它不需要的口子。
+             </remarks>
+             <param name="Bus">权威指令总线。</param>
+             <param name="Settings">宿主设置存储。</param>
+             <param name="DataDirectory">应用数据根，发布日志以它为基准。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.DevelopmentContext.#ctor(HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Core.Storage.ISettingsService,System.String)">
+             <summary>
+             开发路线指令所需的宿主服务。
+             </summary>
+             <remarks>
+             这条路线迁入宿主前住在 HistoryDiana 里，参数类型是 <c>IModuleContext</c>——
+             那是**宿主提供给模块**的契约。留着它，等于让宿主自己去实现一份「模块视角」
+             才能调用自己的代码，方向是反的。
+            
+             所以换成这个只含实际用到的三样的类型：指令总线（装包要经它走）、
+             设置（项目库根与工作区根可配）、数据根（发布日志落盘）。
+             少一样都跑不了，多一样就是给这条路线开了它不需要的口子。
+             </remarks>
+             <param name="Bus">权威指令总线。</param>
+             <param name="Settings">宿主设置存储。</param>
+             <param name="DataDirectory">应用数据根，发布日志以它为基准。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Development.DevelopmentContext.Bus">
+            <summary>权威指令总线。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Development.DevelopmentContext.Settings">
+            <summary>宿主设置存储。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Development.DevelopmentContext.DataDirectory">
+            <summary>应用数据根，发布日志以它为基准。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.ModulePackageHotReload">
+            <summary>
+            Module test and deploy both call Vulcan's package hot-reload:
+            <c>vulcan.module.install</c>. That is the same path as the Modules page 热重载 button.
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.ProjectLibraryRoot">
+            <summary>
+            项目库根：一项目一仓的 HistoryClio。旧 Vesta 配置改写到 Clio。
+            </summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.Default">
+            <summary>项目库的缺省根：一项目一仓的 HistoryClio。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.LegacyVesta">
+            <summary>旧库根 HistoryVesta；读到它时改写到 HistoryClio。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.KeyLibraryRoot">
+            <summary>项目库根的设置键。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.KeyWorktreeRoot">
+            <summary>旧的工作区根设置键，仅作兼容读取。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.Resolve(HistoryVulcan.Core.Storage.ISettingsService)">
+            <summary>按设置解析项目库根；未配置时取缺省值。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.Coerce(System.String)">
+            <summary>把旧库根改写到现行库根，其余原样返回。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.IsGitProject(System.String)">
+            <summary>判断给定目录是否是一个 git 项目。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.PublishPackages">
+            <summary>
+            发布包的定位约定：候选包在哪、历史归档在哪、目录怎么命名。
+            </summary>
+            <remarks>
+            随开发路线迁入宿主（4.6.0）并提为公开面：这是**体系共用的约定**而非管线私有实现，
+            HistoryDiana 的 z 文档通道也按它枚举当前包。两边各写一份，
+            迟早在「z-Publish 还是别的名字」这种问题上分叉。
+            </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.PublishPackages.PublishDirectoryName">
+            <summary>发布目录名。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.PublishPackages.HistoryDirectoryName">
+            <summary>历史发布归档的子目录名。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.PackageDirectoryName(System.String,System.String)">
+            <summary>按模块名与版本拼出候选包目录名。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.ResolveCurrent(System.String,System.String)">
+            <summary>解析项目当前的候选包目录；找不到或有歧义时抛出。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.ResolveHostSnapshot(System.String)">
+            <summary>解析宿主快照目录。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.EnumerateCurrent(System.String)">
+            <summary>枚举发布根下的全部当前包。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.TryRead(System.String,HistoryVulcan.Services.Development.PublishPackages.PublishedPackage@)">
+            <summary>读取一个发布包目录的身份；不是有效包时返回 false。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.PublishPackages.PublishedPackage">
+            <summary>一个已发布包的身份与位置。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.PublishedPackage.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>一个已发布包的身份与位置。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.ReleaseCommands">
+             <summary>
+             发布管线的命令面：把 <c>Publish-OneHistoryModule.ps1</c> 作为分离子进程拉起，
+             让模块发布和其余能力一样原生暴露为 MCP 工具。
+             </summary>
+             <remarks>
+             关键约束：运行状态只落在日志文件里，不放在本模块的内存里。
+             门禁提交后对模块调用 <c>vulcan.module.install</c> 热重载（与测试、模块页按钮同一接口）。
+             发布 HistoryDiana 时本模块自身会在热重载途中被替换——任何存在静态字段里的运行记录都会随之蒸发。因此 start 立即返回 run 标识，
+             status/log 一律现场读日志目录，Diana 被换掉也不影响追踪。
+            
+             子进程自己把 stdout/stderr 重定向进日志（PowerShell 的 <c>*&gt;</c>），Diana 不做流泵送：
+             泵送线程会随模块卸载而中断，日志就断在半截。退出码单独落一个纯 ASCII 的
+             <c>.exit</c> 文件，status 据此判断"仍在跑 / 成功 / 失败"，不依赖进程句柄。
+             </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ReleaseCommands.PipelineProjectName">
+            <summary>
+            发布引擎所在的项目。随开发路线一同迁入宿主（4.6.0），此前是 2026-019-HistoryDiana。
+            </summary>
+            <remarks>
+            引擎（<c>Publish-OneHistoryModule.ps1</c> 与发布登记）必须与指令面同仓：
+            指令面在宿主而引擎留在模块，等于「宿主活着但发布跑不了」——
+            而这条路线搬进宿主的全部理由就是它不该依赖任何模块。
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.ReadTail(System.String,System.Int32,System.Int32@,System.Boolean@)">
+            <summary>读日志末尾；允许被子进程同时写入，因此以共享模式打开。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ReleaseCommands.PipelineDirectory">
+            <summary>引擎脚本与发布登记在项目里的位置。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.Quote(System.String)">
+            <summary>PowerShell 单引号字符串：内部单引号翻倍转义。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.WorktreeCommands">
+             <summary>
+             AI 工作区的命令面：开分支工作树、列出、回收。
+             </summary>
+             <remarks>
+             位置不硬编码。优先级是 <c>root=</c> 参数 &gt; 设置项 <c>ai.worktreeroot</c> &gt; 默认
+             <see cref="F:HistoryVulcan.Services.Development.WorktreeCommands.DefaultRoot"/>，因此默认能用、想改随时改、单次想换也不用改设置。
+            
+             分支名与目录名同形：<c>ai/&lt;项目&gt;/&lt;短SHA&gt;-&lt;序号&gt;-&lt;标识&gt;</c>。
+             带短 SHA 是为了让工作区一眼看出基于哪个提交；带序号是因为同一提交上常并行开多个尝试，
+             上一轮 Janus 的性能修复和工作区特性就是同一 SHA 的 -1 与 -2。
+             </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.WriteBuildOverride(System.String,HistoryVulcan.Core.Storage.ISettingsService)">
+            <summary>
+            在新工作树里写下本机覆盖点，让它一诞生就能构建。
+            </summary>
+            <remarks>
+            各工程按相对路径引用宿主 z 快照，假定本仓与 2026-023-HistoryVulcan 在同一库根下；
+            而 AI 工作树落在库根之外，那条相对路径必然指空，表现为上百个"找不到类型"。
+            这里把 HistoryVulcanPackageRoot 指回来源库根的绝对路径。文件不入库（各项目 .gitignore 已登记），
+            因此工作树从诞生起就是干净的；项目侧没有 Directory.Build.props 时不写，避免留下无人 Import 的孤儿文件。
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.FindIdleWorktree(System.String,System.String)">
+            <summary>找出"开了但没干活"的工作区：既无未提交改动，其分支也没有领先主干的提交。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.ResolveRootPublic(HistoryVulcan.Core.Storage.ISettingsService)">
+            <summary>供同模块的其他命令解析工作区根，避免第二处默认值。</summary>
+        </member>
         <member name="T:HistoryVulcan.Services.FileLayoutStore">
             <summary>
             布局文件存取实现:当前布局为 layout/current.layout.xml,

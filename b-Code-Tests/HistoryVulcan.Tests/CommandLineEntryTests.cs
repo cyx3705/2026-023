@@ -130,6 +130,10 @@ public sealed class CommandLineEntryTests
     /// 本轮 MCP 迁移里正是集合断言指出了改名绕过硬排除。
     ///
     /// 只覆盖宿主自己注册的。模块可以自行声明，那属于模块的暴露面，由模块的门禁去守。
+    ///
+    /// 开发路线（worktree / release）整条都在清单里，那正是第 6、7 步合起来的意义：
+    /// 走 MCP 要 agent 会话活着，走 Web 要 Portunus 装载成功，而需要修模块的时刻
+    /// 恰恰是这些前提不成立的时刻。
     /// </remarks>
     [Fact]
     public void OnlyTheDevelopmentPipelineCommandsAreDeclaredForTheCli()
@@ -138,6 +142,8 @@ public sealed class CommandLineEntryTests
         [
             Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.ServiceHost", "ServiceComposer.cs"),
             Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.Services", "Commands", "CommandCatalogCommands.cs"),
+            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.Services", "Development", "WorktreeCommands.cs"),
+            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.Services", "Development", "ReleaseCommands.cs"),
         ];
 
         var declared = new List<string>();
@@ -168,6 +174,14 @@ public sealed class CommandLineEntryTests
                 "vulcan.module.reload",
                 "vulcan.module.remove",
                 "vulcan.module.unload",
+                "vulcan.release.cycle",
+                "vulcan.release.log",
+                "vulcan.release.modules",
+                "vulcan.release.status",
+                "vulcan.worktree.create",
+                "vulcan.worktree.list",
+                "vulcan.worktree.merge",
+                "vulcan.worktree.root",
             }.Order(StringComparer.OrdinalIgnoreCase),
             declared.Order(StringComparer.OrdinalIgnoreCase));
     }

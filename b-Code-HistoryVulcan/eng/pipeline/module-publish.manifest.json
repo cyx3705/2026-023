@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 1,
+  "_hostsComment": "宿主的冻结标签期望值由 Diana 持有，刻意不放在宿主自己的 project.manifest.json 里：期望值与被守护值同处一文件时，同一次编辑会一起改动，闸口形同虚设。",
+  "hosts": [
+    {
+      "name": "HistoryVulcan",
+      "freezeTag": "v3.0.3"
+    }
+  ],
+  "modules": [
+    {
+      "name": "HistoryDiana",
+      "kind": "module",
+      "projectDirectory": "2026-019-HistoryDiana",
+      "versionProps": "b-Code-HistoryDiana\\HistoryDianaVersion.props",
+      "versionProperty": "HistoryDianaVersion",
+      "sourceManifest": "b-Code-HistoryDiana\\module.manifest.json",
+      "snapshotManifest": "module.manifest.json",
+      "identityProperty": "name",
+      "candidateDirectory": "z-Publish",
+      "formalDirectory": "z-Publish",
+      "buildScript": "b-Code\\Build-HistoryDianaPackage.ps1",
+      "packageDocuments": "b-Office-Diana\\package",
+      "validation": [
+        {
+          "tool": "dotnet.exe",
+          "arguments": [
+            "run",
+            "--project",
+            "b-Code-HistoryDiana\\tests\\HistoryDiana.Smoke\\HistoryDiana.Smoke.csproj",
+            "-c",
+            "Release",
+            "-p:NuGetAudit=false"
+          ],
+          "description": "Run module Smoke"
+        }
+      ]
+    },
+    {
+      "name": "HistoryAurora",
+      "kind": "module",
+      "projectDirectory": "2026-026-HistoryAurora",
+      "versionProps": "b-Code-Studio\\AuroraVersion.props",
+      "versionProperty": "HistoryAuroraVersion",
+      "sourceManifest": "b-Code-Studio\\Module\\module.manifest.json",
+      "snapshotManifest": "module.manifest.json",
+      "identityProperty": "name",
+      "candidateDirectory": "z-Publish",
+      "formalDirectory": "z-Publish",
+      "buildScript": "b-Code-Studio\\eng\\Build-HistoryAuroraPackage.ps1",
+      "packageDocuments": "b-Office\\package",
+      "validation": [
+        {
+          "tool": "powershell.exe",
+          "arguments": [
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            "b-Code-Studio\\eng\\Test-QualityGate.ps1"
+          ],
+          "description": "Run module quality gate"
+        },
+        {
+          "tool": "dotnet.exe",
+          "configurations": [
+            "Release"
+          ],
+          "arguments": [
+            "test",
+            "b-Code-Verify\\Contracts\\Contracts.csproj",
+            "-c",
+            "{configuration}",
+            "-p:NuGetAudit=false"
+          ],
+          "description": "Run module contracts ({configuration})"
+        }
+      ]
+    },
+    {
+      "name": "HistoryJanus",
+      "kind": "module",
+      "projectDirectory": "2026-020-HistoryJanus",
+      "versionProps": "b-Code-Studio\\JanusVersion.props",
+      "versionProperty": "HistoryJanusVersion",
+      "sourceManifest": "b-Code-Studio\\Module\\module.manifest.json",
+      "snapshotManifest": "module.manifest.json",
+      "identityProperty": "name",
+      "candidateDirectory": "z-Publish",
+      "formalDirectory": "z-Publish",
+      "buildScript": "b-Code-Studio\\eng\\Build-HistoryJanusPackage.ps1",
+      "packageDocuments": "b-Office\\package",
+      "validation": [
+        {
+          "tool": "powershell.exe",
+          "arguments": [
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            "b-Code-Studio\\eng\\Test-QualityGate.ps1",
+            "-CandidateRoot",
+            "{candidateRoot}"
+          ],
+          "description": "Run module quality gate"
+        },
+        {
+          "tool": "dotnet.exe",
+          "configurations": [
+            "Debug",
+            "Release"
+          ],
+          "arguments": [
+            "test",
+            "b-Code-Verify\\Contracts\\Contracts.csproj",
+            "-c",
+            "{configuration}",
+            "--no-build",
+            "--no-restore",
+            "-p:NuGetAudit=false"
+          ],
+          "description": "Run module contracts ({configuration})"
+        },
+        {
+          "tool": "dotnet.exe",
+          "configurations": [
+            "Debug",
+            "Release"
+          ],
+          "arguments": [
+            "run",
+            "--project",
+            "b-Code-Verify\\Smoke\\Smoke.csproj",
+            "-c",
+            "{configuration}",
+            "--no-build",
+            "--no-restore",
+            "--",
+            "--candidate-root",
+            "{candidateRoot}"
+          ],
+          "description": "Run module Smoke ({configuration})"
+        },
+        {
+          "tool": "dotnet.exe",
+          "configurations": [
+            "Debug",
+            "Release"
+          ],
+          "arguments": [
+            "run",
+            "--project",
+            "b-Code-Verify\\ModuleSmoke\\ModuleSmoke.csproj",
+            "-c",
+            "{configuration}",
+            "--no-build",
+            "--no-restore",
+            "--",
+            "{moduleOutput}"
+          ],
+          "description": "Run module loader Smoke ({configuration})",
+          "moduleOutputRoot": "b-Code-Studio\\Module\\bin"
+        }
+      ]
+    },
+    {
+      "name": "HistoryMercury",
+      "kind": "module",
+      "projectDirectory": "2026-021-HistoryMercury",
+      "versionProps": "b-Code-MercuryDock\\HistoryMercury.csproj",
+      "versionProperty": "Version",
+      "sourceManifest": "b-Code-MercuryDock\\module.manifest.json",
+      "snapshotManifest": "module.manifest.json",
+      "identityProperty": "name",
+      "candidateDirectory": "z-Publish",
+      "formalDirectory": "z-Publish",
+      "buildScript": "b-Code\\Build-HistoryMercuryPackage.ps1",
+      "packageDocuments": "b-Office\\package",
+      "validation": [
+        {
+          "tool": "dotnet.exe",
+          "arguments": [
+            "run",
+            "--project",
+            "b-Code-Tests\\HistoryMercury.Smoke\\HistoryMercury.Smoke.csproj",
+            "-c",
+            "Release",
+            "-p:NuGetAudit=false"
+          ],
+          "description": "Run module Smoke"
+        }
+      ]
+    },
+    {
+      "name": "HistoryMinerva",
+      "kind": "module",
+      "projectDirectory": "2026-024-HistoryMinerva",
+      "versionProps": "b-Code-HistoryMinerva\\build\\HistoryMinerva.Version.props",
+      "versionProperty": "HistoryMinervaVersion",
+      "sourceManifest": "b-Code-HistoryMinerva\\module.manifest.json",
+      "snapshotManifest": "module.manifest.json",
+      "identityProperty": "name",
+      "candidateDirectory": "z-Publish",
+      "formalDirectory": "z-Publish",
+      "buildScript": "b-Code-HistoryMinerva\\eng\\Build-HistoryMinervaPackage.ps1",
+      "packageDocuments": "b-Office\\package",
+      "validation": [
+        {
+          "tool": "dotnet.exe",
+          "configurations": [
+            "Release"
+          ],
+          "arguments": [
+            "run",
+            "--project",
+            "b-Code-HistoryMinerva-Tests\\tests\\HistoryMinerva.Smoke\\HistoryMinerva.Smoke.csproj",
+            "-c",
+            "{configuration}",
+            "-p:NuGetAudit=false",
+            "-p:BaseOutputPath={isolatedOutputRoot}"
+          ],
+          "description": "Run module Smoke",
+          "isolatedOutputRoot": "b-Code-HistoryMinerva-Tests\\tests\\HistoryMinerva.Smoke\\isolated"
+        },
+        {
+          "tool": "dotnet.exe",
+          "configurations": [
+            "Release"
+          ],
+          "arguments": [
+            "run",
+            "--project",
+            "b-Code-HistoryMinerva-Tests\\tests\\HistoryMinerva.UiSmoke\\HistoryMinerva.UiSmoke.csproj",
+            "-c",
+            "{configuration}",
+            "-p:NuGetAudit=false",
+            "-p:BaseOutputPath={isolatedOutputRoot}",
+            "--",
+            "--width",
+            "320",
+            "--height",
+            "680",
+            "--dark",
+            "--capture",
+            "{capturePath}"
+          ],
+          "description": "Run module UI Smoke",
+          "isolatedOutputRoot": "b-Code-HistoryMinerva-Tests\\tests\\HistoryMinerva.UiSmoke\\isolated"
+        }
+      ]
+    },
+    {
+      "name": "HistoryPortunus",
+      "kind": "module",
+      "projectDirectory": "2026-027-HistoryPortunus",
+      "versionProps": "b-Code-Portunus\\PortunusVersion.props",
+      "versionProperty": "HistoryPortunusVersion",
+      "sourceManifest": "b-Code-Portunus\\module.manifest.json",
+      "snapshotManifest": "module.manifest.json",
+      "identityProperty": "name",
+      "candidateDirectory": "z-Publish",
+      "formalDirectory": "z-Publish",
+      "buildScript": "b-Code-Portunus\\eng\\Build-HistoryPortunusPackage.ps1",
+      "packageDocuments": "b-Office\\package",
+      "validation": [
+        {
+          "tool": "dotnet.exe",
+          "configurations": [
+            "Release"
+          ],
+          "arguments": [
+            "test",
+            "b-Code-Verify\\Contracts\\Contracts.csproj",
+            "-c",
+            "{configuration}",
+            "-p:NuGetAudit=false"
+          ],
+          "description": "Run Portunus contract tests"
+        }
+      ]
+    }
+  ]
+}
