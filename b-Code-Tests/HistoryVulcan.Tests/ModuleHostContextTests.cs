@@ -62,6 +62,76 @@ namespace HistoryVulcan.Tests
             }
         }
 
+        /// <summary>
+        /// 模块实例持有的进程级资源必须在拆除时交还，**三条拆除路径一条都不能漏**。
+        /// </summary>
+        /// <remarks>
+        /// 卸载加载上下文只回收托管内存；端口、文件锁、命名管道、计时器都不在
+        /// 垃圾回收的管辖范围内。非界面模块没有 <c>DestroyUi</c> 可依赖，
+        /// <c>IDisposable</c> 是它唯一的交还时机。
+        ///
+        /// 这条不变量在真实系统里连续破了两次，两次都是"少覆盖了一条路径"：
+        /// 先是整快照重载没有回收，后是按模块卸载（<c>vulcan.module.install</c> 与
+        /// <c>remove</c> 的必经之路）只丢引用不 Dispose。两次的现场一样——
+        /// 旧网关继续监听、继续持有活的指令总线引用，新实例只能退到下一个端口。
+        ///
+        /// 因此本用例按路径逐条断言，而不是笼统测一次"拆除后被 Dispose 了"。
+        /// </remarks>
+        [Theory]
+        [InlineData(TeardownPath.HostDispose)]
+        [InlineData(TeardownPath.PerModuleUnload)]
+        [InlineData(TeardownPath.FullReload)]
+        public void ModuleInstancesAreDisposedOnEveryTeardownPath(TeardownPath path)
+        {
+            var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));
+            var modulesDirectory = Path.Combine(root, "modules");
+            var slotDirectory = Path.Combine(modulesDirectory, "context-fixture");
+            var dataDirectory = Path.Combine(root, "data");
+            Directory.CreateDirectory(slotDirectory);
+            Directory.CreateDirectory(dataDirectory);
+            File.Copy(
+                typeof(ContextFixtureModuleInfo).Assembly.Location,
+                Path.Combine(slotDirectory, "ContextFixture.dll"));
+
+            var marker = Path.Combine(Path.GetFullPath(dataDirectory), ContextAwareFixture.DisposeMarker);
+            var registry = new CommandRegistry();
+            var log = new TestLog();
+            var host = new ModuleHost(modulesDirectory, log)
+            {
+                EnableFileWatching = false,
+                EnableUiModules = false,
+            };
+
+            try
+            {
+                host.Attach(registry, new CommandBus(registry, log), new MemorySettings(), dataDirectory);
+                host.Start();
+                Assert.False(File.Exists(marker), "装载阶段不应触发拆除");
+
+                switch (path)
+                {
+                    case TeardownPath.PerModuleUnload:
+                        Assert.True(host.Unload("contextfixture").Success);
+                        break;
+                    case TeardownPath.HostDispose:
+                        host.Dispose();
+                        break;
+                    case TeardownPath.FullReload:
+                        // Start 走的就是 Reload：旧快照整体拆除，再装新的。
+                        host.Start();
+                        break;
+                }
+
+                Assert.True(File.Exists(marker), $"{path} 未回收模块实例");
+            }
+            finally
+            {
+                host.Dispose();
+                try { Directory.Delete(root, recursive: true); }
+                catch (IOException) { }
+            }
+        }
+
         [Fact]
         public void DisabledModuleDoesNotAttachContextOrRegisterCommands()
         {
@@ -263,6 +333,19 @@ namespace HistoryVulcan.Tests
 
     }
 
+    /// <summary>宿主拆除模块的路径。整快照重载走 Reload，另两条见此。</summary>
+    public enum TeardownPath
+    {
+        /// <summary>宿主退出：ModuleHost.Dispose。</summary>
+        HostDispose,
+
+        /// <summary>按模块卸载：vulcan.module.unload / install / remove 的必经之路。</summary>
+        PerModuleUnload,
+
+        /// <summary>整快照热重载：装包与 vulcan.module.reload 的公共尾段。</summary>
+        FullReload,
+    }
+
     public sealed class ContextFixtureModuleInfo : BaseVariable.ModuleInfoBase
     {
         public const string EnabledVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_ENABLED";
@@ -279,10 +362,20 @@ namespace HistoryVulcan.Tests
             => !string.Equals(Environment.GetEnvironmentVariable(EnabledVariable), "0", StringComparison.Ordinal);
     }
 
-    public sealed class ContextAwareFixture : IModuleContextAware
+    public sealed class ContextAwareFixture : IModuleContextAware, IDisposable
     {
+        /// <summary>
+        /// 拆除留痕。用文件而不是静态计数器：夹具程序集被复制进模块槽后由可回收
+        /// 加载上下文装载，它的类型标识与测试进程里的那一份不是同一个，
+        /// 静态字段互不可见。文件是唯一能跨上下文观测的证据。
+        /// </summary>
+        public const string DisposeMarker = "fixture-disposed.marker";
+
+        private string? _dataDirectory;
+
         public void Attach(IModuleContext context)
         {
+            _dataDirectory = context.DataDirectory;
             context.RegisterCommands(registry => registry.Register(new CommandDescriptor
             {
                 Name = "contextfixture.context-probe",
@@ -297,6 +390,13 @@ namespace HistoryVulcan.Tests
 
         [ModuleCommand(CommandClass = "probe")]
         public string Probe() => "reflected";
+
+        public void Dispose()
+        {
+            if (_dataDirectory == null)
+                return;
+            File.WriteAllText(Path.Combine(_dataDirectory, DisposeMarker), "disposed");
+        }
     }
 
 }

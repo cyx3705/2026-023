@@ -1,0 +1,7 @@
+﻿#nullable enable
+*REMOVED*HistoryVulcan.ServiceHost.ShellRelayConfirmation.ShellRelayConfirmation(System.Func<HistoryVulcan.Services.Web.WebGateway?>! gateway, HistoryVulcan.Core.Logging.IShellLog! log, System.TimeSpan? timeout = null) -> void
+HistoryVulcan.ServiceHost.ShellRelayConfirmation.ShellRelayConfirmation(HistoryVulcan.Core.Logging.IShellLog! log) -> void
+*REMOVED*HistoryVulcan.ServiceHost.ServiceComposition.EndpointFile.get -> string?
+*REMOVED*HistoryVulcan.ServiceHost.ServiceComposition.EndpointFile.init -> void
+*REMOVED*HistoryVulcan.ServiceHost.ServiceComposition.Web.get -> HistoryVulcan.Services.Web.WebGateway?
+*REMOVED*HistoryVulcan.ServiceHost.ServiceComposition.Web.init -> void

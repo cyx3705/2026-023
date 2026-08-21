@@ -1,0 +1,61 @@
+﻿#nullable enable
+*REMOVED*const HistoryVulcan.Services.Web.WebGateway.KeyFrontendCatalog = "web.frontendcatalog" -> string!
+*REMOVED*const HistoryVulcan.Services.Web.WebGateway.KeyFrontendCatalogLimit = "web.frontendcataloglimit" -> string!
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient.DataDeserializer.get -> System.Func<string!, System.Text.Json.JsonElement, object?>?
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient.DataDeserializer.set -> void
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient.Dispose() -> void
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient.ExecuteAsync(string! text, string! source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient.LogReceived -> System.EventHandler<HistoryVulcan.Core.Logging.ShellLogEntry!>?
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient.ModuleRevisionReceived -> System.Action<long>?
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient.ReconnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient.RunEventLoopAsync(HistoryVulcan.Core.Commands.CommandBus! localBus, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient.ShellServiceClient(HistoryVulcan.Services.Web.ShellEndpointProfile! profile, string! name) -> void
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient.ShellServiceClient(System.Uri! baseUri, string! name) -> void
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient.State.get -> HistoryVulcan.Services.Web.ShellConnectionState
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient.StateChanged -> System.Action<HistoryVulcan.Services.Web.ShellConnectionState>?
+*REMOVED*HistoryVulcan.Services.Web.ShellServiceClient.WaitForReadyAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.ConnectedShells.get -> int
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.RelayFrontendCommandAsync(string! text, string! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.RequestShellConfirmation(string! prompt, System.TimeSpan timeout) -> bool
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.RequestWebConfirmation(string! prompt, string! source, System.TimeSpan timeout) -> bool
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.ConnectedClients.get -> int
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.PublishModuleRevision(long revision) -> void
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.TryGetSession(string! source, out HistoryVulcan.Core.Clients.ClientSession! session) -> bool
+*REMOVED*HistoryVulcan.Services.Web.ShellConnectionState
+*REMOVED*HistoryVulcan.Services.Web.ShellConnectionState.Connecting = 1 -> HistoryVulcan.Services.Web.ShellConnectionState
+*REMOVED*HistoryVulcan.Services.Web.ShellConnectionState.Disconnected = 0 -> HistoryVulcan.Services.Web.ShellConnectionState
+*REMOVED*HistoryVulcan.Services.Web.ShellConnectionState.PairingRequired = 2 -> HistoryVulcan.Services.Web.ShellConnectionState
+*REMOVED*HistoryVulcan.Services.Web.ShellConnectionState.Ready = 3 -> HistoryVulcan.Services.Web.ShellConnectionState
+*REMOVED*HistoryVulcan.Services.Web.ShellConnectionState.Rejected = 4 -> HistoryVulcan.Services.Web.ShellConnectionState
+*REMOVED*HistoryVulcan.Services.Web.ShellConnectionState.VersionMismatch = 5 -> HistoryVulcan.Services.Web.ShellConnectionState
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.AccessTokenProvider.get -> System.Func<string?>?
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.AccessTokenProvider.init -> void
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.BaseUri.get -> System.Uri!
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.BaseUri.init -> void
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.CertificateFingerprint.get -> string?
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.CertificateFingerprint.init -> void
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.ConnectTimeout.get -> System.TimeSpan?
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.ConnectTimeout.init -> void
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.DeviceId.get -> string!
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.DeviceId.init -> void
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.EffectiveConnectTimeout.get -> System.TimeSpan
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.ServerId.get -> string?
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.ServerId.init -> void
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.ShellEndpointProfile(System.Uri! BaseUri, string! DeviceId, System.Func<string?>? AccessTokenProvider = null, string? CertificateFingerprint = null, System.TimeSpan? ConnectTimeout = null, string? ServerId = null) -> void
+*REMOVED*HistoryVulcan.Services.Web.ShellEndpointProfile.ValidateCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2? certificate) -> bool
+*REMOVED*HistoryVulcan.Services.Web.WebGateway
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.AccessToken.get -> string!
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.Dispose() -> void
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.IsRunning.get -> bool
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.Port.get -> int
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.ServerId.get -> string!
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.ServerId.set -> void
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.Start(int? port = null) -> (bool Success, string! Message)
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.Stop() -> (bool Success, string! Message)
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.WebGateway(System.Func<HistoryVulcan.Core.Commands.CommandBus?>! busAccessor, HistoryVulcan.Core.Storage.ISettingsService! settings, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+*REMOVED*const HistoryVulcan.Services.Web.WebGateway.KeyPort = "web.port" -> string!
+*REMOVED*const HistoryVulcan.Services.Web.WebGateway.KeyPortRetries = "web.portretries" -> string!
+*REMOVED*const HistoryVulcan.Services.Web.WebGateway.LoopbackAddress = "127.0.0.1" -> string!
+*REMOVED*static HistoryVulcan.Services.Web.ShellEndpointProfile.NormalizeFingerprint(string? value) -> string!

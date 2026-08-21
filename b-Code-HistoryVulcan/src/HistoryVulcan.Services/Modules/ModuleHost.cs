@@ -277,12 +277,19 @@ public sealed partial class ModuleHost : IDisposable
         {
             // 钉住的上下文不可回收，卸载会抛；它的实例也要留着——模块正持有进程级状态
             // （例如一条还在跑的 UI 线程），丢掉实例等于把那条线程变成孤儿。
+            // 代价是钉住模块持有的端口、句柄同样留到宿主重启，这是 pinned 的固有含义。
             if (ReferenceEquals(alc, AssemblyLoadContext.Default))
             {
                 _log.Info("module", $"{owner} 是钉住模块：已撤销指令，进程内状态保留至宿主重启");
             }
             else
             {
+                // 必须先 Dispose 再 Drop：DropInstancesFrom 只丢引用，
+                // 而托管引用被丢弃不会关闭实例持有的端口与句柄。
+                // 本路径（按模块卸载）是 vulcan.module.install / remove 的必经之路，
+                // 漏掉这一步的后果与整快照重载漏掉时完全一样——每装一次包，
+                // 就多一个仍在监听、仍持有活总线引用的旧网关。
+                DisposeInstances(snap.InstancesFrom(alc));
                 snap.DropInstancesFrom(alc);
                 snap.Contexts.Remove(alc);
                 alc.Unload();

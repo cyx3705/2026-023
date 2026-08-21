@@ -742,6 +742,9 @@
              指令总线引用，而新实例只能退到下一个端口。
              </summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.InstancesFrom(System.Runtime.Loader.AssemblyLoadContext)">
+            <summary>取出由指定加载上下文装载的全部实例，供按模块卸载时回收资源。</summary>
+        </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleHost.ModuleLoadContext">
             <summary>可回收的加载上下文:模块及其依赖全部从内存流加载,不锁磁盘文件。</summary>
         </member>
@@ -765,7 +768,7 @@
             程序集；默认上下文的 Resolving 钩子会命中旧的那份，新窗口的 XAML 随即解析失败。
             </summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.DisposeInstances(HistoryVulcan.Services.Modules.ModuleHost.Snapshot)">
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.DisposeInstances(System.Collections.Generic.IReadOnlyList{System.Object})">
              <summary>
              回收模块实例持有的进程级资源。
             

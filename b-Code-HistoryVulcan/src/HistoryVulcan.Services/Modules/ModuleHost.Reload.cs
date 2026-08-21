@@ -53,7 +53,7 @@ public sealed partial class ModuleHost
             }, null);
         }
 
-        DisposeInstances(old);
+        DisposeInstances(old.Instances);
 
         foreach (var alc in old.Contexts)
             alc.Unload();
@@ -72,9 +72,9 @@ public sealed partial class ModuleHost
     /// 任何一个实例抛出都只记警告：一个模块拆不干净，不能连累整轮重载——
     /// 那会让宿主停在一个既没有旧快照也没有新快照的状态上。
     /// </summary>
-    private void DisposeInstances(Snapshot old)
+    internal void DisposeInstances(IReadOnlyList<object> instances)
     {
-        foreach (var instance in old.Instances)
+        foreach (var instance in instances)
         {
             if (instance is not IDisposable disposable)
                 continue;

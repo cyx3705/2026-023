@@ -233,7 +233,7 @@ public sealed partial class ModuleHost
         }
 
         // 与热重载同一条拆除次序：界面先拆，再回收实例持有的端口与句柄，最后卸载上下文。
-        DisposeInstances(_current);
+        DisposeInstances(_current.Instances);
 
         foreach (var alc in _current.Contexts)
             alc.Unload();
@@ -316,6 +316,14 @@ public sealed partial class ModuleHost
             => _commandCounts[moduleName] = _commandCounts.GetValueOrDefault(moduleName) + 1;
 
         public void ClearCommandCount(string moduleName) => _commandCounts.Remove(moduleName);
+
+        /// <summary>取出由指定加载上下文装载的全部实例，供按模块卸载时回收资源。</summary>
+        public IReadOnlyList<object> InstancesFrom(AssemblyLoadContext alc)
+            => _instances
+                .Where(pair => ReferenceEquals(
+                    AssemblyLoadContext.GetLoadContext(pair.Key.Assembly), alc))
+                .Select(pair => pair.Value)
+                .ToArray();
 
         public void DropInstancesFrom(AssemblyLoadContext alc)
         {
