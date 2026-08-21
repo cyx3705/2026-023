@@ -64,6 +64,17 @@ public sealed class CommandDescriptor
     /// </summary>
     public bool AllowMcpExecution { get; init; }
 
+    /// <summary>
+    /// 是否声明本指令可经命令行入口执行。默认 false。
+    /// </summary>
+    /// <remarks>
+    /// 与 <see cref="AllowMcpExecution"/> 的差别不只是面不同：MCP 那一面由
+    /// <c>McpExposurePolicy</c> 按只读/危险/隐藏**推断**，本标记则是**逐条声明**，
+    /// 缺省全关。CLI 是新面，没有存量指令要照顾，缺省全开等于把
+    /// 「还没想过要不要暴露」写成「已经暴露」。判据见 <c>CliExposurePolicy</c>。
+    /// </remarks>
+    public bool AllowCliExecution { get; init; }
+
     /// <summary>代理描述符可接受任意参数并原样转发；本地业务命令不应开启。</summary>
     public bool AllowUnspecifiedParameters { get; init; }
 

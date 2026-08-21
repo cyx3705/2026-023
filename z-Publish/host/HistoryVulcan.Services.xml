@@ -585,6 +585,52 @@
             纯文件级操作,不加载任何 DLL——启动期(窗口创建前)与热重载后均可调用。
             </summary>
         </member>
+        <member name="T:HistoryVulcan.Services.Modules.OfflineModuleInstall">
+             <summary>
+             不依赖运行中宿主的模块包安装。
+             </summary>
+             <remarks>
+             **这是恢复矩阵里最后一格。**
+            
+             平时换模块靠两条路：经指令总线调 <c>vulcan.module.install</c>，或者直接把包拷进模块槽
+             让文件监视自己重载。两条都要求宿主**已经起来了**。宿主起不来时——比如某个模块在装载
+             阶段就抛，或者宿主自己的快照坏了——那两条路一条都不通，而恰恰此刻最需要换包。
+            
+             因此本类刻意**不构建组合根、不装载任何模块、不碰指令总线**：它只做校验和文件事务。
+             装载路径整个坏掉时它依然成立，这是它存在的全部理由。凡是让它依赖宿主运行时的改动，
+             都是在拆掉这一格。
+            
+             校验、拷贝与回滚复用 <see cref="T:HistoryVulcan.Services.Modules.RuntimeModulePackageStore"/>，与活宿主的那条编排同源：
+             「离线装的包和在线装的包不一样」会是一类极难排查的故障。
+             </remarks>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.OfflineModuleInstall.Result">
+            <summary>安装结果：退出码与一行人读消息。</summary>
+            <param name="ExitCode">0 成功；2 参数或校验失败；1 文件操作失败。</param>
+            <param name="Message">人读结果，供 CLI 直接打印。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.#ctor(System.Int32,System.String)">
+            <summary>安装结果：退出码与一行人读消息。</summary>
+            <param name="ExitCode">0 成功；2 参数或校验失败；1 文件操作失败。</param>
+            <param name="Message">人读结果，供 CLI 直接打印。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.ExitCode">
+            <summary>0 成功；2 参数或校验失败；1 文件操作失败。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.Message">
+            <summary>人读结果，供 CLI 直接打印。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.OfflineModuleInstall.Install(System.String,System.String)">
+            <summary>
+            把 <paramref name="sourcePath"/> 处的模块包安装进 <paramref name="runtimeRoot"/>。
+            </summary>
+            <remarks>
+            与在线安装的差别只有一处：不卸载、不重载、不核对快照。若此刻恰好有宿主在运行，
+            它的文件监视会看到目录变化并自行重载——**但不要依赖这一点**：
+            正在被装载的程序集处于文件锁定状态，替换会失败并回滚。
+            换活着的宿主里的模块，请走 <c>vulcan.module.install</c>。
+            </remarks>
+        </member>
         <member name="T:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource">
             <summary>
             Discovers manifest packages from the direct children of a fixed runtime module directory.
@@ -601,6 +647,22 @@
         </member>
         <member name="M:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.Discover">
             <inheritdoc />
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.RuntimeModulePackageStore">
+             <summary>
+             运行区模块包的校验与文件事务原语。
+             </summary>
+             <remarks>
+             这些方法原先是 <see cref="T:HistoryVulcan.Services.Modules.ModuleHost"/> 的私有静态成员。抽出来是因为**装包有两条编排**：
+            
+             - <c>ModuleHost.InstallPackage</c>：在活着的宿主里换包，要先卸载旧模块释放文件锁，
+               换完还要重载并核对新快照；
+             - <c>OfflineModuleInstall</c>：宿主没起来（或起不来）时按文件系统换包，
+               没有快照可卸、也没有快照可核。
+            
+             两条编排不同，但**校验、拷贝与回滚必须是同一份**——这几步一旦分叉，
+             代价是用户的模块目录。编排各自保留，原语共用。
+             </remarks>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry">
             <summary>A validated module artifact discovered from an explicit Z-level manifest.</summary>

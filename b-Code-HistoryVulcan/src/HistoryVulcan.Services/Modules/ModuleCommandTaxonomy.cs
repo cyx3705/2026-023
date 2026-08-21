@@ -21,6 +21,7 @@ internal static class ModuleCommandTaxonomy
             RequiresUiThread = source.RequiresUiThread,
             ExecutionSite = source.ExecutionSite,
             AllowMcpExecution = source.AllowMcpExecution,
+            AllowCliExecution = source.AllowCliExecution,
             AllowUnspecifiedParameters = source.AllowUnspecifiedParameters,
             Handler = source.Handler,
         };

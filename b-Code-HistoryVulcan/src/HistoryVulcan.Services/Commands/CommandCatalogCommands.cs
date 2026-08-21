@@ -197,6 +197,7 @@ public static class CommandCatalogCommands
         Func<string> policy) => new()
         {
             Name = "vulcan.command.list",
+            AllowCliExecution = true,  // 开发管线：查指令面
             Domain = "vulcan",
             CommandClass = "command",
             Summary = "结构化列出全部注册指令及其来源、风险和 MCP 投影",
@@ -264,6 +265,7 @@ public static class CommandCatalogCommands
         Func<string> policy) => new()
         {
             Name = "vulcan.command.show",
+            AllowCliExecution = true,  // 开发管线：查指令面
             Domain = "vulcan",
             CommandClass = "command",
             Summary = "查看单条指令的 Help 参数、来源、风险和 MCP 映射",
@@ -308,6 +310,7 @@ public static class CommandCatalogCommands
     private static CommandDescriptor BuildDomains(CommandRegistry registry) => new()
     {
         Name = "vulcan.command.domains",
+        AllowCliExecution = true,  // 开发管线：查指令面
         Domain = "vulcan",
         CommandClass = "command",
         Summary = "列出全部指令域及注册数量",
