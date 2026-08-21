@@ -194,14 +194,9 @@ public sealed partial class WebGateway : IDisposable
 
     private sealed record CommandRequest(string Text);
 
-    private sealed record ConfirmRequest(string Id, bool Approved);
-
     private sealed record PendingCommand(
         string SessionId,
         TaskCompletionSource<CommandResult> Completion);
 
-    private sealed record PendingConfirmation(
-        string SessionId,
-        TaskCompletionSource<bool> Completion);
 }
 
