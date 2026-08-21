@@ -1082,6 +1082,16 @@
             不再让一个坏连接冒泡出循环、悄悄终结整条监听。
             </summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Web.WebGateway.CreateSession(System.Net.HttpListenerRequest)">
+             <summary>
+             按请求头造一个候选会话。种类恒为 <see cref="F:HistoryVulcan.Core.Clients.ClientKind.Shell"/>——这是本网关
+             唯一会接受的种类，<see cref="M:HistoryVulcan.Services.Web.WebGateway.Authenticate(System.Net.HttpListenerRequest,HistoryVulcan.Core.Clients.ClientSession)"/> 负责核对请求头是否真的这么声明。
+            
+             4.2.0 之前这里会把不声明 Shell 的请求归成 <c>ClientKind.Web</c>，而鉴权紧接着
+             无条件拒绝它——一道从来没有人通过的门。那不是纵深防御，只是把"未实现"
+             写成了"已拒绝"的样子。种类枚举里的 Web 一并退役。
+             </summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Web.WebGateway.Authenticate(System.Net.HttpListenerRequest,HistoryVulcan.Core.Clients.ClientSession)">
              <summary>
              3.13.0 起唯一的接受条件：同机回环上的前端 Shell。

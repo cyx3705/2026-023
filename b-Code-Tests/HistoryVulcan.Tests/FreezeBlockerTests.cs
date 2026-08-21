@@ -281,7 +281,7 @@ public sealed class FreezeBlockerTests
     public void SessionSourceRoundTripsArbitraryIdsAndNames(string id, string name)
     {
         var session = new ClientSession(
-            id, ClientKind.Web, name, "3.0.0", DateTimeOffset.UtcNow)
+            id, ClientKind.Shell, name, "3.0.0", DateTimeOffset.UtcNow)
         {
             IsLoopback = true,
         };

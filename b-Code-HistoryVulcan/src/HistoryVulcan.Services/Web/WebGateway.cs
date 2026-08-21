@@ -456,11 +456,17 @@ public sealed partial class WebGateway : IDisposable
         return string.Join(' ', parts);
     }
 
+    /// <summary>
+    /// 按请求头造一个候选会话。种类恒为 <see cref="ClientKind.Shell"/>——这是本网关
+    /// 唯一会接受的种类，<see cref="Authenticate"/> 负责核对请求头是否真的这么声明。
+    ///
+    /// 4.2.0 之前这里会把不声明 Shell 的请求归成 <c>ClientKind.Web</c>，而鉴权紧接着
+    /// 无条件拒绝它——一道从来没有人通过的门。那不是纵深防御，只是把"未实现"
+    /// 写成了"已拒绝"的样子。种类枚举里的 Web 一并退役。
+    /// </summary>
     private ClientSession CreateSession(HttpListenerRequest request)
     {
-        var kind = request.Headers["X-HistoryVulcan-Client"]?.Equals("Shell", StringComparison.OrdinalIgnoreCase) == true
-            ? ClientKind.Shell
-            : ClientKind.Web;
+        const ClientKind kind = ClientKind.Shell;
         var name = request.Headers["X-Client-Name"];
         var id = request.Headers["X-Session-Id"];
         id ??= StableSessionId(kind, request.RemoteEndPoint?.Address, name);
@@ -486,7 +492,9 @@ public sealed partial class WebGateway : IDisposable
     /// </summary>
     private ClientSession? Authenticate(HttpListenerRequest request, ClientSession requested)
     {
-        if (!requested.IsLoopback || requested.Kind != ClientKind.Shell)
+        if (!requested.IsLoopback
+            || request.Headers["X-HistoryVulcan-Client"]?.Equals(
+                "Shell", StringComparison.OrdinalIgnoreCase) != true)
             return null;
 
         var token = AccessToken;
