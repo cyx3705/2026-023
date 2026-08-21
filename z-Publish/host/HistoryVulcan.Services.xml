@@ -744,6 +744,15 @@
             程序集；默认上下文的 Resolving 钩子会命中旧的那份，新窗口的 XAML 随即解析失败。
             </summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ClearShellHooks">
+             <summary>
+             丢弃上一轮界面留下的两个反向挂钩。
+            
+             两个都必须清：它们指向的是已经拆掉的那套界面对象。留着任何一个，
+             下一轮的消费方就会挂到一个死界面上——注册进去的页面永远不会出现，
+             而调用方拿到的是非 null，看不出有什么不对。
+             </summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ResolveFromModuleContexts(System.Runtime.Loader.AssemblyLoadContext,System.Reflection.AssemblyName)">
             <summary>
             XAML 按程序集简单名走默认上下文。把可回收 ALC 里已装载的同名程序集交回去；
