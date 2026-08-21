@@ -33,15 +33,9 @@ public sealed partial class WebGateway : IDisposable
     public const string KeyPort = "web.port";
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public const string KeyPortRetries = "web.portretries";
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public const string KeyFrontendCatalog = "web.frontendcatalog";
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public const string KeyFrontendCatalogLimit = "web.frontendcataloglimit";
-
     private const int DefaultPortBase = 8938;
     private const int DefaultPortSpan = 200;
     private const int DefaultPortRetries = 20;
-    private const int DefaultFrontendCatalogLimit = 32;
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -55,10 +49,6 @@ public sealed partial class WebGateway : IDisposable
     private readonly object _lifecycleLock = new();
     private readonly ConcurrentDictionary<string, EventClient> _clients = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, PendingCommand> _pending = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, PendingConfirmation> _pendingConfirmations = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, FrontendCapabilityCatalog> _sessionCatalogs = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, FrontendCapabilityCatalog> _cachedCatalogs = new(StringComparer.OrdinalIgnoreCase);
-    private readonly object _catalogLock = new();
 
     private HttpListener? _listener;
     private CancellationTokenSource? _cts;
@@ -100,9 +90,6 @@ public sealed partial class WebGateway : IDisposable
     public int ConnectedClients => _clients.Count;
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public int ConnectedShells => _clients.Values.Count(client => client.Session.Kind == ClientKind.Shell);
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public void PublishModuleRevision(long revision)
     {
         var payload = new JsonObject
@@ -134,8 +121,6 @@ public sealed partial class WebGateway : IDisposable
         {
             if (IsRunning)
                 return (false, $"Web 服务已在运行(端口 {Port})");
-
-            RestoreCachedFrontendCatalogs();
 
             var configured = int.TryParse(
                 _settings.Get(KeyPort), System.Globalization.NumberStyles.Integer,
@@ -211,159 +196,9 @@ public sealed partial class WebGateway : IDisposable
             foreach (var pending in _pending.Values)
                 pending.Completion.TrySetResult(CommandResult.Fail("前端连接已断开"));
             _pending.Clear();
-            foreach (var confirmation in _pendingConfirmations.Values)
-                confirmation.Completion.TrySetResult(false);
-            _pendingConfirmations.Clear();
-            _sessionCatalogs.Clear();
             Port = 0;
             _log.Info("web", "Web 服务已停止");
             return (true, $"Web 服务已停止(端口 {releasedPort} 已释放)");
-        }
-    }
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public async Task<CommandResult> RelayFrontendCommandAsync(
-        string text,
-        string source,
-        CancellationToken cancellationToken)
-    {
-        ParsedCommand parsed;
-        try
-        {
-            parsed = CommandParser.Parse(text);
-        }
-        catch (CommandSyntaxException ex)
-        {
-            return CommandResult.Fail($"前端命令语法错误: {ex.Message}");
-        }
-
-        var target = parsed.Named.GetValueOrDefault("_frontend");
-        var candidates = _clients.Values
-            .Where(client => client.Session.Kind == ClientKind.Shell
-                             && client.Socket.State == WebSocketState.Open)
-            .Where(client => !_sessionCatalogs.TryGetValue(client.Session.Id, out var catalog)
-                             || catalog.Commands.Any(command => command.Name.Equals(
-                                 parsed.Name, StringComparison.OrdinalIgnoreCase)))
-            .ToList();
-        EventClient? frontend = null;
-        if (!string.IsNullOrWhiteSpace(target))
-        {
-            var matched = candidates.Where(client =>
-                    client.Session.Id.Equals(target, StringComparison.OrdinalIgnoreCase)
-                    || client.Session.Name.Equals(target, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-            if (matched.Count != 1)
-                return CommandResult.Fail(matched.Count == 0
-                    ? $"目标前端不可用: {target}"
-                    : $"目标前端不唯一: {target}，请改用会话 ID");
-            frontend = matched[0];
-        }
-        else
-        {
-            var originSessionId = SessionIdFromSource(source);
-            frontend = originSessionId == null
-                ? null
-                : candidates.FirstOrDefault(client => client.Session.Id.Equals(
-                    originSessionId, StringComparison.Ordinal));
-            if (frontend == null && candidates.Count == 1)
-                frontend = candidates[0];
-            if (frontend == null && candidates.Count > 1)
-                return CommandResult.Fail("多个前端可执行该命令，请指定 _frontend=<会话 ID 或应用名>");
-        }
-
-        if (frontend == null)
-            return CommandResult.Fail("前端不可用");
-        var relayText = RemoveFrontendTarget(parsed);
-
-        var id = Guid.NewGuid().ToString("N");
-        var completion = new TaskCompletionSource<CommandResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-        if (!_pending.TryAdd(id, new PendingCommand(frontend.Session.Id, completion)))
-            return CommandResult.Fail("无法创建前端命令关联 ID");
-
-        try
-        {
-            await SendAsync(frontend, new JsonObject
-            {
-                ["type"] = "uiCommand",
-                ["id"] = id,
-                ["text"] = relayText,
-                ["source"] = source,
-            }, cancellationToken).ConfigureAwait(false);
-
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(TimeSpan.FromSeconds(15));
-            return await completion.Task.WaitAsync(timeout.Token).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            return CommandResult.Fail(cancellationToken.IsCancellationRequested
-                ? "前端命令已取消"
-                : "前端命令响应超时");
-        }
-        catch (WebSocketException)
-        {
-            return CommandResult.Fail("前端连接已断开");
-        }
-        catch (ObjectDisposedException)
-        {
-            return CommandResult.Fail("前端连接已断开");
-        }
-        finally
-        {
-            _pending.TryRemove(id, out _);
-        }
-    }
-
-    /// <summary>
-    /// 把确认请求送到当前连接的前端 Shell，与请求来源无关。
-    ///
-    /// 4.0.0 新增（REQ-A2）。<see cref="RequestWebConfirmation"/> 按 <c>source</c> 反查会话，
-    /// 只适用于"谁发起就问谁"；而 MCP 来的危险命令，其来源是 MCP 客户端，映射不到任何前端会话。
-    /// 宿主无头化后这类确认必须问人，唯一有人看着的进程就是前端。
-    ///
-    /// **没有前端连接时返回 false（拒绝），绝不放行。** 调用方应记录一条可见日志——
-    /// 静默拒绝会让用户以为命令没执行，而静默放行会让"危险命令需确认"这条约束形同虚设。
-    /// </summary>
-    public bool RequestShellConfirmation(string prompt, TimeSpan timeout)
-    {
-        var shell = _clients.Values.FirstOrDefault(client =>
-            client.Session.Kind == ClientKind.Shell
-            && client.Socket.State == WebSocketState.Open);
-        return shell != null && AskClient(shell, shell.Session.Id, prompt, "Service:Confirm", timeout);
-    }
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public bool RequestWebConfirmation(string prompt, string source, TimeSpan timeout)
-    {
-        var sessionId = SessionIdFromSource(source);
-        if (sessionId == null || !_clients.TryGetValue(sessionId, out var client)
-            || client.Socket.State != WebSocketState.Open)
-            return false;
-
-        return AskClient(client, sessionId, prompt, source, timeout);
-    }
-
-    private bool AskClient(EventClient client, string sessionId, string prompt, string source, TimeSpan timeout)
-    {
-        var id = Guid.NewGuid().ToString("N");
-        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        if (!_pendingConfirmations.TryAdd(id, new PendingConfirmation(sessionId, completion)))
-            return false;
-        try
-        {
-            var payload = new JsonObject
-            {
-                ["type"] = "confirmation",
-                ["id"] = id,
-                ["prompt"] = prompt,
-                ["source"] = source,
-            };
-            _ = SendIgnoringErrorsAsync(client, payload);
-            return completion.Task.Wait(timeout) && completion.Task.Result;
-        }
-        finally
-        {
-            _pendingConfirmations.TryRemove(id, out _);
         }
     }
 
@@ -420,7 +255,6 @@ public sealed partial class WebGateway : IDisposable
                     port = Port,
                     bind = LoopbackAddress,
                     clients = ConnectedClients,
-                    shells = ConnectedShells,
                     serverId = ServerId,
                     productVersion = AppIdentity.Current.Version,
                     historyVulcanProtocolVersion = GatewayProtocolVersion,
@@ -482,27 +316,6 @@ public sealed partial class WebGateway : IDisposable
                     SessionSource(session),
                     cancellationToken).ConfigureAwait(false);
                 await WriteJsonAsync(context, result, 200).ConfigureAwait(false);
-                return;
-            }
-
-            if (path.Equals("/api/confirm", StringComparison.OrdinalIgnoreCase)
-                && context.Request.HttpMethod == "POST")
-            {
-                if (session.Kind != ClientKind.Web)
-                {
-                    await WriteJsonAsync(context, new { error = "web session required" }, 403).ConfigureAwait(false);
-                    return;
-                }
-                var answer = await ReadJsonAsync<ConfirmRequest>(context.Request).ConfigureAwait(false);
-                if (answer == null || string.IsNullOrWhiteSpace(answer.Id)
-                    || !_pendingConfirmations.TryGetValue(answer.Id, out var pending)
-                    || !pending.SessionId.Equals(session.Id, StringComparison.Ordinal))
-                {
-                    await WriteJsonAsync(context, new { error = "confirmation not found" }, 404).ConfigureAwait(false);
-                    return;
-                }
-                pending.Completion.TrySetResult(answer.Approved);
-                await WriteJsonAsync(context, new { accepted = true }, 200).ConfigureAwait(false);
                 return;
             }
 
@@ -604,26 +417,6 @@ public sealed partial class WebGateway : IDisposable
                             ? CommandResult.Ok(message, data)
                             : CommandResult.Fail(message));
                     }
-                    else if (root.TryGetProperty("type", out type)
-                             && type.GetString() == "confirmationResult"
-                             && root.TryGetProperty("id", out var confirmationId)
-                             && _pendingConfirmations.TryGetValue(
-                                 confirmationId.GetString() ?? "", out var confirmation)
-                             && confirmation.SessionId.Equals(session.Id, StringComparison.Ordinal))
-                    {
-                        confirmation.Completion.TrySetResult(
-                            root.TryGetProperty("approved", out var approved) && approved.GetBoolean());
-                    }
-                    else if (root.TryGetProperty("type", out type)
-                             && type.GetString() == "commandCatalog"
-                             && session.Kind == ClientKind.Shell
-                             && root.TryGetProperty("catalog", out var catalogJson))
-                    {
-                        var catalog = JsonSerializer.Deserialize<FrontendCapabilityCatalog>(
-                            catalogJson.GetRawText(), JsonOptions);
-                        if (catalog != null)
-                            ApplyFrontendCatalog(session, catalog);
-                    }
                 }
             }
         }
@@ -638,10 +431,7 @@ public sealed partial class WebGateway : IDisposable
             var removed = ((ICollection<KeyValuePair<string, EventClient>>)_clients).Remove(
                 new KeyValuePair<string, EventClient>(session.Id, client));
             if (removed)
-            {
-                _sessionCatalogs.TryRemove(session.Id, out _);
                 CompletePendingForSession(session.Id);
-            }
             client.Dispose();
         }
     }
@@ -653,163 +443,6 @@ public sealed partial class WebGateway : IDisposable
         {
             if (_pending.TryRemove(item.Key, out var pending))
                 pending.Completion.TrySetResult(CommandResult.Fail("发起前端已断开"));
-        }
-        foreach (var item in _pendingConfirmations.Where(item =>
-                     item.Value.SessionId.Equals(sessionId, StringComparison.Ordinal)).ToList())
-        {
-            if (_pendingConfirmations.TryRemove(item.Key, out var pending))
-                pending.Completion.TrySetResult(false);
-        }
-    }
-
-    private void ApplyFrontendCatalog(ClientSession session, FrontendCapabilityCatalog catalog)
-    {
-        var registry = _busAccessor()?.Registry;
-        if (registry == null || string.IsNullOrWhiteSpace(catalog.FrontendName)
-            || catalog.Commands.Count > 4096)
-            return;
-        var commands = catalog.Commands
-            .Where(command => !string.IsNullOrWhiteSpace(command.Name))
-            .GroupBy(command => command.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(group => group.First())
-            .ToList();
-        var normalized = catalog with { Commands = commands };
-
-        lock (_catalogLock)
-        {
-            _sessionCatalogs[session.Id] = normalized;
-            _cachedCatalogs[normalized.FrontendName] = normalized;
-            TrimCatalogCache(normalized.FrontendName);
-            ApplyCatalogToRegistry(registry, normalized);
-            _settings.Set(KeyFrontendCatalog, JsonSerializer.Serialize(
-                _cachedCatalogs.Values.OrderBy(item => item.FrontendName).ToList(), JsonOptions));
-        }
-        _log.Info("web", $"已同步前端命令目录: {normalized.FrontendName}，{commands.Count} 条");
-    }
-
-    private void RestoreCachedFrontendCatalogs()
-    {
-        var registry = _busAccessor()?.Registry;
-        var json = _settings.Get(KeyFrontendCatalog);
-        if (registry == null || string.IsNullOrWhiteSpace(json))
-            return;
-        lock (_catalogLock)
-        {
-            if (_cachedCatalogs.Count > 0)
-                return;
-            try
-            {
-                var catalogs = JsonSerializer.Deserialize<List<FrontendCapabilityCatalog>>(json, JsonOptions) ?? [];
-                foreach (var catalog in catalogs.Where(item => item.Commands.Count <= 4096))
-                {
-                    _cachedCatalogs[catalog.FrontendName] = catalog;
-                    TrimCatalogCache(catalog.FrontendName);
-                    ApplyCatalogToRegistry(registry, catalog);
-                }
-            }
-            catch (JsonException ex)
-            {
-                _log.Warn("web", $"缓存的前端命令目录无效，已忽略: {ex.Message}");
-            }
-        }
-    }
-
-    /// <summary>
-    /// 忘掉某个前端的缓存能力目录，并撤掉它留在注册表里的代理指令。
-    ///
-    /// 缓存按**前端名**做键，本意是前端离线时命令仍可查；代价是被弃用的名字永远不会消失。
-    /// 4.0.0 把前端从 HistoryVulcan.Frontend 改名为 HistoryAurora 之后，旧名下的 37 条
-    /// （含全部 21 条 vulcan.ui.*）就一直以幽灵身份留在 vulcan 域里——它们在宿主源码中
-    /// 一处都不存在，却查得到、还能被"成功"解析，直到真去执行才发现无人接手。
-    ///
-    /// <see cref="TrimCatalogCache"/> 只在条目数超过上限（缺省 32）时才淘汰，
-    /// 两三个前端名根本触不到，因此需要一个显式入口。
-    ///
-    /// 不做自动淘汰是有意的：断开与退役在协议上无法区分，按"离线即忘"会把
-    /// 前端重启期间的命令查询也一并打断，那正是这份缓存最初要解决的问题。
-    /// </summary>
-    /// <returns>从注册表撤掉的指令条数；该前端本就没有缓存时返回 -1。</returns>
-    public int ForgetFrontendCatalog(string frontendName)
-    {
-        if (string.IsNullOrWhiteSpace(frontendName))
-            return -1;
-
-        var registry = _busAccessor()?.Registry;
-        lock (_catalogLock)
-        {
-            if (!_cachedCatalogs.TryGetValue(frontendName, out var catalog))
-                return -1;
-
-            _cachedCatalogs.Remove(frontendName);
-            var source = "frontend:" + catalog.FrontendName;
-            var removed = 0;
-            if (registry != null)
-            {
-                foreach (var command in catalog.Commands)
-                {
-                    // 只撤仍归该前端所有的条目：同名指令若已被在线前端重新注册，
-                    // 撤掉它等于把活着的能力也一起删了。
-                    if (registry.TryGet(command.Name, out _)
-                        && string.Equals(registry.GetSource(command.Name), source, StringComparison.Ordinal)
-                        && registry.Unregister(command.Name))
-                        removed++;
-                }
-            }
-
-            _settings.Set(KeyFrontendCatalog, JsonSerializer.Serialize(
-                _cachedCatalogs.Values.OrderBy(item => item.FrontendName).ToList(), JsonOptions));
-            _log.Info("web", $"已忘掉前端命令目录: {catalog.FrontendName}，撤销 {removed} 条");
-            return removed;
-        }
-    }
-
-    /// <summary>当前缓存了哪些前端名及其条数,供清理前核对。</summary>
-    public IReadOnlyDictionary<string, int> CachedFrontendCatalogs()
-    {
-        lock (_catalogLock)
-        {
-            return _cachedCatalogs.Values.ToDictionary(
-                item => item.FrontendName,
-                item => item.Commands.Count,
-                StringComparer.OrdinalIgnoreCase);
-        }
-    }
-
-    private void TrimCatalogCache(string keepName)
-    {
-        var limit = Math.Clamp(
-            _settings.GetInt(KeyFrontendCatalogLimit, DefaultFrontendCatalogLimit), 1, 256);
-        foreach (var name in _cachedCatalogs.Keys
-                     .Where(name => !name.Equals(keepName, StringComparison.OrdinalIgnoreCase))
-                     .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
-                     .Take(Math.Max(0, _cachedCatalogs.Count - limit))
-                     .ToList())
-        {
-            _cachedCatalogs.Remove(name);
-        }
-    }
-
-    private static void ApplyCatalogToRegistry(CommandRegistry registry, FrontendCapabilityCatalog catalog)
-    {
-        foreach (var command in catalog.Commands)
-        {
-            try
-            {
-                if (!CommandParser.Parse(command.Name).Name.Equals(command.Name, StringComparison.OrdinalIgnoreCase))
-                    continue;
-            }
-            catch (CommandSyntaxException)
-            {
-                continue;
-            }
-
-            if (registry.TryGet(command.Name, out var existing))
-            {
-                if (existing.ExecutionSite != CommandExecutionSite.Frontend)
-                    continue;
-                registry.Unregister(command.Name);
-            }
-            registry.Register(command.CreateProxy(), $"frontend:{catalog.FrontendName}");
         }
     }
 

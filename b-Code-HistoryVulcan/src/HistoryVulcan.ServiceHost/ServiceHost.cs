@@ -37,7 +37,7 @@ public static class ServiceHost
 
         // 4.0.0（REQ-A2）：确认中继到前端，服务进程不再自己弹框。
         // 前端未连接时拒绝而非放行——没有人可问就等于没得到批准。
-        var confirmation = new ShellRelayConfirmation(() => composition.Web, composition.Log);
+        var confirmation = new ShellRelayConfirmation(composition.Log);
         var gatewayAwareConfirmation = new GatewayAwareConfirmation(confirmation);
         composition.Bus.Confirmation = gatewayAwareConfirmation;
         // 3.13.0 删除局域网面后，网关只接受同机前端 Shell（源形如 "Shell:v1.…"），
@@ -73,11 +73,6 @@ public static class ServiceHost
 
         if (composition.Web != null)
         {
-            // 只在没人认领时才装网关中继。进程内界面（Aurora DEC-008）在**模块装载阶段**
-            // 就把自己登记成了前端执行器，那比这里早；无条件覆盖的症状是界面明明开着，
-            // vulcan.app.* 却一律答"前端不可用"——因为网关那边确实没有连接的 shell。
-            // 外部前端不受影响：它走的是 ConnectedShells > 0 那条显式分支。
-            composition.Bus.FrontendExecutor ??= composition.Web.RelayFrontendCommandAsync;
             var (started, message) = composition.Web.Start();
             LogResult(composition.Log, "web", started, message);
             if (started && composition.EndpointFile != null)
