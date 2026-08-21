@@ -119,60 +119,6 @@ public static class ServiceCommands
 
         registry.Register(new CommandDescriptor
         {
-            Name = "vulcan.svc.frontends",
-            Domain = "vulcan",
-            CommandClass = "svc",
-            Summary = "列出仍被缓存的前端能力目录",
-            Readonly = true,
-            Handler = CommandDescriptor.Sync(_ =>
-            {
-                var web = composition.Web;
-                if (web == null)
-                    return CommandResult.Fail("网关未启用");
-                var cached = web.CachedFrontendCatalogs();
-                if (cached.Count == 0)
-                    return CommandResult.Ok("无缓存的前端目录");
-                return CommandResult.Ok(string.Join(
-                    Environment.NewLine,
-                    cached.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase)
-                        .Select(pair => $"{pair.Key}  {pair.Value} 条")));
-            }),
-        }, source);
-
-        registry.Register(new CommandDescriptor
-        {
-            Name = "vulcan.svc.forgetfrontend",
-            Domain = "vulcan",
-            CommandClass = "svc",
-            Summary = "忘掉某个前端的缓存目录并撤销其代理指令",
-            Example = "vulcan.svc.forgetfrontend name=HistoryVulcan.Frontend",
-            Parameters =
-            [
-                new ParameterSpec
-                {
-                    Name = "name",
-                    Description = "vulcan.svc.frontends 中列出的前端名",
-                    Required = true,
-                    Position = 0,
-                },
-            ],
-            Handler = CommandDescriptor.Sync(ctx =>
-            {
-                var web = composition.Web;
-                if (web == null)
-                    return CommandResult.Fail("网关未启用");
-                var name = ctx.GetString("name")?.Trim();
-                if (string.IsNullOrWhiteSpace(name))
-                    return CommandResult.Fail("缺少 name");
-                var removed = web.ForgetFrontendCatalog(name);
-                return removed < 0
-                    ? CommandResult.Fail($"没有名为 {name} 的缓存目录")
-                    : CommandResult.Ok($"已忘掉 {name}，撤销 {removed} 条指令");
-            }),
-        }, source);
-
-        registry.Register(new CommandDescriptor
-        {
             Name = "vulcan.svc.stop",
             Domain = "vulcan",
             CommandClass = "svc",
@@ -194,10 +140,10 @@ public static class ServiceCommands
             ConfirmPrompt = _ => "确认退出 HistoryVulcan 前端和后台服务？",
             Handler = async ctx =>
             {
-                var frontend = composition.Web?.ConnectedShells > 0
-                    ? await composition.Web.RelayFrontendCommandAsync(
-                        "vulcan.app.close", ctx.Source, ctx.Cancellation).ConfigureAwait(false)
-                    : CommandResult.Ok("前端未连接");
+                var frontend = composition.Bus.FrontendExecutor is { } close
+                    ? await close("vulcan.app.close", ctx.Source, ctx.Cancellation)
+                        .ConfigureAwait(false)
+                    : CommandResult.Ok("界面未装载");
                 requestStop();
                 return frontend.Success
                     ? CommandResult.Ok("HistoryVulcan 正在退出")
@@ -369,15 +315,10 @@ public static class ServiceCommands
             Summary = summary,
             Handler = async context =>
             {
-                var web = composition.Web;
-                if (web != null && web.ConnectedShells > 0)
-                    return await web.RelayFrontendCommandAsync(
-                        name, context.Source, context.Cancellation).ConfigureAwait(false);
-
                 if (composition.Bus.FrontendExecutor is { } frontend)
                     return await frontend(name, context.Source, context.Cancellation).ConfigureAwait(false);
 
-                return CommandResult.Fail("界面未装载：未发现进程内界面，也没有已连接的外部前端");
+                return CommandResult.Fail("界面未装载");
             },
         };
 

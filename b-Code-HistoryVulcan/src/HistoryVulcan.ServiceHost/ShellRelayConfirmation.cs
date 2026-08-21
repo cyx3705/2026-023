@@ -1,65 +1,44 @@
-using HistoryVulcan.Core.Commands;
+﻿using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Services.Web;
 
 namespace HistoryVulcan.ServiceHost;
 
 /// <summary>
-/// 把人工确认中继到前端的确认通道（4.0.0，REQ-A2）。
+/// 宿主自带的确认服务：一律拒绝。
 ///
-/// 取代此前的 <c>ServiceConfirmation</c>——那个实现在服务进程里直接弹
-/// <c>MessageBox</c>，是服务侧最后一处业务性 WPF 依赖，也让"无头服务"名不副实：
-/// 一个没有界面的后台进程弹出模态框，在无人值守场景下会一直阻塞到超时。
+/// 确认的语义是「请人过目」，而宿主进程里没有人可问——它是个后台服务。
+/// 真正能弹框的是承载界面的那个模块：Aurora 在装载时把 <c>Bus.Confirmation</c>
+/// 换成自己的窗口确认（见 <c>AuroraShellHost</c>），本实现随即不再被调用。
 ///
-/// **没有前端连接时一律拒绝。** 这不是保守选择而是唯一正确的选择：确认的语义是
-/// "请人过目"，没有人可问就等于没得到批准。放行会让 MCP 侧"危险命令需确认"整条约束失效。
-/// 拒绝时写一条 warn 日志，否则用户只会看到命令莫名失败。
+/// 4.2.0 之前这里会把确认经 WebSocket 中继给进程外前端。那条路随 DEC-008 的
+/// 独立 exe 一起退役了——中继在没有连接时同样是拒绝，所以行为没有变化，
+/// 变的只是不再假装存在一条通道。
+///
+/// **拒绝而不是放行**：放行会让「危险命令需确认」整条约束失效。
+/// 每次拒绝写一条 warn，否则用户只会看到命令莫名失败。
 /// </summary>
 public sealed class ShellRelayConfirmation : IConfirmationService
 {
-    private readonly Func<WebGateway?> _gateway;
     private readonly IShellLog _log;
-    private readonly TimeSpan _timeout;
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public ShellRelayConfirmation(Func<WebGateway?> gateway, IShellLog log, TimeSpan? timeout = null)
+    public ShellRelayConfirmation(IShellLog log)
     {
-        ArgumentNullException.ThrowIfNull(gateway);
         ArgumentNullException.ThrowIfNull(log);
-        _gateway = gateway;
         _log = log;
-        _timeout = timeout ?? TimeSpan.FromSeconds(60);
     }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public bool Confirm(string prompt) => Ask(prompt, _timeout, client: null);
+    public bool Confirm(string prompt) => Refuse(prompt, client: null);
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public bool? ConfirmRemote(string client, string prompt, int timeoutSeconds)
-        => Ask(
-            prompt,
-            timeoutSeconds > 0 ? TimeSpan.FromSeconds(timeoutSeconds) : _timeout,
-            client);
+        => Refuse(prompt, client);
 
-    private bool Ask(string prompt, TimeSpan timeout, string? client)
+    private bool Refuse(string prompt, string? client)
     {
-        var gateway = _gateway();
-        if (gateway == null || !gateway.IsRunning)
-        {
-            _log.Warn("confirm", $"网关未运行，确认请求已拒绝{Describe(client)}: {prompt}");
-            return false;
-        }
-
-        if (gateway.ConnectedShells == 0)
-        {
-            _log.Warn("confirm", $"前端未连接，确认请求已拒绝{Describe(client)}: {prompt}");
-            return false;
-        }
-
-        var approved = gateway.RequestShellConfirmation(prompt, timeout);
-        if (!approved)
-            _log.Info("confirm", $"确认被拒绝或超时{Describe(client)}: {prompt}");
-        return approved;
+        _log.Warn("confirm", $"界面未装载，确认请求已拒绝{Describe(client)}: {prompt}");
+        return false;
     }
 
     private static string Describe(string? client)
