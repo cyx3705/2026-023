@@ -6,6 +6,7 @@ using Microsoft.Win32;
 using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
+using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.Services;
 using HistoryVulcan.Services.Modules;
@@ -52,7 +53,7 @@ public static partial class ServiceComposer
             var markdown = HistoryVulcan.Extensibility.Mcp.CommandManualGenerator.Render(
                 composition.Registry!,
                 new HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter(composition.Registry!),
-                composition.Mcp?.Policy ?? "readonly");
+                McpSettingKeys.ResolvePolicy(composition.Settings));
 
             var target = Path.GetFullPath(outputPath);
             var directory = Path.GetDirectoryName(target);
@@ -110,29 +111,22 @@ public static partial class ServiceComposer
         RegisterServiceModuleCommands(registry, modules, settings, bus);
         RegisterServiceMcpSettingCommands(registry, settings);
 
-        // The backend registry owns both module commands and the MCP projection. Prompt and
-        // audit state stay at the historical application root so moving the listener does not
-        // orphan existing governance revisions or call history.
-        var prompts = new Services.Mcp.PromptGovernanceStore(paths.Root, log);
-        var audit = new Services.Mcp.McpAuditRecorder(paths.Root, log);
-        // 4.0.0（REQ-A2）：MCP 的危险命令确认同样中继到前端。服务进程无人值守，
-        // 在这里弹模态框只会阻塞到超时；前端未连接时拒绝，不放行。
-        var confirmation = new ShellRelayConfirmation(log);
-        Services.Mcp.McpGateway? mcp = null;
-        mcp = new Services.Mcp.McpGateway(
-            () => bus,
-            settings,
-            log,
-            audit,
-            prompts,
-            identity,
-            confirmation.ConfirmRemote);
-        HistoryVulcan.Services.Mcp.McpCommands.RegisterAll(
+        // 指令自省面（vulcan.command.list / show / domains / manual）随宿主装配，
+        // 不随承载 MCP 的模块来去：Portunus 装不上时最需要的恰恰是能查指令。
+        //
+        // 它要的两样东西都不必经过网关：
+        //   策略——就是 mcp.policy 这个设置键，宿主自己读得到；
+        //   治理——经 CommandBus.McpGovernance 由模块注入，没有模块时那几列为空。
+        var catalogExporter = new HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter(registry)
+        {
+            DescriptionsProvider = () => bus.McpGovernance?.EffectiveDescriptions()
+                                         ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+        };
+        HistoryVulcan.Services.Commands.CommandCatalogCommands.RegisterAll(
             registry,
-            () => bus,
-            () => mcp,
-            settings,
-            prompts,
+            catalogExporter,
+            governance: null,
+            policy: () => McpSettingKeys.ResolvePolicy(settings),
             source: "framework:service");
 
         return new ServiceComposition
@@ -143,7 +137,6 @@ public static partial class ServiceComposer
             Settings = settings,
             Log = log,
             Modules = modules,
-            Mcp = mcp,
             // 与前端此前的 DataDirectory 同值：脚本相对路径基准不变（REQ-A6）。
             DataDirectory = paths.Root,
             RegisterAutostartOnFirstRun = true,
@@ -246,20 +239,8 @@ public static partial class ServiceComposer
         ISettingsService service,
         IShellLog log)
     {
-        string[] keys =
-        [
-            Services.Mcp.McpGateway.KeyPort,
-            Services.Mcp.McpGateway.KeyPolicy,
-            Services.Mcp.McpGateway.KeyToken,
-            Services.Mcp.McpGateway.KeyAutostart,
-            Services.Mcp.McpGateway.KeyTimeout,
-            Services.Mcp.McpGateway.KeyConfirm,
-            Services.Mcp.McpGateway.KeyConfirmTimeout,
-            Services.Mcp.McpGateway.KeyPortRetries,
-            Services.Mcp.McpGateway.KeySessionLimit,
-        ];
         var migrated = 0;
-        foreach (var key in keys)
+        foreach (var key in McpSettingKeys.All)
         {
             if (service.Get(key) != null || legacy.Get(key) is not { } value)
                 continue;

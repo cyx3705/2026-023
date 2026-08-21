@@ -51,6 +51,10 @@ namespace HistoryVulcan.Tests
 
                 Assert.True(result.Success, result.Message);
                 Assert.Equal($"{Path.GetFullPath(dataDirectory)}|attached", result.Message);
+                // 恰好两条：一条显式注册、一条反射投影。
+                // Attach 与 Dispose 都是生命周期契约的实现，不得成为指令——
+                // 尤其是 Dispose：远端调用它等于拆掉半个模块。
+                Assert.False(registry.TryGet("contextfixture.Dispose", out _));
                 Assert.Equal(2, Assert.Single(host.Modules).CommandCount);
             }
             finally

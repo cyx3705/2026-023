@@ -72,11 +72,8 @@ public static class ServiceHost
         // Web 网关与 endpoint.json 已迁出至 HistoryPortunus 模块（4.3.0）。
         // 宿主不再持有任何对外 HTTP 监听：模块没装上时本机就没有 Web 入口，
         // 这一点由 endpoint.json 的存在与否如实反映。
-        if (composition.Mcp != null)
-        {
-            var (started, message) = composition.Mcp.TryAutostart();
-            LogResult(composition.Log, "mcp", started, message);
-        }
+        // MCP 的自启随网关迁往 HistoryPortunus（4.4.0）：mcp.autostart 由模块在装载时读。
+        // 宿主至此不再持有任何对外监听。
 
         if (composition.RegisterAutostartOnFirstRun && composition.Autostart != null)
         {

@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Modules;
 
@@ -102,10 +102,19 @@ public sealed partial class ModuleHost
 
     private static bool IsModuleLifecycleMethod(Type type, MethodInfo method)
     {
+        // 生命周期契约的实现方法不是指令：它们由宿主在装载/拆除时调用，
+        // 不该同时出现在指令目录里让人（或 agent）手动触发。
+        //
+        // IDisposable 自 4.3.0 起也算：那一版让宿主在拆除阶段回收模块实例，
+        // 于是「实现 IDisposable」从模块的私事变成了与宿主的约定。
+        // 不排除的话，任何一个持有资源、因而实现了 IDisposable 的模块，
+        // 都会平白多出一条 <域>.dispose 指令——远端调用它等于拆掉半个模块，
+        // 而模块作者完全不知道自己暴露了它。
         Type[] lifecycleContracts =
         [
             typeof(IModuleContextAware),
             typeof(IUiModule),
+            typeof(IDisposable),
         ];
 
         foreach (var contract in lifecycleContracts)

@@ -6,7 +6,7 @@ using System.Text.Json;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Extensibility.Commands;
 
-namespace HistoryVulcan.Services.Mcp;
+namespace HistoryVulcan.Services.Commands;
 
 /// <summary>目录中的一行：一条指令的注册事实与 MCP 投影状态。</summary>
 /// <param name="CommandName">完整指令名。</param>
@@ -107,59 +107,53 @@ public static class CommandCatalogCommands
     public static void RegisterCore(CommandRegistry registry, string source = "app")
     {
         var exporter = new CommandSchemaExporter(registry);
-        RegisterCatalog(registry, exporter, prompts: null, static () => null, source);
+        RegisterCatalog(registry, exporter, governance: null, static () => "readonly", source);
     }
 
     /// <summary>把目录查询指令注册进指定注册表。</summary>
     public static void RegisterAll(
         CommandRegistry registry,
         CommandSchemaExporter exporter,
-        PromptGovernanceStore prompts,
-        Func<McpGateway?> gateway,
+        IMcpPromptGovernanceView? governance,
+        Func<string> policy,
         string source = "app")
-        => RegisterCatalog(registry, exporter, prompts, gateway, source);
+        => RegisterCatalog(registry, exporter, governance, policy, source);
 
     private static void RegisterCatalog(
         CommandRegistry registry,
         CommandSchemaExporter exporter,
-        PromptGovernanceStore? prompts,
-        Func<McpGateway?> gateway,
+        IMcpPromptGovernanceView? governance,
+        Func<string> policy,
         string source)
     {
-        registry.Register(BuildList(registry, exporter, prompts, gateway), source);
-        registry.Register(BuildShow(registry, exporter, prompts, gateway), source);
+        registry.Register(BuildList(registry, exporter, governance, policy), source);
+        registry.Register(BuildShow(registry, exporter, governance, policy), source);
         registry.Register(BuildDomains(registry), source);
-        registry.Register(BuildManual(registry, exporter, gateway), source);
+        registry.Register(BuildManual(registry, exporter, policy), source);
     }
 
     /// <summary>按当前注册表与 MCP 投影生成目录快照。</summary>
     public static IReadOnlyList<CommandCatalogRow> Snapshot(
         CommandRegistry registry,
         CommandSchemaExporter exporter,
-        PromptGovernanceStore prompts,
+        IMcpPromptGovernanceView? governance,
         string policy)
-        => SnapshotCore(registry, exporter, prompts, policy);
+        => SnapshotCore(registry, exporter, governance, policy);
 
     private static IReadOnlyList<CommandCatalogRow> SnapshotCore(
         CommandRegistry registry,
         CommandSchemaExporter exporter,
-        PromptGovernanceStore? prompts,
+        IMcpPromptGovernanceView? governance,
         string policy)
     {
         var tools = exporter.ExportTools().ToDictionary(
             tool => tool.CommandName, StringComparer.OrdinalIgnoreCase);
-        IReadOnlyDictionary<string, string> descriptions = prompts?.AllEffectiveDescriptions()
+        IReadOnlyDictionary<string, string> descriptions = governance?.EffectiveDescriptions()
             ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        IReadOnlyDictionary<string, int> openProposals = prompts == null
-            ? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
-            : prompts.ListProposals(openOnly: true, limit: 500)
-                .GroupBy(item => item.Command, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
-        IReadOnlyDictionary<string, int> incidents = prompts == null
-            ? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
-            : prompts.ListIncidents(limit: 500)
-                .GroupBy(item => item.Command, StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
+        IReadOnlyDictionary<string, int> openProposals = governance?.OpenProposalCounts()
+            ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        IReadOnlyDictionary<string, int> incidents = governance?.IncidentCounts()
+            ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
         return registry.All().Select(descriptor =>
         {
@@ -169,7 +163,7 @@ public static class CommandCatalogCommands
             var sourceName = module ? "module" : rawSource;
             var sourceDetail = module ? rawSource["module:".Length..] : null;
             var customized = descriptions.ContainsKey(descriptor.Name);
-            var revision = customized ? prompts?.GetCurrentRevision(descriptor.Name)?.Id : null;
+            var revision = customized ? governance?.CurrentRevisionId(descriptor.Name) : null;
 
             return new CommandCatalogRow(
                 descriptor.Name,
@@ -199,8 +193,8 @@ public static class CommandCatalogCommands
     private static CommandDescriptor BuildList(
         CommandRegistry registry,
         CommandSchemaExporter exporter,
-        PromptGovernanceStore? prompts,
-        Func<McpGateway?> gateway) => new()
+        IMcpPromptGovernanceView? governance,
+        Func<string> policy) => new()
         {
             Name = "vulcan.command.list",
             Domain = "vulcan",
@@ -224,7 +218,7 @@ public static class CommandCatalogCommands
             Handler = CommandDescriptor.Sync(ctx =>
             {
                 IEnumerable<CommandCatalogRow> rows = SnapshotCore(
-                    registry, exporter, prompts, gateway()?.Policy ?? "readonly");
+                    registry, exporter, governance, policy());
                 var domain = ctx.GetString("domain")?.Trim();
                 if (!string.IsNullOrWhiteSpace(domain))
                     rows = rows.Where(row => row.Domain.Equals(domain, StringComparison.OrdinalIgnoreCase));
@@ -266,8 +260,8 @@ public static class CommandCatalogCommands
     private static CommandDescriptor BuildShow(
         CommandRegistry registry,
         CommandSchemaExporter exporter,
-        PromptGovernanceStore? prompts,
-        Func<McpGateway?> gateway) => new()
+        IMcpPromptGovernanceView? governance,
+        Func<string> policy) => new()
         {
             Name = "vulcan.command.show",
             Domain = "vulcan",
@@ -282,7 +276,7 @@ public static class CommandCatalogCommands
                 if (!registry.TryGet(name, out var descriptor))
                     return CommandResult.Fail($"指令不存在: {name}");
 
-                var row = SnapshotCore(registry, exporter, prompts, gateway()?.Policy ?? "readonly")
+                var row = SnapshotCore(registry, exporter, governance, policy())
                     .First(item => item.CommandName.Equals(descriptor.Name, StringComparison.OrdinalIgnoreCase));
                 var parameters = descriptor.Parameters.Select(parameter => new CommandParameterInfo(
                     parameter.Name,
@@ -334,7 +328,7 @@ public static class CommandCatalogCommands
     private static CommandDescriptor BuildManual(
         CommandRegistry registry,
         CommandSchemaExporter exporter,
-        Func<McpGateway?> gateway) => new()
+        Func<string> policy) => new()
         {
             Name = "vulcan.command.manual",
             Domain = "vulcan",
@@ -375,7 +369,7 @@ public static class CommandCatalogCommands
                     return CommandResult.Fail("命令手册路径越出当前工作目录");
 
                 var markdown = CommandManualGenerator.Render(
-                    registry, exporter, gateway()?.Policy ?? "readonly");
+                    registry, exporter, policy());
                 var preview = new CommandManualPreview(
                     target, registry.All().Count, CommandManualGenerator.Sha256(markdown),
                     markdown, context.GetBool("apply"));

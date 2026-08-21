@@ -2,7 +2,6 @@
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Modules;
 using HistoryVulcan.Core.Storage;
-using HistoryVulcan.Services.Mcp;
 using HistoryVulcan.Services.Modules;
 
 namespace HistoryVulcan.ServiceHost;
@@ -23,8 +22,6 @@ public sealed class ServiceComposition : IDisposable
     public ModuleHost? Modules { get; init; }
 
 
-    public McpGateway? Mcp { get; init; }
-
     /// <summary>
     /// 应用数据根，脚本等相对路径以它为基准。
     ///
@@ -44,7 +41,6 @@ public sealed class ServiceComposition : IDisposable
 
     public void Dispose()
     {
-        Mcp?.Dispose();
         Modules?.Dispose();
         DisposeApplicationServices?.Invoke();
         if (Log is IDisposable disposable)

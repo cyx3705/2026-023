@@ -111,9 +111,9 @@ public static class ServiceCommands
             {
                 running = true,
                 processId = Environment.ProcessId,
-                mcp = composition.Mcp?.IsRunning ?? false,
-                // web 字段随网关迁出（4.3.0）：宿主不再持有它，也就无从如实回答。
-                // 由 HistoryPortunus 自己的 portunus.web.status 回答。
+                // mcp 与 web 两个字段都随网关迁出（4.3.0 / 4.4.0）：宿主不再持有它们，
+                // 也就无从如实回答。MCP 的运行状态由 portunus.mcp.status 回答。
+                // 本指令回答的收敛为「宿主自己知道的事」：进程与已装载模块数。
                 modules = composition.Modules?.Modules.Count ?? 0,
             })),
         }, source);

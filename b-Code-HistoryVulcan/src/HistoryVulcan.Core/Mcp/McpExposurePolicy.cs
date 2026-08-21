@@ -128,11 +128,36 @@ public static class McpExposurePolicy
             return "界面内部协议不对远程暴露";
         }
 
-        if (commandName.StartsWith("vulcan.mcp.", StringComparison.OrdinalIgnoreCase))
+        if (IsMcpAdministration(commandName))
             return "防止远程递归管理或关闭 MCP 服务";
         if (string.Equals(ExposureOf(commandName), "hidden", StringComparison.OrdinalIgnoreCase))
             return "模块清单声明 mcpExposure=hidden,不对 MCP 暴露(Q211-2)";
         return null;
+    }
+
+    /// <summary>
+    /// 判定一条指令是否属于 MCP 自身的管理面（<c>&lt;域&gt;.mcp.&lt;动作&gt;</c>）。
+    /// </summary>
+    /// <remarks>
+    /// **按指令类判定，不按域前缀。** 这条排除原先写成 <c>StartsWith("vulcan.mcp.")</c>，
+    /// 4.4.0 把网关迁往 HistoryPortunus、指令随之改名为 <c>portunus.mcp.*</c> 时，
+    /// 它当场失效——start / stop / autostart 一并变成远端可见工具，
+    /// 也就是把「关掉正在服务你的那条通道」交给了远端。
+    ///
+    /// 这是同一个错误的第三次：<c>debug.logflood</c> 收编为 <c>vulcan.log.flood</c> 时，
+    /// 按 <c>debug.</c> 前缀写的排除同样当场失效（见上文承压指令一段）。
+    /// 域会随归属变动，指令类不会——安全排除必须挂在不随搬家改变的那一段上。
+    /// </remarks>
+    private static bool IsMcpAdministration(string commandName)
+    {
+        var first = commandName.IndexOf('.');
+        if (first < 0)
+            return false;
+        var second = commandName.IndexOf('.', first + 1);
+        if (second < 0)
+            return false;
+        return string.Equals(
+            commandName[(first + 1)..second], "mcp", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>

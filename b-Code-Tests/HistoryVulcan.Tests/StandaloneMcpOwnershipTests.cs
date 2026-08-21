@@ -62,18 +62,19 @@ public sealed class StandaloneMcpOwnershipTests
     }
 
     /// <summary>
-    /// 宿主自己开的监听器必须晚于模块装载，否则第一个远程目录会读到只有框架指令的中间快照。
-    ///
-    /// 4.3.0 起这条只剩 MCP 一半：Web 网关迁往 HistoryPortunus 后，它的监听器在**模块装载过程中**
-    /// 打开，而不是全部装完之后。这个保证因此对 Web 真实地变弱了，不是换个地方重新成立——
-    /// 重载期间客户端会先遇到连接被拒（旧实例已拆、新实例未起），随后极短一段窗口内
-    /// 可能读到尚未提交的指令目录。代价由客户端重试吸收：每次调用前重读 endpoint.json 并重试。
-    ///
-    /// 因此本用例同时守住第二件事：宿主不得再持有任何 Web 监听。
-    /// 哪天有人把它加回宿主，这条会立刻失败。
+    /// 宿主不得再持有任何对外监听。
     /// </summary>
+    /// <remarks>
+    /// 4.3.0 迁出 Web、4.4.0 迁出 MCP 之后，「先装模块再开监听」这条顺序不变量在宿主侧
+    /// 已经无处可守——宿主一个监听器都不开了。它在模块侧也没有换个地方重新成立：
+    /// 网关随模块装载过程打开，而不是全部装完之后，因此重载期间客户端会先遇到连接被拒，
+    /// 随后极短一段窗口内可能读到尚未提交的指令目录。代价由客户端重试吸收。
+    ///
+    /// 于是这条用例改守一件更简单也更要紧的事：**监听不许回到宿主**。
+    /// 哪天有人为了图方便把网关加回 ServiceHost，这条立刻失败。
+    /// </remarks>
     [Fact]
-    public void ServiceStartsModulesBeforeOpeningItsOwnListeners()
+    public void ServiceHostOpensNoRemoteListenersOfItsOwn()
     {
         var source = File.ReadAllText(Path.Combine(
             RepositoryRoot(),
@@ -81,12 +82,10 @@ public sealed class StandaloneMcpOwnershipTests
             "src",
             "HistoryVulcan.ServiceHost",
             "ServiceHost.cs"));
-        var modules = source.IndexOf("composition.Modules?.Start()", StringComparison.Ordinal);
-        var mcp = source.IndexOf("composition.Mcp.TryAutostart()", StringComparison.Ordinal);
 
-        Assert.True(modules >= 0);
-        Assert.True(mcp > modules);
+        Assert.Contains("composition.Modules?.Start()", source, StringComparison.Ordinal);
         Assert.DoesNotContain("composition.Web", source, StringComparison.Ordinal);
+        Assert.DoesNotContain("composition.Mcp", source, StringComparison.Ordinal);
     }
 
     private static string RepositoryRoot()
