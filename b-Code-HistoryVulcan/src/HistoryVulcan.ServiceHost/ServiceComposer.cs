@@ -111,10 +111,6 @@ public static partial class ServiceComposer
         {
             ServerId = identity.Name + ".service",
         };
-        long moduleRevision = 0;
-        modules.ReloadCompleted += () =>
-            web.PublishModuleRevision(Interlocked.Increment(ref moduleRevision));
-
         modules.Attach(registry, bus, settings, servicePaths.Root);
         RegisterServiceModuleCommands(registry, modules, settings, bus);
         RegisterServiceMcpSettingCommands(registry, settings);
