@@ -72,27 +72,6 @@ public sealed partial class WebGateway : IDisposable
     private static int DeriveDefaultPort(string appName)
         => LoopbackHttpTransport.DerivePort(appName, DefaultPortBase, DefaultPortSpan);
 
-    private void OnLogEntry(object? sender, ShellLogEntry entry)
-    {
-        var payload = new JsonObject
-        {
-            ["type"] = "log",
-            ["time"] = entry.Time.ToString("O"),
-            ["level"] = entry.Level.ToString(),
-            ["category"] = entry.Category,
-            ["message"] = entry.Message,
-        };
-        foreach (var client in _clients.Values)
-        {
-            if ((entry.Category.Equals("cmd", StringComparison.OrdinalIgnoreCase)
-                 || entry.Category.StartsWith(CommandBus.EchoCategoryPrefix, StringComparison.OrdinalIgnoreCase))
-                && !client.Session.Scopes.Contains("operate")
-                && !client.Session.Scopes.Contains("admin"))
-                continue;
-            client.TryQueueLog(payload);
-        }
-    }
-
     private static async Task<T?> ReadJsonAsync<T>(HttpListenerRequest request)
     {
         var body = await HttpRequestBodyReader.ReadUtf8Async(request).ConfigureAwait(false);
@@ -109,94 +88,10 @@ public sealed partial class WebGateway : IDisposable
         context.Response.Close();
     }
 
-    private static async Task SendAsync(EventClient client, JsonNode payload, CancellationToken cancellationToken)
-    {
-        var bytes = Encoding.UTF8.GetBytes(payload.ToJsonString());
-        await client.SendLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            await client.Socket.SendAsync(bytes, WebSocketMessageType.Text, true, cancellationToken).ConfigureAwait(false);
-        }
-        finally
-        {
-            client.SendLock.Release();
-        }
-    }
-
-    private static async Task SendIgnoringErrorsAsync(EventClient client, JsonNode payload)
-    {
-        try
-        {
-            if (client.Socket.State == WebSocketState.Open)
-                await SendAsync(client, payload, CancellationToken.None).ConfigureAwait(false);
-        }
-        catch (WebSocketException)
-        {
-        }
-        catch (ObjectDisposedException)
-        {
-        }
-    }
-
     private static void TryClose(HttpListenerContext context, int status)
         => LoopbackHttpTransport.TryClose(context, status);
 
-    private sealed class EventClient : IDisposable
-    {
-        private const int LogQueueCapacity = 256;
-        private int _disposed;
-        private readonly Channel<JsonObject> _logQueue;
-        private readonly Task _logPump;
-
-        public EventClient(ClientSession session, WebSocket socket)
-        {
-            Session = session;
-            Socket = socket;
-            _logQueue = Channel.CreateBounded<JsonObject>(new BoundedChannelOptions(LogQueueCapacity)
-            {
-                SingleReader = true,
-                SingleWriter = false,
-                FullMode = BoundedChannelFullMode.DropOldest,
-            });
-            _logPump = Task.Run(PumpLogsAsync);
-        }
-
-        public ClientSession Session { get; }
-
-        public WebSocket Socket { get; }
-
-        public SemaphoreSlim SendLock { get; } = new(1, 1);
-
-        public bool TryQueueLog(JsonObject payload)
-            => Volatile.Read(ref _disposed) == 0
-               && _logQueue.Writer.TryWrite((JsonObject)payload.DeepClone());
-
-        private async Task PumpLogsAsync()
-        {
-            await foreach (var payload in _logQueue.Reader.ReadAllAsync().ConfigureAwait(false))
-                await SendIgnoringErrorsAsync(this, payload).ConfigureAwait(false);
-        }
-
-        public void Dispose()
-        {
-            if (Interlocked.Exchange(ref _disposed, 1) != 0)
-                return;
-            _logQueue.Writer.TryComplete();
-            Socket.Dispose();
-            SendLock.Dispose();
-            _ = _logPump.ContinueWith(
-                static task => _ = task.Exception,
-                CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
-        }
-    }
-
     private sealed record CommandRequest(string Text);
-
-    private sealed record PendingCommand(
-        string SessionId,
-        TaskCompletionSource<CommandResult> Completion);
 
 }
 

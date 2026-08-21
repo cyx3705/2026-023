@@ -212,39 +212,6 @@ public sealed class FreezeBlockerTests
     }
 
     [Fact]
-    public async Task DuplicateWebSocketSessionIdDoesNotReplaceTheOriginalClient()
-    {
-        var log = new MemoryLog();
-        using var gateway = new WebGateway(
-            () => new CommandBus(new CommandRegistry(), log),
-            new MemorySettings(),
-            log);
-        Assert.True(gateway.Start(FreePort()).Success);
-        var sessionId = Guid.NewGuid().ToString("N");
-
-        using var original = new ClientWebSocket();
-        ConfigureShellSocket(original, sessionId, "Original", gateway.AccessToken);
-        await original.ConnectAsync(
-            new Uri($"ws://127.0.0.1:{gateway.Port}/api/events"), CancellationToken.None);
-        using (var connected = await ReceiveJsonAsync(original))
-            Assert.Equal("connected", connected.RootElement.GetProperty("type").GetString());
-
-        using var duplicate = new ClientWebSocket();
-        ConfigureShellSocket(duplicate, sessionId, "Duplicate", gateway.AccessToken);
-        await duplicate.ConnectAsync(
-            new Uri($"ws://127.0.0.1:{gateway.Port}/api/events"), CancellationToken.None);
-        using (var rejected = await ReceiveJsonAsync(duplicate))
-        {
-            Assert.Equal("error", rejected.RootElement.GetProperty("type").GetString());
-            Assert.Equal("session_id_in_use", rejected.RootElement.GetProperty("error").GetString());
-        }
-
-        log.Info("app", "original-still-connected");
-        using var received = await ReceiveJsonAsync(original);
-        Assert.Equal("original-still-connected", received.RootElement.GetProperty("message").GetString());
-    }
-
-    [Fact]
     public async Task WebGatewayRejectsRequestBodiesOverOneMiBBeforeDeserialization()
     {
         var gateway = new WebGateway(

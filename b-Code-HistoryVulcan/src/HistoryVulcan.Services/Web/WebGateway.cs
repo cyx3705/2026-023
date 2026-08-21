@@ -47,8 +47,6 @@ public sealed partial class WebGateway : IDisposable
     private readonly ISettingsService _settings;
     private readonly IShellLog _log;
     private readonly object _lifecycleLock = new();
-    private readonly ConcurrentDictionary<string, EventClient> _clients = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, PendingCommand> _pending = new(StringComparer.Ordinal);
 
     private HttpListener? _listener;
     private CancellationTokenSource? _cts;
@@ -59,7 +57,6 @@ public sealed partial class WebGateway : IDisposable
         _busAccessor = busAccessor;
         _settings = settings;
         _log = log;
-        _log.EntryAdded += OnLogEntry;
     }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -85,34 +82,6 @@ public sealed partial class WebGateway : IDisposable
     /// `%AppData%\HistoryVulcan\service\endpoint.json`，随进程生存，不落设置、不可配置、不回显。
     /// </summary>
     public string AccessToken { get; private set; } = "";
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public int ConnectedClients => _clients.Count;
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public void PublishModuleRevision(long revision)
-    {
-        var payload = new JsonObject
-        {
-            ["type"] = "moduleRevision",
-            ["revision"] = revision,
-        };
-        foreach (var client in _clients.Values.Where(client => client.Session.Kind == ClientKind.Shell))
-            client.TryQueueLog(payload);
-    }
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public bool TryGetSession(string source, out ClientSession session)
-    {
-        var id = SessionIdFromSource(source);
-        if (id != null && _clients.TryGetValue(id, out var client))
-        {
-            session = client.Session;
-            return true;
-        }
-        session = null!;
-        return false;
-    }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public (bool Success, string Message) Start(int? port = null)
@@ -190,12 +159,6 @@ public sealed partial class WebGateway : IDisposable
             _cts?.Dispose();
             _cts = null;
             AccessToken = "";
-            foreach (var client in _clients.Values)
-                client.Dispose();
-            _clients.Clear();
-            foreach (var pending in _pending.Values)
-                pending.Completion.TrySetResult(CommandResult.Fail("前端连接已断开"));
-            _pending.Clear();
             Port = 0;
             _log.Info("web", "Web 服务已停止");
             return (true, $"Web 服务已停止(端口 {releasedPort} 已释放)");
@@ -205,7 +168,6 @@ public sealed partial class WebGateway : IDisposable
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public void Dispose()
     {
-        _log.EntryAdded -= OnLogEntry;
         if (IsRunning)
             Stop();
     }
@@ -239,13 +201,6 @@ public sealed partial class WebGateway : IDisposable
                 return;
             }
 
-            if (path.Equals("/api/events", StringComparison.OrdinalIgnoreCase)
-                && context.Request.IsWebSocketRequest)
-            {
-                await HandleWebSocketAsync(context, session, cancellationToken).ConfigureAwait(false);
-                return;
-            }
-
             if (path.Equals("/api/health", StringComparison.OrdinalIgnoreCase)
                 && context.Request.HttpMethod == "GET")
             {
@@ -254,7 +209,6 @@ public sealed partial class WebGateway : IDisposable
                     status = "ok",
                     port = Port,
                     bind = LoopbackAddress,
-                    clients = ConnectedClients,
                     serverId = ServerId,
                     productVersion = AppIdentity.Current.Version,
                     historyVulcanProtocolVersion = GatewayProtocolVersion,
@@ -336,124 +290,6 @@ public sealed partial class WebGateway : IDisposable
             _log.Error("web", $"请求处理失败: {ex.Message}");
             TryClose(context, 500);
         }
-    }
-
-    private async Task HandleWebSocketAsync(
-        HttpListenerContext context,
-        ClientSession session,
-        CancellationToken cancellationToken)
-    {
-        var accepted = await context.AcceptWebSocketAsync(null).ConfigureAwait(false);
-        var client = new EventClient(session, accepted.WebSocket);
-        if (!_clients.TryAdd(session.Id, client))
-        {
-            try
-            {
-                await SendAsync(client, new JsonObject
-                {
-                    ["type"] = "error",
-                    ["error"] = "session_id_in_use",
-                    ["message"] = "该 session id 已有活动连接",
-                }, CancellationToken.None).ConfigureAwait(false);
-                await client.Socket.CloseAsync(
-                    WebSocketCloseStatus.PolicyViolation,
-                    "session id already connected",
-                    CancellationToken.None).ConfigureAwait(false);
-            }
-            catch (WebSocketException)
-            {
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-            finally
-            {
-                client.Dispose();
-            }
-            return;
-        }
-        await SendAsync(client, new JsonObject
-        {
-            ["type"] = "connected",
-            ["sessionId"] = session.Id,
-            ["kind"] = session.Kind.ToString(),
-        }, cancellationToken).ConfigureAwait(false);
-
-        var buffer = new byte[64 * 1024];
-        try
-        {
-            while (client.Socket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
-            {
-                var payloadBytes = await WebSocketMessageReader.ReceiveTextAsync(
-                    client.Socket, buffer, cancellationToken).ConfigureAwait(false);
-                if (payloadBytes == null)
-                    break;
-
-                JsonDocument doc;
-                try
-                {
-                    doc = JsonDocument.Parse(payloadBytes);
-                }
-                catch (JsonException ex)
-                {
-                    _log.Warn("web", $"已忽略无效 WebSocket JSON: {ex.Message}");
-                    continue;
-                }
-                using (doc)
-                {
-                    var root = doc.RootElement;
-                    if (root.TryGetProperty("type", out var type)
-                        && type.GetString() == "commandResult"
-                        && root.TryGetProperty("id", out var id)
-                        && _pending.TryGetValue(id.GetString() ?? "", out var pending)
-                        && pending.SessionId.Equals(session.Id, StringComparison.Ordinal))
-                    {
-                        var success = root.TryGetProperty("success", out var ok) && ok.GetBoolean();
-                        var message = root.TryGetProperty("message", out var msg) ? msg.GetString() ?? "" : "";
-                        object? data = root.TryGetProperty("data", out var payload)
-                            ? JsonSerializer.Deserialize<object>(payload.GetRawText(), JsonOptions)
-                            : null;
-                        pending.Completion.TrySetResult(success
-                            ? CommandResult.Ok(message, data)
-                            : CommandResult.Fail(message));
-                    }
-                }
-            }
-        }
-        catch (WebSocketException)
-        {
-        }
-        catch (ObjectDisposedException)
-        {
-        }
-        finally
-        {
-            var removed = ((ICollection<KeyValuePair<string, EventClient>>)_clients).Remove(
-                new KeyValuePair<string, EventClient>(session.Id, client));
-            if (removed)
-                CompletePendingForSession(session.Id);
-            client.Dispose();
-        }
-    }
-
-    private void CompletePendingForSession(string sessionId)
-    {
-        foreach (var item in _pending.Where(item =>
-                     item.Value.SessionId.Equals(sessionId, StringComparison.Ordinal)).ToList())
-        {
-            if (_pending.TryRemove(item.Key, out var pending))
-                pending.Completion.TrySetResult(CommandResult.Fail("发起前端已断开"));
-        }
-    }
-
-    private static string RemoveFrontendTarget(ParsedCommand parsed)
-    {
-        var parts = new List<string> { parsed.Name };
-        parts.AddRange(parsed.Positionals.Select(CommandParser.QuoteArg));
-        parts.AddRange(parsed.Named
-            .Where(pair => !pair.Key.Equals("_frontend", StringComparison.OrdinalIgnoreCase))
-            .Select(pair => $"{pair.Key}={CommandParser.QuoteArg(pair.Value)}"));
-        return string.Join(' ', parts);
     }
 
     /// <summary>

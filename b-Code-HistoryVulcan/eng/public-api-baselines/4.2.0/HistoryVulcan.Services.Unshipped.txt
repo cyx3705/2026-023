@@ -19,3 +19,6 @@
 *REMOVED*HistoryVulcan.Services.Web.WebGateway.RelayFrontendCommandAsync(string! text, string! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
 *REMOVED*HistoryVulcan.Services.Web.WebGateway.RequestShellConfirmation(string! prompt, System.TimeSpan timeout) -> bool
 *REMOVED*HistoryVulcan.Services.Web.WebGateway.RequestWebConfirmation(string! prompt, string! source, System.TimeSpan timeout) -> bool
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.ConnectedClients.get -> int
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.PublishModuleRevision(long revision) -> void
+*REMOVED*HistoryVulcan.Services.Web.WebGateway.TryGetSession(string! source, out HistoryVulcan.Core.Clients.ClientSession! session) -> bool
