@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.Loader;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Modules;
@@ -42,19 +42,32 @@ public sealed partial class ModuleHost
         if (ui == null)
         {
             DestroyUi(old);
-            ShellUi = null;
+            ClearShellHooks();
         }
         else
         {
             ui.Send(_ =>
             {
                 DestroyUi(old);
-                ShellUi = null;
+                ClearShellHooks();
             }, null);
         }
 
         foreach (var alc in old.Contexts)
             alc.Unload();
+    }
+
+    /// <summary>
+    /// 丢弃上一轮界面留下的两个反向挂钩。
+    ///
+    /// 两个都必须清：它们指向的是已经拆掉的那套界面对象。留着任何一个，
+    /// 下一轮的消费方就会挂到一个死界面上——注册进去的页面永远不会出现，
+    /// 而调用方拿到的是非 null，看不出有什么不对。
+    /// </summary>
+    private void ClearShellHooks()
+    {
+        ShellUi = null;
+        CommandWorkbench = null;
     }
 
     private void CommitSnapshot(Snapshot old, Snapshot next)
@@ -182,14 +195,28 @@ public sealed partial class ModuleHost
     private void CreateUi(Snapshot snapshot)
     {
         // 第一遍只取提供方。模块装载顺序不可控，不能指望承载界面的那个恰好排在前面。
+        // 注册器与命令工作台是两条独立的反向通道：同一个模块通常两条都提供，
+        // 但不能因为取到了注册器就 break——那样工作台会永远留在 null 上。
         foreach (var (module, _) in snapshot.UiModules)
         {
-            if (module is IShellUiProvider provider && provider.ShellUi != null)
+            if (ShellUi == null
+                && module is IShellUiProvider provider
+                && provider.ShellUi != null)
             {
                 ShellUi = provider.ShellUi;
                 _log.Info("module", $"界面注册器由 {module.GetType().Assembly.GetName().Name} 提供");
-                break;
             }
+
+            if (CommandWorkbench == null
+                && module is IShellCommandWorkbenchProvider workbenchProvider
+                && workbenchProvider.CommandWorkbench != null)
+            {
+                CommandWorkbench = workbenchProvider.CommandWorkbench;
+                _log.Info("module", $"命令工作台挂载点由 {module.GetType().Assembly.GetName().Name} 提供");
+            }
+
+            if (ShellUi != null && CommandWorkbench != null)
+                break;
         }
 
         // 没有注册器就没有可注册的地方：跳过而不是让每个模块各自撞空引用。
@@ -207,6 +234,11 @@ public sealed partial class ModuleHost
             {
                 if (item.Module is IShellUiAware aware)
                     aware.ShellUi = ShellUi;
+
+                // 与注册器同理必须在这里再注入一次：装载时那一次发生在 Build 阶段，
+                // 而提供方自己也在同一次 Build 里，先装到的模块只能拿到 null。
+                if (item.Module is IShellCommandWorkbenchAware workbenchAware)
+                    workbenchAware.CommandWorkbench = CommandWorkbench;
 
                 // 必须编组到界面线程。宿主自己的循环不是 STA，模块一建控件就抛
                 // "调用线程必须为 STA"——而这条异常被按模块吞掉，表现为某个模块的页面

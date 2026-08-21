@@ -316,6 +316,22 @@
         <member name="P:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchAware.CommandWorkbench">
             <summary>命令工作台宿主；服务宿主或未装配时可为 null。</summary>
         </member>
+        <member name="T:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchProvider">
+             <summary>
+             由模块**反向提供**命令工作台挂载点。
+            
+             与 <see cref="T:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchAware"/> 方向相反，和
+             <c>IShellUiProvider</c> 完全对称：界面整体成为模块之后（Aurora DEC-008），
+             宿主自己不再持有任何界面实现，挂载点只能来自承载界面的那个模块。
+            
+             少了这条反向通道，<see cref="P:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchAware.CommandWorkbench"/>
+             永远是 null——症状是命令集与指令详情两个页面一声不响地不出现，
+             控制台的补全同时退化到本地注册表兜底，而日志里没有任何错误。
+             </summary>
+        </member>
+        <member name="P:HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchProvider.CommandWorkbench">
+            <summary>本模块提供的命令工作台挂载点；界面尚未就绪时为 null。</summary>
+        </member>
         <member name="T:HistoryVulcan.Extensibility.Panels.PanelDefinition">
              <summary>
              控制面板声明(§4.5,P-01):JSON 配置文件与 C# 注册 API 共用的信息模型。
