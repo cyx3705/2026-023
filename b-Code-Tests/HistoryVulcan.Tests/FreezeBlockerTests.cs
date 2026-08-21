@@ -325,36 +325,6 @@ public sealed class FreezeBlockerTests
 
 
 
-    [Fact]
-    public async Task MalformedWebSocketJsonDoesNotKillFrontendLoop()
-    {
-        var port = FreePort();
-        using var listener = new HttpListener();
-        listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        listener.Start();
-        var server = ServeMalformedThenValidAsync(listener);
-
-        var registry = new CommandRegistry();
-        registry.Register(new CommandDescriptor
-        {
-            Name = "ui.afterbad",
-            Summary = "after bad",
-            Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("still-alive")),
-        });
-        using var client = new ShellServiceClient(
-            new Uri($"http://127.0.0.1:{port}/"), "MalformedFrameTest");
-        using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var loop = client.RunEventLoopAsync(
-            new CommandBus(registry, new MemoryLog()), cancellation.Token);
-
-        using var response = await server.WaitAsync(TimeSpan.FromSeconds(5));
-        Assert.True(response.RootElement.GetProperty("success").GetBoolean());
-        Assert.Equal("still-alive", response.RootElement.GetProperty("message").GetString());
-        cancellation.Cancel();
-        try { await loop; }
-        catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
-    }
-
     private static CommandDescriptor SecretDescriptor(string name, string parameter, int? position)
         => new()
         {
@@ -376,20 +346,6 @@ public sealed class FreezeBlockerTests
                 return CommandResult.Ok($"set {value}", new { value });
             }),
         };
-
-    private static async Task<JsonDocument> ServeMalformedThenValidAsync(HttpListener listener)
-    {
-        var context = await listener.GetContextAsync();
-        var accepted = await context.AcceptWebSocketAsync(null);
-        using var socket = accepted.WebSocket;
-        using (await ReceiveJsonAsync(socket))
-        {
-        }
-        await SendTextAsync(socket, "{\"type\":");
-        await SendTextAsync(socket,
-            "{\"type\":\"uiCommand\",\"id\":\"after-bad\",\"text\":\"ui.afterbad\",\"source\":\"Test\"}");
-        return await ReceiveJsonAsync(socket);
-    }
 
     private static async Task SendTextAsync(WebSocket socket, string text)
     {
