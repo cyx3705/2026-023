@@ -49,7 +49,6 @@ public sealed partial class WebGateway : IDisposable
     private readonly object _lifecycleLock = new();
     private readonly ConcurrentDictionary<string, EventClient> _clients = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, PendingCommand> _pending = new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string, PendingConfirmation> _pendingConfirmations = new(StringComparer.Ordinal);
 
     private HttpListener? _listener;
     private CancellationTokenSource? _cts;
@@ -197,47 +196,9 @@ public sealed partial class WebGateway : IDisposable
             foreach (var pending in _pending.Values)
                 pending.Completion.TrySetResult(CommandResult.Fail("前端连接已断开"));
             _pending.Clear();
-            foreach (var confirmation in _pendingConfirmations.Values)
-                confirmation.Completion.TrySetResult(false);
-            _pendingConfirmations.Clear();
             Port = 0;
             _log.Info("web", "Web 服务已停止");
             return (true, $"Web 服务已停止(端口 {releasedPort} 已释放)");
-        }
-    }
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public bool RequestWebConfirmation(string prompt, string source, TimeSpan timeout)
-    {
-        var sessionId = SessionIdFromSource(source);
-        if (sessionId == null || !_clients.TryGetValue(sessionId, out var client)
-            || client.Socket.State != WebSocketState.Open)
-            return false;
-
-        return AskClient(client, sessionId, prompt, source, timeout);
-    }
-
-    private bool AskClient(EventClient client, string sessionId, string prompt, string source, TimeSpan timeout)
-    {
-        var id = Guid.NewGuid().ToString("N");
-        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        if (!_pendingConfirmations.TryAdd(id, new PendingConfirmation(sessionId, completion)))
-            return false;
-        try
-        {
-            var payload = new JsonObject
-            {
-                ["type"] = "confirmation",
-                ["id"] = id,
-                ["prompt"] = prompt,
-                ["source"] = source,
-            };
-            _ = SendIgnoringErrorsAsync(client, payload);
-            return completion.Task.Wait(timeout) && completion.Task.Result;
-        }
-        finally
-        {
-            _pendingConfirmations.TryRemove(id, out _);
         }
     }
 
@@ -358,27 +319,6 @@ public sealed partial class WebGateway : IDisposable
                 return;
             }
 
-            if (path.Equals("/api/confirm", StringComparison.OrdinalIgnoreCase)
-                && context.Request.HttpMethod == "POST")
-            {
-                if (session.Kind != ClientKind.Web)
-                {
-                    await WriteJsonAsync(context, new { error = "web session required" }, 403).ConfigureAwait(false);
-                    return;
-                }
-                var answer = await ReadJsonAsync<ConfirmRequest>(context.Request).ConfigureAwait(false);
-                if (answer == null || string.IsNullOrWhiteSpace(answer.Id)
-                    || !_pendingConfirmations.TryGetValue(answer.Id, out var pending)
-                    || !pending.SessionId.Equals(session.Id, StringComparison.Ordinal))
-                {
-                    await WriteJsonAsync(context, new { error = "confirmation not found" }, 404).ConfigureAwait(false);
-                    return;
-                }
-                pending.Completion.TrySetResult(answer.Approved);
-                await WriteJsonAsync(context, new { accepted = true }, 200).ConfigureAwait(false);
-                return;
-            }
-
             await WriteJsonAsync(context, new { error = "not found" }, 404).ConfigureAwait(false);
         }
         catch (InvalidDataException ex)
@@ -477,16 +417,6 @@ public sealed partial class WebGateway : IDisposable
                             ? CommandResult.Ok(message, data)
                             : CommandResult.Fail(message));
                     }
-                    else if (root.TryGetProperty("type", out type)
-                             && type.GetString() == "confirmationResult"
-                             && root.TryGetProperty("id", out var confirmationId)
-                             && _pendingConfirmations.TryGetValue(
-                                 confirmationId.GetString() ?? "", out var confirmation)
-                             && confirmation.SessionId.Equals(session.Id, StringComparison.Ordinal))
-                    {
-                        confirmation.Completion.TrySetResult(
-                            root.TryGetProperty("approved", out var approved) && approved.GetBoolean());
-                    }
                 }
             }
         }
@@ -513,12 +443,6 @@ public sealed partial class WebGateway : IDisposable
         {
             if (_pending.TryRemove(item.Key, out var pending))
                 pending.Completion.TrySetResult(CommandResult.Fail("发起前端已断开"));
-        }
-        foreach (var item in _pendingConfirmations.Where(item =>
-                     item.Value.SessionId.Equals(sessionId, StringComparison.Ordinal)).ToList())
-        {
-            if (_pendingConfirmations.TryRemove(item.Key, out var pending))
-                pending.Completion.TrySetResult(false);
         }
     }
 
