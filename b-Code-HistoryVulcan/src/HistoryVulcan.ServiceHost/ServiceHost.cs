@@ -45,7 +45,6 @@ public static class ServiceHost
         //   - 非回环会话按 scope + lan.confirm 决定是否回问客户端。`lan.confirm` 这个键
         //     从来没有任何代码写入过（唯一能写确认档的 WebCommands 写的是 web.confirm，
         //     且它自己从未被注册），所以这条分支在任何配置下都只会返回 false。
-        //   - "Web:" 源按 web.confirm 回问 Web 客户端；ClientKind.Web 会话现在无法通过鉴权。
         // 剩下的唯一语义就是本机确认。
         composition.Bus.ConfirmationRouter =
             (_, prompt) => gatewayAwareConfirmation.Confirm(prompt);

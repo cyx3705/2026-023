@@ -13,8 +13,6 @@ public enum ClientKind
     Mcp,
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     Shell,
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    Web,
 }
 
 /// <summary>一次客户端会话的稳定身份。</summary>

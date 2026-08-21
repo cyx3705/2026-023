@@ -58,3 +58,4 @@ HistoryVulcan.Core.Modules.IShellUiProvider.ShellUi.get -> HistoryVulcan.Core.Mo
 *REMOVED*static HistoryVulcan.Core.Data.SqlText.Quote(string! value) -> string!
 *REMOVED*static HistoryVulcan.Core.Data.SqlText.QuoteNullable(string? value) -> string!
 *REMOVED*static HistoryVulcan.Core.Data.SqlText.Truncate(string! value, int max) -> string!
+*REMOVED*HistoryVulcan.Core.Clients.ClientKind.Web = 2 -> HistoryVulcan.Core.Clients.ClientKind

@@ -41,9 +41,6 @@
         <member name="F:HistoryVulcan.Core.Clients.ClientKind.Shell">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="F:HistoryVulcan.Core.Clients.ClientKind.Web">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
         <member name="T:HistoryVulcan.Core.Clients.ClientSession">
             <summary>一次客户端会话的稳定身份。</summary>
         </member>
