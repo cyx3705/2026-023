@@ -145,6 +145,18 @@
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemoteCommand">
             <summary>按命令文本和来源决定是否走远端；设置后优先于仅按来源的兼容委托。</summary>
         </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandBus.McpGovernance">
+             <summary>
+             提示词治理的只读视图，由承载 MCP 的模块在装载时注入、拆除时清空。
+            
+             放在总线上而不是新开一条注入通道：<see cref="P:HistoryVulcan.Core.Commands.CommandBus.Confirmation"/> 与
+             <see cref="P:HistoryVulcan.Core.Commands.CommandBus.FrontendExecutor"/> 已经确立了「宿主留挂钩、模块填实现」这一模式，
+             而总线是模块经 <c>IModuleContext</c> 唯一拿得到的宿主共享对象。
+            
+             **消费方必须容忍 null。** 模块没装上、正在热重载、或装载失败时它就是 null，
+             此时目录指令照常可用，只是少了治理那几列——而不是整条指令消失。
+             </summary>
+        </member>
         <member name="E:HistoryVulcan.Core.Commands.CommandBus.Executed">
             <summary>每条指令执行完毕后触发(状态栏摘要,S-03);在执行线程上引发。</summary>
         </member>
@@ -818,6 +830,36 @@
         <member name="M:HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(HistoryVulcan.Core.Clients.ClientSession,System.String,System.String,System.String,System.Int64)">
             <summary>记录带稳定会话身份的 MCP 调用；旧实现自动转发到兼容签名。</summary>
         </member>
+        <member name="T:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView">
+             <summary>
+             提示词治理的只读视图。宿主消费，模块提供。
+             </summary>
+             <remarks>
+             承接 <c>IEffectivePromptDescriptionReader</c> 早就写明的分工——
+             「治理的写方刻意在宿主之外，宿主只消费这个只读视图」。那条注释写于治理还在宿主里的时候，
+             4.4.0 把 <c>PromptGovernanceStore</c> 迁往 HistoryPortunus 之后，它才真正成立。
+            
+             **返回值刻意全部退化为基本类型。** 调用方（<c>vulcan.command.list/show</c>）只需要
+             「改过没有、第几版、几条待审、几起事故」这四格，不需要提案与事故的完整结构。
+             让治理的记录类型跨过这个边界，等于把宿主重新绑回模块的数据模型上——
+             那正是这次迁移要解开的东西。
+            
+             实现方随模块热重载来去，因此消费方必须把它当作**随时可能为 null**：
+             模块没装上、正在重载、或装载失败时，目录指令要照常可用，只是少了治理那几列。
+             </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView.EffectiveDescriptions">
+            <summary>当前生效的工具描述覆盖，按指令名索引；未被覆盖的指令不出现在结果中。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView.OpenProposalCounts">
+            <summary>各指令待审提案数，按指令名索引。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView.IncidentCounts">
+            <summary>各指令已记录事故数，按指令名索引。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView.CurrentRevisionId(System.String)">
+            <summary>指定指令当前生效的描述修订号；未被覆盖时为 null。</summary>
+        </member>
         <member name="T:HistoryVulcan.Core.Mcp.McpConfirmationScope">
             <summary>
             MCP 确认中继的执行域(V2.2 CX-02/03)。
@@ -901,11 +943,80 @@
         <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.HardExclusionReason(System.String)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.IsMcpAdministration(System.String)">
+             <summary>
+             判定一条指令是否属于 MCP 自身的管理面（<c>&lt;域&gt;.mcp.&lt;动作&gt;</c>）。
+             </summary>
+             <remarks>
+             **按指令类判定，不按域前缀。** 这条排除原先写成 <c>StartsWith("vulcan.mcp.")</c>，
+             4.4.0 把网关迁往 HistoryPortunus、指令随之改名为 <c>portunus.mcp.*</c> 时，
+             它当场失效——start / stop / autostart 一并变成远端可见工具，
+             也就是把「关掉正在服务你的那条通道」交给了远端。
+            
+             这是同一个错误的第三次：<c>debug.logflood</c> 收编为 <c>vulcan.log.flood</c> 时，
+             按 <c>debug.</c> 前缀写的排除同样当场失效（见上文承压指令一段）。
+             域会随归属变动，指令类不会——安全排除必须挂在不随搬家改变的那一段上。
+             </remarks>
+        </member>
         <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.State(HistoryVulcan.Core.Commands.CommandDescriptor)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.IsVisible(HistoryVulcan.Core.Commands.CommandDescriptor,System.String)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.McpSettingKeys">
+             <summary>
+             MCP 的配置键与策略解析。
+             </summary>
+             <remarks>
+             这些键此前是 <c>McpGateway</c> 的常量。网关迁往 HistoryPortunus（4.4.0）后它们留在宿主，
+             因为**配置是契约，网关是实现**：
+            
+             - 宿主的 <c>vulcan.app.set/get</c> 按 <c>mcp.*</c> 前缀放行这些键，不问谁来消费；
+             - 旧前端设置的迁移（<c>MigrateLegacyMcpSettings</c>）必须逐个键搬，而它跑在装载模块之前；
+             - <c>vulcan.command.list</c> 要按当前策略判断一条指令对远端是否可见。
+            
+             换句话说：即使 Portunus 没装上，这些键的含义依然成立，只是没有东西在读第二类之外的键。
+             把它们跟着网关搬走，会让宿主为了知道"用户配了什么策略"而依赖一个模块。
+             </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.McpSettingKeys.Port">
+            <summary>监听端口。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.McpSettingKeys.Policy">
+            <summary>暴露策略：readonly（默认）/ standard。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.McpSettingKeys.Token">
+            <summary>访问令牌。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.McpSettingKeys.Autostart">
+            <summary>是否随宿主自动监听。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.McpSettingKeys.Timeout">
+            <summary>单次调用超时（秒）。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.McpSettingKeys.Confirm">
+            <summary>确认中继模式：deny（默认）/ host。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.McpSettingKeys.ConfirmTimeout">
+            <summary>确认等待上限（秒）。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.McpSettingKeys.PortRetries">
+            <summary>端口被占用时的顺延次数。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Mcp.McpSettingKeys.SessionLimit">
+            <summary>并发会话上限。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.McpSettingKeys.All">
+            <summary>本设置存储里全部 MCP 配置键，供迁移与巡检按序遍历。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpSettingKeys.ResolvePolicy(HistoryVulcan.Core.Storage.ISettingsService)">
+             <summary>
+             解析当前生效的暴露策略。
+            
+             缺省与无法识别的取值一律落到 <c>readonly</c>——策略解析失败必须收紧而不是放开，
+             否则一个拼错的配置值就会把全部 standard 级指令暴露出去。
+             </summary>
         </member>
         <member name="T:HistoryVulcan.Core.Mcp.PromptTextIntegrity">
             <summary>拒绝已在上游丢失、无法由 UTF-8 解码恢复的提示词文本。</summary>

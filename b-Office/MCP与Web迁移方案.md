@@ -140,7 +140,7 @@ Portunus 是港口与门户之神，一个港口停两条航线，名字上也�
 2. [x] Web 瘦身：删已死的 socket 半边      840 → 532，网关不再持有按客户端状态
 3. [ ] Program.Main 未知参数报错           备忘录 0b，CLI 的前置
 4a.[x] Web 迁出成 HistoryPortunus 0.2.0   宿主 4.3.0，见下「第一轮实况」
-4b.[ ] MCP 迁出，并入同一模块              ~2,560 行
+4b.[x] MCP 迁出，并入同一模块              宿主 4.4.0，见下「第二轮实况」
 5. [ ] --install-module 离线开关           补上"服务起不来"那一格
 6. [ ] CLI 骨架 + 它自己的暴露声明          只声明开发管线那几条
 7. [ ] 开发路线从 Diana 搬回宿主
@@ -254,3 +254,70 @@ MCP 没有这个问题，所以这 2,560 行搬出去是**真**增量。
    这条要在 CLI 骨架落地时验一遍，不能只写在文档里。
 3. 本文件放桌面还是进 Vulcan 的 `b-Office/current/`。现在放桌面是为了不动仓里的文档治理；
    决定落地之后，第二、三节的结论应该写进 Vulcan 的《有效决策》。
+
+
+---
+
+## 第二轮实况（2026-08-21，MCP 迁出）
+
+### 切口比方案画的窄：9 个文件里有 3 个不该搬
+
+| 文件 | 行 | 为什么留在宿主 |
+|---|---|---|
+| `CommandCatalogCommands.cs` | 413 | 它注册的是 `vulcan.command.list / show / domains / manual`——**宿主的指令自省面**，不是 MCP 传输。搬走会让它们改名成 `portunus.*`，而且 Portunus 一坏就查不了指令，恰恰是最需要查的时候。文件从 `Services/Mcp` 移到 `Services/Commands` |
+| `CommandSchemaExporter.cs` | 216 | 宿主的 `--export-command-manual` 是发布管线入口，不能依赖某个模块装没装上 |
+| `CommandManualGenerator.cs` | 121 | 同上 |
+
+实际搬走 1,808 行。宿主 `Services` **6,559 → 3,858**。
+
+### 耦合是怎么解开的
+
+目录指令对网关的依赖只有一个字符串：`gateway()?.Policy`。而它本身就是 `mcp.policy`
+设置键的归一化，宿主自己读得到。于是 `Func<McpGateway?>` 换成 `Func<string>`，
+归一化收敛到 `Core.McpSettingKeys.ResolvePolicy`。
+
+对治理库的依赖是四个只读方法，返回值全退化为基本类型（计数、修订号）。新增
+`Core.IMcpPromptGovernanceView`，实现方经 `CommandBus.McpGovernance` 注入——沿用
+`Confirmation` / `FrontendExecutor` 已确立的「宿主留挂钩、模块填实现」模式，
+也因为总线是模块经 `IModuleContext` 唯一拿得到的宿主共享对象。
+
+### 装机时炸了三个模块，全是真问题
+
+测试全绿（宿主 92/92、Portunus 22/22）也挡不住这一类：**它们编译于旧的宿主公开面**。
+
+| 模块 | 症状 | 真实原因 |
+|---|---|---|
+| Aurora | 界面起不来（Fatal） | 自建了一整套 MCP：`McpGateway` + `PromptGovernanceStore` + `McpAuditRecorder` |
+| Mercury | 命令集页挂载失败 | `CommandCatalogDetail` 换了命名空间 |
+| Janus | 36 条掉到 1 条 | `HistoryRecorder` 自建 `McpAuditRecorder`，还用着 4.2.0 就删掉的 `SqlText` |
+
+修的时候发现**三处都是死码**，不是"忘了适配"：
+
+- Aurora 的 `EnableMcp` 全仓只被赋值一次，值是 `false`；`McpAuditLog`、`McpRemoteConfirm`
+  从没人设过。那个「第二个 MCP 网关」自界面变成模块（DEC-008）起就没被构造过。
+  连带挖出 `FrontendCommandCatalog.CreateProxy`（进程外前端的代理机制）与
+  `RemoteConfirmDialog`——它们一直没暴露，只因为 Aurora 从没重编译过。
+- Janus 的 `IMcpAuditLog` 实现唯一装配点就是 Aurora 那个从未被赋值的 `McpAuditLog`。
+
+**教训**：模块长期不重编译，会让宿主早已删除的公开面在模块里"看起来还活着"。
+公开面注销与模块重编译之间的时间差，就是这类死码的藏身处。
+
+### 两个被抓到的问题
+
+**改名把安全排除绕过去了。** `McpExposurePolicy` 写的是 `StartsWith("vulcan.mcp.")`，
+指令改名成 `portunus.mcp.*` 后当场失效——`start` / `stop` / `autostart` 一并变成远端
+可见工具，等于把「关掉正在服务你的那条通道」交给远端。
+
+这是同一个错误的**第三次**（前两次：`debug.logflood` → `vulcan.log.flood`）。
+改为按**指令类**判定（`<域>.mcp.<动作>` 的中段）：域会随归属变动，指令类不会。
+安全排除必须挂在不随搬家改变的那一段上。
+
+**实现 `IDisposable` 的模块会平白多出一条 `dispose` 指令。** 4.3.0 让宿主在拆除阶段
+回收模块实例之后，`IDisposable` 就从模块的私事变成了与宿主的约定，而反射投影不认识它。
+远端调用 `<域>.dispose` 等于拆掉半个模块。已加入生命周期契约排除名单。
+
+### 数字断言换成集合断言
+
+`PromptGovernanceExternalizationTests` 原本断言可见工具数等于 16。改名绕过排除后它变成 18——
+「多了两个」说明不了多的是哪两个。改成断言可见集合**恰好等于**那组无关的宿主夹具指令，
+这样多出任何一条都会直接指名。
