@@ -504,46 +504,6 @@
         <member name="E:HistoryVulcan.Core.Commands.CommandSelectionState.Changed">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="T:HistoryVulcan.Core.Commands.CommandParameterCapability">
-            <summary>可跨进程同步的命令参数元数据。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandParameterCapability.#ctor(System.String,System.String,HistoryVulcan.Core.Commands.ParamType,System.Boolean,System.String,System.Nullable{System.Int32},System.String[])">
-            <summary>可跨进程同步的命令参数元数据。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandParameterCapability.From(HistoryVulcan.Core.Commands.ParameterSpec)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandParameterCapability.ToParameter">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Commands.FrontendCommandCapability">
-            <summary>
-            前端向服务端权威目录发布的执行能力。只携带稳定元数据，不序列化 handler。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.FrontendCommandCapability.#ctor(System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{HistoryVulcan.Core.Commands.CommandParameterCapability},System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.String)">
-            <summary>
-            前端向服务端权威目录发布的执行能力。只携带稳定元数据，不序列化 handler。
-            </summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.FrontendCommandCapability.Domain">
-            <summary>命令所属宿主或模块域；附加属性保持旧位置构造函数兼容。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.FrontendCommandCapability.CommandClass">
-            <summary>命令在域内的功能类；附加属性保持旧位置构造函数兼容。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.FrontendCommandCapability.From(HistoryVulcan.Core.Commands.CommandDescriptor,System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.FrontendCommandCapability.CreateProxy">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Commands.FrontendCapabilityCatalog">
-            <summary>一个前端应用在单次连接中发布的完整命令能力目录。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.FrontendCapabilityCatalog.#ctor(System.String,System.Collections.Generic.IReadOnlyList{HistoryVulcan.Core.Commands.FrontendCommandCapability})">
-            <summary>一个前端应用在单次连接中发布的完整命令能力目录。</summary>
-        </member>
         <member name="T:HistoryVulcan.Core.Commands.IConfirmationService">
             <summary>
             二次确认通道(§5.2 拦截器链的首个内置拦截器;T-08 / R-06 等危险操作依赖)。
@@ -624,25 +584,6 @@
         </member>
         <member name="P:HistoryVulcan.Core.Commands.ParsedCommand.RawText">
             <summary>原始输入文本(回显用)。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Data.SqlText">
-            <summary>
-            SQL 文本片段助手(V2.1.6 R1):单引号转义/引用/截断的唯一实现,
-            HistoryRecorder 与 PromptGovernanceStore 共同取用。
-            时间戳格式不在此统一——各表既有格式属对外行为,由调用方自持。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Data.SqlText.Escape(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Data.SqlText.Quote(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Data.SqlText.QuoteNullable(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Data.SqlText.Truncate(System.String,System.Int32)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Docking.DockSide">
             <summary>
