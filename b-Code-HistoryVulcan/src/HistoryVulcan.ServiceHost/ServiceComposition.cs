@@ -4,7 +4,6 @@ using HistoryVulcan.Core.Modules;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.Services.Mcp;
 using HistoryVulcan.Services.Modules;
-using HistoryVulcan.Services.Web;
 
 namespace HistoryVulcan.ServiceHost;
 
@@ -26,11 +25,6 @@ public sealed class ServiceComposition : IDisposable
 
     public McpGateway? Mcp { get; init; }
 
-    public WebGateway? Web { get; init; }
-
-    /// <summary>Optional loopback endpoint file used by a cooperating desktop frontend.</summary>
-    public string? EndpointFile { get; init; }
-
     /// <summary>
     /// 应用数据根，脚本等相对路径以它为基准。
     ///
@@ -50,7 +44,6 @@ public sealed class ServiceComposition : IDisposable
 
     public void Dispose()
     {
-        Web?.Dispose();
         Mcp?.Dispose();
         Modules?.Dispose();
         DisposeApplicationServices?.Invoke();

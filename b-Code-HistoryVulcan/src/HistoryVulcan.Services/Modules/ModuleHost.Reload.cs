@@ -53,8 +53,41 @@ public sealed partial class ModuleHost
             }, null);
         }
 
+        DisposeInstances(old);
+
         foreach (var alc in old.Contexts)
             alc.Unload();
+    }
+
+    /// <summary>
+    /// 回收模块实例持有的进程级资源。
+    ///
+    /// 必须在 <c>alc.Unload()</c> 之前：卸载后再碰实例就是在动一个已经开始拆的上下文。
+    /// 也必须在 <see cref="DestroyUi"/> 之后：界面拆除要先编组回界面线程，
+    /// 而这里可能阻塞在关端口、Join 线程上，顺序颠倒会让界面线程等在一个 IO 上。
+    ///
+    /// 界面模块的 <c>DestroyUi</c> 与这里的 <c>Dispose</c> 都会被调用，因此
+    /// 两者的实现必须各自可重入且互不假设对方已经跑过。
+    ///
+    /// 任何一个实例抛出都只记警告：一个模块拆不干净，不能连累整轮重载——
+    /// 那会让宿主停在一个既没有旧快照也没有新快照的状态上。
+    /// </summary>
+    private void DisposeInstances(Snapshot old)
+    {
+        foreach (var instance in old.Instances)
+        {
+            if (instance is not IDisposable disposable)
+                continue;
+
+            try
+            {
+                disposable.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _log.Warn("module", $"回收模块实例 {instance.GetType().FullName} 失败: {ex.Message}");
+            }
+        }
     }
 
     /// <summary>

@@ -1,8 +1,17 @@
-using System.Net;
+﻿using System.Net;
 using System.Text;
 
-namespace HistoryVulcan.Services.Web;
+namespace HistoryVulcan.Services;
 
+/// <summary>
+/// 读请求体并按严格 UTF-8 解码，带 1 MiB 上限。
+/// </summary>
+/// <remarks>
+/// 与 <see cref="LoopbackHttpTransport"/> 同属传输层零件，随 MCP 网关的迁出一并作废：
+/// Web 网关搬到 HistoryPortunus 时它已在那边有一份同源副本，这里保留是因为
+/// <c>McpGateway</c> 还没搬，而模块够不着宿主的 <c>internal</c>。
+/// **第 2 轮搬完 MCP 后连同 <c>LoopbackHttpTransport</c> 一起删除。**
+/// </remarks>
 internal static class HttpRequestBodyReader
 {
     internal const int MaximumBodyBytes = 1_048_576;

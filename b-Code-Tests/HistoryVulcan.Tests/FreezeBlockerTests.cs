@@ -12,7 +12,7 @@ using HistoryVulcan.Core.Clients;
 using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.ServiceHost;
-using HistoryVulcan.Services.Web;
+
 using Xunit;
 
 namespace HistoryVulcan.Tests;
@@ -119,150 +119,16 @@ public sealed class FreezeBlockerTests
         Assert.Contains(log.Snapshot(), entry => entry.Category == "cmd:internal");
     }
 
-    /// <summary>
-    /// 3.13.0 用这条不变量取代原先的两个只读设备会话用例
-    /// （<c>ReadOnlyWebSessionDoesNotReceiveCommandLogs</c> 与
-    /// <c>ReadOnlyWebSessionFailsClosedForUnknownMalformedAndWritableCommands</c>）。
-    ///
-    /// 那两个用例守的是"设备 scope=read 时不得执行可写指令"，前提是网关能产生低于 admin 的
-    /// 会话。删除局域网面后这个前提消失了：唯一能通过鉴权的是同机前端 Shell。因此要守的边界
-    /// 从"部分授权会话不能越权"变成"除同机 Shell 外任何人都进不来"——退化成一条更强的约束，
-    /// 但必须显式验证，否则删除 scope 判定就成了无人看守的放宽。
-    /// </summary>
-    [Fact]
-    public async Task GatewayAcceptsOnlyTheLoopbackShellSession()
-    {
-        var registry = new CommandRegistry();
-        registry.Register(new CommandDescriptor
-        {
-            Name = "unsafe.write",
-            Summary = "write",
-            Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("must-not-run")),
-        });
-        var log = new MemoryLog();
-        var bus = new CommandBus(registry, log);
-        using var gateway = new WebGateway(() => bus, new MemorySettings(), log);
-        Assert.True(gateway.Start(FreePort()).Success);
-
-        // 不声明 X-HistoryVulcan-Client: Shell 的回环调用方按 ClientKind.Web 归类，一律 401。
-        using var web = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{gateway.Port}/") };
-        web.DefaultRequestHeaders.Add("X-Session-Id", Guid.NewGuid().ToString("N"));
-        web.DefaultRequestHeaders.Add("X-Client-Name", "PlainWeb");
-        using var rejected = await PostCommandAsync(web, "unsafe.write");
-        Assert.Equal(HttpStatusCode.Unauthorized, rejected.StatusCode);
-
-        // 携带过去的设备鉴权头也不再有任何特权路径可走。
-        using var device = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{gateway.Port}/") };
-        device.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "read-token");
-        device.DefaultRequestHeaders.Add("X-Device-Id", "read-device");
-        device.DefaultRequestHeaders.Add("X-Session-Id", Guid.NewGuid().ToString("N"));
-        using var deviceRejected = await PostCommandAsync(device, "unsafe.write");
-        Assert.Equal(HttpStatusCode.Unauthorized, deviceRejected.StatusCode);
-
-        // 只伪造 Shell 头、不持券的本机进程必须被挡下。这是本条用例的核心：
-        // 回环与请求头都可以被任意本机进程伪造，真正的边界只有一次性凭据。
-        using var forged = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{gateway.Port}/") };
-        forged.DefaultRequestHeaders.Add("X-HistoryVulcan-Client", "Shell");
-        forged.DefaultRequestHeaders.Add("X-Session-Id", Guid.NewGuid().ToString("N"));
-        forged.DefaultRequestHeaders.Add("X-Client-Name", "ForgedFrontend");
-        using var forgedRejected = await PostCommandAsync(forged, "unsafe.write");
-        Assert.Equal(HttpStatusCode.Unauthorized, forgedRejected.StatusCode);
-
-        // 持错券同样被挡下。
-        using var wrongToken = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{gateway.Port}/") };
-        wrongToken.DefaultRequestHeaders.Add("X-HistoryVulcan-Client", "Shell");
-        wrongToken.DefaultRequestHeaders.Add("X-Session-Id", Guid.NewGuid().ToString("N"));
-        wrongToken.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", gateway.AccessToken + "x");
-        using var wrongRejected = await PostCommandAsync(wrongToken, "unsafe.write");
-        Assert.Equal(HttpStatusCode.Unauthorized, wrongRejected.StatusCode);
-
-        // 持本次监听凭据的同机前端畅通，且拿到完整权限。
-        using var shell = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{gateway.Port}/") };
-        shell.DefaultRequestHeaders.Add("X-HistoryVulcan-Client", "Shell");
-        shell.DefaultRequestHeaders.Add("X-Session-Id", Guid.NewGuid().ToString("N"));
-        shell.DefaultRequestHeaders.Add("X-Client-Name", "Frontend");
-        shell.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", gateway.AccessToken);
-        using var accepted = await PostCommandAsync(shell, "unsafe.write");
-        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
-    }
-
-    /// <summary>
-    /// 凭据必须每次监听换发，否则 endpoint.json 的残留值会在宿主重启后继续有效。
-    /// </summary>
-    [Fact]
-    public void AccessTokenIsRegeneratedPerListenAndClearedOnStop()
-    {
-        var log = new MemoryLog();
-        using var gateway = new WebGateway(
-            () => new CommandBus(new CommandRegistry(), log), new MemorySettings(), log);
-
-        Assert.True(gateway.Start(FreePort()).Success);
-        var first = gateway.AccessToken;
-        Assert.False(string.IsNullOrWhiteSpace(first));
-        Assert.True(first.Length >= 32);
-
-        Assert.True(gateway.Stop().Success);
-        Assert.Equal("", gateway.AccessToken);
-
-        Assert.True(gateway.Start(FreePort()).Success);
-        Assert.NotEqual(first, gateway.AccessToken);
-    }
-
-    [Fact]
-    public async Task WebGatewayRejectsRequestBodiesOverOneMiBBeforeDeserialization()
-    {
-        var gateway = new WebGateway(
-            () => new CommandBus(new CommandRegistry(), new MemoryLog()),
-            new MemorySettings(),
-            new MemoryLog());
-        using (gateway)
-        {
-            Assert.True(gateway.Start(FreePort()).Success);
-            using var client = new HttpClient { BaseAddress = new Uri($"http://127.0.0.1:{gateway.Port}/") };
-            client.DefaultRequestHeaders.Add("X-HistoryVulcan-Client", "Shell");
-            client.DefaultRequestHeaders.Add("X-Client-Name", "LargeBodyTest");
-            client.DefaultRequestHeaders.Add("X-Session-Id", Guid.NewGuid().ToString("N"));
-            client.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", gateway.AccessToken);
-            using var body = new StringContent(
-                new string('x', 1_048_577), Encoding.UTF8, "application/json");
-
-            using var response = await client.PostAsync("api/command", body);
-
-            Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
-        }
-    }
-
+    // 4.3.0：Web 网关的三条边界用例（回环 Shell 鉴权、凭据每次监听换发、请求体 1 MiB 上限）
+    // 随网关迁往 HistoryPortunus/b-Code-Verify/Contracts。同批删除
+    // SessionSourceRoundTripsArbitraryIdsAndNames——它测的解码半边 SessionIdFromSource
+    // 已无生产调用方，只剩这条测试在维持它活着。
+    //
     // 3.13.0 退役 AuthenticationAttemptsAreRateLimitedByRemoteAddressBeforeSessionHeaders：
     // 它守的是"轮换 X-Session-Id 不能绕过失败鉴权的按源限流"。令牌鉴权与限流都随局域网面
     // 一起删除后，未授权请求只会稳定拿到 401。代价是失败鉴权不再有节流——在只监听
     // 127.0.0.1 的前提下可以接受：能对回环发请求的人已经以当前用户身份在执行代码。
     // 一旦将来重新对外监听，这条限流必须与监听能力同时回来。
-    [Theory]
-    [InlineData("Web:127.0.0.1:Web", "浏览器")]
-    [InlineData("含:冒号:与中文", "中文:名称")]
-    [InlineData("plain-id", "")]
-    public void SessionSourceRoundTripsArbitraryIdsAndNames(string id, string name)
-    {
-        var session = new ClientSession(
-            id, ClientKind.Shell, name, "3.0.0", DateTimeOffset.UtcNow)
-        {
-            IsLoopback = true,
-        };
-        var sourceMethod = typeof(WebGateway).GetMethod(
-            "SessionSource", BindingFlags.NonPublic | BindingFlags.Static)!;
-        var idMethod = typeof(WebGateway).GetMethod(
-            "SessionIdFromSource", BindingFlags.NonPublic | BindingFlags.Static)!;
-
-        var source = Assert.IsType<string>(sourceMethod.Invoke(null, [session]));
-        var recovered = Assert.IsType<string>(idMethod.Invoke(null, [source]));
-
-        Assert.Equal(id, recovered);
-    }
-
     // 跨进程全局 mutex：本机若有 HistoryVulcan 实例在跑就会一直等不到，
     // 超时必须是一条具名失败，而不是整轮静默挂死（DEC-023）。
     [Fact(Timeout = 30_000)]

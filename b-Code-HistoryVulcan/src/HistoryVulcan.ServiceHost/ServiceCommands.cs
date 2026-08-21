@@ -112,7 +112,8 @@ public static class ServiceCommands
                 running = true,
                 processId = Environment.ProcessId,
                 mcp = composition.Mcp?.IsRunning ?? false,
-                web = composition.Web?.IsRunning ?? false,
+                // web 字段随网关迁出（4.3.0）：宿主不再持有它，也就无从如实回答。
+                // 由 HistoryPortunus 自己的 portunus.web.status 回答。
                 modules = composition.Modules?.Modules.Count ?? 0,
             })),
         }, source);

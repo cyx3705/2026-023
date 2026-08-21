@@ -232,6 +232,9 @@ public sealed partial class ModuleHost
             UnregisterCommands(_current);
         }
 
+        // 与热重载同一条拆除次序：界面先拆，再回收实例持有的端口与句柄，最后卸载上下文。
+        DisposeInstances(_current);
+
         foreach (var alc in _current.Contexts)
             alc.Unload();
         _current = Snapshot.Empty;
@@ -298,6 +301,16 @@ public sealed partial class ModuleHost
         private readonly System.Collections.Concurrent.ConcurrentDictionary<Type, object> _instances = new();
 
         public object GetInstance(Type t) => _instances.GetOrAdd(t, x => Activator.CreateInstance(x)!);
+
+        /// <summary>
+        /// 本快照构造出的全部模块实例，供拆除阶段回收持有的进程级资源。
+        ///
+        /// 卸载 ALC 只回收托管内存，不会关闭实例持有的操作系统句柄：端口、文件锁、
+        /// 命名管道、计时器都不在垃圾回收的管辖范围内。非界面模块此前没有任何拆除回调，
+        /// 于是这类资源在每轮热重载后被静默遗弃——旧监听器仍占着端口、仍持有活的
+        /// 指令总线引用，而新实例只能退到下一个端口。
+        /// </summary>
+        public IReadOnlyList<object> Instances => _instances.Values.ToArray();
 
         public void CountCommand(string moduleName)
             => _commandCounts[moduleName] = _commandCounts.GetValueOrDefault(moduleName) + 1;

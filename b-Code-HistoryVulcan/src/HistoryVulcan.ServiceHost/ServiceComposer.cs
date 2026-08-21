@@ -9,7 +9,6 @@ using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.Services;
 using HistoryVulcan.Services.Modules;
-using HistoryVulcan.Services.Web;
 
 namespace HistoryVulcan.ServiceHost;
 
@@ -107,10 +106,6 @@ public static partial class ServiceComposer
             // ModuleHost 会整段跳过 UI 生命周期，进程仍然是纯无头的。
             EnableUiModules = true,
         };
-        var web = new WebGateway(() => bus, settings, log)
-        {
-            ServerId = identity.Name + ".service",
-        };
         modules.Attach(registry, bus, settings, servicePaths.Root);
         RegisterServiceModuleCommands(registry, modules, settings, bus);
         RegisterServiceMcpSettingCommands(registry, settings);
@@ -149,8 +144,6 @@ public static partial class ServiceComposer
             Log = log,
             Modules = modules,
             Mcp = mcp,
-            Web = web,
-            EndpointFile = Path.Combine(servicePaths.Root, "endpoint.json"),
             // 与前端此前的 DataDirectory 同值：脚本相对路径基准不变（REQ-A6）。
             DataDirectory = paths.Root,
             RegisterAutostartOnFirstRun = true,

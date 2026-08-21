@@ -3,7 +3,6 @@ using System.IO;
 using System.Text.Json;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Mcp;
-using HistoryVulcan.Services.Web;
 
 namespace HistoryVulcan.ServiceHost;
 
@@ -57,8 +56,8 @@ public static class ServiceHost
             servicePath,
             serviceArguments: serviceArguments);
 
-        // The module registry is authoritative for both Web and MCP. Complete the first
-        // synchronous load before either listener is opened so the first remote catalog
+        // The module registry is authoritative for every gateway. Complete the first
+        // synchronous load before any listener is opened so the first remote catalog
         // cannot observe a framework-only intermediate snapshot.
         try
         {
@@ -70,14 +69,9 @@ public static class ServiceHost
             composition.Log.Warn("module", $"模块启动失败，远程网关将仅暴露成功注册的指令: {ex.Message}");
         }
 
-        if (composition.Web != null)
-        {
-            var (started, message) = composition.Web.Start();
-            LogResult(composition.Log, "web", started, message);
-            if (started && composition.EndpointFile != null)
-                WriteEndpoint(composition.EndpointFile, composition);
-        }
-
+        // Web 网关与 endpoint.json 已迁出至 HistoryPortunus 模块（4.3.0）。
+        // 宿主不再持有任何对外 HTTP 监听：模块没装上时本机就没有 Web 入口，
+        // 这一点由 endpoint.json 的存在与否如实反映。
         if (composition.Mcp != null)
         {
             var (started, message) = composition.Mcp.TryAutostart();
@@ -124,12 +118,7 @@ public static class ServiceHost
         }
         finally
         {
-            if (composition.EndpointFile != null)
-            {
-                try { File.Delete(composition.EndpointFile); }
-                catch (IOException) { }
-                catch (UnauthorizedAccessException) { }
-            }
+            // endpoint.json 的删除随模块拆除发生（ModuleHost 在卸载前 Dispose 模块实例）。
             composition.Dispose();
             mutex.ReleaseMutex();
         }
@@ -170,29 +159,4 @@ public static class ServiceHost
         }
     }
 
-    private static void WriteEndpoint(string path, ServiceComposition composition)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        var temporary = path + ".tmp." + Guid.NewGuid().ToString("N");
-        try
-        {
-            // accessToken 是本次监听的一次性 IPC 凭据（见 WebGateway.AccessToken）。
-            // 它使 endpoint.json 从"端口通告"变成凭据载体：文件位于用户 AppData 下，
-            // 其读取权限就是这条边界的实际强度。宿主停止时该文件被删除，令牌随之作废。
-            File.WriteAllText(temporary, JsonSerializer.Serialize(new
-            {
-                port = composition.Web?.Port ?? 0,
-                serverId = composition.Web?.ServerId ?? composition.ServiceName,
-                processId = Environment.ProcessId,
-                accessToken = composition.Web?.AccessToken ?? "",
-            }));
-            File.Move(temporary, path, overwrite: true);
-        }
-        finally
-        {
-            try { File.Delete(temporary); }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
-        }
-    }
 }

@@ -70,6 +70,17 @@
         <member name="M:HistoryVulcan.Services.FileLayoutStore.ListNamed">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
+        <member name="T:HistoryVulcan.Services.HttpRequestBodyReader">
+            <summary>
+            读请求体并按严格 UTF-8 解码，带 1 MiB 上限。
+            </summary>
+            <remarks>
+            与 <see cref="T:HistoryVulcan.Services.LoopbackHttpTransport"/> 同属传输层零件，随 MCP 网关的迁出一并作废：
+            Web 网关搬到 HistoryPortunus 时它已在那边有一份同源副本，这里保留是因为
+            <c>McpGateway</c> 还没搬，而模块够不着宿主的 <c>internal</c>。
+            **第 2 轮搬完 MCP 后连同 <c>LoopbackHttpTransport</c> 一起删除。**
+            </remarks>
+        </member>
         <member name="T:HistoryVulcan.Services.LoopbackHttpTransport">
              <summary>
              两个本机网关（<c>McpGateway</c> 与 <c>WebGateway</c>）共用的 HttpListener 传输层零件。
@@ -721,6 +732,16 @@
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Metas">
             <summary>模块元信息(vulcan.module.list);CommandCount 在注册完成后定稿。</summary>
         </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Instances">
+             <summary>
+             本快照构造出的全部模块实例，供拆除阶段回收持有的进程级资源。
+            
+             卸载 ALC 只回收托管内存，不会关闭实例持有的操作系统句柄：端口、文件锁、
+             命名管道、计时器都不在垃圾回收的管辖范围内。非界面模块此前没有任何拆除回调，
+             于是这类资源在每轮热重载后被静默遗弃——旧监听器仍占着端口、仍持有活的
+             指令总线引用，而新实例只能退到下一个端口。
+             </summary>
+        </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleHost.ModuleLoadContext">
             <summary>可回收的加载上下文:模块及其依赖全部从内存流加载,不锁磁盘文件。</summary>
         </member>
@@ -743,6 +764,21 @@
             WPF 模块（例如 HistoryAurora）若先 Build 再卸旧包，进程里会同时存在两份同名
             程序集；默认上下文的 Resolving 钩子会命中旧的那份，新窗口的 XAML 随即解析失败。
             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.DisposeInstances(HistoryVulcan.Services.Modules.ModuleHost.Snapshot)">
+             <summary>
+             回收模块实例持有的进程级资源。
+            
+             必须在 <c>alc.Unload()</c> 之前：卸载后再碰实例就是在动一个已经开始拆的上下文。
+             也必须在 <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.DestroyUi(HistoryVulcan.Services.Modules.ModuleHost.Snapshot)"/> 之后：界面拆除要先编组回界面线程，
+             而这里可能阻塞在关端口、Join 线程上，顺序颠倒会让界面线程等在一个 IO 上。
+            
+             界面模块的 <c>DestroyUi</c> 与这里的 <c>Dispose</c> 都会被调用，因此
+             两者的实现必须各自可重入且互不假设对方已经跑过。
+            
+             任何一个实例抛出都只记警告：一个模块拆不干净，不能连累整轮重载——
+             那会让宿主停在一个既没有旧快照也没有新快照的状态上。
+             </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ClearShellHooks">
              <summary>
@@ -974,135 +1010,6 @@
         </member>
         <member name="M:HistoryVulcan.Services.ShellLog.Dispose">
             <summary>退出前冲刷文件队列(App 关闭时调用)。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Web.ShellConnectionState">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.ShellConnectionState.Disconnected">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.ShellConnectionState.Connecting">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.ShellConnectionState.PairingRequired">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.ShellConnectionState.Ready">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.ShellConnectionState.Rejected">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.ShellConnectionState.VersionMismatch">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Web.ShellEndpointProfile">
-            <summary>Shell HTTP/WS 共享的端点、设备凭据与证书固定配置。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.ShellEndpointProfile.#ctor(System.Uri,System.String,System.Func{System.String},System.String,System.Nullable{System.TimeSpan},System.String)">
-            <summary>Shell HTTP/WS 共享的端点、设备凭据与证书固定配置。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Web.ShellEndpointProfile.EffectiveConnectTimeout">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.ShellEndpointProfile.NormalizeFingerprint(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.ShellEndpointProfile.ValidateCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Web.WebGateway">
-             <summary>
-             命令总线的本机 HTTP/WS 接入点，只服务同机前端 Shell。
-            
-             3.13.0 删除局域网面（DEC-045）：绑定地址、设备鉴权/配对、令牌、CORS 与限流一并移除。
-             那套机制两年内没有任何生产装配点——<c>IDeviceAuthenticationProvider</c> 只在测试里被赋值，
-             <c>WebCommands</c> 从未被注册，确认档甚至读的是一个没人写入的 <c>lan.confirm</c> 键。
-             保留它只会让每次公开面评审背着一份不可达的安全边界。真要局域网访问时，
-             基于合并后的单网关重写，而不是复活这一套。
-             </summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.WebGateway.GatewayProtocolVersion">
-            <summary>网关线协议版本；健康检查回报，前端据此拒绝不兼容的后台。</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.WebGateway.KeyPort">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.WebGateway.KeyPortRetries">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.#ctor(System.Func{HistoryVulcan.Core.Commands.CommandBus},HistoryVulcan.Core.Storage.ISettingsService,HistoryVulcan.Core.Logging.IShellLog)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Web.WebGateway.IsRunning">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Web.WebGateway.ServerId">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Web.WebGateway.Port">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.WebGateway.LoopbackAddress">
-            <summary>网关固定绑定的本机地址；3.13.0 起不可配置。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Web.WebGateway.AccessToken">
-             <summary>
-             本次监听的一次性凭据，由 <see cref="M:HistoryVulcan.Services.Web.WebGateway.Start(System.Nullable{System.Int32})"/> 用密码学随机数生成，`Stop` 后作废。
-            
-             存在的理由：回环本身不构成边界。删除局域网面前后，只要带上
-             <c>X-HistoryVulcan-Client: Shell</c> 头，任何本机进程都能在权威总线上执行任意命令——
-             包括 MCP 侧硬排除的 `vulcan.app.quit`、`vulcan.module.install/remove` 和全部
-             `vulcan.mcp.*`。也就是说 MCP 的策略、隐藏与危险确认在同机范围内可被整体绕过。
-             令牌把"我们自己启动的前端"和"任意本机进程"区分开：它只写进
-             `%AppData%\HistoryVulcan\service\endpoint.json`，随进程生存，不落设置、不可配置、不回显。
-             </summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Web.WebGateway.ConnectedClients">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.PublishModuleRevision(System.Int64)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.TryGetSession(System.String,HistoryVulcan.Core.Clients.ClientSession@)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.Start(System.Nullable{System.Int32})">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.Stop">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.Dispose">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.AcceptLoopAsync(System.Net.HttpListener,System.Threading.CancellationToken)">
-            <summary>
-            共用实现后顺带获得 MCP 侧原有的健壮性：单次接受失败只记警告并继续，
-            不再让一个坏连接冒泡出循环、悄悄终结整条监听。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.CreateSession(System.Net.HttpListenerRequest)">
-             <summary>
-             按请求头造一个候选会话。种类恒为 <see cref="F:HistoryVulcan.Core.Clients.ClientKind.Shell"/>——这是本网关
-             唯一会接受的种类，<see cref="M:HistoryVulcan.Services.Web.WebGateway.Authenticate(System.Net.HttpListenerRequest,HistoryVulcan.Core.Clients.ClientSession)"/> 负责核对请求头是否真的这么声明。
-            
-             4.2.0 之前这里会把不声明 Shell 的请求归成 <c>ClientKind.Web</c>，而鉴权紧接着
-             无条件拒绝它——一道从来没有人通过的门。那不是纵深防御，只是把"未实现"
-             写成了"已拒绝"的样子。种类枚举里的 Web 一并退役。
-             </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.Authenticate(System.Net.HttpListenerRequest,HistoryVulcan.Core.Clients.ClientSession)">
-             <summary>
-             3.13.0 起唯一的接受条件：同机回环上的前端 Shell。
-            
-             删除局域网面后这里不再有"部分授权"的中间态——要么是本机前端（read/operate/admin
-             全给），要么直接 401。<c>ClientSession.Scopes</c> 仍然填齐是因为它属于冻结的 Core
-             公开面，消费方仍可能读取；本网关只是不再产生任何低于 admin 的会话。
-            
-             三个条件缺一不可：回环、声明为 Shell、持有本次监听的 <see cref="P:HistoryVulcan.Services.Web.WebGateway.AccessToken"/>。
-             前两条只是形状检查（任何本机进程都能伪造），真正的边界是第三条。
-             </summary>
         </member>
     </members>
 </doc>
