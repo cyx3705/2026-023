@@ -455,7 +455,9 @@ internal static class ReleaseCommands
             return CommandResult.Fail("管线已拉起，但没有返回 run 标识。\n" + started.Message);
 
         progress?.Report($"已拉起 {run}，等待门禁和提交结束…");
-        var (finished, exitCode, tail) = await WaitForRunAsync(host, run, progress, cancellation)
+        // 管线子进程已经独立在跑。MCP/CLI 客户端超时不得取消等待和热重载，
+        // 否则会出现「日志成功、运行区仍是旧包」。
+        var (finished, exitCode, tail) = await WaitForRunAsync(host, run, progress, CancellationToken.None)
             .ConfigureAwait(false);
         if (!finished)
             return CommandResult.Fail($"cycle 等待结束：{tail}\nrun={run}");
@@ -484,7 +486,7 @@ internal static class ReleaseCommands
 
         progress?.Report("提交完成，正在调用 Vulcan 热重载当前候选…");
         var reload = await ModulePackageHotReload.InstallCurrentAsync(
-            host, repoRoot, moduleName, "host:vulcan.release.cycle", cancellation).ConfigureAwait(false);
+            host, repoRoot, moduleName, "host:vulcan.release.cycle", CancellationToken.None).ConfigureAwait(false);
         text.Append('\n').Append(reload.Success
             ? reload.Message
             : "候选已提交，但 Vulcan 热重载未成功（不自动回滚）：" + reload.Message);
@@ -492,7 +494,7 @@ internal static class ReleaseCommands
         if (isWorktree)
         {
             text.Append("\n可继续在此工作区开发，或 vulcan.worktree.merge 并回主线。");
-            text.Append("\n若对话根已在工作区内（grok 切过根），合并前先迁到项目主树或 Diana 再 merge；合并会删工作区目录。其他 AI 对话不在工作区里，可直接 merge。");
+            text.Append("\n若对话根已在工作区内（grok 切过根），合并前先迁到宿主主树或该模块 Clio 主树再 merge；合并会删工作区目录。其他 AI 对话不在工作区里，可直接 merge。");
         }
 
         return reload.Success
