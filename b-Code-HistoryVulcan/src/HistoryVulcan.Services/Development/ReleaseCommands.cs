@@ -16,8 +16,8 @@ namespace HistoryVulcan.Services.Development;
 /// <remarks>
 /// 关键约束：运行状态只落在日志文件里，不放在本模块的内存里。
 /// 门禁提交后对模块调用 <c>vulcan.module.install</c> 热重载（与测试、模块页按钮同一接口）。
-/// 发布 HistoryDiana 时本模块自身会在热重载途中被替换——任何存在静态字段里的运行记录都会随之蒸发。因此 start 立即返回 run 标识，
-/// status/log 一律现场读日志目录，Diana 被换掉也不影响追踪。
+/// 热重载会替换目标模块，不替换宿主。运行状态只落日志：start 立即返回 run 标识，
+/// status/log 一律现场读日志目录，目标模块被换掉也不影响追踪。
 ///
 /// 子进程自己把 stdout/stderr 重定向进日志（PowerShell 的 <c>*&gt;</c>），Diana 不做流泵送：
 /// 泵送线程会随模块卸载而中断，日志就断在半截。退出码单独落一个纯 ASCII 的
@@ -293,7 +293,7 @@ internal static class ReleaseCommands
             return CommandResult.Ok(
                 $"已拉起 {moduleName} 的发布管线（{mode}），run={run}，pid={process.Id}\n"
                 + $"日志: {logPath}\n"
-                + "管线在独立进程中运行，用 vulcan.release.status 查看进度；发布 HistoryDiana 时本模块会被热重载，状态仍从日志读取。",
+                + "管线在独立进程中运行，用 vulcan.release.status 查看进度；目标模块热重载时状态仍从日志读取。",
                 new { Run = run, Module = moduleName, Publish = publish, Pid = process.Id, Log = logPath });
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
@@ -428,9 +428,6 @@ internal static class ReleaseCommands
         string repoRoot;
         if (isWorktree)
         {
-            if (moduleName.Equals("HistoryDiana", StringComparison.OrdinalIgnoreCase))
-                return CommandResult.Fail("HistoryDiana 只在主线 cycle；不要给它传 worktree。");
-
             repoRoot = WorktreeCommands.ResolveWorktreePath(
                 host.Settings, module.ProjectDirectory, worktree!.Trim());
             if (!Directory.Exists(repoRoot))
@@ -458,7 +455,9 @@ internal static class ReleaseCommands
             return CommandResult.Fail("管线已拉起，但没有返回 run 标识。\n" + started.Message);
 
         progress?.Report($"已拉起 {run}，等待门禁和提交结束…");
-        var (finished, exitCode, tail) = await WaitForRunAsync(host, run, progress, cancellation)
+        // 管线子进程已经独立在跑。MCP/CLI 客户端超时不得取消等待和热重载，
+        // 否则会出现「日志成功、运行区仍是旧包」。
+        var (finished, exitCode, tail) = await WaitForRunAsync(host, run, progress, CancellationToken.None)
             .ConfigureAwait(false);
         if (!finished)
             return CommandResult.Fail($"cycle 等待结束：{tail}\nrun={run}");
@@ -487,7 +486,7 @@ internal static class ReleaseCommands
 
         progress?.Report("提交完成，正在调用 Vulcan 热重载当前候选…");
         var reload = await ModulePackageHotReload.InstallCurrentAsync(
-            host, repoRoot, moduleName, "host:vulcan.release.cycle", cancellation).ConfigureAwait(false);
+            host, repoRoot, moduleName, "host:vulcan.release.cycle", CancellationToken.None).ConfigureAwait(false);
         text.Append('\n').Append(reload.Success
             ? reload.Message
             : "候选已提交，但 Vulcan 热重载未成功（不自动回滚）：" + reload.Message);
@@ -495,7 +494,7 @@ internal static class ReleaseCommands
         if (isWorktree)
         {
             text.Append("\n可继续在此工作区开发，或 vulcan.worktree.merge 并回主线。");
-            text.Append("\n若对话根已在工作区内（grok 切过根），合并前先迁到项目主树或 Diana 再 merge；合并会删工作区目录。其他 AI 对话不在工作区里，可直接 merge。");
+            text.Append("\n若对话根已在工作区内（grok 切过根），合并前先迁到宿主主树或该模块 Clio 主树再 merge；合并会删工作区目录。其他 AI 对话不在工作区里，可直接 merge。");
         }
 
         return reload.Success
