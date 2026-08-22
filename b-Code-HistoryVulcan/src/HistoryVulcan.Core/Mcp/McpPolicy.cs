@@ -1,4 +1,15 @@
-﻿using HistoryVulcan.Core.Commands;
+﻿// MCP 策略：宿主**决定**的那一半。
+//
+// McpExposurePolicy —— 哪些指令可以被远端调用。这条排除因为「按名字前缀写」
+//   已经失效过三次（debug.logflood、vulcan.log.flood、vulcan.mcp.*），
+//   细节见类型注释；判据现在挂在指令类上，域会随归属变动，指令类不会。
+// McpConfirmationScope —— 远端预批准的确认在什么范围内有效。
+// PromptTextIntegrity —— 工具描述是否被篡改。
+//
+// 与同目录 McpContracts.cs 的分工：那边是宿主声明的形状，这边是宿主做的判断。
+// 网关搬去了 HistoryPortunus，这三样刻意留下——门搬走，锁留下。
+
+using HistoryVulcan.Core.Commands;
 
 namespace HistoryVulcan.Core.Mcp;
 
@@ -176,9 +187,100 @@ public static class McpExposurePolicy
     public static bool IsVisible(CommandDescriptor descriptor, string policy)
         => HardExclusionReason(descriptor.Name) == null
            && !descriptor.IsDangerous
-           && (descriptor.ExecutionSite != CommandExecutionSite.Frontend
-               || descriptor.AllowMcpExecution)
            && (policy.Equals("standard", StringComparison.OrdinalIgnoreCase)
                || descriptor.Readonly
                || IsReadonlyAllowed(descriptor.Name));
+}
+
+/// <summary>
+/// MCP 确认中继的执行域(V2.2 CX-02/03)。
+/// 网关在宿主端弹框获得人工批准后,用本域标记"这次总线执行的二次确认已由人工完成",
+/// 使总线不再重复弹框;AsyncLocal 只沿网关发起的异步流前向传播,UI/手动/脚本指令的
+/// 确认路径不受影响(其 AsyncLocal 恒为 false)。
+/// </summary>
+public static class McpConfirmationScope
+{
+    private static readonly AsyncLocal<bool> _preApproved = new();
+
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    public static bool PreApproved => _preApproved.Value;
+
+    /// <summary>在预批准标记下执行网关发起的总线调用;结束后复位。</summary>
+    public static async Task<T> RunPreApprovedAsync<T>(Func<Task<T>> action)
+    {
+        _preApproved.Value = true;
+        try
+        {
+            return await action().ConfigureAwait(false);
+        }
+        finally
+        {
+            _preApproved.Value = false;
+        }
+    }
+}
+
+/// <summary>
+/// 包装 Shell 交互确认(或 --yes 的自动确认)的确认服务(V2.2 CX-03):
+/// MCP 中继已由人工预批准的执行直接放行(不二次弹框);其余一律走内层——
+/// 即 UI/手动的真实弹框,或 --yes 的自动确认。
+/// 关键:MCP 危险调用的确认由网关独立完成,从不经过 --yes 的自动确认,
+/// 因此 --yes 对 MCP 来源危险指令不生效(CX-03)。
+/// </summary>
+public sealed class GatewayAwareConfirmation : IConfirmationService
+{
+    private readonly IConfirmationService? _inner;
+
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    public GatewayAwareConfirmation(IConfirmationService? inner) => _inner = inner;
+
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    public bool Confirm(string prompt)
+        // 无内层服务时安全缺省拒绝,与总线"无确认通道即拒绝"一致
+        => McpConfirmationScope.PreApproved || (_inner?.Confirm(prompt) ?? false);
+}
+
+/// <summary>拒绝已在上游丢失、无法由 UTF-8 解码恢复的提示词文本。</summary>
+public static class PromptTextIntegrity
+{
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    public static string ValidateDescription(string text)
+    {
+        text = text.Trim();
+        if (text.Length == 0)
+            throw new InvalidOperationException("描述不能为空");
+        if (text.Length > 2000)
+            throw new InvalidOperationException($"描述过长({text.Length} 字符，上限 2000)");
+        if (LooksCorrupted(text))
+            throw new InvalidOperationException(
+                "描述疑似发生编码损坏（包含替换字符或大量连续问号），已拒绝保存；" +
+                "请使用 UTF-8 JSON 请求体重新提交");
+        return text;
+    }
+
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    public static bool LooksCorrupted(string text)
+    {
+        if (text.Contains('\uFFFD'))
+            return true;
+
+        var questionMarks = 0;
+        var consecutive = 0;
+        foreach (var character in text)
+        {
+            if (character == '?')
+            {
+                questionMarks++;
+                consecutive++;
+                if (consecutive >= 3)
+                    return true;
+            }
+            else
+            {
+                consecutive = 0;
+            }
+        }
+
+        return questionMarks >= 4 && questionMarks * 4 >= text.Length;
+    }
 }

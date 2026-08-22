@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text.Json;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
@@ -166,54 +166,6 @@ public sealed class RuntimeModulePackageTests
             var result = host.InstallPackage(second);
             Assert.False(result.Success);
             Assert.True(File.Exists(manifest));
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, previous);
-        }
-    }
-
-    [Fact]
-    public async Task InstallUnloadsFrontendBeforeReplacingLockedRuntimePackage()
-    {
-        using var temp = new TemporaryDirectory();
-        var runtime = Path.Combine(temp.Path, "HistoryVulcan", "Modules");
-        var candidates = Directory.CreateDirectory(Path.Combine(temp.Path, "candidates")).FullName;
-        var first = CreatePackage(candidates, "first", "contextfixture", "v1.0.0");
-        var second = CreatePackage(candidates, "second", "contextfixture", "v2.0.0");
-        var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable);
-        var registry = new CommandRegistry();
-        var log = new TestLog();
-        var bus = new CommandBus(registry, log);
-        using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
-        {
-            EnableFileWatching = false,
-            EnableUiModules = false,
-        };
-
-        try
-        {
-            host.Attach(registry, bus, new MemorySettings(), Path.Combine(temp.Path, "data"));
-            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
-            host.Start();
-            Assert.True(host.InstallPackage(first).Success);
-
-            var manifest = Path.Combine(runtime, "contextfixture", "module.manifest.json");
-            using var locked = new FileStream(manifest, FileMode.Open, FileAccess.Read, FileShare.Read);
-            var calls = new List<string>();
-            bus.FrontendExecutor = (text, _, _) =>
-            {
-                calls.Add(text);
-                locked.Dispose();
-                return Task.FromResult(CommandResult.Ok("前端已卸载"));
-            };
-
-            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v2.0.0");
-            var result = await ServiceComposer.InstallRuntimePackageAsync(host, bus, second);
-
-            Assert.True(result.Success, result.Message);
-            Assert.Equal(["vulcan.module.unload name=contextfixture"], calls);
-            Assert.Equal("v2.0.0", Assert.Single(host.Modules).Version);
         }
         finally
         {

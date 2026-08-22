@@ -1,4 +1,4 @@
-# HistoryVulcan API 与指令手册
+﻿# HistoryVulcan API 与指令手册
 
 > 适用版本：HistoryVulcan **4.0.0**
 
@@ -281,9 +281,10 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 ### 3.6 安全与执行位点（简要）
 
 - `Dangerous` / `ConfirmPrompt`：危险元数据与本地确认闸口；未注入确认服务时带确认位的命令拒绝执行。
-- `RequiresUiThread`：总线经 `UiContext` 编组到 UI 线程。
-- `ExecutionSite`：`Local` 在当前宿主执行；`Frontend` 由服务转发给在线 Shell。
-- `FrontendCommandCapability`：前端→服务的可序列化能力描述（无 Handler）；`From` / `CreateProxy` 用于跨进程目录与前端代理命令。
+- `RequiresUiThread`：总线经 `UiContext` 编组到 UI 线程。这是**唯一**的执行位点概念。
+- `ExecutionSite` 与 `FrontendCommandCapability` 已于 4.7.0 删除。它们服务的是「界面在另一个进程」
+  那套跨进程中继；界面变成宿主内模块（DEC-008）之后，全仓再没有一处把 `ExecutionSite` 设成
+  `Frontend`，它的每个读取点都成了走不到的分支。跨线程编组仍然真实存在，由 `RequiresUiThread` 承担。
 
 ## 4. 常用公开 API
 
@@ -303,12 +304,11 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 |---|---|---|
 | `CommandRegistry` | `Register`、`Unregister`、`TryGet`、`All`、`Suggest`、`GetSource`、`GetDomain`、`GetCommandClass`、`GetMethod`、`LegacyDomain`、`LegacyClass`、`LegacyMethod` | 权威命令注册表；重名注册会拒绝；域/类以有效解析结果为准；`GetMethod` 等同末段方法名（`LegacyMethod`） |
 | `CommandBus` | `Validate`、`ExecuteAsync`、`Executed`、`Confirmation` | 唯一执行入口，统一校验、确认、线程切换、回显和错误结果 |
-| `CommandDescriptor` | `Name`、`Domain`、`CommandClass`、`Summary`、`Example`、`Parameters`、`Readonly`、`Dangerous`、`ConfirmPrompt`、`RequiresUiThread`、`ExecutionSite`、`AllowMcpExecution`、`Handler` | 命令的完整合同 |
+| `CommandDescriptor` | `Name`、`Domain`、`CommandClass`、`Summary`、`Example`、`Parameters`、`Readonly`、`Dangerous`、`ConfirmPrompt`、`RequiresUiThread`、`AllowMcpExecution`、`AllowCliExecution`、`Annotations`、`Handler` | 命令的完整合同 |
 | `CommandContext` | `RequireString`、`GetString`、`GetInt`、`GetDouble`、`GetBool`、`Has` | 读取已校验参数 |
 | `CommandResult` | `Ok`、`Fail`、`Success`、`Message`、`Data` | 统一执行结果 |
 | `CommandSchemaExporter` | `ExportTools`、`Find`、`BuildCommandText` | 从最终注册表生成 MCP schema 和反向命令文本 |
 | `CommandManualGenerator` | `Render`、`Sha256` | 从运行时注册表生成命令手册 |
-| `FrontendCommandCapability` | `From`、`CreateProxy`、`Domain`、`CommandClass` | 前端可序列化能力；代理描述符 `ExecutionSite=Frontend` |
 | `ICommandCatalogSession` | `RefreshAsync`、`SetFilter`、`CompleteAsync`、`Select`、… | 命令目录会话合同（Core）；由 Mercury 实现并挂接 |
 | `IShellCommandWorkbenchHost` | `AttachCommandCatalogSession`、`Bus`、`ConfigureCommandCompletionRouting`、… | Shell 工作台宿主合同（Core）；`ShellWindow` 实现 |
 | `IGlobalShortcutHost` | `Register`、`Start`、`Stop`、`Registrations`、… | 全局快捷键宿主合同（Core）；Mercury 实现 |
@@ -401,8 +401,9 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
   `cmd:手动` 脱敏回显写入历史。3.0 历史文件带 `# HistoryVulcan.CommandHistory.v2:redacted` 头，首次启动时会清空
   没有该头的旧格式历史，避免 3.0 以前可能保存的明文再由 `vulcan.command.history` 返回。
 - 所有 UI、脚本、Web 和 MCP 调用最终都进入 `CommandBus.ExecuteAsync`。
-- `ExecutionSite=Local` 在当前宿主执行；`Frontend` 由服务转发给在线 Shell。
-- `Readonly`、`Dangerous` 和 `AllowMcpExecution` 是安全合同。前端/UI 命令默认不进入 MCP。
+- `Readonly`、`Dangerous` 是安全合同。**注意 `AllowMcpExecution` 已不再是**：它此前只在
+  `ExecutionSite=Frontend` 时起作用，该字段删除后它没有任何读取点，界面/UI 命令因此不再
+  「默认不进入 MCP」，是否可见完全由 `McpExposurePolicy` 按只读/危险/硬排除判定。
 - 3.2.1 起一个宿主或模块对应一个域，域内功能分支对应命令类。3.3.0 起内置命令名为 `vulcan.<类>.<方法>`，
   Domain=`vulcan`；命令集表格列为域|类|方法|MCP|参数|说明。
   `CommandCatalogRow.Source/SourceDetail`、`CommandRegistry.GetSource` 与 `FrontendCommandCatalog.Source`
@@ -585,8 +586,6 @@ Web 组合注册 `vulcan.web.*`；`ServiceHost.Run` 注册 `vulcan.svc.*`。全�
 - `readonly` 策略只开放明确只读且未硬排除的命令。
 - `standard` 可增加不需要本地确认的普通命令。
 - 危险命令不是第三种策略；仅在 `standard` 且 `mcp.confirm=host` 时进入工具列表，并仍须由宿主确认，远端参数不能绕过。
-- `ExecutionSite=Frontend` 的命令必须同时 `AllowMcpExecution=true`，并且目标前端在线。
-- 多个前端在线而未指定 `_frontend` 时返回歧义错误，不随机选择。
 - 独立宿主的 `tools/list` / `tools/call` 与非 UI 模块共用后台权威注册表；模块热重载动态更新工具面，
   不需要重启 MCP 端口。
 

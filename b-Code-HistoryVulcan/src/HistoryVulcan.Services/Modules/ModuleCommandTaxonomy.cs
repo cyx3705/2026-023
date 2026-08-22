@@ -19,10 +19,12 @@ internal static class ModuleCommandTaxonomy
             Dangerous = source.Dangerous,
             Readonly = source.Readonly,
             RequiresUiThread = source.RequiresUiThread,
-            ExecutionSite = source.ExecutionSite,
             AllowMcpExecution = source.AllowMcpExecution,
             AllowCliExecution = source.AllowCliExecution,
             AllowUnspecifiedParameters = source.AllowUnspecifiedParameters,
+            // 注解必须一并带过来：模块经它声明消费方能力，漏掉这一行等于
+            // 模块的注解在进入宿主注册表的那一刻被静默清空。
+            Annotations = source.Annotations,
             Handler = source.Handler,
         };
 }

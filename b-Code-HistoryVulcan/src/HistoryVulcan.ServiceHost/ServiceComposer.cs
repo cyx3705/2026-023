@@ -330,36 +330,13 @@ public static partial class ServiceComposer
                     Position = 0,
                 },
             ],
-            Handler = async ctx =>
+            Handler = CommandDescriptor.Sync(ctx =>
             {
-                var name = ctx.RequireString("name");
-                string? frontendNote = null;
-                // 进程内界面（IShellUiProvider）把 FrontendExecutor 指回本总线。
-                // 再中继 vulcan.module.unload 会在同一条命令上无限递归，直到进程崩掉。
-                // 双进程时代才需要先卸另一边的文件锁。
-                if (host.ShellUi == null && bus.FrontendExecutor is { } frontend)
-                {
-                    var remote = await frontend(
-                        $"vulcan.module.unload name={CommandParser.QuoteArg(name)}",
-                        "framework:service",
-                        ctx.Cancellation).ConfigureAwait(false);
-                    frontendNote = remote.Success
-                        ? "前端界面已一并卸载"
-                        : $"前端: {remote.Message}";
-                }
-
-                var local = host.Unload(name);
-                if (!local.Success)
-                {
-                    if (frontendNote == "前端界面已一并卸载")
-                        return CommandResult.Ok($"前端界面已卸载，但后台: {local.Message}");
-                    return local;
-                }
-
-                return frontendNote == null
-                    ? local
-                    : CommandResult.Ok($"{local.Message}；{frontendNote}");
-            },
+                // 界面与后台在同一进程、同一张注册表里，卸载只有这一步。
+                // 双进程时代这里还要先中继到界面卸掉同名快照以释放文件锁，
+                // 那条中继在进程内会打回本命令上无限递归，已随进程外前端一并删除。
+                return host.Unload(ctx.RequireString("name"));
+            }),
         }, "framework:service");
 
         registry.Register(new CommandDescriptor
@@ -382,11 +359,9 @@ public static partial class ServiceComposer
             {
                 if (!IsLocalModuleMutationSource(ctx.Source))
                     return CommandResult.Fail("模块安装只允许认证的本机宿主通道。");
-                return await InstallRuntimePackageAsync(
-                    host,
-                    bus,
-                    ctx.RequireString("path"),
-                    ctx.Cancellation).ConfigureAwait(false);
+                var path = ctx.RequireString("path");
+                return await Task.Run(() => host.InstallPackage(path), ctx.Cancellation)
+                    .ConfigureAwait(false);
             },
         }, "framework:service");
 
@@ -410,11 +385,9 @@ public static partial class ServiceComposer
             {
                 if (!IsLocalModuleMutationSource(ctx.Source))
                     return CommandResult.Fail("模块移除只允许认证的本机宿主通道。");
-                return await RemoveRuntimePackageAsync(
-                    host,
-                    bus,
-                    ctx.RequireString("name"),
-                    ctx.Cancellation).ConfigureAwait(false);
+                var target = ctx.RequireString("name");
+                return await Task.Run(() => host.RemovePackage(target), ctx.Cancellation)
+                    .ConfigureAwait(false);
             },
         }, "framework:service");
 

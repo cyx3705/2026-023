@@ -1,4 +1,8 @@
-﻿namespace HistoryVulcan.Core.Commands;
+﻿// 一条指令的形状：描述符本身，以及它的参数规格。
+//
+// ParameterSpec 只作为描述符的一部分存在，两者从来一起改，此前却是两个文件。
+
+namespace HistoryVulcan.Core.Commands;
 
 /// <summary>
 /// 一条指令的注册模型(§5.3):名称、参数定义、执行体、帮助文本与二次确认。
@@ -55,12 +59,9 @@ public sealed class CommandDescriptor
     /// <summary>true 时总线把执行体编组到 UI 线程(win.*/layout.* 等操作窗口的指令)。</summary>
     public bool RequiresUiThread { get; init; }
 
-    /// <summary>命令的执行位置；默认在当前宿主执行。</summary>
-    public CommandExecutionSite ExecutionSite { get; init; }
-
     /// <summary>
-    /// Frontend 命令是否显式允许 MCP 执行。默认 false；仅查阅与治理不需要开启。
-    /// Backend/Local 命令仍由既有只读、危险确认与策略规则决定是否暴露。
+    /// 是否显式允许 MCP 执行。默认 false；仅查阅与治理不需要开启。
+    /// 其余命令由既有只读、危险确认与策略规则决定是否暴露。
     /// </summary>
     public bool AllowMcpExecution { get; init; }
 
@@ -83,8 +84,8 @@ public sealed class CommandDescriptor
     /// 不再以「给本类加一个字段」的方式落地。
     ///
     /// 背景:本类历史上为每个消费方各长过一个字段——Domain / CommandClass(命令目录的
-    /// 分类展示)、AllowMcpExecution(MCP 暴露)、ExecutionSite(前端路由)、SupportsUndo
-    /// (至今未实现的预留位)。这些字段总线一个都不用,却让「命令描述符」这个地基类型
+    /// 分类展示)、AllowMcpExecution(MCP 暴露)、ExecutionSite(前端路由,已随进程外前端一并删除)、
+    /// SupportsUndo(至今未实现的预留位)。这些字段总线一个都不用,却让「命令描述符」这个地基类型
     /// 跟着每个消费方一起变,冻结因此无从谈起。
     ///
     /// 约定:键用 <c>&lt;消费方&gt;.&lt;能力&gt;</c>,如 <c>mcp.execute</c>、<c>catalog.hidden</c>。
@@ -107,4 +108,47 @@ public sealed class CommandDescriptor
     /// <summary>同步执行体的便捷包装。</summary>
     public static Func<CommandContext, Task<CommandResult>> Sync(Func<CommandContext, CommandResult> handler)
         => ctx => Task.FromResult(handler(ctx));
+}
+
+/// <summary>参数类型(校验用,§5.2 参数校验)。</summary>
+public enum ParamType
+{
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    String,
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    Int,
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    Double,
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    Bool,
+}
+
+/// <summary>
+/// 一个指令参数的定义(§5.3:名 / 类型 / 是否必填 / 默认值 / 说明)。
+/// </summary>
+public sealed class ParameterSpec
+{
+    /// <summary>参数名(键=值 的键),小写。</summary>
+    public required string Name { get; init; }
+
+    /// <summary>帮助文本里的一句话说明。</summary>
+    public required string Description { get; init; }
+
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    public ParamType Type { get; init; } = ParamType.String;
+
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    public bool Required { get; init; }
+
+    /// <summary>缺省值的文本表达(帮助显示 + 取值兜底);null 表示无默认。</summary>
+    public string? Default { get; init; }
+
+    /// <summary>
+    /// 允许按位置传入时的位置序号(0 起);null 表示只能 键=值。
+    /// 例:help 的 command 参数 Position=0,支持 “help vulcan.ui.dock”。
+    /// </summary>
+    public int? Position { get; init; }
+
+    /// <summary>枚举型取值约束(如 pos=left/right/top/bottom/tab);null 不限。</summary>
+    public string[]? AllowedValues { get; init; }
 }
