@@ -16,8 +16,8 @@ namespace HistoryVulcan.Services.Development;
 /// <remarks>
 /// 关键约束：运行状态只落在日志文件里，不放在本模块的内存里。
 /// 门禁提交后对模块调用 <c>vulcan.module.install</c> 热重载（与测试、模块页按钮同一接口）。
-/// 发布 HistoryDiana 时本模块自身会在热重载途中被替换——任何存在静态字段里的运行记录都会随之蒸发。因此 start 立即返回 run 标识，
-/// status/log 一律现场读日志目录，Diana 被换掉也不影响追踪。
+/// 热重载会替换目标模块，不替换宿主。运行状态只落日志：start 立即返回 run 标识，
+/// status/log 一律现场读日志目录，目标模块被换掉也不影响追踪。
 ///
 /// 子进程自己把 stdout/stderr 重定向进日志（PowerShell 的 <c>*&gt;</c>），Diana 不做流泵送：
 /// 泵送线程会随模块卸载而中断，日志就断在半截。退出码单独落一个纯 ASCII 的
@@ -293,7 +293,7 @@ internal static class ReleaseCommands
             return CommandResult.Ok(
                 $"已拉起 {moduleName} 的发布管线（{mode}），run={run}，pid={process.Id}\n"
                 + $"日志: {logPath}\n"
-                + "管线在独立进程中运行，用 vulcan.release.status 查看进度；发布 HistoryDiana 时本模块会被热重载，状态仍从日志读取。",
+                + "管线在独立进程中运行，用 vulcan.release.status 查看进度；目标模块热重载时状态仍从日志读取。",
                 new { Run = run, Module = moduleName, Publish = publish, Pid = process.Id, Log = logPath });
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
@@ -428,9 +428,6 @@ internal static class ReleaseCommands
         string repoRoot;
         if (isWorktree)
         {
-            if (moduleName.Equals("HistoryDiana", StringComparison.OrdinalIgnoreCase))
-                return CommandResult.Fail("HistoryDiana 只在主线 cycle；不要给它传 worktree。");
-
             repoRoot = WorktreeCommands.ResolveWorktreePath(
                 host.Settings, module.ProjectDirectory, worktree!.Trim());
             if (!Directory.Exists(repoRoot))

@@ -15,14 +15,15 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$dianaRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$projectsRoot = [IO.Path]::GetFullPath((Join-Path $dianaRoot '..'))
+# 本脚本在 HistoryVulcan/eng/pipeline（4.6.0 从 Diana/b-Code 迁入）。
+$pipelineRoot = $PSScriptRoot
+$projectsRoot = [IO.Path]::GetFullPath((Join-Path $pipelineRoot '..\..\..\..'))
 $transactionId = [Guid]::NewGuid().ToString('N')
 $stamp = [DateTimeOffset]::UtcNow.ToString('yyyyMMdd-HHmmss')
 $workRoot = $null
 
 # 普通 module 的定义与验证步骤由注册表提供；新增普通模块只需新增一项 JSON。
-$registryPath = Join-Path $dianaRoot 'b-Code\module-publish.manifest.json'
+$registryPath = Join-Path $pipelineRoot 'module-publish.manifest.json'
 if (-not (Test-Path -LiteralPath $registryPath -PathType Leaf)) {
     throw "Module publish registry is missing: $registryPath"
 }
