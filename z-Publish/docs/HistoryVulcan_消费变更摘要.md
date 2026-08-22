@@ -10,6 +10,11 @@
 > 本文抬头曾长期停留在旧版本；当前 4.0.0 变化列在本节顶部。
 > 版本线推进时必须同步本文抬头，这与同步 `project.manifest.json` 同等重要。
 
+**UI 风格与嵌入页面规范不再随宿主 docs 发布（2026-08-22）。** 颜色令牌、嵌入页结构和顶栏归属
+改由 HistoryAurora 现行合同维护，路径为
+`../../../2026-026-HistoryAurora/b-Office/current/HistoryAurora_UI风格与嵌入页面规范.md`。
+模块作者继续用 `DynamicResource` 引用 `Aurora.*` 键；宿主消费包只保留 API、运行时限制和变更摘要。
+
 ## 破坏性变更（升级必读；自 3.3.2 累积）
 
 **〇之零、MCP 与命令目录三个类型换程序集（4.0.0，DEC-049 / REQ-A1）。**
@@ -156,6 +161,7 @@ MCP/Web 硬排除。命令集里不应再看到 `debug` 类。
 
 ## 主要变化
 
+- 4.8.1 开发管线按登记表 `kind` 区分，不再按模块名拦截。`kind=module`（含 HistoryDiana 及以后新模块）都可以 `vulcan.release.cycle` 带 `worktree=`；只有 `kind=host` 不热重载 EXE，且正式宿主仍在跑时拒绝 `worktree.merge`。新模块只需写入 `eng/pipeline/module-publish.manifest.json`。
 - 4.0.0 可回收 WPF 模块热重载：整体 `Reload` 先拆界面并卸载旧可回收 ALC，再装新包。
   默认上下文的 Resolving 只返回模块 ALC 里已装载的程序集，不把它们装进 Default。
   `pinned: true` 仍走 Default，不可卸载。`IShellUiProvider` 最后销毁。公开 API 不变。
