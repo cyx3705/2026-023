@@ -52,7 +52,7 @@
             <param name="ParameterCount">参数个数。</param>
             <param name="Source">注册方，如 framework:service 或 frontend:*。</param>
             <param name="SourceDetail">注册方补充信息；无则为 null。</param>
-            <param name="Dangerous">是否为危险指令（需要确认）。</param>
+            <param name="Dangerous">级别是否为「询问」（执行前必须问过人）。</param>
             <param name="RequiresUiThread">是否必须在 UI 线程执行。</param>
             <param name="McpToolName">投影后的 MCP 工具名；未投影为 null。</param>
             <param name="McpState">MCP 投影状态：readonly / standard / dangerous / hidden。</param>
@@ -72,7 +72,7 @@
             <param name="ParameterCount">参数个数。</param>
             <param name="Source">注册方，如 framework:service 或 frontend:*。</param>
             <param name="SourceDetail">注册方补充信息；无则为 null。</param>
-            <param name="Dangerous">是否为危险指令（需要确认）。</param>
+            <param name="Dangerous">级别是否为「询问」（执行前必须问过人）。</param>
             <param name="RequiresUiThread">是否必须在 UI 线程执行。</param>
             <param name="McpToolName">投影后的 MCP 工具名；未投影为 null。</param>
             <param name="McpState">MCP 投影状态：readonly / standard / dangerous / hidden。</param>
@@ -105,7 +105,7 @@
             <summary>注册方补充信息；无则为 null。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Dangerous">
-            <summary>是否为危险指令（需要确认）。</summary>
+            <summary>级别是否为「询问」（执行前必须问过人）。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.RequiresUiThread">
             <summary>是否必须在 UI 线程执行。</summary>
@@ -254,7 +254,7 @@
              而只要宿主活着，**任何一个模块坏掉都能用这条路线单独修好**，
              包括承载对外传输的 HistoryPortunus 和承载界面的 HistoryAurora。
             
-             这也是它整条都声明了命令行暴露的原因（<c>AllowCliExecution</c>）：
+             这也是整条路线都在命令行面上的原因（见 <c>CliExposurePolicy.ExposedCommands</c>）：
              走 MCP 要 agent 会话活着，走 Web 要 Portunus 装载成功，而需要修模块的时刻
              恰恰是这些前提不成立的时刻。<c>--cli</c> 在本进程内执行，一样都不需要。
             

@@ -85,30 +85,54 @@
              决定一条指令能否经命令行入口执行。
              </summary>
              <remarks>
-             **缺省全关，逐条声明。** 这一点与 <c>McpExposurePolicy</c> 相反，是刻意的：
-             MCP 面对的是一份已经存在、长年累月长起来的指令集，缺省全关等于让它一夜失能，
-             所以它按「危险/只读/隐藏」推断。CLI 是一张白纸，没有存量要照顾——
-             新面缺省全开，等于把「还没想过要不要暴露」写成「已经暴露」。
+             **命令行是唯一不由描述符声明的消费面，这是刻意的。**
             
-             判据放在 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.AllowCliExecution"/> 上而不是一张名单里：
-             指令跟着它的实现走，声明也应该跟着实现走。名单会在指令改名、迁模块时悄悄失配——
-             本体系已经因为「按名字前缀写的安全排除」栽过三次
-             （<c>debug.logflood</c>、<c>vulcan.log.flood</c>、<c>vulcan.mcp.*</c>）。
+             暴露与否，描述符上只有一个声明（<see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.HiddenReason"/>），
+             三个消费面共用。但命令行有一条别的面没有的额外要求：
+             <c>vulcan.module.install</c> 与 <c>vulcan.module.remove</c> 对 MCP 是**硬排除**
+             （不能让远端给自己换宿主的包），对命令行却是**必须有**
+             （模块坏掉时，<c>--cli</c> 是唯一还能换包的路）。
+             一个布尔位给不出「这个面要、那个面不要」这个答案。
             
-             门在模块里，锁留在宿主：命令行客户端搬到哪都不能给自己放权，
-             因为它拿到的描述符是宿主注册表里的那一份。
+             所以命令行的收窄留在命令行自己这里，而不是回到「每个面各发一个令牌」的老路上。
+            
+             **名单有代价，必须承认：** 指令改名时它会静默失配，本体系已经因为按名字写的
+             安全规则栽过四次。补偿措施是 <see cref="M:HistoryVulcan.Core.Commands.CliExposurePolicy.MissingCommands(HistoryVulcan.Core.Commands.CommandRegistry)"/>——命令行入口每次执行前
+             拿本名单与真实注册表对账，缺一条就整体报错，改名后第一次用 <c>--cli</c> 就会炸出来，
+             而不是等到某天需要救火时才发现那条恢复指令不见了。
              </remarks>
         </member>
-        <member name="M:HistoryVulcan.Core.Commands.CliExposurePolicy.IsExposed(HistoryVulcan.Core.Commands.CommandDescriptor)">
-            <summary>指定指令是否已声明为命令行可执行。</summary>
+        <member name="P:HistoryVulcan.Core.Commands.CliExposurePolicy.ExposedCommands">
+             <summary>
+             命令行可执行的全部指令。
+             </summary>
+             <remarks>
+             恰好是「查目录 + 换包装载 + 发布管线 + 工作区管线」这四组，不多一条。
+            
+             走 MCP 要 agent 会话活着，走 Web 要 HistoryPortunus 装载成功，
+             而需要修模块的时刻恰恰是这些前提不成立的时刻；<c>--cli</c> 在本进程内执行，
+             一样都不需要。这条理由不适用于任何别的指令，所以名单也就到此为止。
+             </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CliExposurePolicy.IsExposed(System.String)">
+            <summary>指定指令是否在命令行面上。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CliExposurePolicy.MissingCommands(HistoryVulcan.Core.Commands.CommandRegistry)">
+            <summary>
+            名单里已经不存在于注册表的指令；空表示对得上。
+            </summary>
+            <remarks>
+            名单按名字写，改名会让它静默失配——而失配的方向最坏：
+            需要救火时才发现恢复指令不在面上。调用方应在执行前对账并直接报错。
+            </remarks>
         </member>
         <member name="M:HistoryVulcan.Core.Commands.CliExposurePolicy.RefusalReason(System.String)">
             <summary>
-            未声明时给调用方的拒绝说明。
+            不在名单上时给调用方的拒绝说明。
             </summary>
             <remarks>
             说明里要写清「不是这条指令不存在」，否则使用者会以为自己打错了名字，
-            转而去猜别的写法——而真正需要做的是给那条指令加声明。
+            转而去猜别的写法——而真正需要做的是判断它该不该进这份名单。
             </remarks>
         </member>
         <member name="T:HistoryVulcan.Core.Commands.CommandBus">
@@ -159,15 +183,28 @@
             <summary>UI 线程上下文;RequiresUiThread 的指令经此编组。</summary>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.FrontendExecutor">
-            <summary>
-            前端命令中继。服务宿主为其注入传输实现；未连接前端时保持 null，
-            总线返回明确失败结果，不等待网络超时。
-            </summary>
+             <summary>
+             界面命令中继。界面模块装载时填入，拆除时置回 null。
+             </summary>
+             <remarks>
+             **总线自己从不调用它。** 4.7.0 之前描述符上有个 <c>ExecutionSite</c> 字段，
+             取 <c>Frontend</c> 的指令由总线自动改道到这里；界面从独立进程变成宿主内模块
+             （DEC-008）之后，全仓再没有任何一处把它设成 <c>Frontend</c>，那条改道成了死码，
+             已随字段一并删除。
+            
+             留下这个挂钩，是因为 <c>vulcan.app.{show,hide,close,focusconsole}</c> 这几条
+             **名字在宿主域、实现在界面模块**：注册表强制 <c>module:X</c> 来源的指令归属
+             模块自己的域（见 <c>CommandRegistry.ResolveDomain</c>），界面因此无法直接注册
+             一条 <c>vulcan.*</c>。宿主注册壳、界面填实现，是这条归属规则下唯一的形状。
+            
+             调用方只有 <c>ServiceCommands</c> 那几条，且必须显式判 null——界面没装载时
+             它就是 null，那时的正确答复是「界面未装载」而不是空引用。
+             </remarks>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor">
             <summary>
             客户端模式下的远程总线。ShouldUseRemote 返回 true 时整条命令交给服务，
-            服务经前端中继发回的 UI 命令可用来源标签绕过此路由并在本地执行。
+            服务经界面中继发回的 UI 命令可用来源标签绕过此路由并在本地执行。
             </summary>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemote">
@@ -215,6 +252,15 @@
         </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandBus.FormatUsage(HistoryVulcan.Core.Commands.CommandDescriptor)">
             <summary>用法行,如 "用法: vulcan.ui.dock name= pos=left/right/top/bottom/tab [target=] [ratio=]"。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.IConfirmationService">
+            <summary>
+            二次确认通道(§5.2 拦截器链的首个内置拦截器;T-08 / R-06 等危险操作依赖)。
+            Shell 层以模态对话框实现;无 UI 场景(脚本/测试)可注入自动拒绝或自动通过的实现。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.IConfirmationService.Confirm(System.String)">
+            <summary>返回 true 表示用户确认继续。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Commands.CommandContext">
             <summary>
@@ -288,46 +334,63 @@
         <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Parameters">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Level">
+             <summary>
+             本指令是直接跑，还是执行前必须问过人。
+             </summary>
+             <remarks>
+             这一件事此前由三个成员共同表达：<c>Dangerous</c>（元数据）、<c>ConfirmPrompt</c>
+             （闸口）、以及合成的 <c>IsDangerous = Dangerous || ConfirmPrompt != null</c>。
+             三份表达意味着消费方各读各的：MCP 读合成属性、总线读闸口、目录读元数据，
+             于是「这条到底危不危险」在不同的面上可以给出不同答案。
+            
+             现在只有本字段是权威。提示语仍在 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.ConfirmPrompt"/> 里，
+             但它不再**决定**问不问——决定权在这里。两者不一致时注册表直接拒绝注册，
+             见 <c>CommandRegistry.Register</c>：只写 ConfirmPrompt 而忘了升级别，
+             后果是闸口静默失效，那是最不该靠人记住的一类错误。
+             </remarks>
+        </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.ConfirmPrompt">
-            <summary>执行前需二次确认时,返回确认提示文本;null 表示无需确认(§5.2 拦截器)。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Dangerous">
-            <summary>
-            代理描述符无法序列化原始确认函数时保留危险性元数据。
-            本地执行仍只由 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.ConfirmPrompt"/> 触发确认；目录、MCP 与文档读取本合成属性。
-            </summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.IsDangerous">
-            <summary>命令是否具有危险性元数据或本地确认闸口。</summary>
+             <summary>
+             <see cref="F:HistoryVulcan.Core.Commands.CommandLevel.Ask"/> 时的确认提示文本。
+             </summary>
+             <remarks>
+             留空则由总线按指令名生成一句缺省提示。
+            
+             **返回 null 表示本次不问**——这是刻意保留的动态豁免，生产里在用：
+             <c>janus.github.identity</c> 只在 <c>apply=true</c> 时才是写操作，
+             <c>ConfirmPrompt = ctx =&gt; ctx.GetBool("apply") ? "…" : null</c>
+             让它在只读那次不弹无意义的确认框，而级别仍然是「询问」，
+             因此它对 MCP 的可见性不会因为参数不同而摇摆。
+             </remarks>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Readonly">
             <summary>
             只读声明：命令不改变持久状态（不写库、文件或 Git 状态）。
-            MCP 暴露策略优先读取此字段；外部名称白名单仅保留为兼容层。
             </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.HiddenReason">
+             <summary>
+             非 null 表示本指令**不对任何远端消费面暴露**，值是不暴露的原因。
+             </summary>
+             <remarks>
+             缺省 null，即暴露——因为这份指令集是长年累月长起来的，缺省全关等于一夜失能。
+            
+             做成「写原因即隐藏」而不是一个布尔位，是因为**隐藏一条指令永远有具体理由**，
+             而理由是唯一能让后来人判断该不该继续隐藏的东西。目录页与手册直接显示它。
+            
+             这里取代的是 <c>McpExposurePolicy</c> 里那份按名字写的硬排除名单。
+             那份名单失效过四次，每次都是同一个原因：**指令改了名，规则还盯着旧名字**——
+             <c>debug.logflood</c> 收编为 <c>vulcan.log.flood</c>（承压注水指令因此可被远程触发）、
+             <c>vulcan.mcp.*</c> 随网关迁出改名 <c>portunus.mcp.*</c>（把「关掉正在服务你的通道」
+             交给了远端）。声明挂在描述符上，改名时它跟着一起走，这类失效不再可能发生。
+            
+             代价要写明：**新指令忘了写就是暴露的**。这是权衡后的选择——
+             缺省全关会让 153 条现有指令一夜失能，而那 153 条恰恰包含全部恢复路径。
+             </remarks>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.RequiresUiThread">
             <summary>true 时总线把执行体编组到 UI 线程(win.*/layout.* 等操作窗口的指令)。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.ExecutionSite">
-            <summary>命令的执行位置；默认在当前宿主执行。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.AllowMcpExecution">
-            <summary>
-            Frontend 命令是否显式允许 MCP 执行。默认 false；仅查阅与治理不需要开启。
-            Backend/Local 命令仍由既有只读、危险确认与策略规则决定是否暴露。
-            </summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.AllowCliExecution">
-            <summary>
-            是否声明本指令可经命令行入口执行。默认 false。
-            </summary>
-            <remarks>
-            与 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.AllowMcpExecution"/> 的差别不只是面不同：MCP 那一面由
-            <c>McpExposurePolicy</c> 按只读/危险/隐藏**推断**，本标记则是**逐条声明**，
-            缺省全关。CLI 是新面，没有存量指令要照顾，缺省全开等于把
-            「还没想过要不要暴露」写成「已经暴露」。判据见 <c>CliExposurePolicy</c>。
-            </remarks>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.AllowUnspecifiedParameters">
             <summary>代理描述符可接受任意参数并原样转发；本地业务命令不应开启。</summary>
@@ -338,8 +401,10 @@
              不再以「给本类加一个字段」的方式落地。
             
              背景:本类历史上为每个消费方各长过一个字段——Domain / CommandClass(命令目录的
-             分类展示)、AllowMcpExecution(MCP 暴露)、ExecutionSite(前端路由)、SupportsUndo
-             (至今未实现的预留位)。这些字段总线一个都不用,却让「命令描述符」这个地基类型
+             分类展示)、AllowMcpExecution(MCP 暴露)、AllowCliExecution(命令行暴露)、
+             ExecutionSite(前端路由)、SupportsUndo(从未实现的预留位)。后四个已经删除:
+             前三个是「每个消费面各发一个令牌」,现在暴露只有 HiddenReason 一处声明;
+             最后一个从未接线。这些字段总线一个都不用,却让「命令描述符」这个地基类型
              跟着每个消费方一起变,冻结因此无从谈起。
             
              约定:键用 <c>&lt;消费方&gt;.&lt;能力&gt;</c>,如 <c>mcp.execute</c>、<c>catalog.hidden</c>。
@@ -358,14 +423,63 @@
         <member name="M:HistoryVulcan.Core.Commands.CommandDescriptor.Sync(System.Func{HistoryVulcan.Core.Commands.CommandContext,HistoryVulcan.Core.Commands.CommandResult})">
             <summary>同步执行体的便捷包装。</summary>
         </member>
-        <member name="T:HistoryVulcan.Core.Commands.CommandExecutionSite">
-            <summary>命令执行位置。服务化宿主可把窗口命令中继给已连接的前端。</summary>
+        <member name="T:HistoryVulcan.Core.Commands.ParamType">
+            <summary>参数类型(校验用,§5.2 参数校验)。</summary>
         </member>
-        <member name="F:HistoryVulcan.Core.Commands.CommandExecutionSite.Local">
+        <member name="F:HistoryVulcan.Core.Commands.ParamType.String">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="F:HistoryVulcan.Core.Commands.CommandExecutionSite.Frontend">
+        <member name="F:HistoryVulcan.Core.Commands.ParamType.Int">
             <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.ParamType.Double">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.ParamType.Bool">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.ParameterSpec">
+            <summary>
+            一个指令参数的定义(§5.3:名 / 类型 / 是否必填 / 默认值 / 说明)。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Name">
+            <summary>参数名(键=值 的键),小写。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Description">
+            <summary>帮助文本里的一句话说明。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Type">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Required">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Default">
+            <summary>缺省值的文本表达(帮助显示 + 取值兜底);null 表示无默认。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Position">
+            <summary>
+            允许按位置传入时的位置序号(0 起);null 表示只能 键=值。
+            例:help 的 command 参数 Position=0,支持 “help vulcan.ui.dock”。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.AllowedValues">
+            <summary>枚举型取值约束(如 pos=left/right/top/bottom/tab);null 不限。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandLevel">
+            <summary>指令的执行级别：跑，还是先问。</summary>
+            <remarks>
+            只有两级，因为本程序完全自用，中间态没有服务对象。
+            级别只回答「要不要问人」这一件事；改不改东西看 <c>Readonly</c>，
+            谁能调看暴露声明，在哪个线程跑看 <c>RequiresUiThread</c>。
+            </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.CommandLevel.Run">
+            <summary>运行：直接执行，不打断。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.CommandLevel.Ask">
+            <summary>询问：执行前必须问过人；没有确认通道时拒绝执行，而不是放行。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Commands.CommandHistory">
             <summary>
@@ -451,6 +565,21 @@
         </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandSyntaxException.#ctor(System.String)">
             <summary>指令文本语法错误。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.ParsedCommand">
+            <summary>一行指令文本的解析结果(§5.1 语法 v0)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParsedCommand.Name">
+            <summary>指令名(域.动作 或 单词指令),已转小写。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParsedCommand.Positionals">
+            <summary>位置参数,按出现顺序。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParsedCommand.Named">
+            <summary>键=值参数;键不敏感大小写,值保留原始大小写。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.ParsedCommand.RawText">
+            <summary>原始输入文本(回显用)。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Commands.CommandRegistry">
             <summary>
@@ -555,15 +684,6 @@
         <member name="E:HistoryVulcan.Core.Commands.CommandSelectionState.Changed">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="T:HistoryVulcan.Core.Commands.IConfirmationService">
-            <summary>
-            二次确认通道(§5.2 拦截器链的首个内置拦截器;T-08 / R-06 等危险操作依赖)。
-            Shell 层以模态对话框实现;无 UI 场景(脚本/测试)可注入自动拒绝或自动通过的实现。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.IConfirmationService.Confirm(System.String)">
-            <summary>返回 true 表示用户确认继续。</summary>
-        </member>
         <member name="T:HistoryVulcan.Core.Commands.ModuleDomainNaming">
             <summary>
             模块名 → 指令域的唯一归一化真值（DEC-023）。
@@ -576,88 +696,6 @@
             把模块名归一化为指令域：大小写不敏感地剥离开头的 <c>History</c> 并转小写；
             剥离后为空时退回原名小写；不以 <c>History</c> 开头的原样转小写。
             </summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Commands.ParamType">
-            <summary>参数类型(校验用,§5.2 参数校验)。</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Commands.ParamType.String">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Commands.ParamType.Int">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Commands.ParamType.Double">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Commands.ParamType.Bool">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Commands.ParameterSpec">
-            <summary>
-            一个指令参数的定义(§5.3:名 / 类型 / 是否必填 / 默认值 / 说明)。
-            </summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Name">
-            <summary>参数名(键=值 的键),小写。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Description">
-            <summary>帮助文本里的一句话说明。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Type">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Required">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Default">
-            <summary>缺省值的文本表达(帮助显示 + 取值兜底);null 表示无默认。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.Position">
-            <summary>
-            允许按位置传入时的位置序号(0 起);null 表示只能 键=值。
-            例:help 的 command 参数 Position=0,支持 “help vulcan.ui.dock”。
-            </summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.ParameterSpec.AllowedValues">
-            <summary>枚举型取值约束(如 pos=left/right/top/bottom/tab);null 不限。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Commands.ParsedCommand">
-            <summary>一行指令文本的解析结果(§5.1 语法 v0)。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.ParsedCommand.Name">
-            <summary>指令名(域.动作 或 单词指令),已转小写。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.ParsedCommand.Positionals">
-            <summary>位置参数,按出现顺序。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.ParsedCommand.Named">
-            <summary>键=值参数;键不敏感大小写,值保留原始大小写。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.ParsedCommand.RawText">
-            <summary>原始输入文本(回显用)。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Docking.DockSide">
-            <summary>
-            工具窗口相对主程序窗体的停靠方位(§4.1 W-03 五种落点)。
-            </summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Docking.DockSide.Left">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Docking.DockSide.Right">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Docking.DockSide.Top">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Docking.DockSide.Bottom">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Docking.DockSide.Tab">
-            <summary>并入目标标签组(vulcan.ui.dock pos=tab target=...)。</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Docking.DockSide.Center">
-            <summary>占据中央工作区；多个中央窗口组成标签组。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Docking.ToolWindowInfo">
             <summary>某个工具窗口的当前状态快照(vulcan.ui.windows 的数据源)。</summary>
@@ -734,31 +772,28 @@
         <member name="E:HistoryVulcan.Core.Docking.IDockingService.WindowsChanged">
             <summary>窗口集合或最大化状态变化时触发。</summary>
         </member>
-        <member name="T:HistoryVulcan.Core.Docking.ShellCommandEventArgs">
+        <member name="T:HistoryVulcan.Core.Docking.DockSide">
             <summary>
-            一条等价指令的文本表达(§5.1 语法),及其来源类别(C-01 来源标签)。
+            工具窗口相对主程序窗体的停靠方位(§4.1 W-03 五种落点)。
             </summary>
         </member>
-        <member name="P:HistoryVulcan.Core.Docking.ShellCommandEventArgs.CommandText">
-            <summary>指令文本,如 "vulcan.ui.dock name=console pos=bottom ratio=0.28"。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Docking.ShellCommandEventArgs.Source">
-            <summary>来源类别:"layout"(拖拽手势)、"UI"(菜单/按钮)等。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Docking.StandardWindowIds">
-            <summary>Window identities owned by HistoryVulcan and available to derived hosts.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Docking.StandardWindowIds.Console">
+        <member name="F:HistoryVulcan.Core.Docking.DockSide.Left">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="F:HistoryVulcan.Core.Docking.StandardWindowIds.Mcp">
+        <member name="F:HistoryVulcan.Core.Docking.DockSide.Right">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="F:HistoryVulcan.Core.Docking.StandardWindowIds.CommandDetail">
+        <member name="F:HistoryVulcan.Core.Docking.DockSide.Top">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="F:HistoryVulcan.Core.Docking.StandardWindowIds.Modules">
+        <member name="F:HistoryVulcan.Core.Docking.DockSide.Bottom">
             <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.DockSide.Tab">
+            <summary>并入目标标签组(vulcan.ui.dock pos=tab target=...)。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.DockSide.Center">
+            <summary>占据中央工作区；多个中央窗口组成标签组。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Docking.ToolWindowDescriptor">
             <summary>
@@ -797,6 +832,32 @@
             例外:Id 为 "console" 的窗口内容由 Shell 提供(§4.4 标准控制台),
             可不设工厂;其余窗口必须提供。
             </summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Docking.StandardWindowIds">
+            <summary>Window identities owned by HistoryVulcan and available to derived hosts.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.StandardWindowIds.Console">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.StandardWindowIds.Mcp">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.StandardWindowIds.CommandDetail">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Docking.StandardWindowIds.Modules">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Docking.ShellCommandEventArgs">
+            <summary>
+            一条等价指令的文本表达(§5.1 语法),及其来源类别(C-01 来源标签)。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Docking.ShellCommandEventArgs.CommandText">
+            <summary>指令文本,如 "vulcan.ui.dock name=console pos=bottom ratio=0.28"。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Docking.ShellCommandEventArgs.Source">
+            <summary>来源类别:"layout"(拖拽手势)、"UI"(菜单/按钮)等。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Logging.ShellLogLevel">
             <summary>日志级别(C-03 六级)。</summary>
@@ -852,160 +913,6 @@
         <member name="M:HistoryVulcan.Core.Logging.ShellLogExtensions.Error(HistoryVulcan.Core.Logging.IShellLog,System.String,System.String)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="T:HistoryVulcan.Core.Mcp.IMcpAuditLog">
-             <summary>
-             MCP 调用留痕（铁律 2 / MS-05：每次调用与拒绝都必须留痕）。
-            
-             0.4.4 抽出：网关此前直接依赖派生应用的 HistoryRecorder，而后者同时承载
-             应用专有的业务留痕表；把网关真正需要的那一面抽成接口，框架层不再认识应用侧类型。
-             派生应用若已有自己的留痕器，实现本接口接进来即可复用同一张表。
-             </summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(System.String,System.String,System.String,System.String,System.Int64)">
-            <summary>记录一次 MCP 调用结果。</summary>
-            <param name="client">客户端标识。</param>
-            <param name="tool">工具名；鉴权阶段的拒绝用 "(auth)"。</param>
-            <param name="arguments">已脱敏的调用参数文本；持久化实现可进一步截断。</param>
-            <param name="result">结果：成功 / 拒绝 / 远程拒绝 / 确认超时 等。</param>
-            <param name="elapsedMs">耗时毫秒；未执行记 0。</param>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(HistoryVulcan.Core.Clients.ClientSession,System.String,System.String,System.String,System.Int64)">
-            <summary>记录带稳定会话身份的 MCP 调用；旧实现自动转发到兼容签名。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView">
-             <summary>
-             提示词治理的只读视图。宿主消费，模块提供。
-             </summary>
-             <remarks>
-             承接 <c>IEffectivePromptDescriptionReader</c> 早就写明的分工——
-             「治理的写方刻意在宿主之外，宿主只消费这个只读视图」。那条注释写于治理还在宿主里的时候，
-             4.4.0 把 <c>PromptGovernanceStore</c> 迁往 HistoryPortunus 之后，它才真正成立。
-            
-             **返回值刻意全部退化为基本类型。** 调用方（<c>vulcan.command.list/show</c>）只需要
-             「改过没有、第几版、几条待审、几起事故」这四格，不需要提案与事故的完整结构。
-             让治理的记录类型跨过这个边界，等于把宿主重新绑回模块的数据模型上——
-             那正是这次迁移要解开的东西。
-            
-             实现方随模块热重载来去，因此消费方必须把它当作**随时可能为 null**：
-             模块没装上、正在重载、或装载失败时，目录指令要照常可用，只是少了治理那几列。
-             </remarks>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView.EffectiveDescriptions">
-            <summary>当前生效的工具描述覆盖，按指令名索引；未被覆盖的指令不出现在结果中。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView.OpenProposalCounts">
-            <summary>各指令待审提案数，按指令名索引。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView.IncidentCounts">
-            <summary>各指令已记录事故数，按指令名索引。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView.CurrentRevisionId(System.String)">
-            <summary>指定指令当前生效的描述修订号；未被覆盖时为 null。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Mcp.McpConfirmationScope">
-            <summary>
-            MCP 确认中继的执行域(V2.2 CX-02/03)。
-            网关在宿主端弹框获得人工批准后,用本域标记"这次总线执行的二次确认已由人工完成",
-            使总线不再重复弹框;AsyncLocal 只沿网关发起的异步流前向传播,UI/手动/脚本指令的
-            确认路径不受影响(其 AsyncLocal 恒为 false)。
-            </summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Mcp.McpConfirmationScope.PreApproved">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.McpConfirmationScope.RunPreApprovedAsync``1(System.Func{System.Threading.Tasks.Task{``0}})">
-            <summary>在预批准标记下执行网关发起的总线调用;结束后复位。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Mcp.GatewayAwareConfirmation">
-            <summary>
-            包装 Shell 交互确认(或 --yes 的自动确认)的确认服务(V2.2 CX-03):
-            MCP 中继已由人工预批准的执行直接放行(不二次弹框);其余一律走内层——
-            即 UI/手动的真实弹框,或 --yes 的自动确认。
-            关键:MCP 危险调用的确认由网关独立完成,从不经过 --yes 的自动确认,
-            因此 --yes 对 MCP 来源危险指令不生效(CX-03)。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.GatewayAwareConfirmation.#ctor(HistoryVulcan.Core.Commands.IConfirmationService)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.GatewayAwareConfirmation.Confirm(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Mcp.McpExposurePolicy">
-             <summary>
-             MCP 暴露规则的解释器，供网关、command.* 和管理页共同使用。
-            
-             **只读性的单一真值在 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.Readonly"/>**（命令自己声明）；
-             模块命令的暴露档来自模块清单的 <c>mcpExposure</c>（经 <see cref="P:HistoryVulcan.Core.Mcp.McpExposurePolicy.ModuleExposure"/> 查得）。
-             本类只负责把这两个来源解释成最终档位，不再持有任何指令名清单（V2.4.4）。
-             </summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Mcp.McpExposurePolicy.ModuleOfCommand">
-            <summary>V2.2 CX-01:命令名 → 所属模块名(注册来源 "module:&lt;name&gt;");装配点接 Registry.GetSource。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Mcp.McpExposurePolicy.ModuleExposure">
-            <summary>V2.2 CX-01:模块名 → 清单声明的 mcpExposure;无清单(根平铺)返回 null = standard 现状。</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Mcp.McpExposurePolicy.ReadonlyCommands">
-             <summary>
-             按名字补登记的只读指令集合。
-            
-             **V2.4.4 起默认为空**:只读性的单一真值是 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.Readonly"/>——
-             由命令在注册处自己声明,与 ConfirmPrompt 同级。
-             0.4.4 时代的 18 条框架基线与派生应用登记的 14 条已全部迁至各自描述符,
-             保留双份会让「一件事实两处声明」以新形态复活,故本集合清空。
-            
-             本集合与 <see cref="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.RegisterReadonly(System.String[])"/> 继续保留,仅用于**无法修改注册点**的场景
-             (例如第三方程序集提供的命令描述符)。正常开发一律用 Readonly = true,不要走这里。
-             </summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.RegisterReadonly(System.String[])">
-             <summary>
-             按名字补登记只读指令(0.4.4 引入,V2.4.4 起退为兜底通道)。幂等、可重复调用。
-            
-             **优先用 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.Readonly"/> 自描述**;只有在拿不到注册点、
-             无法给描述符加字段时才用本方法。
-             </summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Mcp.McpExposurePolicy.ReadonlyCommandNames">
-            <summary>当前生效的只读指令全集(框架基线 + 派生登记),供管理页与自检使用。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.IsReadonlyAllowed(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Core.Mcp.McpExposurePolicy.DiagnosticCommands">
-            <summary>
-            收编进正式域但仍属诊断性质的指令:永不对 MCP/Web 暴露。
-            影子域 <c>debug</c> 退役后,这类指令不再能靠名称前缀识别(DEC-023)。
-            </summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Mcp.McpExposurePolicy.DiagnosticCommandNames">
-            <summary>诊断指令名单,供自检与文档核对。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.HardExclusionReason(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.IsMcpAdministration(System.String)">
-             <summary>
-             判定一条指令是否属于 MCP 自身的管理面（<c>&lt;域&gt;.mcp.&lt;动作&gt;</c>）。
-             </summary>
-             <remarks>
-             **按指令类判定，不按域前缀。** 这条排除原先写成 <c>StartsWith("vulcan.mcp.")</c>，
-             4.4.0 把网关迁往 HistoryPortunus、指令随之改名为 <c>portunus.mcp.*</c> 时，
-             它当场失效——start / stop / autostart 一并变成远端可见工具，
-             也就是把「关掉正在服务你的那条通道」交给了远端。
-            
-             这是同一个错误的第三次：<c>debug.logflood</c> 收编为 <c>vulcan.log.flood</c> 时，
-             按 <c>debug.</c> 前缀写的排除同样当场失效（见上文承压指令一段）。
-             域会随归属变动，指令类不会——安全排除必须挂在不随搬家改变的那一段上。
-             </remarks>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.State(HistoryVulcan.Core.Commands.CommandDescriptor)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.IsVisible(HistoryVulcan.Core.Commands.CommandDescriptor,System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
         <member name="T:HistoryVulcan.Core.Mcp.McpSettingKeys">
              <summary>
              MCP 的配置键与策略解析。
@@ -1059,6 +966,140 @@
              缺省与无法识别的取值一律落到 <c>readonly</c>——策略解析失败必须收紧而不是放开，
              否则一个拼错的配置值就会把全部 standard 级指令暴露出去。
              </summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.IMcpAuditLog">
+             <summary>
+             MCP 调用留痕（铁律 2 / MS-05：每次调用与拒绝都必须留痕）。
+            
+             0.4.4 抽出：网关此前直接依赖派生应用的 HistoryRecorder，而后者同时承载
+             应用专有的业务留痕表；把网关真正需要的那一面抽成接口，框架层不再认识应用侧类型。
+             派生应用若已有自己的留痕器，实现本接口接进来即可复用同一张表。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(System.String,System.String,System.String,System.String,System.Int64)">
+            <summary>记录一次 MCP 调用结果。</summary>
+            <param name="client">客户端标识。</param>
+            <param name="tool">工具名；鉴权阶段的拒绝用 "(auth)"。</param>
+            <param name="arguments">已脱敏的调用参数文本；持久化实现可进一步截断。</param>
+            <param name="result">结果：成功 / 拒绝 / 远程拒绝 / 确认超时 等。</param>
+            <param name="elapsedMs">耗时毫秒；未执行记 0。</param>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(HistoryVulcan.Core.Clients.ClientSession,System.String,System.String,System.String,System.Int64)">
+            <summary>记录带稳定会话身份的 MCP 调用；旧实现自动转发到兼容签名。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView">
+             <summary>
+             提示词治理的只读视图。宿主消费，模块提供。
+             </summary>
+             <remarks>
+             承接 <c>IEffectivePromptDescriptionReader</c> 早就写明的分工——
+             「治理的写方刻意在宿主之外，宿主只消费这个只读视图」。那条注释写于治理还在宿主里的时候，
+             4.4.0 把 <c>PromptGovernanceStore</c> 迁往 HistoryPortunus 之后，它才真正成立。
+            
+             **返回值刻意全部退化为基本类型。** 调用方（<c>vulcan.command.list/show</c>）只需要
+             「改过没有、第几版、几条待审、几起事故」这四格，不需要提案与事故的完整结构。
+             让治理的记录类型跨过这个边界，等于把宿主重新绑回模块的数据模型上——
+             那正是这次迁移要解开的东西。
+            
+             实现方随模块热重载来去，因此消费方必须把它当作**随时可能为 null**：
+             模块没装上、正在重载、或装载失败时，目录指令要照常可用，只是少了治理那几列。
+             </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView.EffectiveDescriptions">
+            <summary>当前生效的工具描述覆盖，按指令名索引；未被覆盖的指令不出现在结果中。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView.OpenProposalCounts">
+            <summary>各指令待审提案数，按指令名索引。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView.IncidentCounts">
+            <summary>各指令已记录事故数，按指令名索引。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView.CurrentRevisionId(System.String)">
+            <summary>指定指令当前生效的描述修订号；未被覆盖时为 null。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.McpExposurePolicy">
+             <summary>
+             MCP 暴露规则的解释器，供网关、command.* 和管理页共同使用。
+            
+             **每条判据的单一真值都在描述符上**：只读看 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.Readonly"/>，
+             问不问看 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.Level"/>，暴不暴露看
+             <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.HiddenReason"/>。模块级的暴露档来自模块清单的
+             <c>mcpExposure</c>（经 <see cref="P:HistoryVulcan.Core.Mcp.McpExposurePolicy.ModuleExposure"/> 查得）。
+             本类只负责把这些来源解释成最终档位，**自身不再持有任何指令名清单**（4.8.0）。
+             </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.McpExposurePolicy.ModuleOfCommand">
+            <summary>V2.2 CX-01:命令名 → 所属模块名(注册来源 "module:&lt;name&gt;");装配点接 Registry.GetSource。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.McpExposurePolicy.ModuleExposure">
+            <summary>V2.2 CX-01:模块名 → 清单声明的 mcpExposure;无清单(根平铺)返回 null = standard 现状。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.IsReadonlyAllowed(System.String)">
+            <summary>
+            模块清单声明 <c>mcpExposure=readonly</c> 时，该模块的指令按只读对待。
+            </summary>
+            <remarks>
+            4.8.0 之前这里还有一份「按名字补登记只读」的字典与配套的 <c>RegisterReadonly</c>。
+            它自 V2.4.4 起就恒为空——只读性的单一真值早已是
+            <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.Readonly"/>——全仓唯一的调用方是它自己的测试。
+            一个只被自己的测试调用的兜底通道不是兜底，是还没被删掉。
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.HardExclusionReason(HistoryVulcan.Core.Commands.CommandDescriptor)">
+             <summary>
+             一条指令不对远端暴露的原因；null 表示暴露。
+             </summary>
+             <remarks>
+             **判据挂在描述符上，不再是一份按名字写的清单。**
+            
+             原先这里有一长串 <c>commandName.Equals(...)</c> / <c>StartsWith("debug.")</c> /
+             <c>EndsWith(".ui.data")</c>。那份清单失效过四次，每次都是同一个原因：
+             指令改了名，规则还盯着旧名字——<c>debug.logflood</c> 收编为 <c>vulcan.log.flood</c>
+             之后承压注水指令可被远程触发；<c>vulcan.mcp.*</c> 随网关迁往 HistoryPortunus
+             改名之后，start/stop/autostart 一并变成远端可见工具。
+            
+             现在原因写在 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.HiddenReason"/> 上，跟着指令一起改名、
+             一起搬家。清单里那两条守着**全仓不存在的指令**
+             （<c>vulcan.log.flood</c>、<c>vulcan.svc.forgetfrontend</c>）也随之消失。
+            
+             模块清单的 <c>mcpExposure=hidden</c> 是另一条通道，保留：那是模块作者在包一级
+             做的声明，不需要改到每条描述符。
+             </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.State(HistoryVulcan.Core.Commands.CommandDescriptor)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpExposurePolicy.IsVisible(HistoryVulcan.Core.Commands.CommandDescriptor,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.McpConfirmationScope">
+            <summary>
+            MCP 确认中继的执行域(V2.2 CX-02/03)。
+            网关在宿主端弹框获得人工批准后,用本域标记"这次总线执行的二次确认已由人工完成",
+            使总线不再重复弹框;AsyncLocal 只沿网关发起的异步流前向传播,UI/手动/脚本指令的
+            确认路径不受影响(其 AsyncLocal 恒为 false)。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Mcp.McpConfirmationScope.PreApproved">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.McpConfirmationScope.RunPreApprovedAsync``1(System.Func{System.Threading.Tasks.Task{``0}})">
+            <summary>在预批准标记下执行网关发起的总线调用;结束后复位。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Mcp.GatewayAwareConfirmation">
+            <summary>
+            包装 Shell 交互确认(或 --yes 的自动确认)的确认服务(V2.2 CX-03):
+            MCP 中继已由人工预批准的执行直接放行(不二次弹框);其余一律走内层——
+            即 UI/手动的真实弹框,或 --yes 的自动确认。
+            关键:MCP 危险调用的确认由网关独立完成,从不经过 --yes 的自动确认,
+            因此 --yes 对 MCP 来源危险指令不生效(CX-03)。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.GatewayAwareConfirmation.#ctor(HistoryVulcan.Core.Commands.IConfirmationService)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Mcp.GatewayAwareConfirmation.Confirm(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Mcp.PromptTextIntegrity">
             <summary>拒绝已在上游丢失、无法由 UTF-8 解码恢复的提示词文本。</summary>
@@ -1166,6 +1207,23 @@
         <member name="M:HistoryVulcan.Core.Modules.IDeferredStartupWork.ExecuteAsync(System.Threading.CancellationToken)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
+        <member name="T:HistoryVulcan.Core.Storage.ISettingsService">
+            <summary>
+            应用设置读写(F-01/F-03):扁平键值对,vulcan.app.set / vulcan.app.get 指令与派生应用共用。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ISettingsService.Get(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ISettingsService.GetInt(System.String,System.Int32)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ISettingsService.Set(System.String,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Storage.ISettingsService.All">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
         <member name="T:HistoryVulcan.Core.Storage.ILayoutStore">
             <summary>
             布局文件存取抽象(F-01:布局采用停靠库序列化格式单独成文件)。
@@ -1188,23 +1246,6 @@
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="M:HistoryVulcan.Core.Storage.ILayoutStore.ListNamed">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Storage.ISettingsService">
-            <summary>
-            应用设置读写(F-01/F-03):扁平键值对,vulcan.app.set / vulcan.app.get 指令与派生应用共用。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Storage.ISettingsService.Get(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Storage.ISettingsService.GetInt(System.String,System.Int32)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Storage.ISettingsService.Set(System.String,System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Storage.ISettingsService.All">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="T:BaseVariable.ModuleInfoBase">

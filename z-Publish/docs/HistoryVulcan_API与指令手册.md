@@ -1,4 +1,4 @@
-# HistoryVulcan API 与指令手册
+﻿# HistoryVulcan API 与指令手册
 
 > 适用版本：HistoryVulcan **4.0.0**
 
@@ -134,7 +134,7 @@ registry.Register(new CommandDescriptor
         new ParameterSpec { Name = "axis", Required = true, Position = 0, AllowedValues = ["X", "Y", "Z"] },
         new ParameterSpec { Name = "distance", Type = ParamType.Double, Required = true, Position = 1 },
     ],
-    Dangerous = true,
+    Level = CommandLevel.Ask,
     ConfirmPrompt = ctx => $"确认移动 {ctx.RequireString("axis")}?",
     Handler = async ctx => await MoveAsync(ctx),
 }, "app");
@@ -280,10 +280,15 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 
 ### 3.6 安全与执行位点（简要）
 
-- `Dangerous` / `ConfirmPrompt`：危险元数据与本地确认闸口；未注入确认服务时带确认位的命令拒绝执行。
-- `RequiresUiThread`：总线经 `UiContext` 编组到 UI 线程。
-- `ExecutionSite`：`Local` 在当前宿主执行；`Frontend` 由服务转发给在线 Shell。
-- `FrontendCommandCapability`：前端→服务的可序列化能力描述（无 Handler）；`From` / `CreateProxy` 用于跨进程目录与前端代理命令。
+- `Level`：两级——`Run`（直接跑）/ `Ask`（执行前必须问过人）。**这是问不问的唯一权威。**
+  未注入确认服务时 `Ask` 级一律拒绝执行，而不是放行。
+- `ConfirmPrompt`：`Ask` 级的提示文本，不参与「问不问」的判定。留空则由总线按指令名生成缺省提示；
+  调用后返回 `null` 表示**这次**不用问（按参数动态豁免，`janus.github.identity` 在用）。
+  写了 `ConfirmPrompt` 却没把 `Level` 升到 `Ask`，注册表直接拒绝注册——那种错误没有运行期症状。
+- `RequiresUiThread`：总线经 `UiContext` 编组到 UI 线程。这是**唯一**的执行位点概念。
+- `ExecutionSite` 与 `FrontendCommandCapability` 已于 4.7.0 删除。它们服务的是「界面在另一个进程」
+  那套跨进程中继；界面变成宿主内模块（DEC-008）之后，全仓再没有一处把 `ExecutionSite` 设成
+  `Frontend`，它的每个读取点都成了走不到的分支。跨线程编组仍然真实存在，由 `RequiresUiThread` 承担。
 
 ## 4. 常用公开 API
 
@@ -303,12 +308,11 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 |---|---|---|
 | `CommandRegistry` | `Register`、`Unregister`、`TryGet`、`All`、`Suggest`、`GetSource`、`GetDomain`、`GetCommandClass`、`GetMethod`、`LegacyDomain`、`LegacyClass`、`LegacyMethod` | 权威命令注册表；重名注册会拒绝；域/类以有效解析结果为准；`GetMethod` 等同末段方法名（`LegacyMethod`） |
 | `CommandBus` | `Validate`、`ExecuteAsync`、`Executed`、`Confirmation` | 唯一执行入口，统一校验、确认、线程切换、回显和错误结果 |
-| `CommandDescriptor` | `Name`、`Domain`、`CommandClass`、`Summary`、`Example`、`Parameters`、`Readonly`、`Dangerous`、`ConfirmPrompt`、`RequiresUiThread`、`ExecutionSite`、`AllowMcpExecution`、`Handler` | 命令的完整合同 |
+| `CommandDescriptor` | `Name`、`Domain`、`CommandClass`、`Summary`、`Example`、`Parameters`、`Readonly`、`Level`、`ConfirmPrompt`、`HiddenReason`、`RequiresUiThread`、`Annotations`、`Handler` | 命令的完整合同 |
 | `CommandContext` | `RequireString`、`GetString`、`GetInt`、`GetDouble`、`GetBool`、`Has` | 读取已校验参数 |
 | `CommandResult` | `Ok`、`Fail`、`Success`、`Message`、`Data` | 统一执行结果 |
 | `CommandSchemaExporter` | `ExportTools`、`Find`、`BuildCommandText` | 从最终注册表生成 MCP schema 和反向命令文本 |
 | `CommandManualGenerator` | `Render`、`Sha256` | 从运行时注册表生成命令手册 |
-| `FrontendCommandCapability` | `From`、`CreateProxy`、`Domain`、`CommandClass` | 前端可序列化能力；代理描述符 `ExecutionSite=Frontend` |
 | `ICommandCatalogSession` | `RefreshAsync`、`SetFilter`、`CompleteAsync`、`Select`、… | 命令目录会话合同（Core）；由 Mercury 实现并挂接 |
 | `IShellCommandWorkbenchHost` | `AttachCommandCatalogSession`、`Bus`、`ConfigureCommandCompletionRouting`、… | Shell 工作台宿主合同（Core）；`ShellWindow` 实现 |
 | `IGlobalShortcutHost` | `Register`、`Start`、`Stop`、`Registrations`、… | 全局快捷键宿主合同（Core）；Mercury 实现 |
@@ -401,8 +405,10 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
   `cmd:手动` 脱敏回显写入历史。3.0 历史文件带 `# HistoryVulcan.CommandHistory.v2:redacted` 头，首次启动时会清空
   没有该头的旧格式历史，避免 3.0 以前可能保存的明文再由 `vulcan.command.history` 返回。
 - 所有 UI、脚本、Web 和 MCP 调用最终都进入 `CommandBus.ExecuteAsync`。
-- `ExecutionSite=Local` 在当前宿主执行；`Frontend` 由服务转发给在线 Shell。
-- `Readonly`、`Dangerous` 和 `AllowMcpExecution` 是安全合同。前端/UI 命令默认不进入 MCP。
+- 安全合同是三条声明：`Readonly`（改不改东西）、`Level`（问不问人）、`HiddenReason`（暴不暴露）。
+  `AllowMcpExecution` 与 `AllowCliExecution` 已删除——那是「给每个消费面各发一个令牌」，
+  而暴露与否只该有一处声明。命令行是唯一的例外，它的收窄留在
+  `CliExposurePolicy.ExposedCommands`（一份 16 条的名单），理由见该类注释。
 - 3.2.1 起一个宿主或模块对应一个域，域内功能分支对应命令类。3.3.0 起内置命令名为 `vulcan.<类>.<方法>`，
   Domain=`vulcan`；命令集表格列为域|类|方法|MCP|参数|说明。
   `CommandCatalogRow.Source/SourceDetail`、`CommandRegistry.GetSource` 与 `FrontendCommandCatalog.Source`
@@ -440,9 +446,10 @@ HistoryVulcan 自身只有一个域 `vulcan`，内置业务命令分为九类；
 
 3.3.1 的 `core`、`frontend`、`win`、`layout`、`panel` 五个类与影子域 `debug` 已退役。
 
-> **诊断指令不进正式命令集。** 影子域 `debug` 退役后，承压注水被收编为 `vulcan.log.flood`，
-> 但它不是给最终用户的功能：默认不注册，需宿主显式设置 `diagnostics.commands=true`；
-> 即便注册，也标记为危险指令并被 MCP/Web 硬排除。上表 83 条不含它。
+> **`vulcan.log.flood` 已不存在。** 本手册此前把它写成「默认不注册的诊断指令」，
+> 但 4.8.0 核对时发现：全仓没有任何注册点，也没有读 `diagnostics.commands` 的代码。
+> 它随影子域 `debug` 退役时一并消失了，只是文档与 MCP 硬排除名单都还在为它背书——
+> 硬排除名单里那条已随名单一起删除。
 
 ### 6.1 基础、应用与日志
 
@@ -471,7 +478,6 @@ HistoryVulcan 自身只有一个域 `vulcan`，内置业务命令分为九类；
 | `vulcan.log.clear`、`vulcan.log.copy` | 清屏或复制当前控制台内容 |
 | `vulcan.log.export [path=]` | 导出当前控制台可见内容。**省略 `path` 时不弹对话框**：写入应用数据目录 `exports/console-<时间戳>.txt` 并在结果中返回绝对路径（3.3.2 起） |
 | `vulcan.log.focus [errors=true|false]` | 聚焦控制台，可选切换错误过滤 |
-| `vulcan.log.flood rate= seconds=` | **诊断指令，默认不注册**：仅当宿主把设置 `diagnostics.commands` 置为 `true` 时才出现。标记为危险指令（走确认闸口），并由 `McpExposurePolicy` 硬排除，MCP/Web 永不可达。3.3.1 为 `debug.logflood` |
 
 ### 6.2 窗口、布局与面板（`ui`）
 
@@ -582,11 +588,9 @@ Web 组合注册 `vulcan.web.*`；`ServiceHost.Run` 注册 `vulcan.svc.*`。全�
 
 命令可查阅不等于允许 MCP 执行。最终可见性由 `CommandDescriptor`、`McpExposurePolicy` 和模块策略共同决定：
 
-- `readonly` 策略只开放明确只读且未硬排除的命令。
+- `readonly` 策略只开放明确只读且未声明 `HiddenReason` 的命令。
 - `standard` 可增加不需要本地确认的普通命令。
 - 危险命令不是第三种策略；仅在 `standard` 且 `mcp.confirm=host` 时进入工具列表，并仍须由宿主确认，远端参数不能绕过。
-- `ExecutionSite=Frontend` 的命令必须同时 `AllowMcpExecution=true`，并且目标前端在线。
-- 多个前端在线而未指定 `_frontend` 时返回歧义错误，不随机选择。
 - 独立宿主的 `tools/list` / `tools/call` 与非 UI 模块共用后台权威注册表；模块热重载动态更新工具面，
   不需要重启 MCP 端口。
 

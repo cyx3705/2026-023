@@ -216,13 +216,13 @@
         <member name="T:HistoryVulcan.Extensibility.Mcp.McpToolInfo">
             <summary>
             一条指令的 MCP 工具形态(MC-01):tools/list 条目与本地 vulcan.mcp.schema 共用。
-            Dangerous = 带 ConfirmPrompt(总线确认闸口),网关侧按 MS-04 对 MCP 一律拒绝执行。
+            Dangerous = 级别为「询问」(总线确认闸口),网关侧按 MS-04 对 MCP 一律拒绝执行。
             </summary>
         </member>
         <member name="M:HistoryVulcan.Extensibility.Mcp.McpToolInfo.#ctor(System.String,System.String,System.String,System.Text.Json.Nodes.JsonObject,System.Boolean,System.String,System.Boolean)">
             <summary>
             一条指令的 MCP 工具形态(MC-01):tools/list 条目与本地 vulcan.mcp.schema 共用。
-            Dangerous = 带 ConfirmPrompt(总线确认闸口),网关侧按 MS-04 对 MCP 一律拒绝执行。
+            Dangerous = 级别为「询问」(总线确认闸口),网关侧按 MS-04 对 MCP 一律拒绝执行。
             </summary>
         </member>
         <member name="T:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter">
@@ -241,16 +241,6 @@
             生效提示词提供者(V2.1.2,装配点接 PromptGovernanceStore.AllEffectiveDescriptions):
             修订在导出读取侧合成，应用后客户端下次 tools/list 即见新描述，无需重启。
             </summary>
-        </member>
-        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter.IsHardExcluded(System.String)">
-            <summary>
-            硬排除清单(MS-03,任何策略下都不暴露):
-            vulcan.app.quit(远端不得杀宿主)、debug.*(承压/注水等自测工具)、
-            mcp.*(防远端自锁与递归启停)。代码内常量,不走配置。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter.HardExclusionReason(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="M:HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter.ExportTools">
             <summary>全量导出(MC-01):注册表指令 − 硬排除,含危险标记与提示词覆盖;调用即现算。</summary>
