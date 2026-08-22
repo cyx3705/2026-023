@@ -10,7 +10,7 @@ namespace HistoryVulcan.Extensibility.Mcp;
 
 /// <summary>
 /// 一条指令的 MCP 工具形态(MC-01):tools/list 条目与本地 vulcan.mcp.schema 共用。
-/// Dangerous = 带 ConfirmPrompt(总线确认闸口),网关侧按 MS-04 对 MCP 一律拒绝执行。
+/// Dangerous = 级别为「询问」(总线确认闸口),网关侧按 MS-04 对 MCP 一律拒绝执行。
 /// </summary>
 public sealed record McpToolInfo(
     string ToolName,
@@ -40,18 +40,6 @@ public sealed partial class CommandSchemaExporter
     /// </summary>
     public Func<IReadOnlyDictionary<string, string>>? DescriptionsProvider { get; set; }
 
-    /// <summary>
-    /// 硬排除清单(MS-03,任何策略下都不暴露):
-    /// vulcan.app.quit(远端不得杀宿主)、debug.*(承压/注水等自测工具)、
-    /// mcp.*(防远端自锁与递归启停)。代码内常量,不走配置。
-    /// </summary>
-    public static bool IsHardExcluded(string commandName)
-        => McpExposurePolicy.HardExclusionReason(commandName) != null;
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public static string? HardExclusionReason(string commandName)
-        => McpExposurePolicy.HardExclusionReason(commandName);
-
     /// <summary>全量导出(MC-01):注册表指令 − 硬排除,含危险标记与提示词覆盖;调用即现算。</summary>
     public IReadOnlyList<McpToolInfo> ExportTools()
     {
@@ -61,7 +49,7 @@ public sealed partial class CommandSchemaExporter
 
         foreach (var descriptor in _registry.All())
         {
-            if (IsHardExcluded(descriptor.Name))
+            if (McpExposurePolicy.HardExclusionReason(descriptor) != null)
                 continue;
 
             var toolName = MakeToolName(descriptor.Name, usedNames);
@@ -79,7 +67,7 @@ public sealed partial class CommandSchemaExporter
                 descriptor.Name,
                 customized ? custom! : defaultDescription,
                 BuildInputSchema(descriptor),
-                Dangerous: descriptor.IsDangerous,
+                Dangerous: descriptor.Level == CommandLevel.Ask,
                 DefaultDescription: defaultDescription,
                 Customized: customized));
         }

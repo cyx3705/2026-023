@@ -398,8 +398,17 @@ public sealed class CommandBus
                 line));
         var context = new CommandContext(descriptor, values, source, progress, cancellation);
 
-        // 拦截:二次确认(§5.2;T-08/R-06 危险操作在“手输指令路径”的统一闸口)
-        var prompt = descriptor.ConfirmPrompt?.Invoke(context);
+        // 拦截:二次确认(§5.2;T-08/R-06 需要询问的操作在“手输指令路径”的统一闸口)
+        //
+        // 问不问由 Level 决定,提示语才由 ConfirmPrompt 提供。两者的分工要点在于
+        // **null 的含义不同**:没有 ConfirmPrompt 是“没写文案”,由这里补一句缺省的;
+        // 而 ConfirmPrompt 调用后返回 null 是“这次不用问”(按参数动态豁免)。
+        // 若把两种 null 混同,janus.github.identity 在 apply=false 那次也会弹框。
+        var prompt = descriptor.Level != CommandLevel.Ask
+            ? null
+            : descriptor.ConfirmPrompt == null
+                ? $"确认执行 {descriptor.Name}？"
+                : descriptor.ConfirmPrompt.Invoke(context);
         if (prompt != null)
         {
             if (ConfirmationRouter != null)

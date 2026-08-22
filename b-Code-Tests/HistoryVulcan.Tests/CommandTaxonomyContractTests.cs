@@ -92,86 +92,99 @@ public sealed class CommandTaxonomyContractTests
                 $"{name} 仍在影子域 debug 下");
     }
 
-    [Fact]
-    public void DiagnosticFloodCommandStaysOutOfReachOfRemoteClients()
-    {
-        // 3.3.2 把 debug.logflood 收编为 vulcan.log.flood。原先的 MCP 硬排除按 "debug." 前缀
-        // 生效，改名一度让它失效——承压注水因此可被 MCP/Web 远程触发
-        // （rate=100000 × seconds=600 即 6000 万条日志）。这里锁住修复后的行为。
-        Assert.NotNull(McpExposurePolicy.HardExclusionReason("vulcan.log.flood"));
-        Assert.Contains("vulcan.log.flood", McpExposurePolicy.DiagnosticCommandNames);
-
-        // 前缀规则保留给尚未迁移的模块调试指令。
-        Assert.NotNull(McpExposurePolicy.HardExclusionReason("debug.anything"));
-
-        // 同类的日志指令不受影响，仍可正常暴露。
-        Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.log.level"));
-    }
-
     /// <summary>
-    /// 前端能力目录按**前端名**做键，本意是前端离线时命令仍可查，代价是被弃用的名字
-    /// 永远不会消失：4.0.0 把前端改名为 HistoryAurora 后，旧名 HistoryVulcan.Frontend 下的
-    /// 37 条（含全部 21 条 vulcan.ui.*）一直以幽灵身份留在 vulcan 域里。
-    /// 清理入口会撤销注册表条目，因此与 module.install/remove 同级，不对远程开放。
+    /// 宿主源码里声明了 <c>HiddenReason</c> 的指令，必须**恰好**是这四条。
     /// </summary>
+    /// <remarks>
+    /// 4.8.0 之前这里有五个测试，分别验 <c>McpExposurePolicy.HardExclusionReason</c>
+    /// 对一批**字符串字面量**的返回值。那种写法验的是规则，不是现实：
+    /// 规则可以完好无损，而它盯着的指令早已改名或根本不存在——
+    /// 被验的 <c>vulcan.log.flood</c> 与 <c>vulcan.svc.forgetfrontend</c> 全仓没有注册点，
+    /// 五个测试里有两个在为不存在的指令背书。
+    ///
+    /// 现在判据挂在描述符上，测试也跟着改为**扫源码**：守的是「写下声明的那一刻」，
+    /// 与那条指令在某份组合里可达与否无关，也不需要构造组合根去动使用者的 %AppData%。
+    ///
+    /// 用集合断言而不是计数：数字变了只说明多了一条，集合断言直接说出多的是哪条。
+    ///
+    /// 只覆盖宿主自己注册的。模块的隐藏声明属于模块的暴露面，由模块的门禁去守
+    /// （HistoryPortunus 的 6 条 <c>portunus.mcp.*</c>、HistoryAurora 的 5 条页面协议通道）。
+    /// </remarks>
     [Fact]
-    public void FrontendCatalogCleanupStaysOutOfReachOfRemoteClients()
+    public void OnlyFourHostCommandsDeclareThemselvesHiddenFromRemoteClients()
     {
-        Assert.NotNull(McpExposurePolicy.HardExclusionReason("vulcan.svc.forgetfrontend"));
+        string[] sources =
+        [
+            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.ServiceHost", "ServiceCommands.cs"),
+            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.ServiceHost", "ServiceComposer.cs"),
+            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.Services", "Commands", "CommandCatalogCommands.cs"),
+            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.Services", "Development", "WorktreeCommands.cs"),
+            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.Services", "Development", "ReleaseCommands.cs"),
+        ];
 
-        // 只读的列举不受限制——它不改任何状态。
-        Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.svc.frontends"));
+        var declared = new List<string>();
+        foreach (var relative in sources)
+        {
+            var lines = File.ReadAllLines(Path.Combine(RepositoryPaths.Root(), relative));
+            for (var index = 0; index < lines.Length; index++)
+            {
+                if (!lines[index].Contains("HiddenReason = ", StringComparison.Ordinal))
+                    continue;
+
+                // 声明紧跟在 Name = "..." 之后。
+                var name = System.Text.RegularExpressions.Regex.Match(
+                    lines[index - 1], "Name = \"(?<name>[^\"]+)\"");
+                Assert.True(name.Success, $"{relative}:{index + 1} 的声明上一行不是指令名");
+
+                // 不许写空理由：隐藏一条指令永远有具体原因，而理由是唯一能让后来人
+                // 判断该不该继续隐藏的东西。空字符串会被策略当成「没隐藏」。
+                Assert.Matches("HiddenReason = \"[^\"]+\"", lines[index]);
+                declared.Add(name.Groups["name"].Value);
+            }
+        }
+
+        Assert.Equal(
+            new[]
+            {
+                "vulcan.app.quit",       // 远程客户端不得退出宿主
+                "vulcan.command.run",    // 脚本批量执行会绕过逐条工具排除
+                "vulcan.module.install", // 运行包变更只走认证的本机通道
+                "vulcan.module.remove",
+            }.Order(StringComparer.OrdinalIgnoreCase),
+            declared.Order(StringComparer.OrdinalIgnoreCase));
     }
 
-    /// <summary>
-    /// Aurora REQ-UI-003 的连带约束。页面注册协议的内部通道此刻本来就不可见，但那只是
-    /// 因为它们走前端注册路径而 PolicyVisible=false——那是**策略**结果，网关策略一改就可能
-    /// 翻转。`vulcan.command.run` 正是这样从前端搬到服务侧后自动变成可见工具的。
-    /// 按名硬排除才是结构性保证，这里锁住它。
-    /// </summary>
+    /// <summary>隐藏是描述符自己的声明，不再由指令名推导。</summary>
+    /// <remarks>
+    /// 按名字写的排除失效过四次，每次都是同一个原因：指令改了名，规则还盯着旧名字。
+    /// 这里锁住「策略不再认识任何指令名」这件事本身——
+    /// 名字相同而声明不同的两个描述符，必须得到不同的判定。
+    /// </remarks>
     [Fact]
-    public void PageProtocolChannelsStayOutOfReachOfRemoteClients()
+    public void ExclusionFollowsTheDescriptorNotTheName()
     {
-        // 描述与取数：模块以自己的域注册，因此按后缀而非全名排除。
-        Assert.NotNull(McpExposurePolicy.HardExclusionReason("mercury.ui.describe"));
-        Assert.NotNull(McpExposurePolicy.HardExclusionReason("janus.ui.data"));
+        var exposed = new CommandDescriptor
+        {
+            Name = "vulcan.module.install",
+            Summary = "同名但未声明隐藏",
+            Handler = CommandDescriptor.Sync(_ => CommandResult.Ok()),
+        };
+        var hidden = new CommandDescriptor
+        {
+            Name = "harmless.read",
+            Summary = "名字无害但声明了隐藏",
+            Readonly = true,
+            HiddenReason = "测试用",
+            Handler = CommandDescriptor.Sync(_ => CommandResult.Ok()),
+        };
 
-        // 驱动前端重建界面的三条。
-        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.reloadpages"));
-        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.invalidate"));
-        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.missing"));
+        Assert.Null(McpExposurePolicy.HardExclusionReason(exposed));
+        Assert.Equal("测试用", McpExposurePolicy.HardExclusionReason(hidden));
 
-        // 组件申请台账：request 写账、requests 读账，都属于界面内部协议。
-        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.request"));
-        Assert.NotNull(McpExposurePolicy.HardExclusionReason("aurora.ui.requests"));
-
-        // 别的 ui.* 指令不受牵连——排除的是这条协议，不是整个 ui 类。
-        Assert.Null(McpExposurePolicy.HardExclusionReason("aurora.ui.show"));
-        Assert.Null(McpExposurePolicy.HardExclusionReason("aurora.ui.layout"));
-    }
-
-    [Fact]
-    public void RuntimePackageMutationCommandsStayOutOfReachOfRemoteClients()
-    {
-        Assert.NotNull(McpExposurePolicy.HardExclusionReason("vulcan.module.install"));
-        Assert.NotNull(McpExposurePolicy.HardExclusionReason("vulcan.module.remove"));
-        Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.module.reload"));
-    }
-
-    /// <summary>
-    /// REQ-A6 的连带约束。`vulcan.command.run` 从前端搬到服务侧后自动变成 MCP 可见工具
-    /// （真机实测确认过），而它按路径读本地脚本并逐行执行任意命令——只要磁盘上存在一个
-    /// 脚本文件，远程就能一次性执行其中任意命令，包括本表其他条目明确排除的那些。
-    /// 这条断言守的是"批量执行入口不得成为逐条排除的旁路"。
-    /// </summary>
-    [Fact]
-    public void ScriptBatchExecutionCannotBypassPerCommandExclusions()
-    {
-        Assert.NotNull(McpExposurePolicy.HardExclusionReason("vulcan.command.run"));
-
-        // 对照：同属 command 类的只读查询命令不受影响。
-        Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.command.list"));
-        Assert.Null(McpExposurePolicy.HardExclusionReason("vulcan.command.show"));
+        // 隐藏的指令在任何策略下都不可见，即便它只读且无害。
+        Assert.False(McpExposurePolicy.IsVisible(hidden, "standard"));
+        Assert.False(McpExposurePolicy.IsVisible(hidden, "readonly"));
+        Assert.Equal("hidden", McpExposurePolicy.State(hidden));
     }
 
     [Fact]

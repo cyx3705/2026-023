@@ -1,8 +1,8 @@
 ﻿// MCP 策略：宿主**决定**的那一半。
 //
-// McpExposurePolicy —— 哪些指令可以被远端调用。这条排除因为「按名字前缀写」
-//   已经失效过三次（debug.logflood、vulcan.log.flood、vulcan.mcp.*），
-//   细节见类型注释；判据现在挂在指令类上，域会随归属变动，指令类不会。
+// McpExposurePolicy —— 哪些指令可以被远端调用。判据现在是描述符上的 HiddenReason：
+//   按名字写的排除失效过四次（debug.logflood、vulcan.log.flood、vulcan.mcp.*），
+//   声明跟着指令走才不会在改名时掉队。细节见 HardExclusionReason 注释。
 // McpConfirmationScope —— 远端预批准的确认在什么范围内有效。
 // PromptTextIntegrity —— 工具描述是否被篡改。
 //
@@ -16,9 +16,11 @@ namespace HistoryVulcan.Core.Mcp;
 /// <summary>
 /// MCP 暴露规则的解释器，供网关、command.* 和管理页共同使用。
 ///
-/// **只读性的单一真值在 <see cref="CommandDescriptor.Readonly"/>**（命令自己声明）；
-/// 模块命令的暴露档来自模块清单的 <c>mcpExposure</c>（经 <see cref="ModuleExposure"/> 查得）。
-/// 本类只负责把这两个来源解释成最终档位，不再持有任何指令名清单（V2.4.4）。
+/// **每条判据的单一真值都在描述符上**：只读看 <see cref="CommandDescriptor.Readonly"/>，
+/// 问不问看 <see cref="CommandDescriptor.Level"/>，暴不暴露看
+/// <see cref="CommandDescriptor.HiddenReason"/>。模块级的暴露档来自模块清单的
+/// <c>mcpExposure</c>（经 <see cref="ModuleExposure"/> 查得）。
+/// 本类只负责把这些来源解释成最终档位，**自身不再持有任何指令名清单**（4.8.0）。
 /// </summary>
 public static class McpExposurePolicy
 {
@@ -46,137 +48,52 @@ public static class McpExposurePolicy
     }
 
     /// <summary>
-    /// 按名字补登记的只读指令集合。
-    ///
-    /// **V2.4.4 起默认为空**:只读性的单一真值是 <see cref="CommandDescriptor.Readonly"/>——
-    /// 由命令在注册处自己声明,与 ConfirmPrompt 同级。
-    /// 0.4.4 时代的 18 条框架基线与派生应用登记的 14 条已全部迁至各自描述符,
-    /// 保留双份会让「一件事实两处声明」以新形态复活,故本集合清空。
-    ///
-    /// 本集合与 <see cref="RegisterReadonly"/> 继续保留,仅用于**无法修改注册点**的场景
-    /// (例如第三方程序集提供的命令描述符)。正常开发一律用 Readonly = true,不要走这里。
-    /// </summary>
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> ReadonlyCommands =
-        new(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// 按名字补登记只读指令(0.4.4 引入,V2.4.4 起退为兜底通道)。幂等、可重复调用。
-    ///
-    /// **优先用 <see cref="CommandDescriptor.Readonly"/> 自描述**;只有在拿不到注册点、
-    /// 无法给描述符加字段时才用本方法。
-    /// </summary>
-    public static void RegisterReadonly(params string[] commandNames)
-    {
-        foreach (var name in commandNames)
-        {
-            if (!string.IsNullOrWhiteSpace(name))
-                ReadonlyCommands.TryAdd(name.Trim(), 0);
-        }
-    }
-
-    /// <summary>当前生效的只读指令全集(框架基线 + 派生登记),供管理页与自检使用。</summary>
-    public static IReadOnlyCollection<string> ReadonlyCommandNames => ReadonlyCommands.Keys.ToArray();
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public static bool IsReadonlyAllowed(string commandName)
-        => ReadonlyCommands.ContainsKey(commandName)
-           || string.Equals(ExposureOf(commandName), "readonly", StringComparison.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// 收编进正式域但仍属诊断性质的指令:永不对 MCP/Web 暴露。
-    /// 影子域 <c>debug</c> 退役后,这类指令不再能靠名称前缀识别(DEC-023)。
-    /// </summary>
-    private static readonly HashSet<string> DiagnosticCommands =
-        new(StringComparer.OrdinalIgnoreCase) { "vulcan.log.flood" };
-
-    /// <summary>诊断指令名单,供自检与文档核对。</summary>
-    public static IReadOnlyCollection<string> DiagnosticCommandNames => DiagnosticCommands.ToArray();
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public static string? HardExclusionReason(string commandName)
-    {
-        if (commandName.Equals("vulcan.module.install", StringComparison.OrdinalIgnoreCase)
-            || commandName.Equals("vulcan.module.remove", StringComparison.OrdinalIgnoreCase))
-            return "运行包变更只允许认证的本机宿主通道";
-        if (commandName.Equals("vulcan.app.quit", StringComparison.OrdinalIgnoreCase))
-            return "远程客户端不得退出宿主";
-        if (commandName.Equals("vulcan.svc.forgetfrontend", StringComparison.OrdinalIgnoreCase))
-            return "注册表清理只允许认证的本机宿主通道";
-        if (commandName.Equals("vulcan.command.run", StringComparison.OrdinalIgnoreCase))
-        {
-            // 4.0.0（REQ-A6）：这条命令从前端搬到服务侧。搬迁本身是对的（它无 UI 依赖），
-            // 但副作用是暴露面扩大——此前由前端注册，PolicyVisible=false，MCP 看不见；
-            // 搬到服务侧后自动成为可见工具（真机实测确认它一度出现在可见清单里）。
-            // 它按路径读本地脚本并逐行经总线执行任意命令，等于给远程一条绕过逐条工具
-            // 投影的通道：只要磁盘上存在一个脚本文件，就能一次性执行其中任意命令，
-            // 包括本表其他条目明确排除的那些。因此按名硬排除。
-            return "脚本批量执行不对远程暴露，否则可绕过逐条工具排除";
-        }
-        if (commandName.StartsWith("debug.", StringComparison.OrdinalIgnoreCase)
-            || DiagnosticCommands.Contains(commandName))
-        {
-            // 3.3.2 把 debug.logflood 收编为 vulcan.log.flood(影子域退役,DEC-023)。
-            // 该改名一度让这条按 "debug." 前缀生效的硬排除失效——承压注水指令因此可被
-            // MCP/Web 远程触发(rate=100000 × seconds=600 即 6000 万条)。前缀规则保留给
-            // 未迁移的模块调试指令,收编后的诊断指令改为按名登记。
-            return "调试与承压指令不对远程暴露";
-        }
-        if (commandName.EndsWith(".ui.describe", StringComparison.OrdinalIgnoreCase)
-            || commandName.EndsWith(".ui.data", StringComparison.OrdinalIgnoreCase)
-            || commandName.Equals("aurora.ui.reloadpages", StringComparison.OrdinalIgnoreCase)
-            || commandName.Equals("aurora.ui.invalidate", StringComparison.OrdinalIgnoreCase)
-            || commandName.Equals("aurora.ui.missing", StringComparison.OrdinalIgnoreCase)
-            || commandName.Equals("aurora.ui.request", StringComparison.OrdinalIgnoreCase)
-            || commandName.Equals("aurora.ui.requests", StringComparison.OrdinalIgnoreCase))
-        {
-            // 页面注册协议（Aurora REQ-UI-003）的内部通道：<域>.ui.describe 返回界面结构，
-            // <域>.ui.data 是表格取数泵，其余三条驱动前端重建界面。对模型没有语义价值，
-            // 而 ui.data 的返回量随行数增长。
-            //
-            // 这三类此刻本来就不可见，但那只是因为它们经前端注册路径而 PolicyVisible=false
-            // ——那是**策略**结果，网关策略一改就可能翻转。vulcan.command.run 正是这样
-            // 从前端搬到服务侧后自动变成可见工具的。按名硬排除才是结构性保证。
-            return "界面内部协议不对远程暴露";
-        }
-
-        if (IsMcpAdministration(commandName))
-            return "防止远程递归管理或关闭 MCP 服务";
-        if (string.Equals(ExposureOf(commandName), "hidden", StringComparison.OrdinalIgnoreCase))
-            return "模块清单声明 mcpExposure=hidden,不对 MCP 暴露(Q211-2)";
-        return null;
-    }
-
-    /// <summary>
-    /// 判定一条指令是否属于 MCP 自身的管理面（<c>&lt;域&gt;.mcp.&lt;动作&gt;</c>）。
+    /// 模块清单声明 <c>mcpExposure=readonly</c> 时，该模块的指令按只读对待。
     /// </summary>
     /// <remarks>
-    /// **按指令类判定，不按域前缀。** 这条排除原先写成 <c>StartsWith("vulcan.mcp.")</c>，
-    /// 4.4.0 把网关迁往 HistoryPortunus、指令随之改名为 <c>portunus.mcp.*</c> 时，
-    /// 它当场失效——start / stop / autostart 一并变成远端可见工具，
-    /// 也就是把「关掉正在服务你的那条通道」交给了远端。
-    ///
-    /// 这是同一个错误的第三次：<c>debug.logflood</c> 收编为 <c>vulcan.log.flood</c> 时，
-    /// 按 <c>debug.</c> 前缀写的排除同样当场失效（见上文承压指令一段）。
-    /// 域会随归属变动，指令类不会——安全排除必须挂在不随搬家改变的那一段上。
+    /// 4.8.0 之前这里还有一份「按名字补登记只读」的字典与配套的 <c>RegisterReadonly</c>。
+    /// 它自 V2.4.4 起就恒为空——只读性的单一真值早已是
+    /// <see cref="CommandDescriptor.Readonly"/>——全仓唯一的调用方是它自己的测试。
+    /// 一个只被自己的测试调用的兜底通道不是兜底，是还没被删掉。
     /// </remarks>
-    private static bool IsMcpAdministration(string commandName)
+    public static bool IsReadonlyAllowed(string commandName)
+        => string.Equals(ExposureOf(commandName), "readonly", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 一条指令不对远端暴露的原因；null 表示暴露。
+    /// </summary>
+    /// <remarks>
+    /// **判据挂在描述符上，不再是一份按名字写的清单。**
+    ///
+    /// 原先这里有一长串 <c>commandName.Equals(...)</c> / <c>StartsWith("debug.")</c> /
+    /// <c>EndsWith(".ui.data")</c>。那份清单失效过四次，每次都是同一个原因：
+    /// 指令改了名，规则还盯着旧名字——<c>debug.logflood</c> 收编为 <c>vulcan.log.flood</c>
+    /// 之后承压注水指令可被远程触发；<c>vulcan.mcp.*</c> 随网关迁往 HistoryPortunus
+    /// 改名之后，start/stop/autostart 一并变成远端可见工具。
+    ///
+    /// 现在原因写在 <see cref="CommandDescriptor.HiddenReason"/> 上，跟着指令一起改名、
+    /// 一起搬家。清单里那两条守着**全仓不存在的指令**
+    /// （<c>vulcan.log.flood</c>、<c>vulcan.svc.forgetfrontend</c>）也随之消失。
+    ///
+    /// 模块清单的 <c>mcpExposure=hidden</c> 是另一条通道，保留：那是模块作者在包一级
+    /// 做的声明，不需要改到每条描述符。
+    /// </remarks>
+    public static string? HardExclusionReason(CommandDescriptor descriptor)
     {
-        var first = commandName.IndexOf('.');
-        if (first < 0)
-            return false;
-        var second = commandName.IndexOf('.', first + 1);
-        if (second < 0)
-            return false;
-        return string.Equals(
-            commandName[(first + 1)..second], "mcp", StringComparison.OrdinalIgnoreCase);
+        ArgumentNullException.ThrowIfNull(descriptor);
+        if (descriptor.HiddenReason is { Length: > 0 } reason)
+            return reason;
+        return string.Equals(ExposureOf(descriptor.Name), "hidden", StringComparison.OrdinalIgnoreCase)
+            ? "模块清单声明 mcpExposure=hidden,不对 MCP 暴露(Q211-2)"
+            : null;
     }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public static string State(CommandDescriptor descriptor)
     {
-        if (HardExclusionReason(descriptor.Name) != null)
+        if (HardExclusionReason(descriptor) != null)
             return "hidden";
-        if (descriptor.IsDangerous)
+        if (descriptor.Level == CommandLevel.Ask)
             return "dangerous";
         if (descriptor.Readonly)
             return "readonly";
@@ -185,8 +102,8 @@ public static class McpExposurePolicy
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public static bool IsVisible(CommandDescriptor descriptor, string policy)
-        => HardExclusionReason(descriptor.Name) == null
-           && !descriptor.IsDangerous
+        => HardExclusionReason(descriptor) == null
+           && descriptor.Level != CommandLevel.Ask
            && (policy.Equals("standard", StringComparison.OrdinalIgnoreCase)
                || descriptor.Readonly
                || IsReadonlyAllowed(descriptor.Name));

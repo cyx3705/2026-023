@@ -19,9 +19,8 @@ namespace HistoryVulcan.ServiceHost;
 /// 而「让正在跑的那个宿主重载」不成立——那要走 <c>vulcan.module.install</c>。
 /// 两者的分工写在 <see cref="OfflineModuleInstall"/> 的注释里。
 ///
-/// 暴露面缺省全关，逐条声明（<see cref="CliExposurePolicy"/>）。当前只声明了开发管线
-/// 要用的那几条。这是有意留下的债务：先让 agent 能用几条简单指令把管线跑起来，
-/// 「命令行要不要暴露全部指令」与 web / mcp 的暴露治理是同一轮的事，那一轮还没开始。
+/// 暴露面见 <see cref="CliExposurePolicy"/>：一份 16 条的名单，恰好是开发管线与模块恢复。
+/// 它是三个消费面里唯一不由描述符声明的——理由与那份名单的代价都写在该类注释里。
 /// </remarks>
 public static class CommandLineRunner
 {
@@ -63,15 +62,30 @@ public static class CommandLineRunner
                 Console.Error.WriteLine($"模块装载失败，仅框架指令可用: {ex.Message}");
             }
 
-            if (!composition.Registry.TryGet(parsed.Name, out var descriptor))
+            // 名单与注册表对账。名单按名字写，指令改名时它会**静默失配**——
+            // 而失配的方向最坏：等到某天模块坏掉、需要 --cli 救火时，才发现那条恢复
+            // 指令已经不在面上。本体系因为按名字写的规则栽过四次，这里不再赌第五次。
+            //
+            // 报错而不是跳过：名单缺条目意味着名单本身过期了，此刻执行任何一条都
+            // 建立在一份已知不准的判据上。
+            var missing = CliExposurePolicy.MissingCommands(composition.Registry);
+            if (missing.Count > 0)
+            {
+                Console.Error.WriteLine(
+                    "命令行名单与注册表对不上，以下指令已不存在: " + string.Join("、", missing));
+                Console.Error.WriteLine("请更新 CliExposurePolicy.ExposedCommands 后重试。");
+                return 2;
+            }
+
+            if (!composition.Registry.TryGet(parsed.Name, out _))
             {
                 Console.Error.WriteLine($"未知指令: {parsed.Name}");
                 return 2;
             }
 
-            if (!CliExposurePolicy.IsExposed(descriptor))
+            if (!CliExposurePolicy.IsExposed(parsed.Name))
             {
-                Console.Error.WriteLine(CliExposurePolicy.RefusalReason(descriptor.Name));
+                Console.Error.WriteLine(CliExposurePolicy.RefusalReason(parsed.Name));
                 return 2;
             }
 

@@ -31,7 +31,6 @@ internal static class WorktreeCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.worktree.root",
-            AllowCliExecution = true,  // 开发路线：整条都要能在无传输时走通
             Domain = "vulcan",
             CommandClass = "worktree",
             Summary = "查看或设置 AI 工作区根目录（省略 path 时查询）",
@@ -43,7 +42,6 @@ internal static class WorktreeCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.worktree.create",
-            AllowCliExecution = true,  // 开发路线：整条都要能在无传输时走通
             Domain = "vulcan",
             CommandClass = "worktree",
             Summary = "为项目开一个 AI 工作区（git worktree + 新分支）",
@@ -68,7 +66,6 @@ internal static class WorktreeCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.worktree.list",
-            AllowCliExecution = true,  // 开发路线：整条都要能在无传输时走通
             Domain = "vulcan",
             CommandClass = "worktree",
             Summary = "列出某项目已开的 AI 工作区",
@@ -81,7 +78,6 @@ internal static class WorktreeCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.worktree.merge",
-            AllowCliExecution = true,  // 开发路线：整条都要能在无传输时走通
             Domain = "vulcan",
             CommandClass = "worktree",
             Summary = "把 AI 工作区分支并回 main；先卸试用（含前端残留）再回收工作区，分支保留",

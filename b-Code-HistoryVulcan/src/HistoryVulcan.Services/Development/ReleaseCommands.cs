@@ -44,7 +44,6 @@ internal static class ReleaseCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.release.modules",
-            AllowCliExecution = true,  // 开发路线：整条都要能在无传输时走通
             Domain = "vulcan",
             CommandClass = "release",
             Summary = "列出可发布的模块和宿主及其项目目录",
@@ -56,7 +55,6 @@ internal static class ReleaseCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.release.status",
-            AllowCliExecution = true,  // 开发路线：整条都要能在无传输时走通
             Domain = "vulcan",
             CommandClass = "release",
             Summary = "查看发布运行状态：仍在跑 / 成功 / 失败，附日志末尾",
@@ -76,7 +74,6 @@ internal static class ReleaseCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.release.log",
-            AllowCliExecution = true,  // 开发路线：整条都要能在无传输时走通
             Domain = "vulcan",
             CommandClass = "release",
             Summary = "读取某次发布运行的日志末尾",
@@ -96,7 +93,6 @@ internal static class ReleaseCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.release.cycle",
-            AllowCliExecution = true,  // 开发路线：整条都要能在无传输时走通
             Domain = "vulcan",
             CommandClass = "release",
             Summary = "跑通门禁、写入版本化候选并提交；模块候选严格替换到 Vulcan 运行区",

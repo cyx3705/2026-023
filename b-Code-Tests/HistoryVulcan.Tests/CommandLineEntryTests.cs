@@ -80,89 +80,83 @@ public sealed class CommandLineEntryTests
     }
 
     /// <summary>
-    /// 命令行暴露**缺省全关**，只有显式声明的指令可执行。
+    /// 命令行面**只认名单**，名单外一律拒绝。
     /// </summary>
     /// <remarks>
-    /// 与 MCP 那一面相反是刻意的：MCP 面对一份长年累月长起来的存量指令集，
-    /// 缺省全关等于让它一夜失能，所以它按只读/危险/隐藏推断；
-    /// CLI 是新面，没有存量要照顾，缺省全开等于把「还没想过要不要暴露」写成「已经暴露」。
+    /// 与别的消费面相反是刻意的：暴露与否，描述符上只有一个声明
+    /// （<c>HiddenReason</c>），三个面共用；而命令行有一条别的面没有的额外要求——
+    /// <c>vulcan.module.install</c> / <c>remove</c> 对 MCP 是硬排除（不能让远端给自己
+    /// 换宿主的包），对命令行却是必须有（模块坏掉时它是唯一还能换包的路）。
+    /// 一个布尔位给不出「这个面要、那个面不要」这个答案，所以收窄留在命令行自己这里。
     /// </remarks>
     [Fact]
-    public void CliExposureIsClosedUnlessDeclared()
+    public void TheCliSurfaceIsExactlyItsAllowList()
     {
-        // 只读且无害的指令**照样**不在 CLI 上，除非显式声明——这正是缺省全关的意思。
-        var plain = new CommandDescriptor
-        {
-            Name = "sample.run",
-            Summary = "sample",
-            Readonly = true,
-            Handler = CommandDescriptor.Sync(_ => CommandResult.Ok()),
-        };
-        var declared = new CommandDescriptor
-        {
-            Name = "sample.run",
-            Summary = "sample",
-            Readonly = true,
-            AllowCliExecution = true,
-            Handler = CommandDescriptor.Sync(_ => CommandResult.Ok()),
-        };
+        Assert.True(CliExposurePolicy.IsExposed("vulcan.module.install"));
+        Assert.True(CliExposurePolicy.IsExposed("VULCAN.MODULE.INSTALL"));
 
-        Assert.False(CliExposurePolicy.IsExposed(plain));
-        Assert.True(CliExposurePolicy.IsExposed(declared));
+        // 只读且无害的指令**照样**不在命令行上——命令行不按危险性推断，只认名单。
+        Assert.False(CliExposurePolicy.IsExposed("vulcan.command.help"));
+        Assert.False(CliExposurePolicy.IsExposed(""));
 
         // 拒绝说明必须写清「不是这条指令不存在」，否则使用者会以为自己打错了名字，
-        // 转而去猜别的写法——而真正该做的是给那条指令加声明。
-        Assert.Contains("未声明", CliExposurePolicy.RefusalReason(plain.Name), StringComparison.Ordinal);
-        Assert.Contains(nameof(CommandDescriptor.AllowCliExecution),
-            CliExposurePolicy.RefusalReason(plain.Name), StringComparison.Ordinal);
+        // 转而去猜别的写法——而真正该做的是判断它该不该进这份名单。
+        var reason = CliExposurePolicy.RefusalReason("vulcan.command.help");
+        Assert.Contains("不在命令行面上", reason, StringComparison.Ordinal);
+        Assert.Contains(nameof(CliExposurePolicy.ExposedCommands), reason, StringComparison.Ordinal);
     }
 
     /// <summary>
-    /// 已声明的那几条必须**恰好**是开发管线要用的，多一条都要有人点头。
+    /// 名单与真实注册表的对账：名单里的指令必须都还在。
     /// </summary>
     /// <remarks>
-    /// 按源码文本扫描而不是构造一份组合根：<c>ServiceComposer.Build</c> 会创建真实的
-    /// 数据目录、日志与设置，测试不该去动使用者的 <c>%AppData%</c>。
-    /// 而且真正要守的事情发生在**写下声明的那一刻**——扫描源码正好守在那里，
-    /// 与那条指令在某份组合里可达与否无关。
-    ///
-    /// 用集合断言而不是计数：数字变了只说明「多了一条」，集合断言直接说出多的是哪条。
-    /// 本轮 MCP 迁移里正是集合断言指出了改名绕过硬排除。
-    ///
-    /// 只覆盖宿主自己注册的。模块可以自行声明，那属于模块的暴露面，由模块的门禁去守。
-    ///
-    /// 开发路线（worktree / release）整条都在清单里，那正是第 6、7 步合起来的意义：
-    /// 走 MCP 要 agent 会话活着，走 Web 要 Portunus 装载成功，而需要修模块的时刻
-    /// 恰恰是这些前提不成立的时刻。
+    /// 名单按名字写，指令改名时会**静默失配**，而失配的方向最坏：等到模块坏掉、
+    /// 需要 --cli 救火时才发现恢复指令不在面上。本体系因为按名字写的规则栽过四次，
+    /// 所以命令行入口每次执行前都做这次对账。这里验对账本身能报出缺失。
     /// </remarks>
     [Fact]
-    public void OnlyTheDevelopmentPipelineCommandsAreDeclaredForTheCli()
+    public void TheAllowListIsReconciledAgainstTheRegistry()
     {
-        string[] sources =
-        [
-            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.ServiceHost", "ServiceComposer.cs"),
-            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.Services", "Commands", "CommandCatalogCommands.cs"),
-            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.Services", "Development", "WorktreeCommands.cs"),
-            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.Services", "Development", "ReleaseCommands.cs"),
-        ];
-
-        var declared = new List<string>();
-        foreach (var relative in sources)
+        var registry = new CommandRegistry();
+        foreach (var name in CliExposurePolicy.ExposedCommands)
         {
-            var lines = File.ReadAllLines(Path.Combine(RepositoryRoot(), relative));
-            for (var index = 0; index < lines.Length; index++)
+            registry.Register(new CommandDescriptor
             {
-                if (!lines[index].Contains("AllowCliExecution = true", StringComparison.Ordinal))
-                    continue;
-
-                // 声明紧跟在 Name = "..." 之后，见两处注册点。
-                var name = System.Text.RegularExpressions.Regex.Match(
-                    lines[index - 1], "Name = \"(?<name>[^\"]+)\"");
-                Assert.True(name.Success, $"{relative}:{index + 1} 的声明上一行不是指令名");
-                declared.Add(name.Groups["name"].Value);
-            }
+                Name = name,
+                Summary = name,
+                Handler = CommandDescriptor.Sync(_ => CommandResult.Ok()),
+            });
         }
 
+        Assert.Empty(CliExposurePolicy.MissingCommands(registry));
+
+        // 模拟一次改名：注册表里少了一条，对账必须点名说出是哪条。
+        var renamed = new CommandRegistry();
+        foreach (var name in CliExposurePolicy.ExposedCommands.Skip(1))
+        {
+            renamed.Register(new CommandDescriptor
+            {
+                Name = name,
+                Summary = name,
+                Handler = CommandDescriptor.Sync(_ => CommandResult.Ok()),
+            });
+        }
+
+        Assert.Equal(
+            [CliExposurePolicy.ExposedCommands[0]],
+            CliExposurePolicy.MissingCommands(renamed));
+    }
+
+    /// <summary>
+    /// 名单必须**恰好**是开发管线与模块恢复那几组，多一条都要有人点头。
+    /// </summary>
+    /// <remarks>
+    /// 走 MCP 要 agent 会话活着，走 Web 要 Portunus 装载成功，而需要修模块的时刻
+    /// 恰恰是这些前提不成立的时刻。这条理由不适用于任何别的指令，名单也就到此为止。
+    /// </remarks>
+    [Fact]
+    public void OnlyTheDevelopmentPipelineAndRecoveryCommandsAreOnTheCli()
+    {
         Assert.Equal(
             new[]
             {
@@ -183,19 +177,6 @@ public sealed class CommandLineEntryTests
                 "vulcan.worktree.merge",
                 "vulcan.worktree.root",
             }.Order(StringComparer.OrdinalIgnoreCase),
-            declared.Order(StringComparer.OrdinalIgnoreCase));
-    }
-
-    private static string RepositoryRoot()
-    {
-        var current = new DirectoryInfo(AppContext.BaseDirectory);
-        while (current != null)
-        {
-            if (File.Exists(Path.Combine(current.FullName, "project.manifest.json")))
-                return current.FullName;
-            current = current.Parent;
-        }
-
-        throw new DirectoryNotFoundException("未找到 HistoryVulcan 仓库根目录");
+            CliExposurePolicy.ExposedCommands.Order(StringComparer.OrdinalIgnoreCase));
     }
 }

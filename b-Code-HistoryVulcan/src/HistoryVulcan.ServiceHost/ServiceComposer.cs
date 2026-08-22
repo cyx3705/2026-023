@@ -284,7 +284,6 @@ public static partial class ServiceComposer
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.module.list",
-            AllowCliExecution = true,  // 开发管线：换包与查装载状态
             Domain = "vulcan",
             CommandClass = "module",
             Summary = "列出已加载模块",
@@ -301,7 +300,6 @@ public static partial class ServiceComposer
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.module.reload",
-            AllowCliExecution = true,  // 开发管线：换包与查装载状态
             Domain = "vulcan",
             CommandClass = "module",
             Summary = "重载全部后台模块",
@@ -315,7 +313,6 @@ public static partial class ServiceComposer
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.module.unload",
-            AllowCliExecution = true,  // 开发管线：换包与查装载状态
             Domain = "vulcan",
             CommandClass = "module",
             Summary = "卸载一个已装载模块（命令与界面）；不改磁盘，reload 会装回",
@@ -342,12 +339,12 @@ public static partial class ServiceComposer
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.module.install",
-            AllowCliExecution = true,  // 开发管线：换包与查装载状态
+            HiddenReason = "运行包变更只允许认证的本机宿主通道",
             Domain = "vulcan",
             CommandClass = "module",
             Summary = "从已校验候选包原子安装并重载运行时模块",
             Example = "vulcan.module.install path=C:\\candidate\\HistoryJanus",
-            Dangerous = true,
+            Level = CommandLevel.Ask,
             Parameters = [new ParameterSpec
             {
                 Name = "path",
@@ -368,12 +365,12 @@ public static partial class ServiceComposer
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.module.remove",
-            AllowCliExecution = true,  // 开发管线：换包与查装载状态
+            HiddenReason = "运行包变更只允许认证的本机宿主通道",
             Domain = "vulcan",
             CommandClass = "module",
             Summary = "从运行区原子移除模块包并刷新运行快照",
             Example = "vulcan.module.remove name=HistoryJanus",
-            Dangerous = true,
+            Level = CommandLevel.Ask,
             Parameters = [new ParameterSpec
             {
                 Name = "name",

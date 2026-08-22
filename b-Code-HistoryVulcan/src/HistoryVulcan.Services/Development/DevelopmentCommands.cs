@@ -17,7 +17,7 @@ namespace HistoryVulcan.Services.Development;
 /// 而只要宿主活着，**任何一个模块坏掉都能用这条路线单独修好**，
 /// 包括承载对外传输的 HistoryPortunus 和承载界面的 HistoryAurora。
 ///
-/// 这也是它整条都声明了命令行暴露的原因（<c>AllowCliExecution</c>）：
+/// 这也是整条路线都在命令行面上的原因（见 <c>CliExposurePolicy.ExposedCommands</c>）：
 /// 走 MCP 要 agent 会话活着，走 Web 要 Portunus 装载成功，而需要修模块的时刻
 /// 恰恰是这些前提不成立的时刻。<c>--cli</c> 在本进程内执行，一样都不需要。
 ///

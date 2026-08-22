@@ -33,15 +33,8 @@ public sealed class QualityRemediationTests
         }
     }
 
-    [Fact]
-    public void ReadonlyFallbackRegistrationIsThreadSafe()
-    {
-        var prefix = "parallel." + Guid.NewGuid().ToString("N") + ".";
-        var names = Enumerable.Range(0, 256).Select(index => prefix + index).ToArray();
-
-        Parallel.ForEach(names, name => McpExposurePolicy.RegisterReadonly(name));
-
-        Assert.All(names, name => Assert.True(McpExposurePolicy.IsReadonlyAllowed(name)));
-        Assert.All(names, name => Assert.Contains(name, McpExposurePolicy.ReadonlyCommandNames));
-    }
+    // ReadonlyFallbackRegistrationIsThreadSafe 随 McpExposurePolicy.RegisterReadonly
+    // 一并删除（4.8.0）。那个「按名字补登记只读」的兜底通道自 V2.4.4 起恒为空——
+    // 只读性的单一真值早已是 CommandDescriptor.Readonly——全仓唯一的调用方
+    // 就是这个测试。一个只被自己的测试调用的兜底通道不是兜底，是还没被删掉。
 }

@@ -33,8 +33,6 @@ public static class BuiltinCommandDefinitions
             Summary = definition.Summary,
             Example = definition.Example,
             Parameters = definition.Parameters.Select(Clone).ToList(),
-            ConfirmPrompt = definition.ConfirmPrompt,
-            Dangerous = definition.Dangerous,
             Readonly = definition.Readonly,
             RequiresUiThread = requiresUiThread,
             Handler = handler,
@@ -111,9 +109,10 @@ public static class BuiltinCommandDefinitions
         string Summary,
         string? Example = null,
         IReadOnlyList<ParameterSpec>? ParameterList = null,
-        bool Readonly = false,
-        bool Dangerous = false,
-        Func<CommandContext, string?>? ConfirmPrompt = null)
+        // 没有 Level / ConfirmPrompt：共享内置指令一条都不需要确认。
+        // 4.8.0 之前这里有 Dangerous 与 ConfirmPrompt 两个形参，全仓无人赋值——
+        // 一个从未被使用的可配置项不是留有余地，只是把「没想过」写成了「支持」。
+        bool Readonly = false)
     {
         public IReadOnlyList<ParameterSpec> Parameters { get; } = ParameterList ?? [];
     }

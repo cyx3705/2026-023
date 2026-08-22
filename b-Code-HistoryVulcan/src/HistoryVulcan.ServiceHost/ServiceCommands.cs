@@ -23,6 +23,7 @@ public static class ServiceCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.command.run",
+            HiddenReason = "脚本批量执行不对远程暴露，否则可绕过逐条工具排除",
             Domain = "vulcan",
             CommandClass = "command",
             Summary = "逐行执行指令脚本文件(# 注释与空行忽略)",
@@ -124,6 +125,7 @@ public static class ServiceCommands
             Domain = "vulcan",
             CommandClass = "svc",
             Summary = "停止服务进程",
+            Level = CommandLevel.Ask,
             ConfirmPrompt = _ => "确认停止后台服务？前端和远程客户端会断开。",
             Handler = CommandDescriptor.Sync(_ =>
             {
@@ -135,9 +137,11 @@ public static class ServiceCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.app.quit",
+            HiddenReason = "远程客户端不得退出宿主",
             Domain = "vulcan",
             CommandClass = "app",
             Summary = "退出 HistoryVulcan 前端与后台服务",
+            Level = CommandLevel.Ask,
             ConfirmPrompt = _ => "确认退出 HistoryVulcan 前端和后台服务？",
             Handler = async ctx =>
             {
@@ -161,6 +165,7 @@ public static class ServiceCommands
             Domain = "vulcan",
             CommandClass = "svc",
             Summary = "重启服务进程",
+            Level = CommandLevel.Ask,
             ConfirmPrompt = _ => "确认重启后台服务？客户端会短暂断开。",
             Handler = CommandDescriptor.Sync(_ =>
             {
@@ -266,7 +271,7 @@ public static class ServiceCommands
         sb.Append($"\n{CommandBus.FormatUsage(d)}");
         if (d.Example != null)
             sb.Append($"\n示例: {d.Example}");
-        if (d.IsDangerous)
+        if (d.Level == CommandLevel.Ask)
             sb.Append("\n安全: 执行动作可能要求本地二次确认");
         if (d.RequiresUiThread)
             sb.Append("\n线程: UI");

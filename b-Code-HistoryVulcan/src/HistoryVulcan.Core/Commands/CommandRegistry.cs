@@ -26,6 +26,16 @@ public sealed class CommandRegistry
                 "命令类必须是以字母开头、只包含字母、数字或连字符的稳定标识符",
                 nameof(descriptor));
         }
+        // 写了确认文案却没把级别升到 Ask,总线不会问,而作者以为问了。
+        // 这类错误没有任何运行期症状——闸口只是静默地不再存在——所以在注册处拒绝,
+        // 而不是留给某一天的人肉审阅。
+        if (descriptor.ConfirmPrompt != null && descriptor.Level != CommandLevel.Ask)
+        {
+            throw new ArgumentException(
+                $"指令 {descriptor.Name} 写了 ConfirmPrompt 但级别不是 {nameof(CommandLevel.Ask)}；"
+                + "提示语不决定问不问，级别才决定。",
+                nameof(descriptor));
+        }
         lock (_gate)
         {
             if (!_commands.TryAdd(descriptor.Name, descriptor))

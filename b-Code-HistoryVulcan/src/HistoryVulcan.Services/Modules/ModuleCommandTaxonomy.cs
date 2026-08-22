@@ -16,11 +16,10 @@ internal static class ModuleCommandTaxonomy
             Example = source.Example,
             Parameters = source.Parameters,
             ConfirmPrompt = source.ConfirmPrompt,
-            Dangerous = source.Dangerous,
+            Level = source.Level,
             Readonly = source.Readonly,
             RequiresUiThread = source.RequiresUiThread,
-            AllowMcpExecution = source.AllowMcpExecution,
-            AllowCliExecution = source.AllowCliExecution,
+            HiddenReason = source.HiddenReason,
             AllowUnspecifiedParameters = source.AllowUnspecifiedParameters,
             // 注解必须一并带过来：模块经它声明消费方能力，漏掉这一行等于
             // 模块的注解在进入宿主注册表的那一刻被静默清空。

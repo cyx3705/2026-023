@@ -16,7 +16,7 @@ namespace HistoryVulcan.Services.Commands;
 /// <param name="ParameterCount">参数个数。</param>
 /// <param name="Source">注册方，如 framework:service 或 frontend:*。</param>
 /// <param name="SourceDetail">注册方补充信息；无则为 null。</param>
-/// <param name="Dangerous">是否为危险指令（需要确认）。</param>
+/// <param name="Dangerous">级别是否为「询问」（执行前必须问过人）。</param>
 /// <param name="RequiresUiThread">是否必须在 UI 线程执行。</param>
 /// <param name="McpToolName">投影后的 MCP 工具名；未投影为 null。</param>
 /// <param name="McpState">MCP 投影状态：readonly / standard / dangerous / hidden。</param>
@@ -173,7 +173,7 @@ public static class CommandCatalogCommands
                 descriptor.Parameters.Count,
                 sourceName,
                 sourceDetail,
-                descriptor.IsDangerous,
+                descriptor.Level == CommandLevel.Ask,
                 descriptor.RequiresUiThread,
                 tool?.ToolName,
                 McpExposurePolicy.State(descriptor),
@@ -182,7 +182,7 @@ public static class CommandCatalogCommands
                 revision,
                 openProposals.GetValueOrDefault(descriptor.Name),
                 incidents.GetValueOrDefault(descriptor.Name),
-                McpExposurePolicy.HardExclusionReason(descriptor.Name))
+                McpExposurePolicy.HardExclusionReason(descriptor))
             {
                 CommandClass = registry.GetCommandClass(descriptor.Name),
                 Method = CommandRegistry.GetMethod(descriptor.Name),
@@ -197,7 +197,6 @@ public static class CommandCatalogCommands
         Func<string> policy) => new()
         {
             Name = "vulcan.command.list",
-            AllowCliExecution = true,  // 开发管线：查指令面
             Domain = "vulcan",
             CommandClass = "command",
             Summary = "结构化列出全部注册指令及其来源、风险和 MCP 投影",
@@ -265,7 +264,6 @@ public static class CommandCatalogCommands
         Func<string> policy) => new()
         {
             Name = "vulcan.command.show",
-            AllowCliExecution = true,  // 开发管线：查指令面
             Domain = "vulcan",
             CommandClass = "command",
             Summary = "查看单条指令的 Help 参数、来源、风险和 MCP 映射",
@@ -310,7 +308,6 @@ public static class CommandCatalogCommands
     private static CommandDescriptor BuildDomains(CommandRegistry registry) => new()
     {
         Name = "vulcan.command.domains",
-        AllowCliExecution = true,  // 开发管线：查指令面
         Domain = "vulcan",
         CommandClass = "command",
         Summary = "列出全部指令域及注册数量",
@@ -355,6 +352,7 @@ public static class CommandCatalogCommands
                 Default = "false",
             },
         ],
+            Level = CommandLevel.Ask,
             ConfirmPrompt = context => context.GetBool("apply")
                 ? $"确认生成命令手册 {context.GetString("file")}？只允许写入当前工作目录边界内的 .md 文件。"
                 : null,

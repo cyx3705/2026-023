@@ -59,6 +59,7 @@ public sealed class CoreFreezeContractTests
                     Required = true,
                 },
             ],
+            Level = CommandLevel.Ask,
             ConfirmPrompt = context => $"change {context.GetInt("count")}",
             Handler = CommandDescriptor.Sync(context =>
             {
