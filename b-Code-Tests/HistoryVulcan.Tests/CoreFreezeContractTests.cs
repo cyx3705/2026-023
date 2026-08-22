@@ -3,7 +3,6 @@ using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Extensibility.Mcp;
 using HistoryVulcan.Services;
-using HistoryVulcan.Services.Mcp;
 using System.Collections.Concurrent;
 using System.IO;
 using Xunit;
@@ -60,6 +59,7 @@ public sealed class CoreFreezeContractTests
                     Required = true,
                 },
             ],
+            Level = CommandLevel.Ask,
             ConfirmPrompt = context => $"change {context.GetInt("count")}",
             Handler = CommandDescriptor.Sync(context =>
             {

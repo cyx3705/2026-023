@@ -1,6 +1,7 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using HistoryVulcan.Core.Logging;
+using HistoryVulcan.Core.Mcp;
 
 namespace HistoryVulcan.Core.Commands;
 
@@ -74,14 +75,27 @@ public sealed class CommandBus
     public SynchronizationContext? UiContext { get; set; }
 
     /// <summary>
-    /// 前端命令中继。服务宿主为其注入传输实现；未连接前端时保持 null，
-    /// 总线返回明确失败结果，不等待网络超时。
+    /// 界面命令中继。界面模块装载时填入，拆除时置回 null。
     /// </summary>
+    /// <remarks>
+    /// **总线自己从不调用它。** 4.7.0 之前描述符上有个 <c>ExecutionSite</c> 字段，
+    /// 取 <c>Frontend</c> 的指令由总线自动改道到这里；界面从独立进程变成宿主内模块
+    /// （DEC-008）之后，全仓再没有任何一处把它设成 <c>Frontend</c>，那条改道成了死码，
+    /// 已随字段一并删除。
+    ///
+    /// 留下这个挂钩，是因为 <c>vulcan.app.{show,hide,close,focusconsole}</c> 这几条
+    /// **名字在宿主域、实现在界面模块**：注册表强制 <c>module:X</c> 来源的指令归属
+    /// 模块自己的域（见 <c>CommandRegistry.ResolveDomain</c>），界面因此无法直接注册
+    /// 一条 <c>vulcan.*</c>。宿主注册壳、界面填实现，是这条归属规则下唯一的形状。
+    ///
+    /// 调用方只有 <c>ServiceCommands</c> 那几条，且必须显式判 null——界面没装载时
+    /// 它就是 null，那时的正确答复是「界面未装载」而不是空引用。
+    /// </remarks>
     public Func<string, string, CancellationToken, Task<CommandResult>>? FrontendExecutor { get; set; }
 
     /// <summary>
     /// 客户端模式下的远程总线。ShouldUseRemote 返回 true 时整条命令交给服务，
-    /// 服务经前端中继发回的 UI 命令可用来源标签绕过此路由并在本地执行。
+    /// 服务经界面中继发回的 UI 命令可用来源标签绕过此路由并在本地执行。
     /// </summary>
     public Func<string, string, CancellationToken, Task<CommandResult>>? RemoteExecutor { get; set; }
 
@@ -90,6 +104,18 @@ public sealed class CommandBus
 
     /// <summary>按命令文本和来源决定是否走远端；设置后优先于仅按来源的兼容委托。</summary>
     public Func<string, string, bool>? ShouldUseRemoteCommand { get; set; }
+
+    /// <summary>
+    /// 提示词治理的只读视图，由承载 MCP 的模块在装载时注入、拆除时清空。
+    ///
+    /// 放在总线上而不是新开一条注入通道：<see cref="Confirmation"/> 与
+    /// <see cref="FrontendExecutor"/> 已经确立了「宿主留挂钩、模块填实现」这一模式，
+    /// 而总线是模块经 <c>IModuleContext</c> 唯一拿得到的宿主共享对象。
+    ///
+    /// **消费方必须容忍 null。** 模块没装上、正在热重载、或装载失败时它就是 null，
+    /// 此时目录指令照常可用，只是少了治理那几列——而不是整条指令消失。
+    /// </summary>
+    public IMcpPromptGovernanceView? McpGovernance { get; set; }
 
     /// <summary>每条指令执行完毕后触发(状态栏摘要,S-03);在执行线程上引发。</summary>
     public event Action<string, string, CommandResult>? Executed;
@@ -361,19 +387,7 @@ public sealed class CommandBus
         }
 
         // 参数校验
-        var bindParsed = descriptor.ExecutionSite == CommandExecutionSite.Frontend
-                         && parsed.Named.ContainsKey("_frontend")
-            ? new ParsedCommand
-            {
-                Name = parsed.Name,
-                Positionals = parsed.Positionals,
-                Named = parsed.Named
-                    .Where(pair => !pair.Key.Equals("_frontend", StringComparison.OrdinalIgnoreCase))
-                    .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase),
-                RawText = parsed.RawText,
-            }
-            : parsed;
-        var bindError = BindArguments(descriptor, bindParsed, out var values);
+        var bindError = BindArguments(descriptor, parsed, out var values);
         if (bindError != null)
             return CommandResult.Fail($"{bindError}\n{FormatUsage(descriptor)}");
 
@@ -384,8 +398,17 @@ public sealed class CommandBus
                 line));
         var context = new CommandContext(descriptor, values, source, progress, cancellation);
 
-        // 拦截:二次确认(§5.2;T-08/R-06 危险操作在“手输指令路径”的统一闸口)
-        var prompt = descriptor.ConfirmPrompt?.Invoke(context);
+        // 拦截:二次确认(§5.2;T-08/R-06 需要询问的操作在“手输指令路径”的统一闸口)
+        //
+        // 问不问由 Level 决定,提示语才由 ConfirmPrompt 提供。两者的分工要点在于
+        // **null 的含义不同**:没有 ConfirmPrompt 是“没写文案”,由这里补一句缺省的;
+        // 而 ConfirmPrompt 调用后返回 null 是“这次不用问”(按参数动态豁免)。
+        // 若把两种 null 混同,janus.github.identity 在 apply=false 那次也会弹框。
+        var prompt = descriptor.Level != CommandLevel.Ask
+            ? null
+            : descriptor.ConfirmPrompt == null
+                ? $"确认执行 {descriptor.Name}？"
+                : descriptor.ConfirmPrompt.Invoke(context);
         if (prompt != null)
         {
             if (ConfirmationRouter != null)
@@ -402,14 +425,6 @@ public sealed class CommandBus
         // 执行(必要时编组 UI 线程)
         try
         {
-            if (descriptor.ExecutionSite == CommandExecutionSite.Frontend)
-            {
-                var frontend = FrontendExecutor;
-                return frontend == null
-                    ? CommandResult.Fail("前端未连接,请启动应用前端")
-                    : await frontend(text, source, cancellation).ConfigureAwait(false);
-            }
-
             if (descriptor.RequiresUiThread && UiContext != null
                 && SynchronizationContext.Current != UiContext)
             {
@@ -605,4 +620,15 @@ public sealed class CommandBus
         });
         return $"用法: {d.Name} {string.Join(" ", parts)}".TrimEnd();
     }
+}
+
+
+/// <summary>
+/// 二次确认通道(§5.2 拦截器链的首个内置拦截器;T-08 / R-06 等危险操作依赖)。
+/// Shell 层以模态对话框实现;无 UI 场景(脚本/测试)可注入自动拒绝或自动通过的实现。
+/// </summary>
+public interface IConfirmationService
+{
+    /// <summary>返回 true 表示用户确认继续。</summary>
+    bool Confirm(string prompt);
 }

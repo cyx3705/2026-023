@@ -68,11 +68,11 @@ public static class CommandManualGenerator
                     builder.AppendLine($"- 域：`{Escape(domain.Key)}`");
                     builder.AppendLine($"- 类：`{Escape(commandClass.Key)}`");
                     builder.AppendLine($"- 来源：`{Escape(source)}`");
-                    builder.AppendLine($"- 安全：{(command.IsDangerous ? "本地二次确认" : "普通")}");
+                    builder.AppendLine($"- 级别：{(command.Level == CommandLevel.Ask ? "询问（执行前必须问过人）" : "运行")}");
                     builder.AppendLine($"- UI 线程：{(command.RequiresUiThread ? "是" : "否")}");
                     builder.AppendLine($"- MCP：`{mcpState}`，当前策略{(visible ? "可见" : "隐藏")}" +
                                        (tool != null ? $"，工具名 `{tool.ToolName}`" : string.Empty));
-                    if (McpExposurePolicy.HardExclusionReason(command.Name) is { } reason)
+                    if (McpExposurePolicy.HardExclusionReason(command) is { } reason)
                         builder.AppendLine($"- MCP 排除原因：{Escape(reason)}");
 
                     if (command.Parameters.Count > 0)

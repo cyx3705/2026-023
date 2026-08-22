@@ -6,10 +6,10 @@ using Microsoft.Win32;
 using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
+using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.Services;
 using HistoryVulcan.Services.Modules;
-using HistoryVulcan.Services.Web;
 
 namespace HistoryVulcan.ServiceHost;
 
@@ -53,7 +53,7 @@ public static partial class ServiceComposer
             var markdown = HistoryVulcan.Extensibility.Mcp.CommandManualGenerator.Render(
                 composition.Registry!,
                 new HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter(composition.Registry!),
-                composition.Mcp?.Policy ?? "readonly");
+                McpSettingKeys.ResolvePolicy(composition.Settings));
 
             var target = Path.GetFullPath(outputPath);
             var directory = Path.GetDirectoryName(target);
@@ -107,40 +107,36 @@ public static partial class ServiceComposer
             // ModuleHost 会整段跳过 UI 生命周期，进程仍然是纯无头的。
             EnableUiModules = true,
         };
-        var web = new WebGateway(() => bus, settings, log)
-        {
-            ServerId = identity.Name + ".service",
-        };
         modules.Attach(registry, bus, settings, servicePaths.Root);
         RegisterServiceModuleCommands(registry, modules, settings, bus);
         RegisterServiceMcpSettingCommands(registry, settings);
 
-        // The backend registry owns both module commands and the MCP projection. Prompt and
-        // audit state stay at the historical application root so moving the listener does not
-        // orphan existing governance revisions or call history.
-        var prompts = new Services.Mcp.PromptGovernanceStore(paths.Root, log);
-        var audit = new Services.Mcp.McpAuditRecorder(paths.Root, log);
-        // 4.0.0（REQ-A2）：MCP 的危险命令确认同样中继到前端。服务进程无人值守，
-        // 在这里弹模态框只会阻塞到超时；前端未连接时拒绝，不放行。
-        var confirmation = new ShellRelayConfirmation(log);
-        Services.Mcp.McpGateway? mcp = null;
-        mcp = new Services.Mcp.McpGateway(
-            () => bus,
-            settings,
-            log,
-            audit,
-            prompts,
-            identity,
-            confirmation.ConfirmRemote);
-        HistoryVulcan.Services.Mcp.McpCommands.RegisterAll(
+        // 指令自省面（vulcan.command.list / show / domains / manual）随宿主装配，
+        // 不随承载 MCP 的模块来去：Portunus 装不上时最需要的恰恰是能查指令。
+        //
+        // 它要的两样东西都不必经过网关：
+        //   策略——就是 mcp.policy 这个设置键，宿主自己读得到；
+        //   治理——经 CommandBus.McpGovernance 由模块注入，没有模块时那几列为空。
+        var catalogExporter = new HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter(registry)
+        {
+            DescriptionsProvider = () => bus.McpGovernance?.EffectiveDescriptions()
+                                         ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+        };
+        // 模块开发路线（4.6.0 从 HistoryDiana 迁入）：工作区、发布、装机。
+        //
+        // 它此前住在模块里，于是每一轮模块开发都依赖那个模块装载成功——而它自己也要
+        // 走这条路线来改。放在宿主则相反：只要宿主活着，任何一个模块坏掉都能被单独修好。
+        HistoryVulcan.Services.Development.DevelopmentCommands.RegisterAll(
+            registry, bus, settings, paths.Root);
+
+        HistoryVulcan.Services.Commands.CommandCatalogCommands.RegisterAll(
             registry,
-            () => bus,
-            () => mcp,
-            settings,
-            prompts,
+            catalogExporter,
+            governance: null,
+            policy: () => McpSettingKeys.ResolvePolicy(settings),
             source: "framework:service");
 
-        return new ServiceComposition
+        var composition = new ServiceComposition
         {
             ServiceName = identity.Name + ".Backend",
             Registry = registry,
@@ -148,14 +144,26 @@ public static partial class ServiceComposer
             Settings = settings,
             Log = log,
             Modules = modules,
-            Mcp = mcp,
-            Web = web,
-            EndpointFile = Path.Combine(servicePaths.Root, "endpoint.json"),
             // 与前端此前的 DataDirectory 同值：脚本相对路径基准不变（REQ-A6）。
             DataDirectory = paths.Root,
             RegisterAutostartOnFirstRun = true,
             Autostart = new WindowsRunAutostartManager(),
         };
+
+        // 服务指令（vulcan.svc.* / vulcan.app.*）在这里注册而不是在 Run 里（4.5.0）。
+        //
+        // 它们此前跟着 Run 走，于是任何不跑循环的入口都看不到它们——`--cli` 里
+        // vulcan 域只剩一半，而「查服务状态」恰恰是命令行最常问的事。
+        // 真正只有循环才做得到的是「停机」一件，那一件经 composition.RequestStop 接进来，
+        // 未接上时相关指令明确失败，而不是假装停了一个不存在的服务。
+        ServiceCommands.RegisterAll(
+            registry,
+            composition,
+            () => composition.RequestStop?.Invoke(),
+            executablePath,
+            serviceArguments: [HostArgumentParser.LegacyServiceSwitch]);
+
+        return composition;
     }
 
     public static int RepairAutostart(string executablePath, Assembly identityAssembly)
@@ -253,20 +261,8 @@ public static partial class ServiceComposer
         ISettingsService service,
         IShellLog log)
     {
-        string[] keys =
-        [
-            Services.Mcp.McpGateway.KeyPort,
-            Services.Mcp.McpGateway.KeyPolicy,
-            Services.Mcp.McpGateway.KeyToken,
-            Services.Mcp.McpGateway.KeyAutostart,
-            Services.Mcp.McpGateway.KeyTimeout,
-            Services.Mcp.McpGateway.KeyConfirm,
-            Services.Mcp.McpGateway.KeyConfirmTimeout,
-            Services.Mcp.McpGateway.KeyPortRetries,
-            Services.Mcp.McpGateway.KeySessionLimit,
-        ];
         var migrated = 0;
-        foreach (var key in keys)
+        foreach (var key in McpSettingKeys.All)
         {
             if (service.Get(key) != null || legacy.Get(key) is not { } value)
                 continue;
@@ -331,46 +327,24 @@ public static partial class ServiceComposer
                     Position = 0,
                 },
             ],
-            Handler = async ctx =>
+            Handler = CommandDescriptor.Sync(ctx =>
             {
-                var name = ctx.RequireString("name");
-                string? frontendNote = null;
-                // 进程内界面（IShellUiProvider）把 FrontendExecutor 指回本总线。
-                // 再中继 vulcan.module.unload 会在同一条命令上无限递归，直到进程崩掉。
-                // 双进程时代才需要先卸另一边的文件锁。
-                if (host.ShellUi == null && bus.FrontendExecutor is { } frontend)
-                {
-                    var remote = await frontend(
-                        $"vulcan.module.unload name={CommandParser.QuoteArg(name)}",
-                        "framework:service",
-                        ctx.Cancellation).ConfigureAwait(false);
-                    frontendNote = remote.Success
-                        ? "前端界面已一并卸载"
-                        : $"前端: {remote.Message}";
-                }
-
-                var local = host.Unload(name);
-                if (!local.Success)
-                {
-                    if (frontendNote == "前端界面已一并卸载")
-                        return CommandResult.Ok($"前端界面已卸载，但后台: {local.Message}");
-                    return local;
-                }
-
-                return frontendNote == null
-                    ? local
-                    : CommandResult.Ok($"{local.Message}；{frontendNote}");
-            },
+                // 界面与后台在同一进程、同一张注册表里，卸载只有这一步。
+                // 双进程时代这里还要先中继到界面卸掉同名快照以释放文件锁，
+                // 那条中继在进程内会打回本命令上无限递归，已随进程外前端一并删除。
+                return host.Unload(ctx.RequireString("name"));
+            }),
         }, "framework:service");
 
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.module.install",
+            HiddenReason = "运行包变更只允许认证的本机宿主通道",
             Domain = "vulcan",
             CommandClass = "module",
             Summary = "从已校验候选包原子安装并重载运行时模块",
             Example = "vulcan.module.install path=C:\\candidate\\HistoryJanus",
-            Dangerous = true,
+            Level = CommandLevel.Ask,
             Parameters = [new ParameterSpec
             {
                 Name = "path",
@@ -382,22 +356,21 @@ public static partial class ServiceComposer
             {
                 if (!IsLocalModuleMutationSource(ctx.Source))
                     return CommandResult.Fail("模块安装只允许认证的本机宿主通道。");
-                return await InstallRuntimePackageAsync(
-                    host,
-                    bus,
-                    ctx.RequireString("path"),
-                    ctx.Cancellation).ConfigureAwait(false);
+                var path = ctx.RequireString("path");
+                return await Task.Run(() => host.InstallPackage(path), ctx.Cancellation)
+                    .ConfigureAwait(false);
             },
         }, "framework:service");
 
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.module.remove",
+            HiddenReason = "运行包变更只允许认证的本机宿主通道",
             Domain = "vulcan",
             CommandClass = "module",
             Summary = "从运行区原子移除模块包并刷新运行快照",
             Example = "vulcan.module.remove name=HistoryJanus",
-            Dangerous = true,
+            Level = CommandLevel.Ask,
             Parameters = [new ParameterSpec
             {
                 Name = "name",
@@ -409,11 +382,9 @@ public static partial class ServiceComposer
             {
                 if (!IsLocalModuleMutationSource(ctx.Source))
                     return CommandResult.Fail("模块移除只允许认证的本机宿主通道。");
-                return await RemoveRuntimePackageAsync(
-                    host,
-                    bus,
-                    ctx.RequireString("name"),
-                    ctx.Cancellation).ConfigureAwait(false);
+                var target = ctx.RequireString("name");
+                return await Task.Run(() => host.RemovePackage(target), ctx.Cancellation)
+                    .ConfigureAwait(false);
             },
         }, "framework:service");
 
