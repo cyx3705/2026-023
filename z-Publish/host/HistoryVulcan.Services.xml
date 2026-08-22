@@ -43,6 +43,409 @@
         <member name="M:HistoryVulcan.Services.AppPaths.GetPanelsDir(System.String)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
+        <member name="T:HistoryVulcan.Services.Commands.CommandCatalogRow">
+            <summary>目录中的一行：一条指令的注册事实与 MCP 投影状态。</summary>
+            <param name="CommandName">完整指令名。</param>
+            <param name="Domain">所属指令域。</param>
+            <param name="Summary">一句话说明。</param>
+            <param name="Example">示例调用；无示例为 null。</param>
+            <param name="ParameterCount">参数个数。</param>
+            <param name="Source">注册方，如 framework:service 或 frontend:*。</param>
+            <param name="SourceDetail">注册方补充信息；无则为 null。</param>
+            <param name="Dangerous">级别是否为「询问」（执行前必须问过人）。</param>
+            <param name="RequiresUiThread">是否必须在 UI 线程执行。</param>
+            <param name="McpToolName">投影后的 MCP 工具名；未投影为 null。</param>
+            <param name="McpState">MCP 投影状态：readonly / standard / dangerous / hidden。</param>
+            <param name="PolicyVisible">按当前策略是否对远程可见。</param>
+            <param name="Customized">工具描述是否已被治理修订覆盖。</param>
+            <param name="CurrentRevision">当前生效的描述修订号；无则为 null。</param>
+            <param name="OpenProposals">待审核的描述提案数。</param>
+            <param name="IncidentCount">已记录的事故数。</param>
+            <param name="HardExclusionReason">硬排除原因；未被硬排除为 null。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandCatalogRow.#ctor(System.String,System.String,System.String,System.String,System.Int32,System.String,System.String,System.Boolean,System.Boolean,System.String,System.String,System.Boolean,System.Boolean,System.String,System.Int32,System.Int32,System.String)">
+            <summary>目录中的一行：一条指令的注册事实与 MCP 投影状态。</summary>
+            <param name="CommandName">完整指令名。</param>
+            <param name="Domain">所属指令域。</param>
+            <param name="Summary">一句话说明。</param>
+            <param name="Example">示例调用；无示例为 null。</param>
+            <param name="ParameterCount">参数个数。</param>
+            <param name="Source">注册方，如 framework:service 或 frontend:*。</param>
+            <param name="SourceDetail">注册方补充信息；无则为 null。</param>
+            <param name="Dangerous">级别是否为「询问」（执行前必须问过人）。</param>
+            <param name="RequiresUiThread">是否必须在 UI 线程执行。</param>
+            <param name="McpToolName">投影后的 MCP 工具名；未投影为 null。</param>
+            <param name="McpState">MCP 投影状态：readonly / standard / dangerous / hidden。</param>
+            <param name="PolicyVisible">按当前策略是否对远程可见。</param>
+            <param name="Customized">工具描述是否已被治理修订覆盖。</param>
+            <param name="CurrentRevision">当前生效的描述修订号；无则为 null。</param>
+            <param name="OpenProposals">待审核的描述提案数。</param>
+            <param name="IncidentCount">已记录的事故数。</param>
+            <param name="HardExclusionReason">硬排除原因；未被硬排除为 null。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.CommandName">
+            <summary>完整指令名。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Domain">
+            <summary>所属指令域。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Summary">
+            <summary>一句话说明。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Example">
+            <summary>示例调用；无示例为 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.ParameterCount">
+            <summary>参数个数。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Source">
+            <summary>注册方，如 framework:service 或 frontend:*。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.SourceDetail">
+            <summary>注册方补充信息；无则为 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Dangerous">
+            <summary>级别是否为「询问」（执行前必须问过人）。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.RequiresUiThread">
+            <summary>是否必须在 UI 线程执行。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.McpToolName">
+            <summary>投影后的 MCP 工具名；未投影为 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.McpState">
+            <summary>MCP 投影状态：readonly / standard / dangerous / hidden。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.PolicyVisible">
+            <summary>按当前策略是否对远程可见。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Customized">
+            <summary>工具描述是否已被治理修订覆盖。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.CurrentRevision">
+            <summary>当前生效的描述修订号；无则为 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.OpenProposals">
+            <summary>待审核的描述提案数。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.IncidentCount">
+            <summary>已记录的事故数。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.HardExclusionReason">
+            <summary>硬排除原因；未被硬排除为 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.CommandClass">
+            <summary>指令在所属域内的功能类；附加属性保持旧位置构造函数兼容。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Method">
+            <summary>三段式命令名的末段方法名。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Commands.CommandParameterInfo">
+            <summary>一条指令的单个参数说明。</summary>
+            <param name="Name">参数名。</param>
+            <param name="Type">参数类型。</param>
+            <param name="Required">是否必填。</param>
+            <param name="Default">默认值；无默认为 null。</param>
+            <param name="Position">位置参数序号；仅具名时为 null。</param>
+            <param name="AllowedValues">允许值枚举；不限时为空。</param>
+            <param name="Description">参数说明。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandParameterInfo.#ctor(System.String,System.String,System.Boolean,System.String,System.Nullable{System.Int32},System.Collections.Generic.IReadOnlyList{System.String},System.String)">
+            <summary>一条指令的单个参数说明。</summary>
+            <param name="Name">参数名。</param>
+            <param name="Type">参数类型。</param>
+            <param name="Required">是否必填。</param>
+            <param name="Default">默认值；无默认为 null。</param>
+            <param name="Position">位置参数序号；仅具名时为 null。</param>
+            <param name="AllowedValues">允许值枚举；不限时为空。</param>
+            <param name="Description">参数说明。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.Name">
+            <summary>参数名。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.Type">
+            <summary>参数类型。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.Required">
+            <summary>是否必填。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.Default">
+            <summary>默认值；无默认为 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.Position">
+            <summary>位置参数序号；仅具名时为 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.AllowedValues">
+            <summary>允许值枚举；不限时为空。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.Description">
+            <summary>参数说明。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Commands.CommandCatalogDetail">
+            <summary>单条指令的完整详情：目录行、参数表与 MCP 输入 schema。</summary>
+            <param name="Command">该指令的目录行。</param>
+            <param name="Parameters">参数表。</param>
+            <param name="McpInputSchema">MCP 工具的输入 JSON Schema；未投影为 null。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandCatalogDetail.#ctor(HistoryVulcan.Services.Commands.CommandCatalogRow,System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Commands.CommandParameterInfo},System.String)">
+            <summary>单条指令的完整详情：目录行、参数表与 MCP 输入 schema。</summary>
+            <param name="Command">该指令的目录行。</param>
+            <param name="Parameters">参数表。</param>
+            <param name="McpInputSchema">MCP 工具的输入 JSON Schema；未投影为 null。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogDetail.Command">
+            <summary>该指令的目录行。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogDetail.Parameters">
+            <summary>参数表。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogDetail.McpInputSchema">
+            <summary>MCP 工具的输入 JSON Schema；未投影为 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogDetail.Annotations">
+            <summary>命令注册方提供、由具体消费方解释的目录注解。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Commands.CommandDomainInfo">
+            <summary>一个指令域及其注册数量。</summary>
+            <param name="Domain">域名。</param>
+            <param name="Count">该域下的指令数。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandDomainInfo.#ctor(System.String,System.Int32)">
+            <summary>一个指令域及其注册数量。</summary>
+            <param name="Domain">域名。</param>
+            <param name="Count">该域下的指令数。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandDomainInfo.Domain">
+            <summary>域名。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandDomainInfo.Count">
+            <summary>该域下的指令数。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Commands.CommandCatalogCommands">
+            <summary>V2.1.3 全指令结构化目录，注册表是唯一上游。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandCatalogCommands.RegisterCore(HistoryVulcan.Core.Commands.CommandRegistry,System.String)">
+             <summary>
+             注册不依赖提示词治理的核心目录指令，供只要命令目录、不承载 MCP 治理的宿主使用。
+            
+             4.0.0 从 internal 提为 public：本类型随 REQ-A1 从 Shell 迁入 Services 后，其调用方
+             （前端）将在 REQ-A3 成为独立仓的独立应用，跨程序集的 internal 不再可达；
+             InternalsVisibleTo 绑定具体程序集名，对外部消费方不成立。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandCatalogCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter,HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView,System.Func{System.String},System.String)">
+            <summary>把目录查询指令注册进指定注册表。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandCatalogCommands.Snapshot(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter,HistoryVulcan.Core.Mcp.IMcpPromptGovernanceView,System.String)">
+            <summary>按当前注册表与 MCP 投影生成目录快照。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.DevelopmentCommands">
+             <summary>
+             模块开发路线的指令面：从主分支拉出工作区，到改完合并回去、发布、装机。
+             </summary>
+             <remarks>
+             **为什么这条路线住在宿主里。**
+            
+             它此前住在 HistoryDiana。那样的话，每一轮模块开发都依赖 Diana 装载成功——
+             而 Diana 自己也是模块，也要走这条路线来改。一旦 Diana 坏了，修复就退化成
+             直接改主分支救急，整条路线跟着塌掉。
+            
+             放在宿主则相反：宿主坏了，所有模块本来就跑不起来，开发本来就该谨慎且少量；
+             而只要宿主活着，**任何一个模块坏掉都能用这条路线单独修好**，
+             包括承载对外传输的 HistoryPortunus 和承载界面的 HistoryAurora。
+            
+             这也是整条路线都在命令行面上的原因（见 <c>CliExposurePolicy.ExposedCommands</c>）：
+             走 MCP 要 agent 会话活着，走 Web 要 Portunus 装载成功，而需要修模块的时刻
+             恰恰是这些前提不成立的时刻。<c>--cli</c> 在本进程内执行，一样都不需要。
+            
+             本类只是注册入口，唯一的公开面。具体实现按阶段分文件，都保持 internal：
+             工作区（<see cref="T:HistoryVulcan.Services.Development.WorktreeCommands"/>）与发布（<see cref="T:HistoryVulcan.Services.Development.ReleaseCommands"/>）。
+             </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.DevelopmentCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Core.Storage.ISettingsService,System.String)">
+            <summary>把开发路线的全部指令注册进宿主注册表。</summary>
+            <param name="registry">宿主注册表。</param>
+            <param name="bus">权威指令总线；装包经它走，与模块管理页的热重载按钮同一条路径。</param>
+            <param name="settings">宿主设置；项目库根与工作区根可配。</param>
+            <param name="dataDirectory">应用数据根；发布日志以它为基准。</param>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.DevelopmentContext">
+             <summary>
+             开发路线指令所需的宿主服务。
+             </summary>
+             <remarks>
+             这条路线迁入宿主前住在 HistoryDiana 里，参数类型是 <c>IModuleContext</c>——
+             那是**宿主提供给模块**的契约。留着它，等于让宿主自己去实现一份「模块视角」
+             才能调用自己的代码，方向是反的。
+            
+             所以换成这个只含实际用到的三样的类型：指令总线（装包要经它走）、
+             设置（项目库根与工作区根可配）、数据根（发布日志落盘）。
+             少一样都跑不了，多一样就是给这条路线开了它不需要的口子。
+             </remarks>
+             <param name="Bus">权威指令总线。</param>
+             <param name="Settings">宿主设置存储。</param>
+             <param name="DataDirectory">应用数据根，发布日志以它为基准。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.DevelopmentContext.#ctor(HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Core.Storage.ISettingsService,System.String)">
+             <summary>
+             开发路线指令所需的宿主服务。
+             </summary>
+             <remarks>
+             这条路线迁入宿主前住在 HistoryDiana 里，参数类型是 <c>IModuleContext</c>——
+             那是**宿主提供给模块**的契约。留着它，等于让宿主自己去实现一份「模块视角」
+             才能调用自己的代码，方向是反的。
+            
+             所以换成这个只含实际用到的三样的类型：指令总线（装包要经它走）、
+             设置（项目库根与工作区根可配）、数据根（发布日志落盘）。
+             少一样都跑不了，多一样就是给这条路线开了它不需要的口子。
+             </remarks>
+             <param name="Bus">权威指令总线。</param>
+             <param name="Settings">宿主设置存储。</param>
+             <param name="DataDirectory">应用数据根，发布日志以它为基准。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Development.DevelopmentContext.Bus">
+            <summary>权威指令总线。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Development.DevelopmentContext.Settings">
+            <summary>宿主设置存储。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Development.DevelopmentContext.DataDirectory">
+            <summary>应用数据根，发布日志以它为基准。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.ModulePackageHotReload">
+            <summary>
+            Module test and deploy both call Vulcan's package hot-reload:
+            <c>vulcan.module.install</c>. That is the same path as the Modules page 热重载 button.
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.ProjectLibraryRoot">
+            <summary>
+            项目库根：一项目一仓的 HistoryClio。旧 Vesta 配置改写到 Clio。
+            </summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.Default">
+            <summary>项目库的缺省根：一项目一仓的 HistoryClio。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.LegacyVesta">
+            <summary>旧库根 HistoryVesta；读到它时改写到 HistoryClio。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.KeyLibraryRoot">
+            <summary>项目库根的设置键。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.KeyWorktreeRoot">
+            <summary>旧的工作区根设置键，仅作兼容读取。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.Resolve(HistoryVulcan.Core.Storage.ISettingsService)">
+            <summary>按设置解析项目库根；未配置时取缺省值。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.Coerce(System.String)">
+            <summary>把旧库根改写到现行库根，其余原样返回。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.IsGitProject(System.String)">
+            <summary>判断给定目录是否是一个 git 项目。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.PublishPackages">
+            <summary>
+            发布包的定位约定：候选包在哪、历史归档在哪、目录怎么命名。
+            </summary>
+            <remarks>
+            随开发路线迁入宿主（4.6.0）并提为公开面：这是**体系共用的约定**而非管线私有实现，
+            HistoryDiana 的 z 文档通道也按它枚举当前包。两边各写一份，
+            迟早在「z-Publish 还是别的名字」这种问题上分叉。
+            </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.PublishPackages.PublishDirectoryName">
+            <summary>发布目录名。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.PublishPackages.HistoryDirectoryName">
+            <summary>历史发布归档的子目录名。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.PackageDirectoryName(System.String,System.String)">
+            <summary>按模块名与版本拼出候选包目录名。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.ResolveCurrent(System.String,System.String)">
+            <summary>解析项目当前的候选包目录；找不到或有歧义时抛出。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.ResolveHostSnapshot(System.String)">
+            <summary>解析宿主快照目录。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.EnumerateCurrent(System.String)">
+            <summary>枚举发布根下的全部当前包。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.TryRead(System.String,HistoryVulcan.Services.Development.PublishPackages.PublishedPackage@)">
+            <summary>读取一个发布包目录的身份；不是有效包时返回 false。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.PublishPackages.PublishedPackage">
+            <summary>一个已发布包的身份与位置。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.PublishedPackage.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>一个已发布包的身份与位置。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.ReleaseCommands">
+             <summary>
+             发布管线的命令面：把 <c>Publish-OneHistoryModule.ps1</c> 作为分离子进程拉起，
+             让模块发布和其余能力一样原生暴露为 MCP 工具。
+             </summary>
+             <remarks>
+             关键约束：运行状态只落在日志文件里，不放在本模块的内存里。
+             门禁提交后对模块调用 <c>vulcan.module.install</c> 热重载（与测试、模块页按钮同一接口）。
+             发布 HistoryDiana 时本模块自身会在热重载途中被替换——任何存在静态字段里的运行记录都会随之蒸发。因此 start 立即返回 run 标识，
+             status/log 一律现场读日志目录，Diana 被换掉也不影响追踪。
+            
+             子进程自己把 stdout/stderr 重定向进日志（PowerShell 的 <c>*&gt;</c>），Diana 不做流泵送：
+             泵送线程会随模块卸载而中断，日志就断在半截。退出码单独落一个纯 ASCII 的
+             <c>.exit</c> 文件，status 据此判断"仍在跑 / 成功 / 失败"，不依赖进程句柄。
+             </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ReleaseCommands.PipelineProjectName">
+            <summary>
+            发布引擎所在的项目。随开发路线一同迁入宿主（4.6.0），此前是 2026-019-HistoryDiana。
+            </summary>
+            <remarks>
+            引擎（<c>Publish-OneHistoryModule.ps1</c> 与发布登记）必须与指令面同仓：
+            指令面在宿主而引擎留在模块，等于「宿主活着但发布跑不了」——
+            而这条路线搬进宿主的全部理由就是它不该依赖任何模块。
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.ReadTail(System.String,System.Int32,System.Int32@,System.Boolean@)">
+            <summary>读日志末尾；允许被子进程同时写入，因此以共享模式打开。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ReleaseCommands.PipelineDirectory">
+            <summary>引擎脚本与发布登记在项目里的位置。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.Quote(System.String)">
+            <summary>PowerShell 单引号字符串：内部单引号翻倍转义。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.WorktreeCommands">
+             <summary>
+             AI 工作区的命令面：开分支工作树、列出、回收。
+             </summary>
+             <remarks>
+             位置不硬编码。优先级是 <c>root=</c> 参数 &gt; 设置项 <c>ai.worktreeroot</c> &gt; 默认
+             <see cref="F:HistoryVulcan.Services.Development.WorktreeCommands.DefaultRoot"/>，因此默认能用、想改随时改、单次想换也不用改设置。
+            
+             分支名与目录名同形：<c>ai/&lt;项目&gt;/&lt;短SHA&gt;-&lt;序号&gt;-&lt;标识&gt;</c>。
+             带短 SHA 是为了让工作区一眼看出基于哪个提交；带序号是因为同一提交上常并行开多个尝试，
+             上一轮 Janus 的性能修复和工作区特性就是同一 SHA 的 -1 与 -2。
+             </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.WriteBuildOverride(System.String,HistoryVulcan.Core.Storage.ISettingsService)">
+            <summary>
+            在新工作树里写下本机覆盖点，让它一诞生就能构建。
+            </summary>
+            <remarks>
+            各工程按相对路径引用宿主 z 快照，假定本仓与 2026-023-HistoryVulcan 在同一库根下；
+            而 AI 工作树落在库根之外，那条相对路径必然指空，表现为上百个"找不到类型"。
+            这里把 HistoryVulcanPackageRoot 指回来源库根的绝对路径。文件不入库（各项目 .gitignore 已登记），
+            因此工作树从诞生起就是干净的；项目侧没有 Directory.Build.props 时不写，避免留下无人 Import 的孤儿文件。
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.FindIdleWorktree(System.String,System.String)">
+            <summary>找出"开了但没干活"的工作区：既无未提交改动，其分支也没有领先主干的提交。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.ResolveRootPublic(HistoryVulcan.Core.Storage.ISettingsService)">
+            <summary>供同模块的其他命令解析工作区根，避免第二处默认值。</summary>
+        </member>
         <member name="T:HistoryVulcan.Services.FileLayoutStore">
             <summary>
             布局文件存取实现:当前布局为 layout/current.layout.xml,
@@ -69,466 +472,6 @@
         </member>
         <member name="M:HistoryVulcan.Services.FileLayoutStore.ListNamed">
             <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.LoopbackHttpTransport">
-             <summary>
-             两个本机网关（<c>McpGateway</c> 与 <c>WebGateway</c>）共用的 HttpListener 传输层零件。
-            
-             收拢的是传输层，不是网关：两者仍各自持有自己的 <see cref="T:System.Net.HttpListener"/> 与端口，
-             <c>vulcan.mcp.stop</c> 必须继续真正关闭端口。不合并监听器的完整论证见 DEC-047 与 REQ-NET-001。
-             </summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.LoopbackHttpTransport.LoopbackAddress">
-            <summary>网关只接受回环；前缀挂根路径，由各网关自行校验具体路由。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.LoopbackHttpTransport.DerivePort(System.String,System.Int32,System.Int32)">
-            <summary>
-            按应用名稳定派生默认端口。同一台机器上的同名应用总是落到同一个端口，
-            不同应用错开，避免多宿主并存时互相抢占。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.LoopbackHttpTransport.ReadBearer(System.Net.HttpListenerRequest)">
-            <summary>读取 <c>Authorization: Bearer</c> 值；缺失或格式不符返回 null。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.LoopbackHttpTransport.FixedEquals(System.String,System.String)">
-            <summary>定长时间比较，避免按字符提前返回泄露令牌前缀。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.LoopbackHttpTransport.TryClose(System.Net.HttpListenerContext,System.Int32)">
-            <summary>
-            只置状态码并关闭响应。客户端可能已经断开，此时 <c>Close</c> 会抛
-            <see cref="T:System.ObjectDisposedException"/> 或 <see cref="T:System.Net.HttpListenerException"/>，
-            都属于正常竞态，不应冒泡成请求处理异常。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.LoopbackHttpTransport.AcceptLoopAsync(System.Net.HttpListener,System.Threading.CancellationToken,System.Func{System.Net.HttpListenerContext,System.Threading.Tasks.Task},System.Action{System.String},System.Action{System.Net.HttpListenerContext,System.Exception})">
-            <summary>
-            接受循环。停机（取消或监听器关闭）静默退出；单次接受失败只记警告并继续，
-            不让一个坏连接终结整个循环。每个请求在独立任务上处理，处理异常由 <paramref name="handle"/>
-            的调用方兜底为 500。
-            </summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.CommandCatalogRow">
-            <summary>目录中的一行：一条指令的注册事实与 MCP 投影状态。</summary>
-            <param name="CommandName">完整指令名。</param>
-            <param name="Domain">所属指令域。</param>
-            <param name="Summary">一句话说明。</param>
-            <param name="Example">示例调用；无示例为 null。</param>
-            <param name="ParameterCount">参数个数。</param>
-            <param name="Source">注册方，如 framework:service 或 frontend:*。</param>
-            <param name="SourceDetail">注册方补充信息；无则为 null。</param>
-            <param name="Dangerous">是否为危险指令（需要确认）。</param>
-            <param name="RequiresUiThread">是否必须在 UI 线程执行。</param>
-            <param name="McpToolName">投影后的 MCP 工具名；未投影为 null。</param>
-            <param name="McpState">MCP 投影状态：readonly / standard / dangerous / hidden。</param>
-            <param name="PolicyVisible">按当前策略是否对远程可见。</param>
-            <param name="Customized">工具描述是否已被治理修订覆盖。</param>
-            <param name="CurrentRevision">当前生效的描述修订号；无则为 null。</param>
-            <param name="OpenProposals">待审核的描述提案数。</param>
-            <param name="IncidentCount">已记录的事故数。</param>
-            <param name="HardExclusionReason">硬排除原因；未被硬排除为 null。</param>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.CommandCatalogRow.#ctor(System.String,System.String,System.String,System.String,System.Int32,System.String,System.String,System.Boolean,System.Boolean,System.String,System.String,System.Boolean,System.Boolean,System.String,System.Int32,System.Int32,System.String)">
-            <summary>目录中的一行：一条指令的注册事实与 MCP 投影状态。</summary>
-            <param name="CommandName">完整指令名。</param>
-            <param name="Domain">所属指令域。</param>
-            <param name="Summary">一句话说明。</param>
-            <param name="Example">示例调用；无示例为 null。</param>
-            <param name="ParameterCount">参数个数。</param>
-            <param name="Source">注册方，如 framework:service 或 frontend:*。</param>
-            <param name="SourceDetail">注册方补充信息；无则为 null。</param>
-            <param name="Dangerous">是否为危险指令（需要确认）。</param>
-            <param name="RequiresUiThread">是否必须在 UI 线程执行。</param>
-            <param name="McpToolName">投影后的 MCP 工具名；未投影为 null。</param>
-            <param name="McpState">MCP 投影状态：readonly / standard / dangerous / hidden。</param>
-            <param name="PolicyVisible">按当前策略是否对远程可见。</param>
-            <param name="Customized">工具描述是否已被治理修订覆盖。</param>
-            <param name="CurrentRevision">当前生效的描述修订号；无则为 null。</param>
-            <param name="OpenProposals">待审核的描述提案数。</param>
-            <param name="IncidentCount">已记录的事故数。</param>
-            <param name="HardExclusionReason">硬排除原因；未被硬排除为 null。</param>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.CommandName">
-            <summary>完整指令名。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.Domain">
-            <summary>所属指令域。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.Summary">
-            <summary>一句话说明。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.Example">
-            <summary>示例调用；无示例为 null。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.ParameterCount">
-            <summary>参数个数。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.Source">
-            <summary>注册方，如 framework:service 或 frontend:*。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.SourceDetail">
-            <summary>注册方补充信息；无则为 null。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.Dangerous">
-            <summary>是否为危险指令（需要确认）。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.RequiresUiThread">
-            <summary>是否必须在 UI 线程执行。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.McpToolName">
-            <summary>投影后的 MCP 工具名；未投影为 null。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.McpState">
-            <summary>MCP 投影状态：readonly / standard / dangerous / hidden。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.PolicyVisible">
-            <summary>按当前策略是否对远程可见。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.Customized">
-            <summary>工具描述是否已被治理修订覆盖。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.CurrentRevision">
-            <summary>当前生效的描述修订号；无则为 null。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.OpenProposals">
-            <summary>待审核的描述提案数。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.IncidentCount">
-            <summary>已记录的事故数。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.HardExclusionReason">
-            <summary>硬排除原因；未被硬排除为 null。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.CommandClass">
-            <summary>指令在所属域内的功能类；附加属性保持旧位置构造函数兼容。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogRow.Method">
-            <summary>三段式命令名的末段方法名。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.CommandParameterInfo">
-            <summary>一条指令的单个参数说明。</summary>
-            <param name="Name">参数名。</param>
-            <param name="Type">参数类型。</param>
-            <param name="Required">是否必填。</param>
-            <param name="Default">默认值；无默认为 null。</param>
-            <param name="Position">位置参数序号；仅具名时为 null。</param>
-            <param name="AllowedValues">允许值枚举；不限时为空。</param>
-            <param name="Description">参数说明。</param>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.CommandParameterInfo.#ctor(System.String,System.String,System.Boolean,System.String,System.Nullable{System.Int32},System.Collections.Generic.IReadOnlyList{System.String},System.String)">
-            <summary>一条指令的单个参数说明。</summary>
-            <param name="Name">参数名。</param>
-            <param name="Type">参数类型。</param>
-            <param name="Required">是否必填。</param>
-            <param name="Default">默认值；无默认为 null。</param>
-            <param name="Position">位置参数序号；仅具名时为 null。</param>
-            <param name="AllowedValues">允许值枚举；不限时为空。</param>
-            <param name="Description">参数说明。</param>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandParameterInfo.Name">
-            <summary>参数名。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandParameterInfo.Type">
-            <summary>参数类型。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandParameterInfo.Required">
-            <summary>是否必填。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandParameterInfo.Default">
-            <summary>默认值；无默认为 null。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandParameterInfo.Position">
-            <summary>位置参数序号；仅具名时为 null。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandParameterInfo.AllowedValues">
-            <summary>允许值枚举；不限时为空。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandParameterInfo.Description">
-            <summary>参数说明。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.CommandCatalogDetail">
-            <summary>单条指令的完整详情：目录行、参数表与 MCP 输入 schema。</summary>
-            <param name="Command">该指令的目录行。</param>
-            <param name="Parameters">参数表。</param>
-            <param name="McpInputSchema">MCP 工具的输入 JSON Schema；未投影为 null。</param>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.CommandCatalogDetail.#ctor(HistoryVulcan.Services.Mcp.CommandCatalogRow,System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Mcp.CommandParameterInfo},System.String)">
-            <summary>单条指令的完整详情：目录行、参数表与 MCP 输入 schema。</summary>
-            <param name="Command">该指令的目录行。</param>
-            <param name="Parameters">参数表。</param>
-            <param name="McpInputSchema">MCP 工具的输入 JSON Schema；未投影为 null。</param>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogDetail.Command">
-            <summary>该指令的目录行。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogDetail.Parameters">
-            <summary>参数表。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogDetail.McpInputSchema">
-            <summary>MCP 工具的输入 JSON Schema；未投影为 null。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandCatalogDetail.Annotations">
-            <summary>命令注册方提供、由具体消费方解释的目录注解。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.CommandDomainInfo">
-            <summary>一个指令域及其注册数量。</summary>
-            <param name="Domain">域名。</param>
-            <param name="Count">该域下的指令数。</param>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.CommandDomainInfo.#ctor(System.String,System.Int32)">
-            <summary>一个指令域及其注册数量。</summary>
-            <param name="Domain">域名。</param>
-            <param name="Count">该域下的指令数。</param>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandDomainInfo.Domain">
-            <summary>域名。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.CommandDomainInfo.Count">
-            <summary>该域下的指令数。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.CommandCatalogCommands">
-            <summary>V2.1.3 全指令结构化目录，注册表是唯一上游。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.CommandCatalogCommands.RegisterCore(HistoryVulcan.Core.Commands.CommandRegistry,System.String)">
-             <summary>
-             注册不依赖提示词治理的核心目录指令，供只要命令目录、不承载 MCP 治理的宿主使用。
-            
-             4.0.0 从 internal 提为 public：本类型随 REQ-A1 从 Shell 迁入 Services 后，其调用方
-             （前端）将在 REQ-A3 成为独立仓的独立应用，跨程序集的 internal 不再可达；
-             InternalsVisibleTo 绑定具体程序集名，对外部消费方不成立。
-             </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.CommandCatalogCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter,HistoryVulcan.Services.Mcp.PromptGovernanceStore,System.Func{HistoryVulcan.Services.Mcp.McpGateway},System.String)">
-            <summary>把目录查询指令注册进指定注册表。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.CommandCatalogCommands.Snapshot(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter,HistoryVulcan.Services.Mcp.PromptGovernanceStore,System.String)">
-            <summary>按当前注册表与 MCP 投影生成目录快照。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.IEffectivePromptDescriptionReader">
-            <summary>
-            Provides the descriptions currently effective for MCP tools.
-            Governance writers are intentionally outside the host; the host only consumes this read-only view.
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.IEffectivePromptDescriptionReader.AllEffectiveDescriptions">
-            <summary>Returns the applied description overrides keyed by command name.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.McpAuditRecorder">
-            <summary>MCP 调用留痕的 JSONL 实现。单条追加失败只告警，不阻断调用。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpAuditRecorder.#ctor(System.String,HistoryVulcan.Core.Logging.IShellLog)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpAuditRecorder.RecordMcp(System.String,System.String,System.String,System.String,System.Int64)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.McpCommands">
-            <summary>
-            mcp.* 指令域：Schema、网关生命周期与命令目录入口。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry,System.Func{HistoryVulcan.Core.Commands.CommandBus},System.Func{HistoryVulcan.Services.Mcp.McpGateway},HistoryVulcan.Core.Storage.ISettingsService,HistoryVulcan.Services.Mcp.PromptGovernanceStore,System.String)">
-            <summary>把 MCP 服务管理指令注册进指定注册表。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpCommands.BuildAutostart(System.Func{HistoryVulcan.Services.Mcp.McpGateway},HistoryVulcan.Core.Storage.ISettingsService)">
-            <summary>
-            持久开关：是否随宿主启动自动监听。与 start/stop 的区别是本命令写设置、跨会话生效。
-            </summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.McpGateway">
-            <summary>
-            MCP 网关(V2.1 §4/§6):HttpListener + JSON-RPC 2.0(Streamable HTTP 无状态子集),
-            仅监听 127.0.0.1。铁律 1:唯一上游是指令总线——本类只认识
-            CommandSchemaExporter / CommandBus,不 import ModuleHost、不反射模块类型。
-            消费方显式装配网关后可调用 TryAutostart；mcp.autostart=false 可关闭自动监听，vulcan.mcp.start 仍可手动恢复。
-            每次调用/拒绝均追加写入 state/mcp-history.jsonl(铁律 2 / MS-05)。
-            </summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.McpGateway.SupportedProtocols">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.McpGateway.KeyPort">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.McpGateway.KeyPolicy">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.McpGateway.KeyToken">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.McpGateway.KeyAutostart">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.McpGateway.KeyTimeout">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.McpGateway.KeyConfirm">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.McpGateway.KeyConfirmTimeout">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.McpGateway.KeyPortRetries">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.McpGateway.KeySessionLimit">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.McpGateway._remoteConfirm">
-            <summary>宿主确认中继对话框(client, 完整提示, 超时秒) → true/false/null;host 档需要。</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.McpGateway._confirmGate">
-            <summary>CX-02 §9-4:同一时刻只弹一个中继确认框,多个远程请求按序处理。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.#ctor(System.Func{HistoryVulcan.Core.Commands.CommandBus},HistoryVulcan.Core.Storage.ISettingsService,HistoryVulcan.Core.Logging.IShellLog,HistoryVulcan.Core.Mcp.IMcpAuditLog,HistoryVulcan.Services.Mcp.PromptGovernanceStore,HistoryVulcan.Core.ApplicationIdentity,System.Func{System.String,System.String,System.Int32,System.Nullable{System.Boolean}})">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.McpGateway.ConfirmMode">
-            <summary>确认中继模式(CX-02):deny=危险指令一律拒绝(默认);host=宿主弹框人工裁决。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.McpGateway.ConfirmTimeout">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.McpGateway.AutostartEnabled">
-            <summary>缺省启用；仅显式配置 false 时关闭宿主启动自动监听。</summary>
-            <summary>
-            是否随宿主启动自动监听。**缺省为 false**：网关会对外开一个回环端口，
-            开不开必须由人显式决定，不能因为装配了就默默监听。
-            用 <c>vulcan.mcp.autostart enabled=true</c> 打开持久自启动。
-            </summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.McpGateway.IsRunning">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.McpGateway.Port">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.McpGateway.Policy">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.McpGateway.CallCount">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Mcp.McpGateway.LastCall">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.VisibleTools">
-            <summary>
-            当前策略下 tools/list 会暴露的工具(每次现算,与模块热重载天然同步)。
-            危险指令(带确认闸口)默认不暴露;仅当 mcp.confirm=host 且策略=standard 时暴露,
-            供 Codex 发现"可请求、由人把关"的操作(V2.2 CX-02)。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.TryAutostart">
-            <summary>宿主完成全部指令和模块装配后调用；禁用时不监听但仍视为正常配置。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.Start(System.Nullable{System.Int32})">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.Stop">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.Dispose">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.ExecuteToolAsync(HistoryVulcan.Core.Clients.ClientSession,System.Text.Json.Nodes.JsonNode,HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Extensibility.Mcp.McpToolInfo,System.String,System.String,System.Boolean,System.String,System.Action{System.String,System.String,System.String})">
-            <summary>组装指令经总线执行并映射为 MCP 结果;preApproved=true 时置确认预批准域(CX-03)。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.McpGateway.RelayConfirmAsync(HistoryVulcan.Core.Clients.ClientSession,HistoryVulcan.Core.Commands.CommandBus,System.String,System.Nullable{System.Text.Json.JsonElement},System.String)">
-            <summary>
-            宿主确认中继(CX-02):复用描述符 ConfirmPrompt 文案,标注 MCP 客户端弹框由人裁决。
-            返回批准、拒绝、确认超时或排队超时。ConfirmPrompt 对本次输入返回 null
-            (如受保护分支)时直接放行,交由指令处理器按业务规则拒绝。
-            </summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.PromptRevision">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptRevision.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.Boolean,System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.PromptProposal">
-            <summary>Legacy proposal data retained for compatibility with existing governance state.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptProposal.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String)">
-            <summary>Legacy proposal data retained for compatibility with existing governance state.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.PromptCorrection">
-            <summary>Legacy correction data retained for compatibility with existing governance state.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptCorrection.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String)">
-            <summary>Legacy correction data retained for compatibility with existing governance state.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.PromptIncident">
-            <summary>Legacy incident data retained for compatibility with existing governance state.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptIncident.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String)">
-            <summary>Legacy incident data retained for compatibility with existing governance state.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Mcp.PromptGovernanceStore">
-            <summary>
-            MCP 提示词治理的文件存储。所有关联状态在同一份 JSON 文档内原子替换，
-            因而批准、应用、回滚仍保持单进程事务语义，但不再要求关系数据库。
-            </summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.PromptGovernanceStore.TableDescriptions">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Mcp.PromptGovernanceStore.TableProposals">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.#ctor(System.String,HistoryVulcan.Core.Logging.IShellLog)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.AllEffectiveDescriptions">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetCurrentRevision(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetRevision(System.String)">
-            <summary>Looks up a legacy revision by identifier.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetRevisions(System.String,System.Int32)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.ApplyDirect(System.String,System.String,System.String,System.String,System.String,System.String)">
-            <summary>Applies a description directly for compatibility with internal migration paths.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.CreateProposal(System.String,System.String,System.String,System.String,System.String,System.String)">
-            <summary>Creates a legacy governance proposal.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetProposal(System.String)">
-            <summary>Looks up a legacy governance proposal.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.ListProposals(System.String,System.Boolean,System.Int32)">
-            <summary>Lists legacy governance proposals.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.ApproveProposal(System.String,System.String)">
-            <summary>Approves a legacy governance proposal.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.RejectProposal(System.String,System.String,System.String)">
-            <summary>Rejects a legacy governance proposal.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.ApplyProposal(System.String,System.String)">
-            <summary>Applies an approved legacy governance proposal.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.RevertToRevision(System.String,System.String,System.String)">
-            <summary>Creates a new revision from a previous legacy revision.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.CreateCorrection(System.String,System.String,System.String,System.String,System.String,System.String)">
-            <summary>Creates a legacy correction record.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetCorrection(System.String)">
-            <summary>Looks up a legacy correction record.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.ListCorrections(System.String,System.Int32)">
-            <summary>Lists legacy correction records.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.CreateIncident(System.String,System.String,System.String,System.String,System.String,System.String,System.String)">
-            <summary>Creates a legacy incident record.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Mcp.PromptGovernanceStore.ListIncidents(System.String,System.Int32)">
-            <summary>Lists legacy incident records.</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleDirectoryWatcher">
              <summary>
@@ -721,6 +664,19 @@
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Metas">
             <summary>模块元信息(vulcan.module.list);CommandCount 在注册完成后定稿。</summary>
         </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Instances">
+             <summary>
+             本快照构造出的全部模块实例，供拆除阶段回收持有的进程级资源。
+            
+             卸载 ALC 只回收托管内存，不会关闭实例持有的操作系统句柄：端口、文件锁、
+             命名管道、计时器都不在垃圾回收的管辖范围内。非界面模块此前没有任何拆除回调，
+             于是这类资源在每轮热重载后被静默遗弃——旧监听器仍占着端口、仍持有活的
+             指令总线引用，而新实例只能退到下一个端口。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.InstancesFrom(System.Runtime.Loader.AssemblyLoadContext)">
+            <summary>取出由指定加载上下文装载的全部实例，供按模块卸载时回收资源。</summary>
+        </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleHost.ModuleLoadContext">
             <summary>可回收的加载上下文:模块及其依赖全部从内存流加载,不锁磁盘文件。</summary>
         </member>
@@ -743,6 +699,21 @@
             WPF 模块（例如 HistoryAurora）若先 Build 再卸旧包，进程里会同时存在两份同名
             程序集；默认上下文的 Resolving 钩子会命中旧的那份，新窗口的 XAML 随即解析失败。
             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.DisposeInstances(System.Collections.Generic.IReadOnlyList{System.Object})">
+             <summary>
+             回收模块实例持有的进程级资源。
+            
+             必须在 <c>alc.Unload()</c> 之前：卸载后再碰实例就是在动一个已经开始拆的上下文。
+             也必须在 <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.DestroyUi(HistoryVulcan.Services.Modules.ModuleHost.Snapshot)"/> 之后：界面拆除要先编组回界面线程，
+             而这里可能阻塞在关端口、Join 线程上，顺序颠倒会让界面线程等在一个 IO 上。
+            
+             界面模块的 <c>DestroyUi</c> 与这里的 <c>Dispose</c> 都会被调用，因此
+             两者的实现必须各自可重入且互不假设对方已经跑过。
+            
+             任何一个实例抛出都只记警告：一个模块拆不干净，不能连累整轮重载——
+             那会让宿主停在一个既没有旧快照也没有新快照的状态上。
+             </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ClearShellHooks">
              <summary>
@@ -821,6 +792,52 @@
             纯文件级操作,不加载任何 DLL——启动期(窗口创建前)与热重载后均可调用。
             </summary>
         </member>
+        <member name="T:HistoryVulcan.Services.Modules.OfflineModuleInstall">
+             <summary>
+             不依赖运行中宿主的模块包安装。
+             </summary>
+             <remarks>
+             **这是恢复矩阵里最后一格。**
+            
+             平时换模块靠两条路：经指令总线调 <c>vulcan.module.install</c>，或者直接把包拷进模块槽
+             让文件监视自己重载。两条都要求宿主**已经起来了**。宿主起不来时——比如某个模块在装载
+             阶段就抛，或者宿主自己的快照坏了——那两条路一条都不通，而恰恰此刻最需要换包。
+            
+             因此本类刻意**不构建组合根、不装载任何模块、不碰指令总线**：它只做校验和文件事务。
+             装载路径整个坏掉时它依然成立，这是它存在的全部理由。凡是让它依赖宿主运行时的改动，
+             都是在拆掉这一格。
+            
+             校验、拷贝与回滚复用 <see cref="T:HistoryVulcan.Services.Modules.RuntimeModulePackageStore"/>，与活宿主的那条编排同源：
+             「离线装的包和在线装的包不一样」会是一类极难排查的故障。
+             </remarks>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.OfflineModuleInstall.Result">
+            <summary>安装结果：退出码与一行人读消息。</summary>
+            <param name="ExitCode">0 成功；2 参数或校验失败；1 文件操作失败。</param>
+            <param name="Message">人读结果，供 CLI 直接打印。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.#ctor(System.Int32,System.String)">
+            <summary>安装结果：退出码与一行人读消息。</summary>
+            <param name="ExitCode">0 成功；2 参数或校验失败；1 文件操作失败。</param>
+            <param name="Message">人读结果，供 CLI 直接打印。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.ExitCode">
+            <summary>0 成功；2 参数或校验失败；1 文件操作失败。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.Message">
+            <summary>人读结果，供 CLI 直接打印。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.OfflineModuleInstall.Install(System.String,System.String)">
+            <summary>
+            把 <paramref name="sourcePath"/> 处的模块包安装进 <paramref name="runtimeRoot"/>。
+            </summary>
+            <remarks>
+            与在线安装的差别只有一处：不卸载、不重载、不核对快照。若此刻恰好有宿主在运行，
+            它的文件监视会看到目录变化并自行重载——**但不要依赖这一点**：
+            正在被装载的程序集处于文件锁定状态，替换会失败并回滚。
+            换活着的宿主里的模块，请走 <c>vulcan.module.install</c>。
+            </remarks>
+        </member>
         <member name="T:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource">
             <summary>
             Discovers manifest packages from the direct children of a fixed runtime module directory.
@@ -837,6 +854,22 @@
         </member>
         <member name="M:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.Discover">
             <inheritdoc />
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.RuntimeModulePackageStore">
+             <summary>
+             运行区模块包的校验与文件事务原语。
+             </summary>
+             <remarks>
+             这些方法原先是 <see cref="T:HistoryVulcan.Services.Modules.ModuleHost"/> 的私有静态成员。抽出来是因为**装包有两条编排**：
+            
+             - <c>ModuleHost.InstallPackage</c>：在活着的宿主里换包，要先卸载旧模块释放文件锁，
+               换完还要重载并核对新快照；
+             - <c>OfflineModuleInstall</c>：宿主没起来（或起不来）时按文件系统换包，
+               没有快照可卸、也没有快照可核。
+            
+             两条编排不同，但**校验、拷贝与回滚必须是同一份**——这几步一旦分叉，
+             代价是用户的模块目录。编排各自保留，原语共用。
+             </remarks>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry">
             <summary>A validated module artifact discovered from an explicit Z-level manifest.</summary>
@@ -974,135 +1007,6 @@
         </member>
         <member name="M:HistoryVulcan.Services.ShellLog.Dispose">
             <summary>退出前冲刷文件队列(App 关闭时调用)。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Web.ShellConnectionState">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.ShellConnectionState.Disconnected">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.ShellConnectionState.Connecting">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.ShellConnectionState.PairingRequired">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.ShellConnectionState.Ready">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.ShellConnectionState.Rejected">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.ShellConnectionState.VersionMismatch">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Web.ShellEndpointProfile">
-            <summary>Shell HTTP/WS 共享的端点、设备凭据与证书固定配置。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.ShellEndpointProfile.#ctor(System.Uri,System.String,System.Func{System.String},System.String,System.Nullable{System.TimeSpan},System.String)">
-            <summary>Shell HTTP/WS 共享的端点、设备凭据与证书固定配置。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Web.ShellEndpointProfile.EffectiveConnectTimeout">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.ShellEndpointProfile.NormalizeFingerprint(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.ShellEndpointProfile.ValidateCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Web.WebGateway">
-             <summary>
-             命令总线的本机 HTTP/WS 接入点，只服务同机前端 Shell。
-            
-             3.13.0 删除局域网面（DEC-045）：绑定地址、设备鉴权/配对、令牌、CORS 与限流一并移除。
-             那套机制两年内没有任何生产装配点——<c>IDeviceAuthenticationProvider</c> 只在测试里被赋值，
-             <c>WebCommands</c> 从未被注册，确认档甚至读的是一个没人写入的 <c>lan.confirm</c> 键。
-             保留它只会让每次公开面评审背着一份不可达的安全边界。真要局域网访问时，
-             基于合并后的单网关重写，而不是复活这一套。
-             </summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.WebGateway.GatewayProtocolVersion">
-            <summary>网关线协议版本；健康检查回报，前端据此拒绝不兼容的后台。</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.WebGateway.KeyPort">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.WebGateway.KeyPortRetries">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.#ctor(System.Func{HistoryVulcan.Core.Commands.CommandBus},HistoryVulcan.Core.Storage.ISettingsService,HistoryVulcan.Core.Logging.IShellLog)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Web.WebGateway.IsRunning">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Web.WebGateway.ServerId">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Web.WebGateway.Port">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Web.WebGateway.LoopbackAddress">
-            <summary>网关固定绑定的本机地址；3.13.0 起不可配置。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Web.WebGateway.AccessToken">
-             <summary>
-             本次监听的一次性凭据，由 <see cref="M:HistoryVulcan.Services.Web.WebGateway.Start(System.Nullable{System.Int32})"/> 用密码学随机数生成，`Stop` 后作废。
-            
-             存在的理由：回环本身不构成边界。删除局域网面前后，只要带上
-             <c>X-HistoryVulcan-Client: Shell</c> 头，任何本机进程都能在权威总线上执行任意命令——
-             包括 MCP 侧硬排除的 `vulcan.app.quit`、`vulcan.module.install/remove` 和全部
-             `vulcan.mcp.*`。也就是说 MCP 的策略、隐藏与危险确认在同机范围内可被整体绕过。
-             令牌把"我们自己启动的前端"和"任意本机进程"区分开：它只写进
-             `%AppData%\HistoryVulcan\service\endpoint.json`，随进程生存，不落设置、不可配置、不回显。
-             </summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Web.WebGateway.ConnectedClients">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.PublishModuleRevision(System.Int64)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.TryGetSession(System.String,HistoryVulcan.Core.Clients.ClientSession@)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.Start(System.Nullable{System.Int32})">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.Stop">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.Dispose">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.AcceptLoopAsync(System.Net.HttpListener,System.Threading.CancellationToken)">
-            <summary>
-            共用实现后顺带获得 MCP 侧原有的健壮性：单次接受失败只记警告并继续，
-            不再让一个坏连接冒泡出循环、悄悄终结整条监听。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.CreateSession(System.Net.HttpListenerRequest)">
-             <summary>
-             按请求头造一个候选会话。种类恒为 <see cref="F:HistoryVulcan.Core.Clients.ClientKind.Shell"/>——这是本网关
-             唯一会接受的种类，<see cref="M:HistoryVulcan.Services.Web.WebGateway.Authenticate(System.Net.HttpListenerRequest,HistoryVulcan.Core.Clients.ClientSession)"/> 负责核对请求头是否真的这么声明。
-            
-             4.2.0 之前这里会把不声明 Shell 的请求归成 <c>ClientKind.Web</c>，而鉴权紧接着
-             无条件拒绝它——一道从来没有人通过的门。那不是纵深防御，只是把"未实现"
-             写成了"已拒绝"的样子。种类枚举里的 Web 一并退役。
-             </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Web.WebGateway.Authenticate(System.Net.HttpListenerRequest,HistoryVulcan.Core.Clients.ClientSession)">
-             <summary>
-             3.13.0 起唯一的接受条件：同机回环上的前端 Shell。
-            
-             删除局域网面后这里不再有"部分授权"的中间态——要么是本机前端（read/operate/admin
-             全给），要么直接 401。<c>ClientSession.Scopes</c> 仍然填齐是因为它属于冻结的 Core
-             公开面，消费方仍可能读取；本网关只是不再产生任何低于 admin 的会话。
-            
-             三个条件缺一不可：回环、声明为 Shell、持有本次监听的 <see cref="P:HistoryVulcan.Services.Web.WebGateway.AccessToken"/>。
-             前两条只是形状检查（任何本机进程都能伪造），真正的边界是第三条。
-             </summary>
         </member>
     </members>
 </doc>
