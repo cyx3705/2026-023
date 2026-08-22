@@ -4,6 +4,17 @@
 公开面自 3.9.0 起冻结，Shell 与 Extensibility 仍可在不改变 Core 合同的前提下演进。进入项目后先确认现行合同和修改边界，
 再按任务读取最小必要上下文。
 
+## 模块开发必须走手册（Janus / Mercury / Diana / Aurora / 其它）
+
+对话根在本仓时，只维护 HistoryVulcan 自己。**用户要开发、排查或修改其它编号模块时，必须走模块开发手册：开 F 盘工作区并把对话根迁进去。禁止留在本仓、按绝对路径改 `HistoryClio\<模块主树>`。** 那等于没走工作区，合并会改错树或锁死目录。不要等用户再提醒一次。
+
+1. `diana.docs.catalog`，再按节读 `diana.docs.vulcan file=docs/模块开发手册.md`。
+2. `vulcan.worktree.create project=<YYYY-NNN-模块> slug=<问题> agent=grok`，工作区在 `F:\ai工作区`。
+3. grok **必须**按手册四步迁根：主树 `checkout --detach` → `move_agent_to_root` → 工作区切回 `ai/<项目>/<工作区名>` → 主树 `checkout main`。不要省掉迁根。
+4. 已发布合同用 `diana.docs.<通道>`。读实现和改代码都在 F 盘工作区，不在 Clio 主树。
+
+手册编辑源：`b-Office/package/模块开发手册.md`。
+
 > 本文件在 3.3.2 之前长期停留在「3.0.3 已冻结、不得新增公开 API、四份 Unshipped 必须仅含
 > `#nullable enable`」的表述，而实际版本早已推进到 3.3.x、Unshipped 累积了上百行。
 > 陈述与事实不符会让 AI 要么被不存在的冻结挡住，要么整份忽略本文件失去全部边界约束。
@@ -19,6 +30,8 @@
    和 `artifacts/` 默认不进入源码维护上下文。
 5. 跨项目说明书：先执行 `diana.docs.catalog`，把完整输出留在本对话中，再调用其中一条
    `diana.docs.<通道>`。不要打开邻接项目仓库的 `package`，也不要依赖手写文件表。
+6. **其它模块的开发/排查**：停在本条，改走上文「模块开发必须走手册」；不要对本仓「只进入活动目录」
+   做例外、去扫邻接 Clio 主树。
 
 ## 真值与冲突处理
 

@@ -52,7 +52,8 @@ HistoryVulcan 独立可执行宿主显式启用模块生命周期与模块管理
 
 | 入口 | 用途 |
 | --- | --- |
-| [AI 工作合同](AGENTS.md) | 读取顺序、真值、冻结与修改边界 |
+| [AI 工作合同](AGENTS.md) | 读取顺序、真值、冻结与修改边界；**开发其它模块必须先走手册，不得改邻接主树** |
+| [模块开发手册](b-Office/package/模块开发手册.md) | Janus / Mercury 等：`vulcan.worktree.create`、迁根、cycle / merge |
 | [项目清单](project.manifest.json) | 项目身份、活动路径、命令、归档和上下文排除项 |
 | [项目概览](b-Office/current/项目概览.md) | 目标、范围、冻结状态与最近验证 |
 | [技术合同](b-Office/current/技术合同.md) | 现行需求、架构和不变量 |

@@ -1,0 +1,13 @@
+---
+description: 在本仓对话里开发 Janus 等模块时必须走模块开发手册，开 F 盘工作区并迁根
+alwaysApply: true
+---
+
+# 模块开发走手册
+
+对话根在 HistoryVulcan 时，只改本仓。用户要开发、排查或修改 Janus / Mercury / Diana / Aurora 等模块时：
+
+1. 读 `diana.docs.vulcan file=docs/模块开发手册.md`（先 catalog，再按节）。
+2. `vulcan.worktree.create` 开 `F:\ai工作区` 工作区；不要改 `C:\OneHistory\HistoryClio\<模块主树>`。
+3. grok 必须 `move_agent_to_root` 迁进该工作区（手册四步：主树 detach → 迁根 → 工作区切回 `ai/...` → 主树回 main）。
+4. 留在本仓按绝对路径改邻接项目 = 没走工作区，禁止。
