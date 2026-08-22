@@ -25,11 +25,12 @@ b-Office/package/
 
 ## 消费合同
 
-- [HistoryVulcan UI 风格与嵌入页面规范](HistoryVulcan_UI风格与嵌入页面规范.md)：颜色、字体、字号、圆角、间距、控件和嵌入页布局合同。
 - [HistoryVulcan API 与指令手册](HistoryVulcan_API与指令手册.md)：包选择、公开 API、**命令总线如何消费**、命令合同和最小宿主。
 - 模块开发流程见 HistoryDiana 的《模块开发手册》（`diana.docs.diana`）；宿主侧的接口事实仍以本目录其余文档为准。
 - [运行时约束与已知限制](HistoryVulcan_运行时约束与已知限制.md)：消费方必须遵守的运行时限制。
 - [消费变更摘要](HistoryVulcan_消费变更摘要.md)：只保留影响消费者的版本变化（含 3.3.0 DEC-022）。
+
+界面令牌与嵌入页规范已移交 HistoryAurora `b-Office/current/HistoryAurora_UI风格与嵌入页面规范.md`，不在本目录维护。
 
 发布清单和生成模板位于 `../../b-Code-HistoryVulcan/eng/release/`；发布步骤见
 `../current/项目概览.md`，完整版本记录位于 `../history/`。新增或改名消费手册时，必须同时更新
