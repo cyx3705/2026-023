@@ -71,10 +71,12 @@
 
 ## 当前版本消费合同
 
-- [HistoryVulcan UI 风格与嵌入页面规范](docs/HistoryVulcan_UI风格与嵌入页面规范.md)
 - [HistoryVulcan API 与指令手册](docs/HistoryVulcan_API与指令手册.md)
 - [HistoryVulcan 运行时约束与已知限制](docs/HistoryVulcan_运行时约束与已知限制.md)
 - [HistoryVulcan 消费变更摘要](docs/HistoryVulcan_消费变更摘要.md)
+
+界面令牌、嵌入页结构和顶栏归属见 HistoryAurora 现行合同
+`HistoryAurora_UI风格与嵌入页面规范.md`（仓 `2026-026-HistoryAurora` 的 `b-Office/current/`），不随宿主 docs 发布。
 
 上述文档与 `host/` 中的宿主作为同一快照发布，是当前正式版本的稳定消费合同。兼容包资产仅供仍以
 `PackageReference` 嵌入框架的项目使用，不是 HistoryVulcan 自身部署物。完整维护资料、测试证据、历史版本和发布归档不属于当前消费合同，需要时再从 `b-Publish/` 查阅。
