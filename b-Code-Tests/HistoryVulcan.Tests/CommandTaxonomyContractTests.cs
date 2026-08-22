@@ -115,11 +115,11 @@ public sealed class CommandTaxonomyContractTests
     {
         string[] sources =
         [
-            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.ServiceHost", "ServiceCommands.cs"),
-            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.ServiceHost", "ServiceComposer.cs"),
-            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.Services", "Commands", "CommandCatalogCommands.cs"),
-            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.Services", "Development", "WorktreeCommands.cs"),
-            Path.Combine("b-Code-HistoryVulcan", "src", "HistoryVulcan.Services", "Development", "ReleaseCommands.cs"),
+            Path.Combine("b-Code-HistoryVulcan", "HistoryVulcan.ServiceHost", "ServiceCommands.cs"),
+            Path.Combine("b-Code-HistoryVulcan", "HistoryVulcan.ServiceHost", "ServiceComposer.cs"),
+            Path.Combine("b-Code-HistoryVulcan", "HistoryVulcan.Services", "Commands", "CommandCatalogCommands.cs"),
+            Path.Combine("b-Code-HistoryVulcan", "HistoryVulcan.Services", "Development", "WorktreeCommands.cs"),
+            Path.Combine("b-Code-HistoryVulcan", "HistoryVulcan.Services", "Development", "ReleaseCommands.cs"),
         ];
 
         var declared = new List<string>();

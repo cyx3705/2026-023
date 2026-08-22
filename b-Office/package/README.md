@@ -32,7 +32,7 @@ b-Office/package/
 
 界面令牌与嵌入页规范已移交 HistoryAurora `b-Office/current/HistoryAurora_UI风格与嵌入页面规范.md`，不在本目录维护。
 
-发布清单和生成模板位于 `../../b-Code-HistoryVulcan/eng/release/`；发布步骤见
+发布清单位于 `../../b-Code-Eng/release/`；发布步骤见
 `../current/项目概览.md`，完整版本记录位于 `../history/`。新增或改名消费手册时，必须同时更新
-`../../b-Code-HistoryVulcan/eng/release/consumer-docs.json`、根 `project.manifest.json` 和本索引；不得直接编辑 `z-Publish/docs`
+`../../b-Code-Eng/release/consumer-docs.json`、根 `project.manifest.json` 和本索引；不得直接编辑 `z-Publish/docs`
 或 `z-Publish/history/<发布标识>/docs` 下的生成副本。

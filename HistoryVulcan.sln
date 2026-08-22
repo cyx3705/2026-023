@@ -5,19 +5,17 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "b-Code-HistoryVulcan", "b-Code-HistoryVulcan", "{C3E1AE08-5A3A-741C-0ADC-7744F68B6C34}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5C8B4F3E-43FD-DAB6-8FA6-006392BA9734}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoryVulcan.Core", "b-Code-HistoryVulcan\HistoryVulcan.Core\HistoryVulcan.Core.csproj", "{1BC9F92E-4179-4F91-B93D-81F9547F319F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoryVulcan.Core", "b-Code-HistoryVulcan\src\HistoryVulcan.Core\HistoryVulcan.Core.csproj", "{1BC9F92E-4179-4F91-B93D-81F9547F319F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoryVulcan.Services", "b-Code-HistoryVulcan\HistoryVulcan.Services\HistoryVulcan.Services.csproj", "{DAD4014F-A584-4E68-8317-CBA8B10C33B0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoryVulcan.Services", "b-Code-HistoryVulcan\src\HistoryVulcan.Services\HistoryVulcan.Services.csproj", "{DAD4014F-A584-4E68-8317-CBA8B10C33B0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoryVulcan.ServiceHost", "b-Code-HistoryVulcan\HistoryVulcan.ServiceHost\HistoryVulcan.ServiceHost.csproj", "{961226E3-8C7F-4F6F-930D-6520FC5EBF68}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoryVulcan.ServiceHost", "b-Code-HistoryVulcan\src\HistoryVulcan.ServiceHost\HistoryVulcan.ServiceHost.csproj", "{961226E3-8C7F-4F6F-930D-6520FC5EBF68}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App", "b-Code-HistoryVulcan\src\App\App.csproj", "{DAC78FF9-E7FA-4C13-8361-AEECCC44F1C2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App", "b-Code-HistoryVulcan\App\App.csproj", "{DAC78FF9-E7FA-4C13-8361-AEECCC44F1C2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoryVulcan.Tests", "b-Code-Tests\HistoryVulcan.Tests\HistoryVulcan.Tests.csproj", "{635B097E-7F87-43E7-AA5D-F6D106A1E9B0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoryVulcan.Extensibility", "b-Code-HistoryVulcan\src\HistoryVulcan.Extensibility\HistoryVulcan.Extensibility.csproj", "{8A76C859-84B3-42FA-ADB5-3B1062480D42}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HistoryVulcan.Extensibility", "b-Code-HistoryVulcan\HistoryVulcan.Extensibility\HistoryVulcan.Extensibility.csproj", "{8A76C859-84B3-42FA-ADB5-3B1062480D42}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -106,12 +104,10 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{5C8B4F3E-43FD-DAB6-8FA6-006392BA9734} = {C3E1AE08-5A3A-741C-0ADC-7744F68B6C34}
-		{1BC9F92E-4179-4F91-B93D-81F9547F319F} = {5C8B4F3E-43FD-DAB6-8FA6-006392BA9734}
-		{DAD4014F-A584-4E68-8317-CBA8B10C33B0} = {5C8B4F3E-43FD-DAB6-8FA6-006392BA9734}
-		{961226E3-8C7F-4F6F-930D-6520FC5EBF68} = {5C8B4F3E-43FD-DAB6-8FA6-006392BA9734}
-		{DAC78FF9-E7FA-4C13-8361-AEECCC44F1C2} = {5C8B4F3E-43FD-DAB6-8FA6-006392BA9734}
-		{635B097E-7F87-43E7-AA5D-F6D106A1E9B0} = {5C8B4F3E-43FD-DAB6-8FA6-006392BA9734}
-		{8A76C859-84B3-42FA-ADB5-3B1062480D42} = {5C8B4F3E-43FD-DAB6-8FA6-006392BA9734}
+		{1BC9F92E-4179-4F91-B93D-81F9547F319F} = {C3E1AE08-5A3A-741C-0ADC-7744F68B6C34}
+		{DAD4014F-A584-4E68-8317-CBA8B10C33B0} = {C3E1AE08-5A3A-741C-0ADC-7744F68B6C34}
+		{961226E3-8C7F-4F6F-930D-6520FC5EBF68} = {C3E1AE08-5A3A-741C-0ADC-7744F68B6C34}
+		{DAC78FF9-E7FA-4C13-8361-AEECCC44F1C2} = {C3E1AE08-5A3A-741C-0ADC-7744F68B6C34}
+		{8A76C859-84B3-42FA-ADB5-3B1062480D42} = {C3E1AE08-5A3A-741C-0ADC-7744F68B6C34}
 	EndGlobalSection
 EndGlobal

@@ -67,18 +67,19 @@ HistoryVulcan 独立可执行宿主显式启用模块生命周期与模块管理
 
 | 路径 | 内容 |
 |---|---|
-| `b-Code-HistoryVulcan/` | Core、Services、Shell、ServiceHost、演示宿主与工程脚本 |
-| `b-Code-Tests/` | HistoryVulcan 回归、布局、命令、安全与包合同测试 |
+| `b-Code-HistoryVulcan/` | Core、Services、ServiceHost、演示宿主源码 |
+| `b-Code-Eng/` | 候选构建、公开 API 基线、质量门禁与发布管线 |
+| `b-Code-Tests/` | HistoryVulcan 回归、模块、命令与安全测试 |
 | `b-Code-Samples/` | 模块开发示例 |
-| `b-Office/package/` | 消费文档与嵌入页面 UI 风格合同编辑源 |
+| `b-Office/package/` | 消费文档编辑源 |
 | `b-Office/current/` | 现行四份合同（概览、技术、决策、验证）加冻结与断头审计 |
-| `b-Code-HistoryVulcan/eng/release/` | 发布清单和生成模板等机器输入 |
-| `b-Office/` | 冻结契约、内部设计与执行证据 |
+| `b-Code-Eng/release/` | 发布文档清单与可选 Inno 安装脚本 |
+| `b-Office/` | 冻结合同、内部设计、Logo 与执行证据 |
 | `z-Publish/` | 根部唯一当前候选：`host/`、`docs/`、manifest 与 SHA |
 | `z-Publish/history/<发布标识>/` | 与当时根候选同构的不可变历史包 |
 
-根级 `HistoryVulcan.sln` 是仓库验收入口，只包含六个冻结项目；组件目录内的
-`b-Code-HistoryVulcan/HistoryVulcan.sln` 是发布脚本使用的等价入口。
+根级 `HistoryVulcan.sln` 是唯一解决方案入口（CI、候选构建、格式门禁都用它）。
+`project.manifest.json` 与 `global.json` 必须留在仓库根：合同脚本和 SDK 都只沿目录向上查找。
 
 ## 构建与测试
 
@@ -95,13 +96,13 @@ dotnet format .\HistoryVulcan.sln --verify-no-changes --no-restore
 
 ```powershell
 # 在系统临时目录构建并校验，再更新 z-Publish 根候选
-.\b-Code-HistoryVulcan\eng\Build-HistoryVulcanPackage.ps1
+.\b-Code-Eng\Build-HistoryVulcanPackage.ps1
 
 # 候选审核通过后，由 Diana 停宿主、归档根候选并原子替换
 powershell -NoProfile -ExecutionPolicy Bypass -File ..\2026-019-HistoryDiana\b-Code\Publish-OneHistoryModule.ps1 -Module HistoryVulcan -Publish
 
-# 从正式 Z 快照生成 Windows 安装包与便携压缩包
-.\b-Code-HistoryVulcan\eng\Pack-HistoryVulcanInstaller.ps1 -Version 3.3.2
+# 可选：从正式 Z 快照生成 Windows 安装包与便携压缩包（需本机 Inno Setup 6 与 7-Zip）
+.\b-Code-Eng\Pack-HistoryVulcanInstaller.ps1
 ```
 
 当前交付物是可直接运行的 HistoryVulcan 宿主，不是 NuGet 包。
@@ -117,8 +118,7 @@ Git 历史取回。现行回滚仍由 `z-Publish/history/<版本>/` 的 3.x 同�
 旧候选整体归档到 `z-Publish/history/<版本>/`。宿主部署脚本不会执行 Git commit、tag、push，
 也不会生成或推送 NuGet 包。
 
-桌面消费者通常引用 `OneHistory.HistoryVulcan.Shell`；服务化宿主额外引用
-`OneHistory.HistoryVulcan.ServiceHost`。当前已验证消费方为 HistoryJanus（020）和 WBall（022）。
+桌面前端在 HistoryAurora；本仓宿主以 `z-Publish/host/HistoryVulcan.exe` 为运行入口。当前已验证消费方为 HistoryJanus（020）和 WBall（022）。
 
 维护入口见 [b-Office/文档中心.md](b-Office/文档中心.md)。其他项目和 AI 先读取
 `z-Publish/manifest.json`，再按需索引同一候选中的 `z-Publish/docs/`；历史版本文档与发布证据从 `z-Publish/history/` 查阅。

@@ -21,14 +21,14 @@
   },
   "paths": {
     "activeRoots": [
-      "b-Code-HistoryVulcan/src",
+      "b-Code-HistoryVulcan",
       "b-Code-Tests",
-      "b-Code-HistoryVulcan/eng",
+      "b-Code-Eng",
       "b-Office/current",
       "b-Office/package"
     ],
     "sourceRoots": [
-      "b-Code-HistoryVulcan/src"
+      "b-Code-HistoryVulcan"
     ],
     "generatedRoots": [
       "z-Publish/host",
@@ -79,8 +79,8 @@
       ".ignore",
       "project.manifest.json",
       "b-Code-HistoryVulcan/README.md",
-      "b-Code-HistoryVulcan/eng/Test-ProjectContract.ps1",
-      "b-Code-HistoryVulcan/eng/Assert-PublicApiBaseline.ps1",
+      "b-Code-Eng/Test-ProjectContract.ps1",
+      "b-Code-Eng/Assert-PublicApiBaseline.ps1",
       ".github/workflows/historyvulcan-freeze-gate.yml"
     ],
     "requiredProjectFields": [
@@ -107,12 +107,12 @@
     "setup": "dotnet restore .\\HistoryVulcan.sln --locked-mode",
     "build": "dotnet build .\\HistoryVulcan.sln -c Release --no-restore",
     "test": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj -c Release --no-build --no-restore",
-    "verify": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\b-Code-HistoryVulcan\\eng\\Test-ProjectContract.ps1 -Instantiation",
-    "run": "dotnet run --project .\\b-Code-HistoryVulcan\\src\\App\\App.csproj",
-    "package": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\b-Code-HistoryVulcan\\eng\\Build-HistoryVulcanPackage.ps1",
+    "verify": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\b-Code-Eng\\Test-ProjectContract.ps1 -Instantiation",
+    "run": "dotnet run --project .\\b-Code-HistoryVulcan\\App\\App.csproj",
+    "package": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\b-Code-Eng\\Build-HistoryVulcanPackage.ps1",
     "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File ..\\2026-019-HistoryDiana\\b-Code\\Publish-OneHistoryModule.ps1 -Module HistoryVulcan -Publish",
-    "publicApiGate": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\b-Code-HistoryVulcan\\eng\\Assert-PublicApiBaseline.ps1",
-    "qualityGate": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\b-Code-HistoryVulcan\\eng\\Test-QualityGate.ps1"
+    "publicApiGate": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\b-Code-Eng\\Assert-PublicApiBaseline.ps1",
+    "qualityGate": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\b-Code-Eng\\Test-QualityGate.ps1"
   },
   "externalDependencies": [
     {
@@ -123,7 +123,7 @@
     {
       "name": "Dirkster.AvalonDock",
       "version": "4.72.1",
-      "purpose": "WPF 停靠布局实现，仅由 HistoryVulcan.Shell 封装"
+      "purpose": "WPF 停靠布局实现；本仓 Core 仍暴露停靠契约，桌面封装在 HistoryAurora"
     }
   ],
   "contextExclusions": [
