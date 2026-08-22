@@ -21,11 +21,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\App\App.csproj" />
-    <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.Core\HistoryVulcan.Core.csproj" />
-    <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.ServiceHost\HistoryVulcan.ServiceHost.csproj" />
-    <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.Services\HistoryVulcan.Services.csproj" />
-    <ProjectReference Include="..\..\b-Code-HistoryVulcan\src\HistoryVulcan.Extensibility\HistoryVulcan.Extensibility.csproj" />
+    <ProjectReference Include="..\..\b-Code-HistoryVulcan\App\App.csproj" />
+    <ProjectReference Include="..\..\b-Code-HistoryVulcan\HistoryVulcan.Core\HistoryVulcan.Core.csproj" />
+    <ProjectReference Include="..\..\b-Code-HistoryVulcan\HistoryVulcan.ServiceHost\HistoryVulcan.ServiceHost.csproj" />
+    <ProjectReference Include="..\..\b-Code-HistoryVulcan\HistoryVulcan.Services\HistoryVulcan.Services.csproj" />
+    <ProjectReference Include="..\..\b-Code-HistoryVulcan\HistoryVulcan.Extensibility\HistoryVulcan.Extensibility.csproj" />
     <!--
       DEC-023:此处曾有一条指向邻接项目 ..\..\..\2026-021-HistoryMercury 的 ProjectReference。
       邻接编号目录是另一座 git 仓库（DEC-040），本仓内不存在 Mercury；

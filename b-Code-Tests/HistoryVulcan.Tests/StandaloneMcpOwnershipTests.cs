@@ -79,7 +79,6 @@ public sealed class StandaloneMcpOwnershipTests
         var source = File.ReadAllText(Path.Combine(
             RepositoryRoot(),
             "b-Code-HistoryVulcan",
-            "src",
             "HistoryVulcan.ServiceHost",
             "ServiceHost.cs"));
 

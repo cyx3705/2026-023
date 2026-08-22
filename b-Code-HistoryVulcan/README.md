@@ -4,12 +4,11 @@ HistoryVulcan 是独立维护的通用桌面应用框架，也是框架源码的
 
 ## 结构
 
-- `src/HistoryVulcan.Core`：指令、停靠、日志、MCP 和存储契约。
-- `src/HistoryVulcan.Services`：日志、设置、文件状态、MCP 与模块托管实现。
-- `src/HistoryVulcan.ServiceHost`：无窗 WPF 服务宿主、确认通道和 `svc.*` 生命周期。
-- `src/HistoryVulcan.Shell`：WPF 主壳、停靠窗口和内置命令。
-- `src/App`：框架演示宿主，用于独立构建和 GUI 验收。
-- `eng`：发布、公开 API 冻结、TRX 失败摘要和 AI-ready 项目合同检查。
+- `HistoryVulcan.Core`：指令、停靠、日志、MCP 和存储契约。
+- `HistoryVulcan.Services`：日志、设置、文件状态、MCP 与模块托管实现。
+- `HistoryVulcan.ServiceHost`：无窗 WPF 服务宿主、确认通道和 `svc.*` 生命周期。
+- `App`：独立宿主入口。桌面 Shell 已迁往 HistoryAurora。
+- `../b-Code-Eng`：候选构建、公开 API 冻结、质量门禁、TRX 失败摘要和项目合同检查。
 - `../b-Office/package`：消费文档编辑源；`../b-Office` 根目录保留冻结合同和内部设计记录。
 - `../z-Publish`：唯一一份当前候选和完整发布测试结果。
 - `../z-Publish/history`：按版本保存的 Z 级最小正式历史副本。
@@ -18,9 +17,9 @@ HistoryVulcan 是独立维护的通用桌面应用框架，也是框架源码的
 ## 构建
 
 ```powershell
-dotnet restore .\HistoryVulcan.sln --locked-mode
-dotnet build .\HistoryVulcan.sln -c Debug --no-restore
-dotnet build .\HistoryVulcan.sln -c Release --no-restore
+dotnet restore ..\HistoryVulcan.sln --locked-mode
+dotnet build ..\HistoryVulcan.sln -c Debug --no-restore
+dotnet build ..\HistoryVulcan.sln -c Release --no-restore
 ```
 
 正式 HistoryVulcan 从 Z 快照运行；需要兼容嵌入式框架消费时使用单独批准的固定版本包，不直接引用本目录源码。
@@ -37,7 +36,7 @@ Runtime 的 HistoryVulcan 宿主，不生成 NuGet 包。兼容包合同继续�
 
 ```powershell
 # 可覆盖 current：生成 Release 宿主、UI/消费文档和 SHA-256 清单
-.\eng\Build-HistoryVulcanPackage.ps1
+.\..\b-Code-Eng\Build-HistoryVulcanPackage.ps1
 
 # 候选审核通过后部署同一完整快照到 Z
 powershell -NoProfile -ExecutionPolicy Bypass -File ..\2026-019-HistoryDiana\b-Code\Publish-OneHistoryModule.ps1 -Module HistoryVulcan -Publish
@@ -54,8 +53,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ..\2026-019-HistoryDiana\b-C
 ## 维护门禁
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\eng\Assert-PublicApiBaseline.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File .\eng\Test-ProjectContract.ps1 -Instantiation
+powershell -NoProfile -ExecutionPolicy Bypass -File .\..\b-Code-Eng\Assert-PublicApiBaseline.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\..\b-Code-Eng\Test-ProjectContract.ps1 -Instantiation
 ```
 
 现行项目规则从 `../project.manifest.json` 和 `../b-Office/current/` 读取；历史施工与冻结证据默认不进入维护上下文。

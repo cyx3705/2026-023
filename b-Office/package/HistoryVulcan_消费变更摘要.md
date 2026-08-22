@@ -162,7 +162,7 @@ MCP/Web 硬排除。命令集里不应再看到 `debug` 类。
 ## 主要变化
 
 - 4.8.2 `vulcan.release.cycle` 在管线子进程拉起后不再跟随 MCP/CLI 客户端取消：门禁、提交和模块热重载会跑完。开发手册写明 grok 必须把对话根迁进/迁出工作区，Diana 与其它模块同样走工作区，工作区文档不要用指向 Clio 兄弟仓的 Markdown 链接。
-- 4.8.1 开发管线按登记表 `kind` 区分，不再按模块名拦截。`kind=module`（含 HistoryDiana 及以后新模块）都可以 `vulcan.release.cycle` 带 `worktree=`；只有 `kind=host` 不热重载 EXE，且正式宿主仍在跑时拒绝 `worktree.merge`。新模块只需写入 `eng/pipeline/module-publish.manifest.json`。
+- 4.8.1 开发管线按登记表 `kind` 区分，不再按模块名拦截。`kind=module`（含 HistoryDiana 及以后新模块）都可以 `vulcan.release.cycle` 带 `worktree=`；只有 `kind=host` 不热重载 EXE，且正式宿主仍在跑时拒绝 `worktree.merge`。新模块只需写入 `b-Code-Eng/pipeline/module-publish.manifest.json`。
 - 4.0.0 可回收 WPF 模块热重载：整体 `Reload` 先拆界面并卸载旧可回收 ALC，再装新包。
   默认上下文的 Resolving 只返回模块 ALC 里已装载的程序集，不把它们装进 Default。
   `pinned: true` 仍走 Default，不可卸载。`IShellUiProvider` 最后销毁。公开 API 不变。

@@ -1,3 +1,0 @@
-﻿#nullable enable
-HistoryVulcan.Services.Web.WebGateway.CachedFrontendCatalogs() -> System.Collections.Generic.IReadOnlyDictionary<string!, int>!
-HistoryVulcan.Services.Web.WebGateway.ForgetFrontendCatalog(string! frontendName) -> int

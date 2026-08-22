@@ -1,3 +1,0 @@
-﻿#nullable enable
-*REMOVED*HistoryVulcan.ServiceHost.ShellRelayConfirmation.ShellRelayConfirmation(System.Func<HistoryVulcan.Services.Web.WebGateway?>! gateway, HistoryVulcan.Core.Logging.IShellLog! log, System.TimeSpan? timeout = null) -> void
-HistoryVulcan.ServiceHost.ShellRelayConfirmation.ShellRelayConfirmation(HistoryVulcan.Core.Logging.IShellLog! log) -> void

@@ -52,16 +52,16 @@ jobs:
 
       - name: Verify frozen public API
         shell: pwsh
-        run: .\b-Code-HistoryVulcan\eng\Assert-PublicApiBaseline.ps1
+        run: .\b-Code-Eng\Assert-PublicApiBaseline.ps1
 
       - name: Verify quality gate
         shell: pwsh
-        run: .\b-Code-HistoryVulcan\eng\Test-QualityGate.ps1
+        run: .\b-Code-Eng\Test-QualityGate.ps1
 
       - name: Report test failures
         if: failure()
         shell: pwsh
-        run: .\b-Code-HistoryVulcan\eng\Write-TrxFailureAnnotations.ps1 -ResultsDirectory .\artifacts\test-results
+        run: .\b-Code-Eng\Write-TrxFailureAnnotations.ps1 -ResultsDirectory .\artifacts\test-results
 
       - name: Upload test results
         if: always()
