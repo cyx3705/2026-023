@@ -1,4 +1,27 @@
+﻿// 存储契约：宿主拥有的两个存储——扁平设置与界面布局。
+//
+// 两者都是「宿主持有、模块与派生应用共用」的读写口，实现都在
+// HistoryVulcan.Services。分成两个不到 30 行的文件不携带任何信息。
+
 namespace HistoryVulcan.Core.Storage;
+
+/// <summary>
+/// 应用设置读写(F-01/F-03):扁平键值对,vulcan.app.set / vulcan.app.get 指令与派生应用共用。
+/// </summary>
+public interface ISettingsService
+{
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    string? Get(string key);
+
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    int GetInt(string key, int fallback);
+
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    void Set(string key, string value);
+
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    IReadOnlyList<KeyValuePair<string, string>> All();
+}
 
 /// <summary>
 /// 布局文件存取抽象(F-01:布局采用停靠库序列化格式单独成文件)。
