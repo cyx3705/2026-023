@@ -1,8 +1,8 @@
 # HistoryVulcan 工程脚本
 
 本目录是宿主的独立工程区：公开 API 基线、可选安装包脚本、发布登记表。
-源码在 `../b-Code-HistoryVulcan/`。开发管线（构建候选、合同、质量门禁、公开 API 基线）
-在宿主进程内实现，入口是 `vulcan.release.cycle`，不再经 PowerShell 引擎脚本。
+源码在 `../b-Code-HistoryVulcan/`。宿主打包（构建候选、合同、质量门禁、公开 API 基线）
+在宿主进程内实现，入口是 `--cli vulcan.release.cycle`（不是模块开发管线），不再经 PowerShell 引擎脚本。
 
 | 路径 | 用途 |
 | --- | --- |

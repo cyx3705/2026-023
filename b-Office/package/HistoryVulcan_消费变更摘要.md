@@ -13,10 +13,9 @@
 ## 主要变化（5.0.1）
 
 开发管线改在宿主进程内执行，不再拉起 `Publish-OneHistoryModule.ps1`。
-模块公开面收成三条：`vulcan.dev.start`（开工作区）→ `vulcan.dev.submit`（发 z、提交、注册审核）→
-`vulcan.dev.finish`（通过后再发 z、提交、并回、删工作区、注册宿主）。宿主不走这三条，打包仍用
-`HistoryVulcan.exe --cli vulcan.release.cycle`。模块三条与 `vulcan.worktree.*`、`vulcan.release.modules/status/log`
-都不配 MCP，只走 `--cli`。项目合同、质量门禁、公开 API 基线和打包都在 `HistoryVulcan.Services.Development.Pipeline`。
+开发管线只给模块：`HistoryVulcan.exe --cli vulcan.dev.start` → `submit` → `finish`。
+宿主禁止走开发管线。模块三条禁止 MCP。宿主写入 z 候选用 `--cli vulcan.release.cycle`（发布入口，不是开发管线）。
+`vulcan.worktree.*` 与 `vulcan.release.modules/status/log` 不对 MCP 暴露。项目合同、质量门禁、公开 API 基线和打包都在 `HistoryVulcan.Services.Development.Pipeline`。
 模块包布局由登记表 `package` 字段描述，验证步骤只允许 `dotnet`。
 
 ## 破坏性变更（升级必读；自 3.3.2 累积）
@@ -36,7 +35,7 @@
 | `ModuleHost.EnableUiModules` / `ShellUi` / `CommandWorkbench` | 删除。ModuleHost 不再编排 CreateUi/DestroyUi |
 | `ModulePanelSync` | 删除。面板声明走命令注解，由界面模块认领 |
 
-开发总线（`vulcan.worktree.*` / `vulcan.release.*`）留在宿主，不外迁到 Diana。
+开发总线留在宿主、不外迁到 Diana。模块只走 `--cli vulcan.dev.start/submit/finish`；宿主禁止走开发管线。
 
 - 升级动作：对 5.0 重新编译模块；去掉对已删类型的引用；UI 模块改为登记命令。Aurora / Portunus / Janus 的跟进在各自模块工作区，不在本仓改邻接主树。
 - 原因：宿主替模块定义世界，就会永远替认领方再实现一套停靠和投影。

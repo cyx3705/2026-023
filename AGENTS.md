@@ -1,7 +1,7 @@
 ﻿# HistoryVulcan AI 工作合同
 
 本文件适用于整个仓库。**当前源码为 5.0.1**；`HistoryVulcan.Core`
-公开面自 4.0 起解冻并可演进，但删除必须进消费变更摘要并走主版本号。宿主冻结面只保留模块注册器、命令总线和开发总线（worktree/release）。进入项目后先确认现行合同和修改边界，
+公开面自 4.0 起解冻并可演进，但删除必须进消费变更摘要并走主版本号。宿主冻结面只保留模块注册器、命令总线和开发总线（模块走 `--cli vulcan.dev.start/submit/finish`；宿主禁止走开发管线）。进入项目后先确认现行合同和修改边界，
 再按任务读取最小必要上下文。
 
 ## 模块开发必须走手册（Janus / Mercury / Diana / Aurora / 其它）
@@ -9,7 +9,7 @@
 对话根在本仓时，只维护 HistoryVulcan 自己。**用户要开发、排查或修改其它编号模块时，必须走模块开发手册：开 F 盘工作区并把对话根迁进去。禁止留在本仓、按绝对路径改 `HistoryClio\<模块主树>`。** 那等于没走工作区，合并会改错树或锁死目录。不要等用户再提醒一次。
 
 1. `diana.docs.catalog`，再按节读 `diana.docs.vulcan file=docs/模块开发手册.md`。
-2. 开发管线不走 MCP，用命令行：`HistoryVulcan.exe --cli vulcan.dev.start project=<YYYY-NNN-模块> slug=<问题> agent=grok`，工作区在 `F:\ai工作区`。宿主不走这三条；改完 `--cli vulcan.dev.submit`，审核通过后 `--cli vulcan.dev.finish`。
+2. **开发管线只给模块、禁止 MCP。** 用命令行：`HistoryVulcan.exe --cli vulcan.dev.start project=<YYYY-NNN-模块> slug=<问题> agent=grok`。宿主禁止走这三条。改完 `--cli vulcan.dev.submit`，审核通过后 `--cli vulcan.dev.finish`。不要把这些指令当 MCP 工具调。
 3. grok **必须**按手册四步迁根：主树 `checkout --detach` → `move_agent_to_root` → 工作区切回 `ai/<项目>/<工作区名>` → 主树 `checkout main`。不要省掉迁根。
 4. 已发布合同用 `diana.docs.<通道>`。读实现和改代码都在 F 盘工作区，不在 Clio 主树。
 
