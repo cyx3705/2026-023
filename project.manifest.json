@@ -15,7 +15,7 @@
       "package"
     ],
     "status": "active",
-    "version": "5.0.0",
+    "version": "5.0.1",
     "branch": "main",
     "freezeTag": "v3.0.3"
   },
@@ -79,8 +79,6 @@
       ".ignore",
       "project.manifest.json",
       "b-Code-HistoryVulcan/README.md",
-      "b-Code-Eng/Test-ProjectContract.ps1",
-      "b-Code-Eng/Assert-PublicApiBaseline.ps1",
       ".github/workflows/historyvulcan-freeze-gate.yml"
     ],
     "requiredProjectFields": [
@@ -107,12 +105,12 @@
     "setup": "dotnet restore .\\HistoryVulcan.sln --locked-mode",
     "build": "dotnet build .\\HistoryVulcan.sln -c Release --no-restore",
     "test": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj -c Release --no-build --no-restore",
-    "verify": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\b-Code-Eng\\Test-ProjectContract.ps1 -Instantiation",
+    "verify": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj -c Release --filter FullyQualifiedName~ReleasePipelineTests",
     "run": "dotnet run --project .\\b-Code-HistoryVulcan\\App\\App.csproj",
-    "package": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\b-Code-Eng\\Build-HistoryVulcanPackage.ps1",
-    "deploy": "powershell -NoProfile -ExecutionPolicy Bypass -File ..\\2026-019-HistoryDiana\\b-Code\\Publish-OneHistoryModule.ps1 -Module HistoryVulcan -Publish",
-    "publicApiGate": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\b-Code-Eng\\Assert-PublicApiBaseline.ps1",
-    "qualityGate": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\b-Code-Eng\\Test-QualityGate.ps1"
+    "package": "HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=package",
+    "deploy": "HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=deploy",
+    "publicApiGate": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj --filter FullyQualifiedName~QualityGatesPassOnThisRepository",
+    "qualityGate": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj --filter FullyQualifiedName~QualityGatesPassOnThisRepository"
   },
   "externalDependencies": [
     {

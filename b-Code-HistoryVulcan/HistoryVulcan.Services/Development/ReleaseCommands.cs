@@ -1,17 +1,14 @@
-﻿using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Storage;
+using HistoryVulcan.Services.Development.Pipeline;
 
 namespace HistoryVulcan.Services.Development;
 
 /// <summary>
-/// 发布管线的命令面：把 <c>Publish-OneHistoryModule.ps1</c> 作为分离子进程拉起，
-/// 让模块发布和其余能力一样原生暴露为 MCP 工具。
+/// 发布管线的命令面：在宿主进程内跑构建、合同、门禁并写入候选。
 /// </summary>
 /// <remarks>
 /// 关键约束：运行状态只落在日志文件里，不放在本模块的内存里。
@@ -19,9 +16,8 @@ namespace HistoryVulcan.Services.Development;
 /// 热重载会替换目标模块，不替换宿主。运行状态只落日志：start 立即返回 run 标识，
 /// status/log 一律现场读日志目录，目标模块被换掉也不影响追踪。
 ///
-/// 子进程自己把 stdout/stderr 重定向进日志（PowerShell 的 <c>*&gt;</c>），Diana 不做流泵送：
-/// 泵送线程会随模块卸载而中断，日志就断在半截。退出码单独落一个纯 ASCII 的
-/// <c>.exit</c> 文件，status 据此判断"仍在跑 / 成功 / 失败"，不依赖进程句柄。
+/// 管线在宿主进程内执行；日志与纯 ASCII 的 <c>.exit</c> 文件仍落在数据目录，
+/// 便于 status 判断「仍在跑 / 成功 / 失败」，不依赖进程句柄。
 /// </remarks>
 internal static class ReleaseCommands
 {
@@ -30,7 +26,7 @@ internal static class ReleaseCommands
     /// 发布引擎所在的项目。随开发路线一同迁入宿主（4.6.0），此前是 2026-019-HistoryDiana。
     /// </summary>
     /// <remarks>
-    /// 引擎（<c>Publish-OneHistoryModule.ps1</c> 与发布登记）必须与指令面同仓：
+    /// 登记表必须与指令面同仓：指令面在宿主而登记留在模块，等于「宿主活着但发布跑不了」。
     /// 指令面在宿主而引擎留在模块，等于「宿主活着但发布跑不了」——
     /// 而这条路线搬进宿主的全部理由就是它不该依赖任何模块。
     /// </remarks>
@@ -44,6 +40,7 @@ internal static class ReleaseCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.release.modules",
+            HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。本条不对 MCP 暴露。",
             Domain = "vulcan",
             CommandClass = "release",
             Summary = "列出可发布的模块和宿主及其项目目录",
@@ -55,6 +52,7 @@ internal static class ReleaseCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.release.status",
+            HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。本条不对 MCP 暴露。",
             Domain = "vulcan",
             CommandClass = "release",
             Summary = "查看发布运行状态：仍在跑 / 成功 / 失败，附日志末尾",
@@ -74,6 +72,7 @@ internal static class ReleaseCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.release.log",
+            HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。本条不对 MCP 暴露。",
             Domain = "vulcan",
             CommandClass = "release",
             Summary = "读取某次发布运行的日志末尾",
@@ -93,23 +92,30 @@ internal static class ReleaseCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.release.cycle",
+            HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。宿主打包仍可用 --cli vulcan.release.cycle。",
             Domain = "vulcan",
             CommandClass = "release",
             Summary = "跑通门禁、写入版本化候选并提交；模块候选严格替换到 Vulcan 运行区",
-            Example = "vulcan.release.cycle name=HistoryJanus msg=fix-layout worktree=abc-1-codex-fix",
+            Example = "vulcan.release.cycle name=HistoryVulcan msg=candidate worktree=abc-1-grok-fix",
             Parameters =
             [
-                Text("name", "已登记的模块名，见 vulcan.release.modules", required: true, position: 0),
+                Text("name", "只接受宿主 HistoryVulcan；模块请用 vulcan.dev.submit / finish", required: true, position: 0),
                 Text("msg", "提交说明", required: true, position: 1),
                 Text("worktree", "AI 工作区目录名或绝对路径；省略则在主树正式促级后提交"),
             ],
-            Handler = async context => await CycleAsync(
-                host,
-                context.RequireString("name"),
-                context.RequireString("msg"),
-                context.GetString("worktree"),
-                context.Progress,
-                context.Cancellation).ConfigureAwait(false),
+            Handler = async context =>
+            {
+                var name = context.RequireString("name");
+                if (!DevPipelineCommands.IsHostProject(host.Settings, name))
+                    return CommandResult.Fail(DevPipelineCommands.ModuleUseSubmitFinish);
+                return await CycleAsync(
+                    host,
+                    name,
+                    context.RequireString("msg"),
+                    context.GetString("worktree"),
+                    context.Progress,
+                    context.Cancellation).ConfigureAwait(false);
+            },
         });
     }
 
@@ -194,7 +200,7 @@ internal static class ReleaseCommands
         if (!known && !moduleName.Equals("HistoryVulcan", StringComparison.OrdinalIgnoreCase))
             return CommandResult.Fail($"{moduleName} 不在发布登记表里，见 vulcan.release.modules。");
 
-        // 工作区不写正式 Clio z：-Publish 只从主树来。无 -Publish 时脚本把候选写入该工作树自己的 z-*。
+        // 工作区不写正式 Clio z：publish 只从主树来。无 publish 时管线把候选写入该工作树自己的 z-*。
         string? projectRootOverride = null;
         if (!string.IsNullOrWhiteSpace(worktree))
         {
@@ -207,98 +213,82 @@ internal static class ReleaseCommands
                 return CommandResult.Fail($"工作区不存在：{projectRootOverride}");
         }
 
-        var scriptPath = Path.Combine(PipelineProjectRoot(host.Settings), PipelineDirectory, "Publish-OneHistoryModule.ps1");
-        if (!File.Exists(scriptPath))
-            return CommandResult.Fail($"找不到发布管线脚本：{scriptPath}");
-
         var logDirectory = LogDirectory(host);
         Directory.CreateDirectory(logDirectory);
         var run = $"{DateTime.Now:yyyyMMdd-HHmmss}-{moduleName}";
         var logPath = Path.Combine(logDirectory, run + ".log");
-        // cycle 一返回 run 就会去读这份日志；子进程的重定向还没创建文件时，
-        // 旧逻辑会立刻报「找不到运行记录」。先占位，等管线往里追加。
         File.WriteAllText(logPath, "", new UTF8Encoding(false));
 
-        // 子进程自己写日志：Diana 被管线热重载时，泵送线程会断，日志就断在半截。
-        // 必须用嵌套的 powershell.exe 调起管线，不能在本会话里 `& 脚本`：
-        // 管线内部会 exit，那会直接终结整个会话，后面的收尾语句一行都跑不到，
-        // 实测表现为子进程已退出却没有留下退出码文件。
-        // 日志用 UTF-8 流式追加，不用 `*>`：控制台默认 GBK，中文 dotnet 输出会烂码。
-        var inner = new StringBuilder();
-        inner.Append("chcp 65001 | Out-Null; ");
-        inner.Append("[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false; ");
-        inner.Append($"& {Quote(scriptPath)} -Module {Quote(moduleName)}");
-        if (publish)
-            inner.Append(" -Publish");
-        if (projectRootOverride != null)
-            inner.Append($" -SourceWorktree {Quote(projectRootOverride)}");
-        inner.Append("; if (-not $?) { exit 1 }; if ($null -eq $LASTEXITCODE) { exit 0 }; exit $LASTEXITCODE");
-
-        var command = new StringBuilder();
-        command.Append("chcp 65001 | Out-Null; ");
-        command.Append("[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false; ");
-        command.Append("$OutputEncoding = [Console]::OutputEncoding; ");
-        command.Append("$__utf8 = New-Object System.Text.UTF8Encoding $false; ");
-        command.Append($"$__writer = New-Object System.IO.StreamWriter({Quote(logPath)}, $true, $__utf8); ");
-        command.Append("$__writer.AutoFlush = $true; ");
-        command.Append("$__pipe = 1; ");
-        command.Append("try { ");
-        command.Append("& powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ");
-        command.Append(Quote(inner.ToString()));
-        command.Append(" 2>&1 | ForEach-Object { $__writer.WriteLine([string]$_) }; ");
-        command.Append("$__pipe = $LASTEXITCODE; if ($null -eq $__pipe) { $__pipe = 1 } ");
-        command.Append("} finally { $__writer.Close() }; ");
-        // 退出码单独落一个纯 ASCII 文件，不往日志里追加。
-        if (!string.IsNullOrWhiteSpace(commitRoot) && !string.IsNullOrWhiteSpace(commitMessage))
+        var projectRoot = projectRootOverride
+            ?? Path.Combine(ProjectLibraryRoot.Resolve(host.Settings), moduleProject);
+        var hostSnapshot = PublishPackages.ResolveHostSnapshot(
+            Path.Combine(ProjectLibraryRoot.Resolve(host.Settings), PipelineProjectName));
+        var exit = 1;
+        using (var log = new StreamWriter(logPath, append: true, new UTF8Encoding(false)) { AutoFlush = true })
         {
-            var msgPath = logPath + ".msg";
-            File.WriteAllText(msgPath, commitMessage.Trim() + Environment.NewLine, new UTF8Encoding(false));
-            command.Append("if ($__pipe -eq 0) { ");
-            command.Append($"git -C {Quote(commitRoot)} add -A; ");
-            command.Append($"git -C {Quote(commitRoot)} diff --cached --quiet; ");
-            command.Append("if ($LASTEXITCODE -ne 0) { ");
-            command.Append($"git -C {Quote(commitRoot)} -c i18n.commitEncoding=utf-8 commit -F {Quote(msgPath)}; ");
-            command.Append("$__pipe = $LASTEXITCODE ");
-            command.Append("} else { Write-Host 'Nothing to commit after pipeline.' } ");
-            command.Append("}; ");
+            try
+            {
+                ReleaseEngine.Execute(
+                    new ReleaseRequest(
+                        moduleName,
+                        projectRoot,
+                        registryPath,
+                        hostSnapshot,
+                        publish,
+                        RequireCleanSource: false),
+                    log);
+                if (!string.IsNullOrWhiteSpace(commitRoot) && !string.IsNullOrWhiteSpace(commitMessage))
+                    CommitAfterPipeline(commitRoot, commitMessage, log);
+                exit = 0;
+            }
+            catch (Exception ex)
+            {
+                log.WriteLine(ex.ToString());
+                exit = 1;
+            }
         }
 
-        command.Append($"Set-Content -Path {Quote(logPath + ExitFileSuffix)} -Value $__pipe -Encoding ascii");
+        File.WriteAllText(logPath + ExitFileSuffix, exit.ToString(), Encoding.ASCII);
+        if (exit != 0)
+            return CommandResult.Fail($"发布管线失败。run={run}\n日志: {logPath}");
 
-        var startInfo = new ProcessStartInfo("powershell.exe")
+        var mode = publish
+            ? "构建 + 门禁 + 正式促级"
+            : projectRootOverride != null
+                ? "构建 + 门禁 + 写入工作区 z"
+                : "只构建候选并跑门禁";
+        if (!string.IsNullOrWhiteSpace(commitRoot))
+            mode += " + 提交";
+        return CommandResult.Ok(
+            $"已完成 {moduleName} 的发布管线（{mode}），run={run}\n日志: {logPath}",
+            new { Run = run, Module = moduleName, Publish = publish, Log = logPath });
+    }
+
+    private static void CommitAfterPipeline(string commitRoot, string commitMessage, TextWriter log)
+    {
+        ToolProcess.Run("git", ["add", "-A"], commitRoot, log, "暂存发布结果");
+        var dirty = ToolProcess.RunAllowingFailure(
+            "git", ["diff", "--cached", "--quiet"], commitRoot, log, "检查暂存区");
+        if (dirty == 0)
         {
-            WorkingDirectory = PipelineProjectRoot(host.Settings),
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        startInfo.ArgumentList.Add("-NoProfile");
-        startInfo.ArgumentList.Add("-ExecutionPolicy");
-        startInfo.ArgumentList.Add("Bypass");
-        startInfo.ArgumentList.Add("-Command");
-        startInfo.ArgumentList.Add(command.ToString());
+            log.WriteLine("管线结束后没有需要提交的变更。");
+            return;
+        }
 
+        var msgPath = Path.Combine(Path.GetTempPath(), "vulcan-release-" + Guid.NewGuid().ToString("N") + ".msg");
+        File.WriteAllText(msgPath, commitMessage.Trim() + Environment.NewLine, new UTF8Encoding(false));
         try
         {
-            using var process = Process.Start(startInfo);
-            if (process == null)
-                return CommandResult.Fail("发布管线子进程启动失败。");
-
-            var mode = publish
-                ? "构建 + 门禁 + 正式促级"
-                : projectRootOverride != null
-                    ? "构建 + 门禁 + 写入工作区 z"
-                    : "只构建候选并跑门禁";
-            if (!string.IsNullOrWhiteSpace(commitRoot))
-                mode += " + 提交";
-            return CommandResult.Ok(
-                $"已拉起 {moduleName} 的发布管线（{mode}），run={run}，pid={process.Id}\n"
-                + $"日志: {logPath}\n"
-                + "管线在独立进程中运行，用 vulcan.release.status 查看进度；目标模块热重载时状态仍从日志读取。",
-                new { Run = run, Module = moduleName, Publish = publish, Pid = process.Id, Log = logPath });
+            ToolProcess.Run(
+                "git",
+                ["-c", "i18n.commitEncoding=utf-8", "commit", "-F", msgPath],
+                commitRoot,
+                log,
+                "提交源码与候选");
         }
-        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        finally
         {
-            return CommandResult.Fail($"发布管线子进程启动失败：{ex.Message}");
+            File.Delete(msgPath);
         }
     }
 
@@ -395,8 +385,8 @@ internal static class ReleaseCommands
         return all.Count <= lines ? all : all.GetRange(all.Count - lines, lines);
     }
 
-    /// <summary>引擎脚本与发布登记在项目里的位置。</summary>
-    private const string PipelineDirectory = "b-Code-HistoryVulcan/eng/pipeline";
+    /// <summary>发布登记表在项目里的位置。管线实现已迁入宿主源码，不再调用 PowerShell 引擎脚本。</summary>
+    private const string PipelineDirectory = "b-Code-Eng/pipeline";
 
     private static string PipelineProjectRoot(ISettingsService settings)
         => Path.Combine(ProjectLibraryRoot.Resolve(settings), PipelineProjectName);
@@ -407,7 +397,7 @@ internal static class ReleaseCommands
     private static string LogDirectory(DevelopmentContext host)
         => Path.Combine(host.DataDirectory, "release");
 
-    private static async Task<CommandResult> CycleAsync(
+    internal static async Task<CommandResult> CycleAsync(
         DevelopmentContext host,
         string name,
         string message,
@@ -455,8 +445,7 @@ internal static class ReleaseCommands
             return CommandResult.Fail("管线已拉起，但没有返回 run 标识。\n" + started.Message);
 
         progress?.Report($"已拉起 {run}，等待门禁和提交结束…");
-        // 管线子进程已经独立在跑。MCP/CLI 客户端超时不得取消等待和热重载，
-        // 否则会出现「日志成功、运行区仍是旧包」。
+        // Start 在本进程内跑完并写 .exit。随后仍读日志目录确认，避免客户端超时取消热重载。
         var (finished, exitCode, tail) = await WaitForRunAsync(host, run, progress, CancellationToken.None)
             .ConfigureAwait(false);
         if (!finished)
@@ -638,9 +627,6 @@ internal static class ReleaseCommands
     }
 
     internal sealed record ReleaseModule(string Name, string Kind, string ProjectDirectory, string FormalDirectory);
-
-    /// <summary>PowerShell 单引号字符串：内部单引号翻倍转义。</summary>
-    private static string Quote(string value) => "'" + value.Replace("'", "''") + "'";
 
     private static ParameterSpec Text(string name, string description, bool required = false, int? position = null)
         => new() { Name = name, Description = description, Required = required, Position = position };

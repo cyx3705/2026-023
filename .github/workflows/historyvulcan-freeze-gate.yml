@@ -50,13 +50,11 @@ jobs:
       - name: Verify formatting
         run: dotnet format .\HistoryVulcan.sln --verify-no-changes --no-restore
 
-      - name: Verify frozen public API
-        shell: pwsh
-        run: .\b-Code-Eng\Assert-PublicApiBaseline.ps1
-
-      - name: Verify quality gate
-        shell: pwsh
-        run: .\b-Code-Eng\Test-QualityGate.ps1
+      - name: Verify frozen public API and quality gates
+        run: >-
+          dotnet test .\b-Code-Tests\HistoryVulcan.Tests\HistoryVulcan.Tests.csproj
+          -c Release --no-build --no-restore
+          --filter FullyQualifiedName~ReleasePipelineTests
 
       - name: Report test failures
         if: failure()

@@ -1,9 +1,9 @@
-# HistoryVulcan 5.0.0
+# HistoryVulcan 5.0.1
 
 本仓库是 OneHistory HistoryVulcan（原 AppShell，3.2.0 起改名）的独立源码、合同与发布资产真值。
 `3.0.3` 是 V3 冻结基线，冻结标签为 `v3.0.3`；版本线不再与 HistoryJanus 对齐，`0.7.x` 仅保留用于回滚。
 
-当前源码为 `5.0.0`。`HistoryVulcan.Core` 自 `3.9.0` 起的公开面冻结已在 4.0 解除（DEC-049）；
+当前源码为 `5.0.1`。`HistoryVulcan.Core` 自 `3.9.0` 起的公开面冻结已在 4.0 解除（DEC-049）；
 5.0（DEC-052）拆除宿主模块抽象，冻结面只留注册器、命令总线和开发总线。
 3.13.0（DEC-045）删除 Web 网关的局域网面：`WebGateway` 退回纯本机 IPC，固定监听 `127.0.0.1`，
 只接受同机前端 Shell，其余一律 401。设备鉴权与配对、令牌鉴权、绑定地址、CORS、限流，以及
@@ -53,7 +53,7 @@ HistoryVulcan 独立可执行宿主显式启用模块生命周期与模块管理
 | 入口 | 用途 |
 | --- | --- |
 | [AI 工作合同](AGENTS.md) | 读取顺序、真值、冻结与修改边界；**开发其它模块必须先走手册，不得改邻接主树** |
-| [模块开发手册](b-Office/package/模块开发手册.md) | Janus / Mercury 等：`vulcan.worktree.create`、迁根、cycle / merge |
+| [模块开发手册](b-Office/package/模块开发手册.md) | Janus / Mercury 等：`vulcan.dev.start` / `submit` / `finish`（宿主不走这三条） |
 | [项目清单](project.manifest.json) | 项目身份、活动路径、命令、归档和上下文排除项 |
 | [项目概览](b-Office/current/项目概览.md) | 目标、范围、冻结状态与最近验证 |
 | [技术合同](b-Office/current/技术合同.md) | 现行需求、架构和不变量 |
@@ -79,7 +79,7 @@ HistoryVulcan 独立可执行宿主显式启用模块生命周期与模块管理
 | `z-Publish/history/<发布标识>/` | 与当时根候选同构的不可变历史包 |
 
 根级 `HistoryVulcan.sln` 是唯一解决方案入口（CI、候选构建、格式门禁都用它）。
-`project.manifest.json` 与 `global.json` 必须留在仓库根：合同脚本和 SDK 都只沿目录向上查找。
+`project.manifest.json` 与 `global.json` 必须留在仓库根：项目合同校验和 SDK 都只沿目录向上查找。
 
 ## 构建与测试
 
@@ -94,12 +94,14 @@ dotnet format .\HistoryVulcan.sln --verify-no-changes --no-restore
 
 ## 宿主候选与正式部署
 
-```powershell
-# 在系统临时目录构建并校验，再更新 z-Publish 根候选
-.\b-Code-Eng\Build-HistoryVulcanPackage.ps1
+开发管线在宿主进程内执行，不再调用 PowerShell 发布脚本：
 
-# 候选审核通过后，由 Diana 停宿主、归档根候选并原子替换
-powershell -NoProfile -ExecutionPolicy Bypass -File ..\2026-019-HistoryDiana\b-Code\Publish-OneHistoryModule.ps1 -Module HistoryVulcan -Publish
+```text
+# 工作区候选：构建、门禁、写入该工作树 z-Publish
+HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=candidate worktree=<工作区>
+
+# 正式提升：主树先部署后提交（须用户批准）
+HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=publish
 
 # 可选：从正式 Z 快照生成 Windows 安装包与便携压缩包（需本机 Inno Setup 6 与 7-Zip）
 .\b-Code-Eng\Pack-HistoryVulcanInstaller.ps1
@@ -115,8 +117,7 @@ Git 历史取回。现行回滚仍由 `z-Publish/history/<版本>/` 的 3.x 同�
 宿主候选与正式运行入口统一为 `z-Publish/host/HistoryVulcan.exe`。已发布说明书在
 `z-Publish/docs/`，编辑源是本仓库的 `b-Office/package/`；跨项目读取走 `diana.docs.vulcan`。
 3.1.9 旧快照已随 3.2.0 发布退役删除（同构副本入库于 `z-Publish/history/3.1.9/`）。
-旧候选整体归档到 `z-Publish/history/<版本>/`。宿主部署脚本不会执行 Git commit、tag、push，
-也不会生成或推送 NuGet 包。
+旧候选整体归档到 `z-Publish/history/<版本>/`。发布管线不会执行 Git tag/push，也不会生成或推送 NuGet 包。
 
 桌面前端在 HistoryAurora；本仓宿主以 `z-Publish/host/HistoryVulcan.exe` 为运行入口。当前已验证消费方为 HistoryJanus（020）和 WBall（022）。
 

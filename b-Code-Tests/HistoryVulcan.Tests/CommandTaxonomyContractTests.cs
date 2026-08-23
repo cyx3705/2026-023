@@ -91,7 +91,7 @@ public sealed class CommandTaxonomyContractTests
     }
 
     /// <summary>
-    /// 宿主源码里声明了 <c>HiddenReason</c> 的指令，必须**恰好**是这四条。
+    /// 宿主源码里声明了 <c>HiddenReason</c> 的指令，必须**恰好**是恢复通道四条加开发总线十一条（八条内部 + 三条 CLI 管线）。
     /// </summary>
     /// <remarks>
     /// 4.8.0 之前这里有五个测试，分别验 <c>McpExposurePolicy.HardExclusionReason</c>
@@ -109,7 +109,7 @@ public sealed class CommandTaxonomyContractTests
     /// （HistoryPortunus 的 6 条 <c>portunus.mcp.*</c>、HistoryAurora 的 5 条页面协议通道）。
     /// </remarks>
     [Fact]
-    public void OnlyFourHostCommandsDeclareThemselvesHiddenFromRemoteClients()
+    public void HiddenHostCommandsAreExactlyTheRecoveryAndInternalPipelineSet()
     {
         string[] sources =
         [
@@ -118,6 +118,7 @@ public sealed class CommandTaxonomyContractTests
             Path.Combine("b-Code-HistoryVulcan", "HistoryVulcan.Services", "Commands", "CommandCatalogCommands.cs"),
             Path.Combine("b-Code-HistoryVulcan", "HistoryVulcan.Services", "Development", "WorktreeCommands.cs"),
             Path.Combine("b-Code-HistoryVulcan", "HistoryVulcan.Services", "Development", "ReleaseCommands.cs"),
+            Path.Combine("b-Code-HistoryVulcan", "HistoryVulcan.Services", "Development", "DevPipelineCommands.cs"),
         ];
 
         var declared = new List<string>();
@@ -144,10 +145,21 @@ public sealed class CommandTaxonomyContractTests
         Assert.Equal(
             new[]
             {
-                "vulcan.app.quit",       // 远程客户端不得退出宿主
-                "vulcan.command.run",    // 脚本批量执行会绕过逐条工具排除
-                "vulcan.module.install", // 运行包变更只走认证的本机通道
+                "vulcan.app.quit",
+                "vulcan.command.run",
+                "vulcan.module.install",
                 "vulcan.module.remove",
+                "vulcan.dev.start",
+                "vulcan.dev.submit",
+                "vulcan.dev.finish",
+                "vulcan.release.cycle",
+                "vulcan.release.log",
+                "vulcan.release.modules",
+                "vulcan.release.status",
+                "vulcan.worktree.create",
+                "vulcan.worktree.list",
+                "vulcan.worktree.merge",
+                "vulcan.worktree.root",
             }.Order(StringComparer.OrdinalIgnoreCase),
             declared.Order(StringComparer.OrdinalIgnoreCase));
     }

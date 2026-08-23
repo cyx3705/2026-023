@@ -31,6 +31,7 @@ internal static class WorktreeCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.worktree.root",
+            HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。本条不对 MCP 暴露。",
             Domain = "vulcan",
             CommandClass = "worktree",
             Summary = "查看或设置 AI 工作区根目录（省略 path 时查询）",
@@ -42,6 +43,7 @@ internal static class WorktreeCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.worktree.create",
+            HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。本条不对 MCP 暴露。",
             Domain = "vulcan",
             CommandClass = "worktree",
             Summary = "为项目开一个 AI 工作区（git worktree + 新分支）",
@@ -54,18 +56,25 @@ internal static class WorktreeCommands
                 Text("root", "本次使用的工作区根，省略时用设置值"),
                 Bool("confirm", "项目已有闲置工作区时，仍坚持再开一个", "false"),
             ],
-            Handler = CommandDescriptor.Sync(context => Create(
-                host.Settings,
-                context.RequireString("project"),
-                context.RequireString("slug"),
-                context.RequireString("agent"),
-                context.GetString("root"),
-                context.GetBool("confirm"))),
+            Handler = CommandDescriptor.Sync(context =>
+            {
+                var project = context.RequireString("project");
+                if (!DevPipelineCommands.IsHostProject(host.Settings, project))
+                    return CommandResult.Fail(DevPipelineCommands.ModuleUseStart);
+                return Create(
+                    host.Settings,
+                    project,
+                    context.RequireString("slug"),
+                    context.RequireString("agent"),
+                    context.GetString("root"),
+                    context.GetBool("confirm"));
+            }),
         });
 
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.worktree.list",
+            HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。本条不对 MCP 暴露。",
             Domain = "vulcan",
             CommandClass = "worktree",
             Summary = "列出某项目已开的 AI 工作区",
@@ -78,6 +87,7 @@ internal static class WorktreeCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.worktree.merge",
+            HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。本条不对 MCP 暴露。",
             Domain = "vulcan",
             CommandClass = "worktree",
             Summary = "把 AI 工作区分支并回 main；先卸试用（含前端残留）再回收工作区，分支保留",
@@ -87,11 +97,17 @@ internal static class WorktreeCommands
                 Text("project", "项目目录名", required: true, position: 0),
                 Text("name", "工作区目录名", required: true, position: 1),
             ],
-            Handler = async context => await MergeAsync(
-                host,
-                context.RequireString("project"),
-                context.RequireString("name"),
-                context.Cancellation).ConfigureAwait(false),
+            Handler = async context =>
+            {
+                var project = context.RequireString("project");
+                if (!DevPipelineCommands.IsHostProject(host.Settings, project))
+                    return CommandResult.Fail(DevPipelineCommands.ModuleUseFinish);
+                return await MergeAsync(
+                    host,
+                    project,
+                    context.RequireString("name"),
+                    context.Cancellation).ConfigureAwait(false);
+            },
         });
     }
 
@@ -108,7 +124,7 @@ internal static class WorktreeCommands
         return CommandResult.Ok($"AI 工作区根已设为: {value}");
     }
 
-    private static CommandResult Create(
+    internal static CommandResult Create(
         ISettingsService settings, string project, string slug, string agent, string? rootOverride, bool confirm)
     {
         var projectName = project.Trim();
@@ -243,7 +259,7 @@ internal static class WorktreeCommands
         return error == null ? branch : "HEAD";
     }
 
-    private static async Task<CommandResult> MergeAsync(
+    internal static async Task<CommandResult> MergeAsync(
         DevelopmentContext host,
         string project,
         string name,

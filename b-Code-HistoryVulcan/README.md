@@ -8,7 +8,7 @@ HistoryVulcan 是独立维护的通用桌面应用框架，也是框架源码的
 - `HistoryVulcan.Services`：日志、设置、文件状态、MCP 与模块托管实现。
 - `HistoryVulcan.ServiceHost`：无窗 WPF 服务宿主、确认通道和 `svc.*` 生命周期。
 - `App`：独立宿主入口。桌面 Shell 已迁往 HistoryAurora。
-- `../b-Code-Eng`：候选构建、公开 API 冻结、质量门禁、TRX 失败摘要和项目合同检查。
+- `../b-Code-Eng`：公开 API 基线、发布登记表、可选安装包脚本和 CI 失败摘要。
 - `../b-Office/package`：消费文档编辑源；`../b-Office` 根目录保留冻结合同和内部设计记录。
 - `../z-Publish`：唯一一份当前候选和完整发布测试结果。
 - `../z-Publish/history`：按版本保存的 Z 级最小正式历史副本。
@@ -32,19 +32,15 @@ dotnet build ..\HistoryVulcan.sln -c Release --no-restore
 Runtime 的 HistoryVulcan 宿主，不生成 NuGet 包。兼容包合同继续保留，但必须从单独批准的同版本包源消费。
 
 宿主候选覆盖写入仓库内 `z-Publish`，同时包含运行程序和消费文档；审核通过后一次性更新
-整个 `z-Publish`。宿主候选与部署入口：
+整个 `z-Publish`。入口是宿主进程内管线：
 
-```powershell
-# 可覆盖 current：生成 Release 宿主、UI/消费文档和 SHA-256 清单
-.\..\b-Code-Eng\Build-HistoryVulcanPackage.ps1
-
-# 候选审核通过后部署同一完整快照到 Z
-powershell -NoProfile -ExecutionPolicy Bypass -File ..\2026-019-HistoryDiana\b-Code\Publish-OneHistoryModule.ps1 -Module HistoryVulcan -Publish
+```text
+HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=candidate worktree=<工作区>
+HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=publish
 ```
 
-当前交付物是宿主程序，不生成 NuGet 包。旧 `Publish-AppShell.ps1` 已于 3.3.2 退役（DEC-023），
-`Build-HistoryVulcanPackage.ps1` 只生成候选；正式提升入口是 Diana 集中发布脚本。
-脚本不会执行 Git commit/tag/push，也不会推送 NuGet.org。包结构与许可边界见 `PACKAGE.md`。
+当前交付物是宿主程序，不生成 NuGet 包。旧 `Publish-AppShell.ps1` 已于 3.3.2 退役（DEC-023）。
+管线不会执行 Git tag/push，也不会推送 NuGet.org。包结构与许可边界见 `PACKAGE.md`。
 完整消费文档由 `../b-Office/package` 生成，候选位于 `../z-Publish/docs/`，正式历史位于
 `../z-Publish/history/<版本>/docs/`，并随当前正式快照写入 `../z-Publish/docs/`；
 其他项目和 AI 先读
@@ -53,8 +49,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ..\2026-019-HistoryDiana\b-C
 ## 维护门禁
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\..\b-Code-Eng\Assert-PublicApiBaseline.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File .\..\b-Code-Eng\Test-ProjectContract.ps1 -Instantiation
+dotnet test ..\b-Code-Tests\HistoryVulcan.Tests\HistoryVulcan.Tests.csproj --filter FullyQualifiedName~ReleasePipelineTests
 ```
 
 现行项目规则从 `../project.manifest.json` 和 `../b-Office/current/` 读取；历史施工与冻结证据默认不进入维护上下文。

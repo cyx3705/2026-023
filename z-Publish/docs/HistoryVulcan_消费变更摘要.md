@@ -1,14 +1,23 @@
 # HistoryVulcan 消费变更摘要
 
-适用版本：HistoryVulcan **5.0.0**。
+适用版本：HistoryVulcan **5.0.1**。
 
 本文按版本累积，不是单版本发布说明：下面的「破坏性变更」自 3.3.2 起逐条累加，每条都标注引入版本；
 「主要变化」是不需要改代码的增量。从 3.3.1 及更早升级的消费方需要通读破坏性变更全节。
 
 本文只记录会影响消费应用、模块作者和部署者的变化；源码施工、冻结审查、完整测试证据和发布操作不属于本文。
 
-> 本文抬头曾长期停留在旧版本；当前 5.0.0 变化列在本节顶部。
+> 本文抬头曾长期停留在旧版本；当前 5.0.1 变化列在本节顶部。
 > 版本线推进时必须同步本文抬头，这与同步 `project.manifest.json` 同等重要。
+
+## 主要变化（5.0.1）
+
+开发管线改在宿主进程内执行，不再拉起 `Publish-OneHistoryModule.ps1`。
+模块公开面收成三条：`vulcan.dev.start`（开工作区）→ `vulcan.dev.submit`（发 z、提交、注册审核）→
+`vulcan.dev.finish`（通过后再发 z、提交、并回、删工作区、注册宿主）。宿主不走这三条，打包仍用
+`HistoryVulcan.exe --cli vulcan.release.cycle`。模块三条与 `vulcan.worktree.*`、`vulcan.release.modules/status/log`
+都不配 MCP，只走 `--cli`。项目合同、质量门禁、公开 API 基线和打包都在 `HistoryVulcan.Services.Development.Pipeline`。
+模块包布局由登记表 `package` 字段描述，验证步骤只允许 `dotnet`。
 
 ## 破坏性变更（升级必读；自 3.3.2 累积）
 
