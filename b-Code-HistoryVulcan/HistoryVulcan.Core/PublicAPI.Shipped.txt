@@ -12,32 +12,6 @@ HistoryVulcan.Core.ApplicationIdentity.Name.get -> string!
 HistoryVulcan.Core.ApplicationIdentity.Name.init -> void
 HistoryVulcan.Core.ApplicationIdentity.Version.get -> string!
 HistoryVulcan.Core.ApplicationIdentity.Version.init -> void
-HistoryVulcan.Core.Clients.ClientKind
-HistoryVulcan.Core.Clients.ClientKind.Mcp = 0 -> HistoryVulcan.Core.Clients.ClientKind
-HistoryVulcan.Core.Clients.ClientKind.Shell = 1 -> HistoryVulcan.Core.Clients.ClientKind
-HistoryVulcan.Core.Clients.ClientKind.Web = 2 -> HistoryVulcan.Core.Clients.ClientKind
-HistoryVulcan.Core.Clients.ClientSession
-HistoryVulcan.Core.Clients.ClientSession.AuthSubject.get -> string?
-HistoryVulcan.Core.Clients.ClientSession.AuthSubject.init -> void
-HistoryVulcan.Core.Clients.ClientSession.ClientSession(string! Id, HistoryVulcan.Core.Clients.ClientKind Kind, string! Name, string! ProtocolVersion, System.DateTimeOffset ConnectedAt) -> void
-HistoryVulcan.Core.Clients.ClientSession.ConnectedAt.get -> System.DateTimeOffset
-HistoryVulcan.Core.Clients.ClientSession.ConnectedAt.init -> void
-HistoryVulcan.Core.Clients.ClientSession.DeviceId.get -> string?
-HistoryVulcan.Core.Clients.ClientSession.DeviceId.init -> void
-HistoryVulcan.Core.Clients.ClientSession.Id.get -> string!
-HistoryVulcan.Core.Clients.ClientSession.Id.init -> void
-HistoryVulcan.Core.Clients.ClientSession.IsLoopback.get -> bool
-HistoryVulcan.Core.Clients.ClientSession.IsLoopback.init -> void
-HistoryVulcan.Core.Clients.ClientSession.Kind.get -> HistoryVulcan.Core.Clients.ClientKind
-HistoryVulcan.Core.Clients.ClientSession.Kind.init -> void
-HistoryVulcan.Core.Clients.ClientSession.Name.get -> string!
-HistoryVulcan.Core.Clients.ClientSession.Name.init -> void
-HistoryVulcan.Core.Clients.ClientSession.ProtocolVersion.get -> string!
-HistoryVulcan.Core.Clients.ClientSession.ProtocolVersion.init -> void
-HistoryVulcan.Core.Clients.ClientSession.RemoteAddress.get -> string?
-HistoryVulcan.Core.Clients.ClientSession.RemoteAddress.init -> void
-HistoryVulcan.Core.Clients.ClientSession.Scopes.get -> System.Collections.Generic.IReadOnlySet<string!>!
-HistoryVulcan.Core.Clients.ClientSession.Scopes.init -> void
 HistoryVulcan.Core.Commands.BuiltinCommandDefinitions
 HistoryVulcan.Core.Commands.CommandBus
 HistoryVulcan.Core.Commands.CommandBus.CommandBus(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Logging.IShellLog! log) -> void
@@ -229,74 +203,6 @@ HistoryVulcan.Core.Commands.ParsedCommand.Positionals.init -> void
 HistoryVulcan.Core.Commands.ParsedCommand.RawText.get -> string!
 HistoryVulcan.Core.Commands.ParsedCommand.RawText.init -> void
 HistoryVulcan.Core.Data.SqlText
-HistoryVulcan.Core.Docking.DockSide
-HistoryVulcan.Core.Docking.DockSide.Bottom = 3 -> HistoryVulcan.Core.Docking.DockSide
-HistoryVulcan.Core.Docking.DockSide.Center = 5 -> HistoryVulcan.Core.Docking.DockSide
-HistoryVulcan.Core.Docking.DockSide.Left = 0 -> HistoryVulcan.Core.Docking.DockSide
-HistoryVulcan.Core.Docking.DockSide.Right = 1 -> HistoryVulcan.Core.Docking.DockSide
-HistoryVulcan.Core.Docking.DockSide.Tab = 4 -> HistoryVulcan.Core.Docking.DockSide
-HistoryVulcan.Core.Docking.DockSide.Top = 2 -> HistoryVulcan.Core.Docking.DockSide
-HistoryVulcan.Core.Docking.IDockingService
-HistoryVulcan.Core.Docking.IDockingService.CommandGenerated -> System.EventHandler<HistoryVulcan.Core.Docking.ShellCommandEventArgs!>?
-HistoryVulcan.Core.Docking.IDockingService.Dock(string! id, HistoryVulcan.Core.Docking.DockSide side, double? ratio = null, string? targetId = null) -> void
-HistoryVulcan.Core.Docking.IDockingService.Float(string! id) -> void
-HistoryVulcan.Core.Docking.IDockingService.Hide(string! id) -> void
-HistoryVulcan.Core.Docking.IDockingService.ListLayouts() -> System.Collections.Generic.IReadOnlyList<string!>!
-HistoryVulcan.Core.Docking.IDockingService.ListWindows() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Docking.ToolWindowInfo!>!
-HistoryVulcan.Core.Docking.IDockingService.LoadLayout(string! name) -> bool
-HistoryVulcan.Core.Docking.IDockingService.MaximizeWindow(string! id) -> void
-HistoryVulcan.Core.Docking.IDockingService.MaximizedId.get -> string?
-HistoryVulcan.Core.Docking.IDockingService.RegisterWindow(HistoryVulcan.Core.Docking.ToolWindowDescriptor! descriptor, string! owner) -> void
-HistoryVulcan.Core.Docking.IDockingService.ResetLayout() -> void
-HistoryVulcan.Core.Docking.IDockingService.ResetWindow(string! id) -> void
-HistoryVulcan.Core.Docking.IDockingService.RestoreLayoutFromMaximized() -> void
-HistoryVulcan.Core.Docking.IDockingService.SaveLayout(string! name) -> void
-HistoryVulcan.Core.Docking.IDockingService.SetRatio(string! id, double ratio) -> void
-HistoryVulcan.Core.Docking.IDockingService.Show(string! id) -> void
-HistoryVulcan.Core.Docking.IDockingService.UnregisterOwner(string! owner) -> void
-HistoryVulcan.Core.Docking.IDockingService.UnregisterWindow(string! id) -> void
-HistoryVulcan.Core.Docking.IDockingService.WindowsChanged -> System.EventHandler?
-HistoryVulcan.Core.Docking.ShellCommandEventArgs
-HistoryVulcan.Core.Docking.ShellCommandEventArgs.CommandText.get -> string!
-HistoryVulcan.Core.Docking.ShellCommandEventArgs.CommandText.init -> void
-HistoryVulcan.Core.Docking.ShellCommandEventArgs.ShellCommandEventArgs() -> void
-HistoryVulcan.Core.Docking.ShellCommandEventArgs.Source.get -> string!
-HistoryVulcan.Core.Docking.ShellCommandEventArgs.Source.init -> void
-HistoryVulcan.Core.Docking.StandardWindowIds
-HistoryVulcan.Core.Docking.ToolWindowDescriptor
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.ContentFactory.get -> System.Func<object!>?
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.ContentFactory.init -> void
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.DefaultRatio.get -> double
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.DefaultRatio.init -> void
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.DefaultSide.get -> HistoryVulcan.Core.Docking.DockSide
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.DefaultSide.init -> void
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.DefaultTabTarget.get -> string?
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.DefaultTabTarget.init -> void
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.DefaultVisible.get -> bool
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.DefaultVisible.init -> void
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.Id.get -> string!
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.Id.init -> void
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.IsSingleton.get -> bool
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.IsSingleton.init -> void
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.Title.get -> string!
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.Title.init -> void
-HistoryVulcan.Core.Docking.ToolWindowDescriptor.ToolWindowDescriptor() -> void
-HistoryVulcan.Core.Docking.ToolWindowInfo
-HistoryVulcan.Core.Docking.ToolWindowInfo.Id.get -> string!
-HistoryVulcan.Core.Docking.ToolWindowInfo.Id.init -> void
-HistoryVulcan.Core.Docking.ToolWindowInfo.IsFloating.get -> bool
-HistoryVulcan.Core.Docking.ToolWindowInfo.IsFloating.init -> void
-HistoryVulcan.Core.Docking.ToolWindowInfo.IsVisible.get -> bool
-HistoryVulcan.Core.Docking.ToolWindowInfo.IsVisible.init -> void
-HistoryVulcan.Core.Docking.ToolWindowInfo.Owner.get -> string!
-HistoryVulcan.Core.Docking.ToolWindowInfo.Owner.init -> void
-HistoryVulcan.Core.Docking.ToolWindowInfo.Ratio.get -> double?
-HistoryVulcan.Core.Docking.ToolWindowInfo.Ratio.init -> void
-HistoryVulcan.Core.Docking.ToolWindowInfo.Side.get -> HistoryVulcan.Core.Docking.DockSide?
-HistoryVulcan.Core.Docking.ToolWindowInfo.Side.init -> void
-HistoryVulcan.Core.Docking.ToolWindowInfo.Title.get -> string!
-HistoryVulcan.Core.Docking.ToolWindowInfo.Title.init -> void
-HistoryVulcan.Core.Docking.ToolWindowInfo.ToolWindowInfo(string! Id, string! Title, bool IsVisible, bool IsFloating, HistoryVulcan.Core.Docking.DockSide? Side, double? Ratio, string! Owner = "framework") -> void
 HistoryVulcan.Core.Logging.IShellLog
 HistoryVulcan.Core.Logging.IShellLog.EntryAdded -> System.EventHandler<HistoryVulcan.Core.Logging.ShellLogEntry!>?
 HistoryVulcan.Core.Logging.IShellLog.Log(HistoryVulcan.Core.Logging.ShellLogLevel level, string! category, string! message) -> void
@@ -319,51 +225,19 @@ HistoryVulcan.Core.Logging.ShellLogLevel.Fatal = 5 -> HistoryVulcan.Core.Logging
 HistoryVulcan.Core.Logging.ShellLogLevel.Info = 2 -> HistoryVulcan.Core.Logging.ShellLogLevel
 HistoryVulcan.Core.Logging.ShellLogLevel.Trace = 0 -> HistoryVulcan.Core.Logging.ShellLogLevel
 HistoryVulcan.Core.Logging.ShellLogLevel.Warn = 3 -> HistoryVulcan.Core.Logging.ShellLogLevel
-HistoryVulcan.Core.Mcp.GatewayAwareConfirmation
-HistoryVulcan.Core.Mcp.GatewayAwareConfirmation.Confirm(string! prompt) -> bool
-HistoryVulcan.Core.Mcp.GatewayAwareConfirmation.GatewayAwareConfirmation(HistoryVulcan.Core.Commands.IConfirmationService? inner) -> void
-HistoryVulcan.Core.Mcp.IMcpAuditLog
-HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(HistoryVulcan.Core.Clients.ClientSession! session, string! tool, string! arguments, string! result, long elapsedMs) -> void
-HistoryVulcan.Core.Mcp.IMcpAuditLog.RecordMcp(string! client, string! tool, string! arguments, string! result, long elapsedMs) -> void
-HistoryVulcan.Core.Mcp.McpConfirmationScope
-HistoryVulcan.Core.Mcp.McpExposurePolicy
-HistoryVulcan.Core.Mcp.PromptTextIntegrity
-HistoryVulcan.Core.Modules.IActivatableToolContent
-HistoryVulcan.Core.Modules.IActivatableToolContent.ActivateContent() -> void
 HistoryVulcan.Core.Modules.IDeferredStartupWork
 HistoryVulcan.Core.Modules.IDeferredStartupWork.ExecuteAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 HistoryVulcan.Core.Modules.IModuleContext
 HistoryVulcan.Core.Modules.IModuleContext.Bus.get -> HistoryVulcan.Core.Commands.CommandBus!
-HistoryVulcan.Core.Modules.IModuleContext.DataDirectory.get -> string!
-HistoryVulcan.Core.Modules.IModuleContext.Log.get -> HistoryVulcan.Core.Logging.IShellLog!
 HistoryVulcan.Core.Modules.IModuleContext.RegisterCommands(System.Action<HistoryVulcan.Core.Commands.CommandRegistry!>! configure) -> void
-HistoryVulcan.Core.Modules.IModuleContext.Settings.get -> HistoryVulcan.Core.Storage.ISettingsService!
 HistoryVulcan.Core.Modules.IModuleContextAware
 HistoryVulcan.Core.Modules.IModuleContextAware.Attach(HistoryVulcan.Core.Modules.IModuleContext! context) -> void
-HistoryVulcan.Core.Modules.IShellUiAware
-HistoryVulcan.Core.Modules.IShellUiAware.ShellUi.set -> void
-HistoryVulcan.Core.Modules.IShellUiRegistrar
-HistoryVulcan.Core.Modules.IShellUiRegistrar.Invoke(System.Action! action) -> void
-HistoryVulcan.Core.Modules.IShellUiRegistrar.IsUiThread.get -> bool
-HistoryVulcan.Core.Modules.IShellUiRegistrar.RegisterToolWindow(HistoryVulcan.Core.Docking.ToolWindowDescriptor! descriptor, string! owner) -> System.IDisposable!
-HistoryVulcan.Core.Modules.IShellUiRegistrar.UnregisterOwner(string! owner) -> void
-HistoryVulcan.Core.Modules.IShellUiRegistrar.UnregisterToolWindow(string! id) -> void
-HistoryVulcan.Core.Modules.IUiModule
-HistoryVulcan.Core.Modules.IUiModule.CreateUi() -> void
-HistoryVulcan.Core.Modules.IUiModule.DestroyUi() -> void
 HistoryVulcan.Core.Modules.ModuleCommandAttribute
 HistoryVulcan.Core.Modules.ModuleCommandAttribute.CommandClass.get -> string?
 HistoryVulcan.Core.Modules.ModuleCommandAttribute.CommandClass.init -> void
 HistoryVulcan.Core.Modules.ModuleCommandAttribute.ModuleCommandAttribute() -> void
 HistoryVulcan.Core.Modules.ModuleCommandAttribute.Readonly.get -> bool
 HistoryVulcan.Core.Modules.ModuleCommandAttribute.Readonly.init -> void
-HistoryVulcan.Core.Storage.ILayoutStore
-HistoryVulcan.Core.Storage.ILayoutStore.DeleteCurrent() -> void
-HistoryVulcan.Core.Storage.ILayoutStore.ListNamed() -> System.Collections.Generic.IReadOnlyList<string!>!
-HistoryVulcan.Core.Storage.ILayoutStore.ReadCurrent() -> string?
-HistoryVulcan.Core.Storage.ILayoutStore.ReadNamed(string! name) -> string?
-HistoryVulcan.Core.Storage.ILayoutStore.WriteCurrent(string! payload) -> void
-HistoryVulcan.Core.Storage.ILayoutStore.WriteNamed(string! name, string! payload) -> void
 HistoryVulcan.Core.Storage.ISettingsService
 HistoryVulcan.Core.Storage.ISettingsService.All() -> System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string!, string!>>!
 HistoryVulcan.Core.Storage.ISettingsService.Get(string! key) -> string?
@@ -372,14 +246,9 @@ HistoryVulcan.Core.Storage.ISettingsService.Set(string! key, string! value) -> v
 const HistoryVulcan.Core.Commands.CommandBus.EchoCategoryPrefix = "cmd:" -> string!
 const HistoryVulcan.Core.Commands.CommandBus.ProgressCategory = "cmd:progress" -> string!
 const HistoryVulcan.Core.Commands.CommandBus.ResultCategory = "cmd:result" -> string!
-const HistoryVulcan.Core.Docking.StandardWindowIds.CommandDetail = "commanddetail" -> string!
-const HistoryVulcan.Core.Docking.StandardWindowIds.Console = "console" -> string!
-const HistoryVulcan.Core.Docking.StandardWindowIds.Mcp = "mcp" -> string!
-const HistoryVulcan.Core.Docking.StandardWindowIds.Modules = "modules" -> string!
 static HistoryVulcan.Core.AppIdentity.Current.get -> HistoryVulcan.Core.ApplicationIdentity!
 static HistoryVulcan.Core.AppIdentity.From(System.Reflection.Assembly! assembly) -> HistoryVulcan.Core.ApplicationIdentity!
 static HistoryVulcan.Core.AppIdentity.Use(System.Reflection.Assembly! assembly) -> void
-static HistoryVulcan.Core.Clients.ClientSession.Create(HistoryVulcan.Core.Clients.ClientKind kind, string! name, string! protocolVersion = "2025-03-26", string? id = null, string? remoteAddress = null, string? deviceId = null, string? authSubject = null, System.Collections.Generic.IEnumerable<string!>? scopes = null, bool isLoopback = false) -> HistoryVulcan.Core.Clients.ClientSession!
 static HistoryVulcan.Core.Commands.BuiltinCommandDefinitions.Bind(string! name, System.Func<HistoryVulcan.Core.Commands.CommandContext!, System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!>! handler, bool requiresUiThread = false) -> HistoryVulcan.Core.Commands.CommandDescriptor!
 static HistoryVulcan.Core.Commands.BuiltinCommandDefinitions.Contains(string! name) -> bool
 static HistoryVulcan.Core.Commands.BuiltinCommandDefinitions.Names.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -405,21 +274,6 @@ static HistoryVulcan.Core.Data.SqlText.Truncate(string! value, int max) -> strin
 static HistoryVulcan.Core.Logging.ShellLogExtensions.Error(this HistoryVulcan.Core.Logging.IShellLog! log, string! category, string! message) -> void
 static HistoryVulcan.Core.Logging.ShellLogExtensions.Info(this HistoryVulcan.Core.Logging.IShellLog! log, string! category, string! message) -> void
 static HistoryVulcan.Core.Logging.ShellLogExtensions.Warn(this HistoryVulcan.Core.Logging.IShellLog! log, string! category, string! message) -> void
-static HistoryVulcan.Core.Mcp.McpConfirmationScope.PreApproved.get -> bool
-static HistoryVulcan.Core.Mcp.McpConfirmationScope.RunPreApprovedAsync<T>(System.Func<System.Threading.Tasks.Task<T>!>! action) -> System.Threading.Tasks.Task<T>!
-static HistoryVulcan.Core.Mcp.McpExposurePolicy.DiagnosticCommandNames.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
-static HistoryVulcan.Core.Mcp.McpExposurePolicy.HardExclusionReason(string! commandName) -> string?
-static HistoryVulcan.Core.Mcp.McpExposurePolicy.IsReadonlyAllowed(string! commandName) -> bool
-static HistoryVulcan.Core.Mcp.McpExposurePolicy.IsVisible(HistoryVulcan.Core.Commands.CommandDescriptor! descriptor, string! policy) -> bool
-static HistoryVulcan.Core.Mcp.McpExposurePolicy.ModuleExposure.get -> System.Func<string!, string?>?
-static HistoryVulcan.Core.Mcp.McpExposurePolicy.ModuleExposure.set -> void
-static HistoryVulcan.Core.Mcp.McpExposurePolicy.ModuleOfCommand.get -> System.Func<string!, string?>?
-static HistoryVulcan.Core.Mcp.McpExposurePolicy.ModuleOfCommand.set -> void
-static HistoryVulcan.Core.Mcp.McpExposurePolicy.ReadonlyCommandNames.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
-static HistoryVulcan.Core.Mcp.McpExposurePolicy.RegisterReadonly(params string![]! commandNames) -> void
-static HistoryVulcan.Core.Mcp.McpExposurePolicy.State(HistoryVulcan.Core.Commands.CommandDescriptor! descriptor) -> string!
-static HistoryVulcan.Core.Mcp.PromptTextIntegrity.LooksCorrupted(string! text) -> bool
-static HistoryVulcan.Core.Mcp.PromptTextIntegrity.ValidateDescription(string! text) -> string!
 virtual BaseVariable.ModuleInfoBase.Author.get -> string!
 virtual BaseVariable.ModuleInfoBase.Description.get -> string!
 virtual BaseVariable.ModuleInfoBase.Enabled.get -> bool

@@ -1,5 +1,5 @@
 ﻿<Project>
   <PropertyGroup>
-    <VulcanVersion>4.8.2</VulcanVersion>
+    <VulcanVersion>5.0.0</VulcanVersion>
   </PropertyGroup>
 </Project>

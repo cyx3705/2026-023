@@ -31,17 +31,10 @@
       "OneHistory.HistoryVulcan.Core": {
         "type": "Project"
       },
-      "OneHistory.HistoryVulcan.Extensibility": {
-        "type": "Project",
-        "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[3.11.3, )"
-        }
-      },
       "OneHistory.HistoryVulcan.Services": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[3.11.3, )",
-          "OneHistory.HistoryVulcan.Extensibility": "[3.11.3, )"
+          "OneHistory.HistoryVulcan.Core": "[3.11.3, )"
         }
       }
     }

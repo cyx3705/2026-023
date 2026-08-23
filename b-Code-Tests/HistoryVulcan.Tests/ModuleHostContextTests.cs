@@ -11,7 +11,7 @@ namespace HistoryVulcan.Tests
     public sealed class ModuleHostContextTests
     {
         [Fact]
-        public async Task ContextAwareModuleReceivesHostServicesAndOwnsItsCommands()
+        public async Task ContextAwareModuleRegistersCommandsOnlyThroughTheBus()
         {
             var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));
             var modulesDirectory = Path.Combine(root, "modules");
@@ -26,12 +26,10 @@ namespace HistoryVulcan.Tests
             var registry = new CommandRegistry();
             var log = new TestLog();
             var settings = new MemorySettings();
-            settings.Set("fixture.value", "attached");
             var bus = new CommandBus(registry, log);
             var host = new ModuleHost(modulesDirectory, log)
             {
                 EnableFileWatching = false,
-                EnableUiModules = false,
             };
 
             try
@@ -50,7 +48,7 @@ namespace HistoryVulcan.Tests
                 var result = await bus.ExecuteAsync("contextfixture.context-probe", "test");
 
                 Assert.True(result.Success, result.Message);
-                Assert.Equal($"{Path.GetFullPath(dataDirectory)}|attached", result.Message);
+                Assert.Equal("registered", result.Message);
                 // 恰好两条：一条显式注册、一条反射投影。
                 // Attach 与 Dispose 都是生命周期契约的实现，不得成为指令——
                 // 尤其是 Dispose：远端调用它等于拆掉半个模块。
@@ -62,6 +60,39 @@ namespace HistoryVulcan.Tests
                 host.Dispose();
                 Assert.False(registry.TryGet("contextfixture.context-probe", out _));
                 Assert.False(registry.TryGet("contextfixture.Probe", out _));
+                Directory.Delete(root, recursive: true);
+            }
+        }
+
+        [Fact]
+        public async Task UiCommandsFailClearlyWhenNoUiModuleIsLoaded()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));
+            var modulesDirectory = Path.Combine(root, "modules");
+            Directory.CreateDirectory(modulesDirectory);
+            var registry = new CommandRegistry();
+            var log = new TestLog();
+            var bus = new CommandBus(registry, log);
+            using var host = new ModuleHost(modulesDirectory, log)
+            {
+                EnableFileWatching = false,
+            };
+            host.Attach(registry, bus, new MemorySettings(), Path.Combine(root, "data"));
+            host.Start();
+
+            try
+            {
+                foreach (var name in new[] { "vulcan.ui.show", "vulcan.ui.hide", "vulcan.ui.dock" })
+                {
+                    Assert.False(registry.TryGet(name, out _), name);
+                    var result = await bus.ExecuteAsync(name, "test");
+                    Assert.False(result.Success);
+                    Assert.Contains("未知指令", result.Message, StringComparison.Ordinal);
+                    Assert.Contains(name, result.Message, StringComparison.OrdinalIgnoreCase);
+                }
+            }
+            finally
+            {
                 Directory.Delete(root, recursive: true);
             }
         }
@@ -103,11 +134,11 @@ namespace HistoryVulcan.Tests
             var host = new ModuleHost(modulesDirectory, log)
             {
                 EnableFileWatching = false,
-                EnableUiModules = false,
             };
 
             try
             {
+                Environment.SetEnvironmentVariable(ContextAwareFixture.DataVariable, Path.GetFullPath(dataDirectory));
                 host.Attach(registry, new CommandBus(registry, log), new MemorySettings(), dataDirectory);
                 host.Start();
                 Assert.False(File.Exists(marker), "装载阶段不应触发拆除");
@@ -156,7 +187,6 @@ namespace HistoryVulcan.Tests
             using var host = new ModuleHost(modulesDirectory, log)
             {
                 EnableFileWatching = false,
-                EnableUiModules = false,
             };
 
             try
@@ -195,7 +225,6 @@ namespace HistoryVulcan.Tests
             using var host = new ModuleHost(modulesDirectory, log)
             {
                 EnableFileWatching = false,
-                EnableUiModules = false,
             };
 
             try
@@ -232,7 +261,6 @@ namespace HistoryVulcan.Tests
             using var host = new ModuleHost(modulesDirectory, log)
             {
                 EnableFileWatching = false,
-                EnableUiModules = false,
             };
 
             try
@@ -281,7 +309,6 @@ namespace HistoryVulcan.Tests
             var host = new ModuleHost(modulesDirectory, log)
             {
                 EnableFileWatching = false,
-                EnableUiModules = false,
             };
 
             try
@@ -375,20 +402,21 @@ namespace HistoryVulcan.Tests
         /// </summary>
         public const string DisposeMarker = "fixture-disposed.marker";
 
+        public const string DataVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_DATA";
+
         private string? _dataDirectory;
 
         public void Attach(IModuleContext context)
         {
-            _dataDirectory = context.DataDirectory;
+            _dataDirectory = Environment.GetEnvironmentVariable(DataVariable);
             context.RegisterCommands(registry => registry.Register(new CommandDescriptor
             {
                 Name = "contextfixture.context-probe",
                 Domain = "spoofed-domain",
                 CommandClass = "context",
-                Summary = "Returns the injected host context values.",
+                Summary = "Proves RegisterCommands staged a command owned by this module.",
                 Readonly = true,
-                Handler = CommandDescriptor.Sync(_ => CommandResult.Ok(
-                    $"{context.DataDirectory}|{context.Settings.Get("fixture.value")}")),
+                Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("registered")),
             }));
         }
 

@@ -2,7 +2,6 @@
 using System.IO;
 using System.Text.Json;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Core.Mcp;
 
 namespace HistoryVulcan.ServiceHost;
 
@@ -37,8 +36,7 @@ public static class ServiceHost
         // 4.0.0（REQ-A2）：确认中继到前端，服务进程不再自己弹框。
         // 前端未连接时拒绝而非放行——没有人可问就等于没得到批准。
         var confirmation = new ShellRelayConfirmation(composition.Log);
-        var gatewayAwareConfirmation = new GatewayAwareConfirmation(confirmation);
-        composition.Bus.Confirmation = gatewayAwareConfirmation;
+        composition.Bus.Confirmation = confirmation;
         // 3.13.0 删除局域网面后，网关只接受同机前端 Shell（源形如 "Shell:v1.…"），
         // 因此原先的两条远程分支都已不可达，一并退役：
         //   - 非回环会话按 scope + lan.confirm 决定是否回问客户端。`lan.confirm` 这个键
@@ -46,7 +44,7 @@ public static class ServiceHost
         //     且它自己从未被注册），所以这条分支在任何配置下都只会返回 false。
         // 剩下的唯一语义就是本机确认。
         composition.Bus.ConfirmationRouter =
-            (_, prompt) => gatewayAwareConfirmation.Confirm(prompt);
+            (_, prompt) => confirmation.Confirm(prompt);
         // 服务指令已在 Build 时注册（4.5.0），这里只把「停机」这件唯一做不到的事接上。
         // 排到循环上再关：命令处理器跑在线程池上，同步关停会让循环在响应写回之前就排空退出。
         composition.RequestStop = () => loop.Post(() => loop.Shutdown());

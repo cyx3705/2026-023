@@ -6,8 +6,8 @@ using Microsoft.Win32;
 using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Core.Storage;
+using HistoryVulcan.Services.Commands;
 using HistoryVulcan.Services;
 using HistoryVulcan.Services.Modules;
 
@@ -50,10 +50,8 @@ public static partial class ServiceComposer
             // 顺带避免与正在运行的后台服务抢端口。
             composition.Modules?.Start();
 
-            var markdown = HistoryVulcan.Extensibility.Mcp.CommandManualGenerator.Render(
-                composition.Registry!,
-                new HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter(composition.Registry!),
-                McpSettingKeys.ResolvePolicy(composition.Settings));
+            var markdown = HistoryVulcan.Services.Commands.CommandCatalogCommands.RenderManual(
+                composition.Registry!);
 
             var target = Path.GetFullPath(outputPath);
             var directory = Path.GetDirectoryName(target);
@@ -68,7 +66,7 @@ public static partial class ServiceComposer
             var count = composition.Registry!.All().Count;
             Console.WriteLine(
                 $"命令手册已导出: {count} 条命令，SHA-256 " +
-                $"{HistoryVulcan.Extensibility.Mcp.CommandManualGenerator.Sha256(markdown)}");
+                $"{HistoryVulcan.Services.Commands.CommandCatalogCommands.Sha256(markdown)}");
             Console.WriteLine(target);
             return 0;
         }
@@ -102,26 +100,14 @@ public static partial class ServiceComposer
             new RuntimeModuleDiscoverySource(paths.ModulesDir), log)
         {
             EnableCommands = true,
-            // 4.0.0 起宿主自己不含任何界面实现；打开这个开关只是允许**模块**提供界面
-            // （Aurora DEC-008）。没有模块实现 IShellUiProvider 时 ShellUi 保持 null，
-            // ModuleHost 会整段跳过 UI 生命周期，进程仍然是纯无头的。
-            EnableUiModules = true,
         };
         modules.Attach(registry, bus, settings, servicePaths.Root);
         RegisterServiceModuleCommands(registry, modules, settings, bus);
         RegisterServiceMcpSettingCommands(registry, settings);
 
         // 指令自省面（vulcan.command.list / show / domains / manual）随宿主装配，
-        // 不随承载 MCP 的模块来去：Portunus 装不上时最需要的恰恰是能查指令。
-        //
-        // 它要的两样东西都不必经过网关：
-        //   策略——就是 mcp.policy 这个设置键，宿主自己读得到；
-        //   治理——经 CommandBus.McpGovernance 由模块注入，没有模块时那几列为空。
-        var catalogExporter = new HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter(registry)
-        {
-            DescriptionsProvider = () => bus.McpGovernance?.EffectiveDescriptions()
-                                         ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
-        };
+        // 目录与手册只读注册表。远端暴露由指令自己的 HiddenReason / Level / Readonly 声明，
+        // 宿主不再另做一层 MCP 投影或策略锁。
         // 模块开发路线（4.6.0 从 HistoryDiana 迁入）：工作区、发布、装机。
         //
         // 它此前住在模块里，于是每一轮模块开发都依赖那个模块装载成功——而它自己也要
@@ -131,9 +117,6 @@ public static partial class ServiceComposer
 
         HistoryVulcan.Services.Commands.CommandCatalogCommands.RegisterAll(
             registry,
-            catalogExporter,
-            governance: null,
-            policy: () => McpSettingKeys.ResolvePolicy(settings),
             source: "framework:service");
 
         var composition = new ServiceComposition
@@ -256,13 +239,26 @@ public static partial class ServiceComposer
             : value;
     }
 
+    private static readonly string[] LegacyMcpSettingKeys =
+    [
+        "mcp.port",
+        "mcp.policy",
+        "mcp.token",
+        "mcp.autostart",
+        "mcp.timeout",
+        "mcp.confirm",
+        "mcp.confirmtimeout",
+        "mcp.portretries",
+        "mcp.sessionlimit",
+    ];
+
     public static void MigrateLegacyMcpSettings(
         ISettingsService legacy,
         ISettingsService service,
         IShellLog log)
     {
         var migrated = 0;
-        foreach (var key in McpSettingKeys.All)
+        foreach (var key in LegacyMcpSettingKeys)
         {
             if (service.Get(key) != null || legacy.Get(key) is not { } value)
                 continue;

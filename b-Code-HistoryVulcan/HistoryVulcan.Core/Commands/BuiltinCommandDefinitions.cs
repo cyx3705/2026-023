@@ -47,7 +47,7 @@ public static class BuiltinCommandDefinitions
                 "vulcan.command.help",
                 "command",
                 "列出全部指令 / 显示某指令详情与示例",
-                "vulcan.command.help vulcan.ui.dock",
+                "vulcan.command.help vulcan.command.help",
                 [Parameter("command", "指令名;省略时列出全部指令", position: 0)],
                 Readonly: true),
             new Definition(

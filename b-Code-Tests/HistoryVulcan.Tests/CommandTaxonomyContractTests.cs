@@ -1,6 +1,4 @@
 ﻿using HistoryVulcan.Core.Commands;
-using HistoryVulcan.Extensibility.Commands;
-using HistoryVulcan.Core.Mcp;
 using Xunit;
 
 namespace HistoryVulcan.Tests;
@@ -178,13 +176,8 @@ public sealed class CommandTaxonomyContractTests
             Handler = CommandDescriptor.Sync(_ => CommandResult.Ok()),
         };
 
-        Assert.Null(McpExposurePolicy.HardExclusionReason(exposed));
-        Assert.Equal("测试用", McpExposurePolicy.HardExclusionReason(hidden));
-
-        // 隐藏的指令在任何策略下都不可见，即便它只读且无害。
-        Assert.False(McpExposurePolicy.IsVisible(hidden, "standard"));
-        Assert.False(McpExposurePolicy.IsVisible(hidden, "readonly"));
-        Assert.Equal("hidden", McpExposurePolicy.State(hidden));
+        Assert.Null(exposed.HiddenReason);
+        Assert.Equal("测试用", hidden.HiddenReason);
     }
 
     [Fact]

@@ -1,6 +1,6 @@
 # HistoryVulcan 运行时约束与已知限制
 
-适用版本：HistoryVulcan **4.0.0**；宿主从 `z-Publish/host` 运行，模块只从
+适用版本：HistoryVulcan **5.0.0**；宿主从 `z-Publish/host` 运行，模块只从
 `%AppData%\HistoryVulcan\Modules` 装载。`3.1.8` 是不受支持的内部过渡版本。
 3.3.0（DEC-022）：内置命令硬切为 `vulcan.<类>.<方法>`；全局快捷键（含 `GlobalShortcutService`）与命令工作台由 HistoryMercury 4.1.0 拥有。
 旧→新映射见 `../history/3.3.0-vulcan-command-rename.md`。
@@ -40,7 +40,7 @@
 | Shell 能力 | 默认值 | 启用方式 |
 |---|---:|---|
 | 模块命令宿主 | 关闭 | `ShellConfig.EnableModules=true` |
-| UI 模块宿主 | 关闭 | `ShellConfig.EnableUiModules=true`，或随 `EnableModules=true` 启用 |
+| UI 模块宿主 | 已删除 | 5.0 起宿主不再编排 UI 模块生命周期；界面由认领 `ui.*` 注解的模块提供 |
 | MCP 网关与治理 | 关闭 | 嵌入式 Shell 用 `ShellConfig.EnableMcp=true`；独立双进程宿主只在后台装配，是否监听仍由 `mcp.autostart` 或显式 start 决定 |
 | 远程管理视图 | 关闭 | `ShellConfig.EnableRemoteManagementViews=true` |
 | 本地 `vulcan.command.*` | 开启 | Shell 核心能力，不创建网络监听 |

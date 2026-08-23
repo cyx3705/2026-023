@@ -5,7 +5,6 @@ using System.Runtime.Loader;
 using System.Text.Json;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Core.Modules;
 using HistoryVulcan.Core.Storage;
 
@@ -206,31 +205,8 @@ public sealed partial class ModuleHost
             _disposed = true;
         }
 
-        _mcpPolicy.Unbind();
         _watcher.Dispose();
-        var ui = UiContext;
-        if (ui != null)
-        {
-            try
-            {
-                ui.Send(_ =>
-                {
-                    DestroyUi(_current);
-                    ShellUi = null;
-                    UnregisterCommands(_current);
-                }, null);
-            }
-            catch (Exception ex)
-            {
-                _log.Warn("module", $"退出时销毁 UI 模块失败: {ex.Message}");
-            }
-        }
-        else
-        {
-            DestroyUi(_current);
-            ShellUi = null;
-            UnregisterCommands(_current);
-        }
+        UnregisterCommands(_current);
 
         // 与热重载同一条拆除次序：界面先拆，再回收实例持有的端口与句柄，最后卸载上下文。
         DisposeInstances(_current.Instances);
@@ -283,12 +259,9 @@ public sealed partial class ModuleHost
         /// <summary>实际注册成功的指令名(热重载时按此注销)。</summary>
         public List<string> RegisteredNames { get; } = new();
 
-        public List<(IUiModule Module, string Owner)> UiModules { get; } = new();
 
 
 
-        /// <summary>Manifest-declared MCP exposure by module owner for the live snapshot.</summary>
-        public Dictionary<string, string?> McpExposures { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>模块元信息(vulcan.module.list);CommandCount 在注册完成后定稿。</summary>
         public List<(string Name, string Desc, string Author, string Version, bool Open, string File,
@@ -361,18 +334,9 @@ public sealed partial class ModuleHost
     private sealed class ModuleContext(
         Snapshot snapshot,
         string owner,
-        CommandBus bus,
-        ISettingsService settings,
-        IShellLog log,
-        string dataDirectory) : IModuleContext
+        CommandBus bus) : IModuleContext
     {
         public CommandBus Bus { get; } = bus;
-
-        public ISettingsService Settings { get; } = settings;
-
-        public IShellLog Log { get; } = log;
-
-        public string DataDirectory { get; } = dataDirectory;
 
         public void RegisterCommands(Action<CommandRegistry> configure)
         {

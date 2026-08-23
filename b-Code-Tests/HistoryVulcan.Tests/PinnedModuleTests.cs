@@ -27,7 +27,6 @@ public sealed class PinnedModuleTests
         var log = new TestLog();
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modules), log)
         {
-            EnableUiModules = false,
             EnableFileWatching = false,
         };
 
@@ -60,7 +59,6 @@ public sealed class PinnedModuleTests
         var log = new TestLog();
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modules), log)
         {
-            EnableUiModules = false,
             EnableFileWatching = false,
         };
 
