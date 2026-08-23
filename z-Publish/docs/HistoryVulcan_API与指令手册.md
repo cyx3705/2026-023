@@ -1,10 +1,10 @@
 ﻿# HistoryVulcan API 与指令手册
 
-> 适用版本：HistoryVulcan **4.0.0**
+> 适用版本：HistoryVulcan **5.0.0**
 
 本手册给出当前正式公开 API 的常用入口和框架基础命令。正式宿主运行入口为
 `host/HistoryVulcan.exe`，程序集 XML 文档位于同一 `host/` 目录；兼容框架包的完整签名位于
-`lib/<TFM>/HistoryVulcan.*.xml`。源码仓中的四份 `PublicAPI.Shipped.txt` 是冻结门禁，不随运行宿主发布。
+`lib/<TFM>/HistoryVulcan.*.xml`。源码仓中的三份 `PublicAPI.Unshipped.txt`（Core / Services / ServiceHost）对照 `b-Code-Eng/public-api-baselines/5.0.0/`。
 最终命令集合以应用运行时的 `vulcan.command.list`、`vulcan.command.show` 和 `vulcan.command.manual` 为准。
 
 3.3.0（DEC-022）将内置命令一次硬切为 `vulcan.<类>.<方法>`（全小写、无连字符、不留别名），Domain=`vulcan`；
@@ -12,7 +12,7 @@
 无 Mercury 时双 `/` 与命令集/详情不可用。
 **3.3.2（DEC-023）在此基础上把类收敛为九类、退役影子域 `debug`，并确立
 模块注册名与指令域的去品牌前缀规则（见 §3.3.1）；3.4.0（DEC-025）恢复受控的两段直接方法与域聚焦。** 3.3.1 → 3.3.2 的逐条改名映射见
-§3.3.4 与 `HistoryVulcan_消费变更摘要.md`。当前源码为 **4.0.0**（宿主位于 `z-Publish/host`）。
+§3.3.4 与 `HistoryVulcan_消费变更摘要.md`。当前源码为 **5.0.0**（宿主位于 `z-Publish/host`）。
 3.1.9 是旧名 AppShell 的最后快照，已随 3.2.0 发布退役；3.1.8 不作为稳定支持版本。以下包表和最小宿主代码
 描述当前正式合同，但正式部署不提供 NuGet feed。
 
@@ -22,60 +22,13 @@
 
 | 包 | 目标框架 | 主要命名空间 | 用途 |
 |---|---|---|---|
-| `OneHistory.HistoryVulcan.Core` | `net8.0` | `HistoryVulcan.Core.*` | 命令、停靠、日志、面板、模块 UI、MCP 元数据契约 |
-| `OneHistory.HistoryVulcan.Services` | `net8.0` | `HistoryVulcan.Services.*` | 文件状态、日志、模块、MCP/Web 服务 |
-| `OneHistory.HistoryVulcan.Shell` | `net8.0-windows` | `HistoryVulcan.Shell.*` | WPF Shell、AvalonDock 封装、控制台、面板和管理视图 |
-| `OneHistory.HistoryVulcan.ServiceHost` | `net8.0-windows` | `HistoryVulcan.ServiceHost.*` | 无窗口 WPF 服务循环、生命周期和登录自启 |
+| `OneHistory.HistoryVulcan.Core` | `net8.0` | `HistoryVulcan.Core.*` | 模块注册器与命令总线契约；日志/MCP/存储供宿主内部使用 |
+| `OneHistory.HistoryVulcan.Services` | `net8.0` | `HistoryVulcan.Services.*` | 设置、文件状态、日志、模块装载；MCP schema/手册生成为程序集内部 |
+| `OneHistory.HistoryVulcan.ServiceHost` | `net8.0-windows` | `HistoryVulcan.ServiceHost.*` | 无窗口服务循环、生命周期和登录自启 |
 
-桌面应用通常只直接引用 Shell；它会传递引入 Core 和 Services。需要独立服务入口时再直接引用 ServiceHost。
+桌面壳在 HistoryAurora，不在本仓。独立服务入口引用 ServiceHost；模块只引用 Core 契约（总线与注册器）。
 
-## 2. 最小桌面宿主
-
-```csharp
-using HistoryVulcan.Core;
-using HistoryVulcan.Core.Commands;
-using HistoryVulcan.Core.Docking;
-using HistoryVulcan.Services;
-using HistoryVulcan.Shell;
-using System.Windows.Controls;
-
-var paths = new AppPaths("MyProduct");
-var settings = new SettingsService(paths);
-var layouts = new FileLayoutStore(paths);
-var log = new ShellLog(paths);
-
-var config = new ShellConfig
-{
-    AppName = "MyProduct",
-    AppVersion = AppIdentity.Current.Version,
-};
-
-config.ToolWindows.Add(new ToolWindowDescriptor
-{
-    Id = "main",
-    Title = "主工作区",
-    DefaultSide = DockSide.Center,
-    DefaultRatio = 1,
-    ContentFactory = () => new TextBlock { Text = "MyProduct 工作区" },
-});
-
-config.ConfigureCommands = registry => registry.Register(new CommandDescriptor
-{
-    Name = "project.refresh",
-    Summary = "刷新当前项目",
-    Readonly = true,
-    Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("已刷新")),
-}, "app");
-
-var window = new ShellWindow(config, layouts, log, settings, paths.Root);
-window.Show();
-```
-
-应用退出时应正常关闭 `ShellWindow`，并释放自己持有的 `ShellLog`、网关和模块宿主。强杀进程不会保证布局与历史完成写入。
-
-`EnableModules`、`EnableUiModules`、`EnableMcp` 和 `EnableRemoteManagementViews` 均默认 `false`。上例只启动
-Shell 核心、窗口和业务命令；仍保留 `vulcan.command.*`。中央命令集/详情与双 `/` 依赖 HistoryMercury 4.1.0。
-需要可选能力时由消费方明确设置，例如 `EnableModules = true` 或 `EnableMcp = true`。
+5.0 起桌面壳与停靠不在本仓。独立无窗入口见 `ServiceHost`；模块只实现 `IModuleContextAware` 并登记命令。最小桌面宿主示例已随 Shell 迁往 HistoryAurora。
 
 ### `EnableMcp` 只是装配，不是监听
 
@@ -107,11 +60,11 @@ HistoryVulcan 桌面宿主自 3.4.0 起 `EnableMcp = true`，因此 `vulcan.mcp.
 
 ```csharp
 // 校验
-var error = bus.Validate("vulcan.ui.show name=console");
+var error = bus.Validate("vulcan.command.help vulcan.command.help");
 if (error != null) { /* 语法或参数问题 */ }
 
 // 执行
-var result = await bus.ExecuteAsync("vulcan.ui.show name=console", "UI");
+var result = await bus.ExecuteAsync("vulcan.command.help vulcan.command.help", "UI");
 ```
 
 所有 UI、脚本、Web 和 MCP 调用最终都进入 `CommandBus.ExecuteAsync`。
@@ -297,9 +250,8 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 | API | 常用成员 | 说明 |
 |---|---|---|
 | `AppIdentity` | `Current`、`From(Assembly)`、`Use(Assembly)` | 统一应用名和版本；应在创建网关前确定 |
-| `AppPaths` | `Root`、`LogsDir`、`ModulesDir`、`PanelsDir` | 建立 `%AppData%/<应用名>` 下的标准路径 |
-| `SettingsService` | `Get`、`GetInt`、`Set`、`All` | JSON 设置持久化 |
-| `FileLayoutStore` | `ReadCurrent`、`WriteCurrent`、`ReadNamed`、`WriteNamed` | 当前布局与命名布局存储 |
+| `AppPaths` | `Root`、`LogsDir`、`ModulesDir` | 建立 `%AppData%/<应用名>` 下的标准路径 |
+| `SettingsService` | `Get`、`GetInt`、`Set`、`All` | JSON 设置持久化（宿主与开发总线使用，不注入模块） |
 | `ShellLog` | `Log`、`Snapshot`、`EntryAdded` | 文件与内存日志；使用后 `Dispose` |
 
 ### 4.2 命令
@@ -311,32 +263,26 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 | `CommandDescriptor` | `Name`、`Domain`、`CommandClass`、`Summary`、`Example`、`Parameters`、`Readonly`、`Level`、`ConfirmPrompt`、`HiddenReason`、`RequiresUiThread`、`Annotations`、`Handler` | 命令的完整合同 |
 | `CommandContext` | `RequireString`、`GetString`、`GetInt`、`GetDouble`、`GetBool`、`Has` | 读取已校验参数 |
 | `CommandResult` | `Ok`、`Fail`、`Success`、`Message`、`Data` | 统一执行结果 |
-| `CommandSchemaExporter` | `ExportTools`、`Find`、`BuildCommandText` | 从最终注册表生成 MCP schema 和反向命令文本 |
-| `CommandManualGenerator` | `Render`、`Sha256` | 从运行时注册表生成命令手册 |
-| `ICommandCatalogSession` | `RefreshAsync`、`SetFilter`、`CompleteAsync`、`Select`、… | 命令目录会话合同（Core）；由 Mercury 实现并挂接 |
-| `IShellCommandWorkbenchHost` | `AttachCommandCatalogSession`、`Bus`、`ConfigureCommandCompletionRouting`、… | Shell 工作台宿主合同（Core）；`ShellWindow` 实现 |
-| `IGlobalShortcutHost` | `Register`、`Start`、`Stop`、`Registrations`、… | 全局快捷键宿主合同（Core）；Mercury 实现 |
+| `IGlobalShortcutHost` | `Register`、`Start`、`Stop`、`Registrations`、… | 全局快捷键宿主合同；Mercury 实现。MCP schema/手册生成与命令目录会话不是模块 SDK |
 
 模块宿主的增量公开面如下：
 
 | API | 常用成员 | 说明 |
 |---|---|---|
-| `IModuleContext` | `Bus`、`Log`、`Settings`、`DataDirectory`、`RegisterCommands` | 模块取得宿主权威服务和宿主数据根目录；模块自行在根目录下选择专属子目录 |
-| `IModuleContextAware` | `Attach(IModuleContext)` | 模块声明需要宿主上下文；由 `ModuleHost` 在装载阶段调用 |
-| `ModuleHost` | `Attach(registry, bus, settings, dataDirectory)` | 为模块生命周期接入完整宿主上下文；可注入 `CommandWorkbench` / `GlobalShortcuts` |
+| `IModuleContext` | `Bus`、`RegisterCommands` | 模块唯一运行时入口；不注入设置、日志、数据根或界面 |
+| `IModuleContextAware` | `Attach(IModuleContext)` | 模块声明需要总线与指令暂存口；由 `ModuleHost` 在装载阶段调用 |
+| `ModuleHost` | `Attach`、`Start`、`Reload`、`Unload` | 发现、装载、卸载模块；不再编排 CreateUi，也不注入 `CommandWorkbench` |
 | `ShellConfig` | `ModuleDirectory` | 可选的部署模块目录；未设置时沿用应用数据目录 |
 
 注册命令时至少提供名称、摘要和 handler；公开给用户或 MCP 的命令还应提供参数说明与示例。完整示例见 §3.2。
 
 ### 4.3 窗口与布局
 
-| API | 常用成员 | 说明 |
-|---|---|---|
-| `ToolWindowDescriptor` | `Id`、`Title`、`ContentFactory`、`DefaultSide`、`DefaultRatio`、`DefaultVisible`、`DefaultTabTarget` | 注册窗口的稳定描述符；未设置 `DefaultSide` 时默认右置 |
-| `DockSide` | `Left`、`Right`、`Top`、`Bottom`、`Tab`、`Center` | `Center` 是中央主工作区；`Tab` 需要目标窗口 |
-| `IDockingService` | `RegisterWindow`、`UnregisterWindow`、`UnregisterOwner`、`Show`、`Hide`、`Float`、`Dock`、`SetRatio` | 操作窗口，不直接接触 AvalonDock 类型 |
-| `IDockingService` | `SaveLayout`、`LoadLayout`、`ListLayouts`、`ResetLayout` | 布局方案管理 |
-| `ShellUiRegistrar` / `IShellUiRegistrar` | `RegisterToolWindow`、`UnregisterOwner`、`Invoke` | 模块安全注册 UI，并在卸载时按 owner 回收 |
+5.0 起 Core 不再发布停靠 SDK（`IDockingService`、`DockSide`、`ToolWindowDescriptor`、`IShellUiRegistrar` 已删除）。
+窗格由模块登记带 `ui.*` 注解的命令，活对象走 `CommandResult.Data`，由 HistoryAurora 认领。
+布局操作是 Aurora 的命令，不是宿主接口。未装界面模块时 `vulcan.ui.*` 为未知指令。
+
+嵌入页面规范见 HistoryAurora 现行合同，不随宿主 docs 发布。
 
 `HistoryVulcan.Shell` 是唯一允许直接依赖 AvalonDock 的层。消费应用和模块只使用上述 HistoryVulcan 契约。
 
@@ -364,13 +310,14 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 
 ### 4.4 面板与模块
 
+5.0 起宿主不再提供停靠 SDK 或 UI 模块生命周期。窗格由模块登记带 `ui.*` 注解的命令，Aurora 认领；未装界面模块时 `vulcan.ui.*` 为未知指令。
+
 | API | 常用成员 | 说明 |
 |---|---|---|
-| `PanelDefinition` | `Id`、`Title`、`Side`、`Ratio`、`Visible`、`Controls` | JSON 面板模型 |
-| `PanelManager` | `Definitions`、`Reload`、`TrySetValue` | 面板发现和运行时值更新 |
-| `ModuleHost` | `Attach`、`Start`、`Reload`、`ChangeDirectory`、`Modules` | 隔离装载命令/UI 模块；`Reload` 先拆旧界面再装新包；使用后 `Dispose` |
-| `IUiModule` | `CreateUi`、`DestroyUi` | UI 模块生命周期 |
-| `IShellUiAware` | `ShellUi` | 注入宿主 UI 注册器 |
+| `IModuleContext` | `Bus`、`RegisterCommands` | 模块唯一运行时入口；不注入设置、日志、数据根或界面 |
+| `IModuleContextAware` | `Attach` | 装载时挂上总线与指令暂存口 |
+| `ModuleHost` | `Attach`、`Start`、`Reload`、`Unload`、`Modules` | 发现、装载、卸载模块；不再编排 CreateUi |
+| `ModuleInfoBase` | `ModuleName`、`Version`、`MainClass` | 鸭子类型身份（MD-02） |
 
 ### 4.5 MCP、Web 与 ServiceHost
 
@@ -435,7 +382,7 @@ HistoryVulcan 自身只有一个域 `vulcan`，内置业务命令分为九类；
 |---|---|---|---|
 | `vulcan` | `app` | 11 | `vulcan.app.*`：身份、主题、设置、数据目录、前端生命周期、快捷键查阅 |
 | `vulcan` | `command` | 8 | `vulcan.command.*`：目录、详情、手册、示例、`help`/`run`/`history` |
-| `vulcan` | `ui` | 21 | `vulcan.ui.*`：停靠窗口、命名布局、面板、文件对话框 |
+| `vulcan` | `ui` | 0（宿主 5.0 起不注册；由 Aurora 认领） | `vulcan.ui.*`：停靠窗口、命名布局、面板；未装界面模块时为未知指令 |
 | `vulcan` | `log` | 11 | `vulcan.log.*`（无 `cls` 别名；含承压 `flood`） |
 | `vulcan` | `mcp` | 11 | `vulcan.mcp.*` |
 | `vulcan` | `module` | 7 | `vulcan.module.*`（list / reload / install / remove / unload / roots / open） |

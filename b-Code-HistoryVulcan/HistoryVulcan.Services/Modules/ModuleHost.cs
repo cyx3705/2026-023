@@ -7,9 +7,7 @@ using System.Threading;
 using System.Xml.Linq;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Core.Mcp;
 using HistoryVulcan.Core.Modules;
-using HistoryVulcan.Extensibility.Modules;
 using HistoryVulcan.Core.Storage;
 
 namespace HistoryVulcan.Services.Modules;
@@ -54,16 +52,12 @@ public sealed partial class ModuleHost : IDisposable
     private bool _xamlResolverInstalled;
     private readonly ModuleDirectoryWatcher _watcher;
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    private readonly ModuleMcpPolicyBinder _mcpPolicy;
-
     /// <summary>按模块目录与日志建立宿主；装载与命令注册由 Attach/Start 触发。</summary>
     public ModuleHost(string modulesDir, IShellLog log)
     {
         _dir = modulesDir;
         _log = log;
         _watcher = new ModuleDirectoryWatcher(log, Reload);
-        _mcpPolicy = new ModuleMcpPolicyBinder(ResolveModuleOfCommand, ResolveModuleExposure);
         EnsureXamlResolver();
     }
 
@@ -75,7 +69,6 @@ public sealed partial class ModuleHost : IDisposable
         _dir = discoverySource is RuntimeModuleDiscoverySource ? discoverySource.Roots[0] : "";
         _log = log;
         _watcher = new ModuleDirectoryWatcher(log, Reload);
-        _mcpPolicy = new ModuleMcpPolicyBinder(ResolveModuleOfCommand, ResolveModuleExposure);
         EnsureXamlResolver();
     }
 
@@ -91,9 +84,6 @@ public sealed partial class ModuleHost : IDisposable
     /// <summary>是否把模块方法注册到本进程指令表。无窗前端可关闭。</summary>
     public bool EnableCommands { get; set; } = true;
 
-    /// <summary>是否实例化模块 UI。无窗服务进程必须关闭。</summary>
-    public bool EnableUiModules { get; set; } = true;
-
     /// <summary>Whether this host owns filesystem change detection for the module directory.</summary>
     public bool EnableFileWatching { get; set; } = true;
 
@@ -101,13 +91,6 @@ public sealed partial class ModuleHost : IDisposable
     /// When true, discovery-backed hosts remain empty until a backend-confirmed manifest set is supplied.
     /// </summary>
     public bool RequireConfirmedSources { get; set; }
-
-    /// <summary>模块内嵌界面的宿主注册器;无窗服务进程保持 null。</summary>
-    public IShellUiRegistrar? ShellUi { get; set; }
-
-    /// <summary>命令工作台挂载点；无窗服务进程或未装配 Shell 时保持 null。</summary>
-    public IShellCommandWorkbenchHost? CommandWorkbench { get; set; }
-
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public string ModulesDirectory => _dir;
@@ -128,7 +111,6 @@ public sealed partial class ModuleHost : IDisposable
     public void Attach(CommandRegistry registry)
     {
         _registry = registry;
-        _mcpPolicy.Bind();
     }
 
     /// <summary>接入模块业务运行所需的完整宿主上下文。</summary>
@@ -150,7 +132,8 @@ public sealed partial class ModuleHost : IDisposable
         _bus = bus;
         _settings = settings;
         _dataDirectory = Path.GetFullPath(dataDirectory);
-        _mcpPolicy.Bind();
+        _ = _settings;
+        _ = _dataDirectory;
     }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -250,8 +233,6 @@ public sealed partial class ModuleHost : IDisposable
         }
 
         var owner = match.ModuleName;
-        DestroyUiForOwner(snap, owner);
-
         if (_registry != null)
         {
             var source = $"module:{owner}";
@@ -269,7 +250,6 @@ public sealed partial class ModuleHost : IDisposable
             item.ModuleName.Equals(owner, StringComparison.OrdinalIgnoreCase));
         snap.Metas.RemoveAll(meta =>
             meta.Name.Equals(owner, StringComparison.OrdinalIgnoreCase));
-        snap.McpExposures.Remove(owner);
         snap.ClearCommandCount(owner);
 
         if (snap.ContextsByOwner.Remove(owner, out var alc)
@@ -299,42 +279,6 @@ public sealed partial class ModuleHost : IDisposable
         snap.FinalizeMetas();
         _log.Info("module", $"已卸载模块: {owner}");
         return CommandResult.Ok($"已卸载模块: {owner}");
-    }
-
-    private void DestroyUiForOwner(Snapshot snap, string owner)
-    {
-        var owners = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { owner };
-        foreach (var meta in snap.Metas.Where(meta =>
-                     meta.Name.Equals(owner, StringComparison.OrdinalIgnoreCase)))
-        {
-            if (meta.Slot.Length > 0)
-                owners.Add(meta.Slot);
-            if (meta.File.Length > 0)
-                owners.Add(Path.GetFileNameWithoutExtension(meta.File));
-        }
-
-        var doomed = snap.UiModules.Where(item => owners.Contains(item.Owner)).ToList();
-        snap.UiModules.RemoveAll(item => owners.Contains(item.Owner));
-        var others = doomed.Where(item => item.Module is not IShellUiProvider).ToList();
-        var providers = doomed.Where(item => item.Module is IShellUiProvider).ToList();
-        foreach (var item in others)
-            DestroyUiModule(item.Module, item.Owner, marshalToShell: true);
-        foreach (var item in providers)
-        {
-            try
-            {
-                ShellUi?.UnregisterOwner(item.Owner);
-            }
-            catch (Exception ex)
-            {
-                _log.Warn("module", $"回收模块界面失败 ({item.Owner}): {ex.Message}");
-            }
-
-            DestroyUiModule(item.Module, item.Owner, marshalToShell: false);
-        }
-
-        if (providers.Count > 0)
-            ShellUi = null;
     }
 
     private void SyncFileWatching()
@@ -465,19 +409,7 @@ public sealed partial class ModuleHost : IDisposable
     }
 
 
-    private string? ResolveModuleOfCommand(string commandName)
-    {
-        if (_registry == null || !_registry.TryGet(commandName, out _))
-            return null;
 
-        var source = _registry.GetSource(commandName);
-        return source.StartsWith("module:", StringComparison.OrdinalIgnoreCase)
-            ? source["module:".Length..]
-            : null;
-    }
-
-    private string? ResolveModuleExposure(string moduleName)
-        => _current.McpExposures.GetValueOrDefault(moduleName);
 
 
     /// <summary>
@@ -700,28 +632,6 @@ public sealed partial class ModuleHost : IDisposable
 
         var discoveredOwner = discovered?.Name;
 
-        if (uiEnabled && EnableUiModules)
-        {
-            var owner = discoveredOwner ?? (slot.Length > 0 ? slot : Path.GetFileNameWithoutExtension(dllPath));
-            foreach (var uiType in types.Where(type =>
-                         type.IsPublic && !type.IsAbstract && typeof(IUiModule).IsAssignableFrom(type)))
-            {
-                try
-                {
-                    var instance = (IUiModule)snap.GetInstance(uiType);
-                    if (instance is IShellUiAware aware && ShellUi != null)
-                        aware.ShellUi = ShellUi;
-                    if (instance is IShellCommandWorkbenchAware workbenchAware)
-                        workbenchAware.CommandWorkbench = CommandWorkbench;
-                    snap.UiModules.Add((instance, owner));
-                }
-                catch (Exception ex)
-                {
-                    _log.Warn("module", $"实例化 UI 模块 {uiType.FullName} 失败: {ex.Message}");
-                }
-            }
-        }
-
         var docs = XmlDocs.TryLoad(dllPath, _log);
         var contextAttached = false;
 
@@ -750,8 +660,6 @@ public sealed partial class ModuleHost : IDisposable
                 continue;
             var moduleName = discovered?.Name ?? declaredName;
             var commandPrefix = GetProp(info, "CommandPrefix") as string ?? moduleName;
-            if (discovered != null)
-                snap.McpExposures[moduleName] = discovered.McpExposure;
             if (!contextAttached)
             {
                 AttachModuleContexts(snap, types, moduleName);

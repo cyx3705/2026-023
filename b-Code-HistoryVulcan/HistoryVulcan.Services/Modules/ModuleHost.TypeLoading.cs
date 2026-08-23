@@ -43,23 +43,17 @@ public sealed partial class ModuleHost
 
         foreach (var contextType in contextTypes)
         {
-            if (_bus == null || _settings == null || string.IsNullOrWhiteSpace(_dataDirectory))
+            if (_bus == null)
             {
                 _log.Warn("module",
-                    $"模块 {owner} 请求宿主业务上下文，但当前装配点只提供了命令注册表；已跳过 {contextType.FullName}");
+                    $"模块 {owner} 请求宿主总线，但当前装配点只提供了命令注册表；已跳过 {contextType.FullName}");
                 continue;
             }
 
             try
             {
                 var module = (IModuleContextAware)snap.GetInstance(contextType);
-                module.Attach(new ModuleContext(
-                    snap,
-                    owner,
-                    _bus,
-                    _settings,
-                    _log,
-                    _dataDirectory));
+                module.Attach(new ModuleContext(snap, owner, _bus));
             }
             catch (Exception ex)
             {
@@ -113,7 +107,6 @@ public sealed partial class ModuleHost
         Type[] lifecycleContracts =
         [
             typeof(IModuleContextAware),
-            typeof(IUiModule),
             typeof(IDisposable),
         ];
 

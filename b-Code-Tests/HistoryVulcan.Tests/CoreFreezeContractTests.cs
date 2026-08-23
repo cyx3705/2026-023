@@ -1,7 +1,5 @@
 ﻿using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Core.Mcp;
-using HistoryVulcan.Extensibility.Mcp;
 using HistoryVulcan.Services;
 using System.Collections.Concurrent;
 using System.IO;

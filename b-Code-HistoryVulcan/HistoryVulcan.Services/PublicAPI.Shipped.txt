@@ -16,127 +16,6 @@ HistoryVulcan.Services.FileLayoutStore.ReadCurrent() -> string?
 HistoryVulcan.Services.FileLayoutStore.ReadNamed(string! name) -> string?
 HistoryVulcan.Services.FileLayoutStore.WriteCurrent(string! payload) -> void
 HistoryVulcan.Services.FileLayoutStore.WriteNamed(string! name, string! payload) -> void
-HistoryVulcan.Services.Mcp.CommandCatalogCommands
-HistoryVulcan.Services.Mcp.CommandCatalogDetail
-HistoryVulcan.Services.Mcp.CommandCatalogDetail.Annotations.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
-HistoryVulcan.Services.Mcp.CommandCatalogDetail.Annotations.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogDetail.Command.get -> HistoryVulcan.Services.Mcp.CommandCatalogRow!
-HistoryVulcan.Services.Mcp.CommandCatalogDetail.Command.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogDetail.CommandCatalogDetail(HistoryVulcan.Services.Mcp.CommandCatalogRow! Command, System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Mcp.CommandParameterInfo!>! Parameters, string? McpInputSchema) -> void
-HistoryVulcan.Services.Mcp.CommandCatalogDetail.McpInputSchema.get -> string?
-HistoryVulcan.Services.Mcp.CommandCatalogDetail.McpInputSchema.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogDetail.Parameters.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Mcp.CommandParameterInfo!>!
-HistoryVulcan.Services.Mcp.CommandCatalogDetail.Parameters.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow
-HistoryVulcan.Services.Mcp.CommandCatalogRow.CommandCatalogRow(string! CommandName, string! Domain, string! Summary, string? Example, int ParameterCount, string! Source, string? SourceDetail, bool Dangerous, bool RequiresUiThread, string? McpToolName, string! McpState, bool PolicyVisible, bool Customized, string? CurrentRevision, int OpenProposals, int IncidentCount, string? HardExclusionReason) -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.CommandClass.get -> string!
-HistoryVulcan.Services.Mcp.CommandCatalogRow.CommandClass.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.CommandName.get -> string!
-HistoryVulcan.Services.Mcp.CommandCatalogRow.CommandName.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.CurrentRevision.get -> string?
-HistoryVulcan.Services.Mcp.CommandCatalogRow.CurrentRevision.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Customized.get -> bool
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Customized.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Dangerous.get -> bool
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Dangerous.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Domain.get -> string!
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Domain.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Example.get -> string?
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Example.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.HardExclusionReason.get -> string?
-HistoryVulcan.Services.Mcp.CommandCatalogRow.HardExclusionReason.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.IncidentCount.get -> int
-HistoryVulcan.Services.Mcp.CommandCatalogRow.IncidentCount.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.McpState.get -> string!
-HistoryVulcan.Services.Mcp.CommandCatalogRow.McpState.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.McpToolName.get -> string?
-HistoryVulcan.Services.Mcp.CommandCatalogRow.McpToolName.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Method.get -> string!
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Method.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.OpenProposals.get -> int
-HistoryVulcan.Services.Mcp.CommandCatalogRow.OpenProposals.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.ParameterCount.get -> int
-HistoryVulcan.Services.Mcp.CommandCatalogRow.ParameterCount.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.PolicyVisible.get -> bool
-HistoryVulcan.Services.Mcp.CommandCatalogRow.PolicyVisible.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.RequiresUiThread.get -> bool
-HistoryVulcan.Services.Mcp.CommandCatalogRow.RequiresUiThread.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Source.get -> string!
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Source.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.SourceDetail.get -> string?
-HistoryVulcan.Services.Mcp.CommandCatalogRow.SourceDetail.init -> void
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Summary.get -> string!
-HistoryVulcan.Services.Mcp.CommandCatalogRow.Summary.init -> void
-HistoryVulcan.Services.Mcp.CommandDomainInfo
-HistoryVulcan.Services.Mcp.CommandDomainInfo.CommandDomainInfo(string! Domain, int Count) -> void
-HistoryVulcan.Services.Mcp.CommandDomainInfo.Count.get -> int
-HistoryVulcan.Services.Mcp.CommandDomainInfo.Count.init -> void
-HistoryVulcan.Services.Mcp.CommandDomainInfo.Domain.get -> string!
-HistoryVulcan.Services.Mcp.CommandDomainInfo.Domain.init -> void
-HistoryVulcan.Services.Mcp.CommandParameterInfo
-HistoryVulcan.Services.Mcp.CommandParameterInfo.AllowedValues.get -> System.Collections.Generic.IReadOnlyList<string!>!
-HistoryVulcan.Services.Mcp.CommandParameterInfo.AllowedValues.init -> void
-HistoryVulcan.Services.Mcp.CommandParameterInfo.CommandParameterInfo(string! Name, string! Type, bool Required, string? Default, int? Position, System.Collections.Generic.IReadOnlyList<string!>! AllowedValues, string! Description) -> void
-HistoryVulcan.Services.Mcp.CommandParameterInfo.Default.get -> string?
-HistoryVulcan.Services.Mcp.CommandParameterInfo.Default.init -> void
-HistoryVulcan.Services.Mcp.CommandParameterInfo.Description.get -> string!
-HistoryVulcan.Services.Mcp.CommandParameterInfo.Description.init -> void
-HistoryVulcan.Services.Mcp.CommandParameterInfo.Name.get -> string!
-HistoryVulcan.Services.Mcp.CommandParameterInfo.Name.init -> void
-HistoryVulcan.Services.Mcp.CommandParameterInfo.Position.get -> int?
-HistoryVulcan.Services.Mcp.CommandParameterInfo.Position.init -> void
-HistoryVulcan.Services.Mcp.CommandParameterInfo.Required.get -> bool
-HistoryVulcan.Services.Mcp.CommandParameterInfo.Required.init -> void
-HistoryVulcan.Services.Mcp.CommandParameterInfo.Type.get -> string!
-HistoryVulcan.Services.Mcp.CommandParameterInfo.Type.init -> void
-HistoryVulcan.Services.Mcp.IEffectivePromptDescriptionReader
-HistoryVulcan.Services.Mcp.IEffectivePromptDescriptionReader.AllEffectiveDescriptions() -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
-HistoryVulcan.Services.Mcp.McpAuditRecorder
-HistoryVulcan.Services.Mcp.McpAuditRecorder.McpAuditRecorder(string! dataDirectory, HistoryVulcan.Core.Logging.IShellLog! log) -> void
-HistoryVulcan.Services.Mcp.McpAuditRecorder.RecordMcp(string! client, string! tool, string! arguments, string! result, long elapsedMs) -> void
-HistoryVulcan.Services.Mcp.McpCommands
-HistoryVulcan.Services.Mcp.McpGateway
-HistoryVulcan.Services.Mcp.McpGateway.AutostartEnabled.get -> bool
-HistoryVulcan.Services.Mcp.McpGateway.CallCount.get -> long
-HistoryVulcan.Services.Mcp.McpGateway.ConfirmMode.get -> string!
-HistoryVulcan.Services.Mcp.McpGateway.ConfirmTimeout.get -> int
-HistoryVulcan.Services.Mcp.McpGateway.Dispose() -> void
-HistoryVulcan.Services.Mcp.McpGateway.IsRunning.get -> bool
-HistoryVulcan.Services.Mcp.McpGateway.LastCall.get -> string!
-HistoryVulcan.Services.Mcp.McpGateway.McpGateway(System.Func<HistoryVulcan.Core.Commands.CommandBus?>! busAccessor, HistoryVulcan.Core.Storage.ISettingsService! settings, HistoryVulcan.Core.Logging.IShellLog! log, HistoryVulcan.Core.Mcp.IMcpAuditLog! history, HistoryVulcan.Services.Mcp.PromptGovernanceStore! prompts, HistoryVulcan.Core.ApplicationIdentity! identity, System.Func<string!, string!, int, bool?>? remoteConfirm = null) -> void
-HistoryVulcan.Services.Mcp.McpGateway.Policy.get -> string!
-HistoryVulcan.Services.Mcp.McpGateway.Port.get -> int
-HistoryVulcan.Services.Mcp.McpGateway.Start(int? port) -> (bool Success, string! Message)
-HistoryVulcan.Services.Mcp.McpGateway.Stop() -> (bool Success, string! Message)
-HistoryVulcan.Services.Mcp.McpGateway.TryAutostart() -> (bool Success, string! Message)
-HistoryVulcan.Services.Mcp.McpGateway.VisibleTools() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Extensibility.Mcp.McpToolInfo!>!
-HistoryVulcan.Services.Mcp.PromptGovernanceStore
-HistoryVulcan.Services.Mcp.PromptGovernanceStore.AllEffectiveDescriptions() -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
-HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetCurrentRevision(string! command) -> HistoryVulcan.Services.Mcp.PromptRevision?
-HistoryVulcan.Services.Mcp.PromptGovernanceStore.GetRevisions(string! command, int limit = 50) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Mcp.PromptRevision!>!
-HistoryVulcan.Services.Mcp.PromptGovernanceStore.PromptGovernanceStore(string! dataDirectory, HistoryVulcan.Core.Logging.IShellLog! log) -> void
-HistoryVulcan.Services.Mcp.PromptRevision
-HistoryVulcan.Services.Mcp.PromptRevision.Applied.get -> bool
-HistoryVulcan.Services.Mcp.PromptRevision.Applied.init -> void
-HistoryVulcan.Services.Mcp.PromptRevision.Command.get -> string!
-HistoryVulcan.Services.Mcp.PromptRevision.Command.init -> void
-HistoryVulcan.Services.Mcp.PromptRevision.Created.get -> string!
-HistoryVulcan.Services.Mcp.PromptRevision.Created.init -> void
-HistoryVulcan.Services.Mcp.PromptRevision.CreatedBy.get -> string!
-HistoryVulcan.Services.Mcp.PromptRevision.CreatedBy.init -> void
-HistoryVulcan.Services.Mcp.PromptRevision.Description.get -> string?
-HistoryVulcan.Services.Mcp.PromptRevision.Description.init -> void
-HistoryVulcan.Services.Mcp.PromptRevision.Id.get -> string!
-HistoryVulcan.Services.Mcp.PromptRevision.Id.init -> void
-HistoryVulcan.Services.Mcp.PromptRevision.ParentRevision.get -> string?
-HistoryVulcan.Services.Mcp.PromptRevision.ParentRevision.init -> void
-HistoryVulcan.Services.Mcp.PromptRevision.PromptRevision(string! Id, string! Command, string? Description, string? ParentRevision, string! Source, string! Reason, string! Created, string! CreatedBy, bool Applied, string? RevertedFrom) -> void
-HistoryVulcan.Services.Mcp.PromptRevision.Reason.get -> string!
-HistoryVulcan.Services.Mcp.PromptRevision.Reason.init -> void
-HistoryVulcan.Services.Mcp.PromptRevision.RevertedFrom.get -> string?
-HistoryVulcan.Services.Mcp.PromptRevision.RevertedFrom.init -> void
-HistoryVulcan.Services.Mcp.PromptRevision.Source.get -> string!
-HistoryVulcan.Services.Mcp.PromptRevision.Source.init -> void
 HistoryVulcan.Services.Modules.IModuleDiscoverySource
 HistoryVulcan.Services.Modules.IModuleDiscoverySource.Discover() -> HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot!
 HistoryVulcan.Services.Modules.IModuleDiscoverySource.Roots.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -308,17 +187,6 @@ HistoryVulcan.Services.Web.WebGateway.Start(int? port = null) -> (bool Success, 
 HistoryVulcan.Services.Web.WebGateway.Stop() -> (bool Success, string! Message)
 HistoryVulcan.Services.Web.WebGateway.TryGetSession(string! source, out HistoryVulcan.Core.Clients.ClientSession! session) -> bool
 HistoryVulcan.Services.Web.WebGateway.WebGateway(System.Func<HistoryVulcan.Core.Commands.CommandBus?>! busAccessor, HistoryVulcan.Core.Storage.ISettingsService! settings, HistoryVulcan.Core.Logging.IShellLog! log) -> void
-const HistoryVulcan.Services.Mcp.McpGateway.KeyAutostart = "mcp.autostart" -> string!
-const HistoryVulcan.Services.Mcp.McpGateway.KeyConfirm = "mcp.confirm" -> string!
-const HistoryVulcan.Services.Mcp.McpGateway.KeyConfirmTimeout = "mcp.confirmtimeout" -> string!
-const HistoryVulcan.Services.Mcp.McpGateway.KeyPolicy = "mcp.policy" -> string!
-const HistoryVulcan.Services.Mcp.McpGateway.KeyPort = "mcp.port" -> string!
-const HistoryVulcan.Services.Mcp.McpGateway.KeyPortRetries = "mcp.portretries" -> string!
-const HistoryVulcan.Services.Mcp.McpGateway.KeySessionLimit = "mcp.sessionlimit" -> string!
-const HistoryVulcan.Services.Mcp.McpGateway.KeyTimeout = "mcp.timeout" -> string!
-const HistoryVulcan.Services.Mcp.McpGateway.KeyToken = "mcp.token" -> string!
-const HistoryVulcan.Services.Mcp.PromptGovernanceStore.TableDescriptions = "mcp_descriptions" -> string!
-const HistoryVulcan.Services.Mcp.PromptGovernanceStore.TableProposals = "mcp_prompt_proposals" -> string!
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.AutomaticRootNotFound = "未能向上找到含多个编号项目目录的项目库根。" -> string!
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.DefaultLibraryRoot = "C:\\OneHistory\\HistoryClio" -> string!
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.LegacyVestaLibrary = "C:\\OneHistory\\HistoryVesta" -> string!
@@ -333,14 +201,9 @@ const HistoryVulcan.Services.Web.WebGateway.LoopbackAddress = "127.0.0.1" -> str
 static HistoryVulcan.Services.AppPaths.GetDataDir(string! root) -> string!
 static HistoryVulcan.Services.AppPaths.GetModulesDir(string! root) -> string!
 static HistoryVulcan.Services.AppPaths.GetPanelsDir(string! root) -> string!
-static HistoryVulcan.Services.Mcp.CommandCatalogCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter! exporter, HistoryVulcan.Services.Mcp.PromptGovernanceStore! prompts, System.Func<HistoryVulcan.Services.Mcp.McpGateway?>! gateway, string! source = "app") -> void
-static HistoryVulcan.Services.Mcp.CommandCatalogCommands.RegisterCore(HistoryVulcan.Core.Commands.CommandRegistry! registry, string! source = "app") -> void
-static HistoryVulcan.Services.Mcp.CommandCatalogCommands.Snapshot(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Extensibility.Mcp.CommandSchemaExporter! exporter, HistoryVulcan.Services.Mcp.PromptGovernanceStore! prompts, string! policy) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Mcp.CommandCatalogRow!>!
-static HistoryVulcan.Services.Mcp.McpCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, System.Func<HistoryVulcan.Core.Commands.CommandBus?>! busAccessor, System.Func<HistoryVulcan.Services.Mcp.McpGateway?>! gateway, HistoryVulcan.Core.Storage.ISettingsService! settings, HistoryVulcan.Services.Mcp.PromptGovernanceStore! prompts, string! source = "app") -> void
 static HistoryVulcan.Services.Modules.ModuleHost.FindModuleDomainConflicts(System.Collections.Generic.IEnumerable<string!>! reservedCommandNames, System.Collections.Generic.IEnumerable<string!>! moduleCommandNames) -> System.Collections.Generic.IReadOnlySet<string!>!
 static HistoryVulcan.Services.Modules.ModulePanelSync.SyncFiles(string! modulesDir, string! panelsDir, HistoryVulcan.Core.Logging.IShellLog! log) -> bool
 static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.CoerceConfiguredRoot(string! path) -> string!
 static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.FindAutomaticRoot(string! startPath) -> string?
 static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ResolveAutomaticRoot() -> string?
 static HistoryVulcan.Services.Web.ShellEndpointProfile.NormalizeFingerprint(string? value) -> string!
-static readonly HistoryVulcan.Services.Mcp.McpGateway.SupportedProtocols -> System.Collections.Generic.IReadOnlyList<string!>!

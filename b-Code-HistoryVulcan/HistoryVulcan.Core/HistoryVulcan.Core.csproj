@@ -7,8 +7,8 @@
     <RootNamespace>HistoryVulcan.Core</RootNamespace>
     <PackageId>OneHistory.HistoryVulcan.Core</PackageId>
     <Title>OneHistory HistoryVulcan Core</Title>
-    <Description>Core contracts, command infrastructure, and MCP metadata for OneHistory HistoryVulcan.</Description>
-    <PackageTags>onehistory;HistoryVulcan;commands;mcp</PackageTags>
+    <Description>Core contracts and command infrastructure for OneHistory HistoryVulcan.</Description>
+    <PackageTags>onehistory;HistoryVulcan;commands</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 

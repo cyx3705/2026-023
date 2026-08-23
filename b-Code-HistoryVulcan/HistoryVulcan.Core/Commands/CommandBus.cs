@@ -1,7 +1,6 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Core.Mcp;
 
 namespace HistoryVulcan.Core.Commands;
 
@@ -104,18 +103,6 @@ public sealed class CommandBus
 
     /// <summary>按命令文本和来源决定是否走远端；设置后优先于仅按来源的兼容委托。</summary>
     public Func<string, string, bool>? ShouldUseRemoteCommand { get; set; }
-
-    /// <summary>
-    /// 提示词治理的只读视图，由承载 MCP 的模块在装载时注入、拆除时清空。
-    ///
-    /// 放在总线上而不是新开一条注入通道：<see cref="Confirmation"/> 与
-    /// <see cref="FrontendExecutor"/> 已经确立了「宿主留挂钩、模块填实现」这一模式，
-    /// 而总线是模块经 <c>IModuleContext</c> 唯一拿得到的宿主共享对象。
-    ///
-    /// **消费方必须容忍 null。** 模块没装上、正在热重载、或装载失败时它就是 null，
-    /// 此时目录指令照常可用，只是少了治理那几列——而不是整条指令消失。
-    /// </summary>
-    public IMcpPromptGovernanceView? McpGovernance { get; set; }
 
     /// <summary>每条指令执行完毕后触发(状态栏摘要,S-03);在执行线程上引发。</summary>
     public event Action<string, string, CommandResult>? Executed;
@@ -608,7 +595,7 @@ public sealed class CommandBus
            || value.Equals("on", StringComparison.OrdinalIgnoreCase)
            || value.Equals("off", StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>用法行,如 "用法: vulcan.ui.dock name= pos=left/right/top/bottom/tab [target=] [ratio=]"。</summary>
+    /// <summary>用法行,如 "用法: vulcan.command.help name= pos=left/right/top/bottom/tab [target=] [ratio=]"。</summary>
     public static string FormatUsage(CommandDescriptor d)
     {
         var parts = d.Parameters.Select(p =>

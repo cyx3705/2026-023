@@ -1,14 +1,36 @@
 # HistoryVulcan 消费变更摘要
 
-适用版本：HistoryVulcan **4.0.0**。
+适用版本：HistoryVulcan **5.0.0**。
 
 本文按版本累积，不是单版本发布说明：下面的「破坏性变更」自 3.3.2 起逐条累加，每条都标注引入版本；
 「主要变化」是不需要改代码的增量。从 3.3.1 及更早升级的消费方需要通读破坏性变更全节。
 
 本文只记录会影响消费应用、模块作者和部署者的变化；源码施工、冻结审查、完整测试证据和发布操作不属于本文。
 
-> 本文抬头曾长期停留在旧版本；当前 4.0.0 变化列在本节顶部。
+> 本文抬头曾长期停留在旧版本；当前 5.0.0 变化列在本节顶部。
 > 版本线推进时必须同步本文抬头，这与同步 `project.manifest.json` 同等重要。
+
+## 破坏性变更（升级必读；自 3.3.2 累积）
+
+**〇之负一、拆除宿主模块抽象，总线完备化（5.0.0，DEC-052）。**
+宿主不再为模块提供领域 SDK。公开删除走主版本。模块作者与邻接仓必须按下面改：
+
+| 删除项 | 5.0 之后怎么做 |
+| --- | --- |
+| `IModuleContext.Settings` / `Log` / `DataDirectory` | 只保留 `Bus` 与 `RegisterCommands`。要设置或数据根，走 `vulcan.app.get` / `set` / `opendata`，或自己的模块域命令 |
+| `IUiModule`、`IShellUiAware`、`IShellUiRegistrar`、`IShellUiProvider`、`IActivatableToolContent` | 不要实现这些接口。窗格用命令注解（如 `ui.window` / `ui.side`，键由 Aurora 定义）登记；活对象走 `CommandResult` 载荷 |
+| `HistoryVulcan.Core.Docking` 与 `ILayoutStore` | 从 Core 删除。布局与停靠是 Aurora 的命令，不是宿主接口 |
+| 宿主注册的 `vulcan.ui.*` | 宿主停止实现。未装界面模块时调用失败（未知指令）。由 Aurora 在总线上登记同名或 `aurora.ui.*` |
+| `HistoryVulcan.Extensibility`（工作台、面板 schema、目录会话、`DomainFocus` / MCP schema 作为模块 SDK） | 程序集删除。`DomainFocus` / `CommandClassLabels` 进入 Core.Commands；命令目录和手册只读注册表，不再经宿主 MCP 投影 |
+| `HistoryVulcan.Core.Mcp`（暴露策略锁、确认预批准、提示词完整性、设置键表、审计/治理视图）与 `HistoryVulcan.Services.Mcp`（schema 导出、手册投影、模块策略绑定） | 删除。MCP 由 Portunus 在指令总线上投影。远端是否可见看 `CommandDescriptor.HiddenReason` / `Level` / `Readonly`。`mcp.*` 设置仍可通过 `vulcan.app.get/set` 读写，键名就是字符串，不必再引用宿主类型 |
+| `HistoryVulcan.Core.Clients`（`ClientKind` / `ClientSession`） | 删除。宿主源码已零引用。会话身份由 Portunus 自持；不要再依赖宿主公开面里的客户端会话类型 |
+| `ModuleHost.EnableUiModules` / `ShellUi` / `CommandWorkbench` | 删除。ModuleHost 不再编排 CreateUi/DestroyUi |
+| `ModulePanelSync` | 删除。面板声明走命令注解，由界面模块认领 |
+
+开发总线（`vulcan.worktree.*` / `vulcan.release.*`）留在宿主，不外迁到 Diana。
+
+- 升级动作：对 5.0 重新编译模块；去掉对已删类型的引用；UI 模块改为登记命令。Aurora / Portunus / Janus 的跟进在各自模块工作区，不在本仓改邻接主树。
+- 原因：宿主替模块定义世界，就会永远替认领方再实现一套停靠和投影。
 
 **UI 风格与嵌入页面规范不再随宿主 docs 发布（2026-08-22）。** 颜色令牌、嵌入页结构和顶栏归属
 改由 HistoryAurora 现行合同维护，路径为

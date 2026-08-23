@@ -7,14 +7,13 @@
     <RootNamespace>HistoryVulcan.Services</RootNamespace>
     <PackageId>OneHistory.HistoryVulcan.Services</PackageId>
     <Title>OneHistory HistoryVulcan Services</Title>
-    <Description>Settings, logging, file-backed state, module hosting, and MCP services for OneHistory HistoryVulcan.</Description>
-    <PackageTags>onehistory;HistoryVulcan;storage;modules;mcp</PackageTags>
+    <Description>Settings, logging, file-backed state, and module hosting for OneHistory HistoryVulcan.</Description>
+    <PackageTags>onehistory;HistoryVulcan;storage;modules</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\HistoryVulcan.Core\HistoryVulcan.Core.csproj" />
-    <ProjectReference Include="..\HistoryVulcan.Extensibility\HistoryVulcan.Extensibility.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -14,7 +14,7 @@ namespace HistoryVulcan.Core.Commands;
 /// </summary>
 public sealed class CommandDescriptor
 {
-    /// <summary>完整指令名,小写,如 "vulcan.ui.dock"、"vulcan.command.help"。</summary>
+    /// <summary>完整指令名,小写,如 "vulcan.command.help"、"vulcan.command.help"。</summary>
     public required string Name { get; init; }
 
     /// <summary>
@@ -32,7 +32,7 @@ public sealed class CommandDescriptor
     /// <summary>一句话说明(help 列表用)。</summary>
     public required string Summary { get; init; }
 
-    /// <summary>示例行(help 详情用),如 "vulcan.ui.dock name=console pos=bottom ratio=0.25"。</summary>
+    /// <summary>示例行(help 详情用),如 "vulcan.command.help name=console pos=bottom ratio=0.25"。</summary>
     public string? Example { get; init; }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -82,7 +82,7 @@ public sealed class CommandDescriptor
     /// 做成「写原因即隐藏」而不是一个布尔位，是因为**隐藏一条指令永远有具体理由**，
     /// 而理由是唯一能让后来人判断该不该继续隐藏的东西。目录页与手册直接显示它。
     ///
-    /// 这里取代的是 <c>McpExposurePolicy</c> 里那份按名字写的硬排除名单。
+    /// 远端是否暴露只看本字段，不再另做一层按名字写的宿主排除名单。
     /// 那份名单失效过四次，每次都是同一个原因：**指令改了名，规则还盯着旧名字**——
     /// <c>debug.logflood</c> 收编为 <c>vulcan.log.flood</c>（承压注水指令因此可被远程触发）、
     /// <c>vulcan.mcp.*</c> 随网关迁出改名 <c>portunus.mcp.*</c>（把「关掉正在服务你的通道」
@@ -167,7 +167,7 @@ public sealed class ParameterSpec
 
     /// <summary>
     /// 允许按位置传入时的位置序号(0 起);null 表示只能 键=值。
-    /// 例:help 的 command 参数 Position=0,支持 “help vulcan.ui.dock”。
+    /// 例:help 的 command 参数 Position=0,支持 “help vulcan.command.help”。
     /// </summary>
     public int? Position { get; init; }
 

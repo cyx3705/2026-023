@@ -26,7 +26,6 @@ public sealed class ModuleZHotReloadTests
         var bus = new CommandBus(registry, log);
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modules), log)
         {
-            EnableUiModules = false,
             EnableFileWatching = true,
         };
 

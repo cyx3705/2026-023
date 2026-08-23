@@ -61,7 +61,6 @@ public sealed class RuntimeModulePackageTests
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
         {
             EnableFileWatching = false,
-            EnableUiModules = false,
         };
 
         try
@@ -112,7 +111,6 @@ public sealed class RuntimeModulePackageTests
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
         {
             EnableFileWatching = false,
-            EnableUiModules = false,
         };
 
         try
@@ -151,7 +149,6 @@ public sealed class RuntimeModulePackageTests
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
         {
             EnableFileWatching = false,
-            EnableUiModules = false,
         };
 
         try
