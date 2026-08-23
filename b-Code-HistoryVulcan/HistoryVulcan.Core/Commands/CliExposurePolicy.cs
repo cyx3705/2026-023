@@ -26,7 +26,7 @@ public static class CliExposurePolicy
     /// 命令行可执行的全部指令。
     /// </summary>
     /// <remarks>
-    /// 恰好是「查目录 + 换包装载 + 发布管线 + 工作区管线」这四组，不多一条。
+    /// 恰好是「查目录 + 换包装载 + 模块三步 + 宿主打包/工作区」这几组，不多一条。
     ///
     /// 走 MCP 要 agent 会话活着，走 Web 要 HistoryPortunus 装载成功，
     /// 而需要修模块的时刻恰恰是这些前提不成立的时刻；<c>--cli</c> 在本进程内执行，
@@ -46,13 +46,15 @@ public static class CliExposurePolicy
         "vulcan.module.remove",
         "vulcan.module.unload",
 
-        // 发布管线
-        "vulcan.release.cycle",
-        "vulcan.release.log",
-        "vulcan.release.modules",
-        "vulcan.release.status",
+        // 模块开发三步：只走 --cli，不配 MCP
+        "vulcan.dev.start",
+        "vulcan.dev.submit",
+        "vulcan.dev.finish",
 
-        // 工作区管线
+        // 宿主打包；模块不得走本条
+        "vulcan.release.cycle",
+
+        // 宿主工作区（模块请用 vulcan.dev.*）
         "vulcan.worktree.create",
         "vulcan.worktree.list",
         "vulcan.worktree.merge",

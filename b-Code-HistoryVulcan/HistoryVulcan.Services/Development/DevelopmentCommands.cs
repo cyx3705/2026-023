@@ -21,8 +21,10 @@ namespace HistoryVulcan.Services.Development;
 /// 走 MCP 要 agent 会话活着，走 Web 要 Portunus 装载成功，而需要修模块的时刻
 /// 恰恰是这些前提不成立的时刻。<c>--cli</c> 在本进程内执行，一样都不需要。
 ///
-/// 本类只是注册入口，唯一的公开面。具体实现按阶段分文件，都保持 internal：
-/// 工作区（<see cref="WorktreeCommands"/>）与发布（<see cref="ReleaseCommands"/>）。
+/// 模块公开面是三条：<c>vulcan.dev.start</c> / <c>submit</c> / <c>finish</c>，
+/// <strong>不配 MCP</strong>，只走 <c>HistoryVulcan.exe --cli</c>。
+/// 工作区（<see cref="WorktreeCommands"/>）与发布（<see cref="ReleaseCommands"/>）仍注册，但对 MCP 隐藏；
+/// 宿主打包走 <c>--cli vulcan.release.cycle</c>。
 /// </remarks>
 public static class DevelopmentCommands
 {
@@ -45,5 +47,6 @@ public static class DevelopmentCommands
         var context = new DevelopmentContext(bus, settings, dataDirectory);
         WorktreeCommands.Register(registry, context);
         ReleaseCommands.Register(registry, context);
+        DevPipelineCommands.Register(registry, context);
     }
 }

@@ -19,7 +19,15 @@
       "identityProperty": "name",
       "candidateDirectory": "z-Publish",
       "formalDirectory": "z-Publish",
-      "buildScript": "b-Code\\Build-HistoryDianaPackage.ps1",
+      "package": {
+        "project": "b-Code-HistoryDiana\\HistoryDiana.csproj",
+        "outputDirectory": "b-Code-HistoryDiana\\bin\\Release\\net8.0-windows",
+        "files": [
+          "HistoryDiana.dll",
+          "HistoryDiana.xml",
+          "module.manifest.json"
+        ]
+      },
       "packageDocuments": "b-Office-Diana\\package",
       "validation": [
         {
@@ -47,20 +55,19 @@
       "identityProperty": "name",
       "candidateDirectory": "z-Publish",
       "formalDirectory": "z-Publish",
-      "buildScript": "b-Code-Studio\\eng\\Build-HistoryAuroraPackage.ps1",
+      "package": {
+        "project": "HistoryAurora.sln",
+        "outputDirectory": "b-Code-Studio\\Module\\bin\\Release\\net8.0-windows",
+        "files": [
+          "HistoryAurora.dll",
+          "HistoryAurora.xml",
+          "AvalonDock.dll",
+          "AvalonDock.Themes.VS2013.dll",
+          "module.manifest.json"
+        ]
+      },
       "packageDocuments": "b-Office\\package",
       "validation": [
-        {
-          "tool": "powershell.exe",
-          "arguments": [
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File",
-            "b-Code-Studio\\eng\\Test-QualityGate.ps1"
-          ],
-          "description": "Run module quality gate"
-        },
         {
           "tool": "dotnet.exe",
           "configurations": [
@@ -88,22 +95,17 @@
       "identityProperty": "name",
       "candidateDirectory": "z-Publish",
       "formalDirectory": "z-Publish",
-      "buildScript": "b-Code-Studio\\eng\\Build-HistoryJanusPackage.ps1",
+      "package": {
+        "project": "b-Code-Studio\\Module\\HistoryJanus.Module.csproj",
+        "outputDirectory": "b-Code-Studio\\Module\\bin\\Release\\net8.0-windows",
+        "files": [
+          "HistoryJanus.dll",
+          "HistoryJanus.xml",
+          "module.manifest.json"
+        ]
+      },
       "packageDocuments": "b-Office\\package",
       "validation": [
-        {
-          "tool": "powershell.exe",
-          "arguments": [
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File",
-            "b-Code-Studio\\eng\\Test-QualityGate.ps1",
-            "-CandidateRoot",
-            "{candidateRoot}"
-          ],
-          "description": "Run module quality gate"
-        },
         {
           "tool": "dotnet.exe",
           "configurations": [
@@ -174,7 +176,15 @@
       "identityProperty": "name",
       "candidateDirectory": "z-Publish",
       "formalDirectory": "z-Publish",
-      "buildScript": "b-Code\\Build-HistoryMercuryPackage.ps1",
+      "package": {
+        "project": "b-Code-MercuryDock\\HistoryMercury.csproj",
+        "outputDirectory": "b-Code-MercuryDock\\bin\\Release\\net8.0-windows",
+        "files": [
+          "HistoryMercury.dll",
+          "HistoryMercury.xml",
+          "module.manifest.json"
+        ]
+      },
       "packageDocuments": "b-Office\\package",
       "validation": [
         {
@@ -202,7 +212,20 @@
       "identityProperty": "name",
       "candidateDirectory": "z-Publish",
       "formalDirectory": "z-Publish",
-      "buildScript": "b-Code-HistoryMinerva\\eng\\Build-HistoryMinervaPackage.ps1",
+      "package": {
+        "project": "b-Code-HistoryMinerva\\src\\HistoryMinerva\\HistoryMinerva.csproj",
+        "outputDirectory": "b-Code-HistoryMinerva\\src\\HistoryMinerva\\bin\\Release\\net8.0-windows",
+        "files": [
+          "HistoryMinerva.dll",
+          "HistoryMinerva.xml",
+          "HistoryMinerva.Contracts.dll",
+          "HistoryMinerva.Worker.exe",
+          "HistoryMinerva.Worker.dll",
+          "HistoryMinerva.Worker.deps.json",
+          "HistoryMinerva.Worker.runtimeconfig.json",
+          "module.manifest.json"
+        ]
+      },
       "packageDocuments": "b-Office\\package",
       "validation": [
         {
@@ -260,7 +283,15 @@
       "identityProperty": "name",
       "candidateDirectory": "z-Publish",
       "formalDirectory": "z-Publish",
-      "buildScript": "b-Code-Portunus\\eng\\Build-HistoryPortunusPackage.ps1",
+      "package": {
+        "project": "b-Code-Portunus\\HistoryPortunus.csproj",
+        "outputDirectory": "b-Code-Portunus\\bin\\Release\\net8.0-windows",
+        "files": [
+          "HistoryPortunus.dll",
+          "HistoryPortunus.xml",
+          "module.manifest.json"
+        ]
+      },
       "packageDocuments": "b-Office\\package",
       "validation": [
         {
