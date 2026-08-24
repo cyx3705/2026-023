@@ -8,6 +8,7 @@ alwaysApply: true
 对话根在 HistoryVulcan 时，只改本仓。用户要开发、排查或修改 Janus / Mercury / Diana / Aurora 等模块时：
 
 1. 读 `diana.docs.vulcan file=docs/模块开发手册.md`（先 catalog，再按节）。
-2. **开发管线只给模块、禁止 MCP。** 用 `HistoryVulcan.exe --cli vulcan.dev.start` 开 `F:\ai工作区` 工作区；不要改 `C:\OneHistory\HistoryClio\<模块主树>`。改完 `--cli vulcan.dev.submit`，通过后 `--cli vulcan.dev.finish`。宿主禁止走这三条。不要当 MCP 工具调。
-3. grok 必须 `move_agent_to_root` 迁进该工作区（手册四步：主树 detach → 迁根 → 工作区切回 `ai/...` → 主树回 main）。
+2. **开发管线只给模块、禁止 MCP。** 用 `HistoryVulcan.exe --cli vulcan.dev.start` 开 `F:\ai工作区` 工作区；不要改 `C:\OneHistory\HistoryClio\<模块主树>`。改完 `--cli vulcan.dev.submit`。**禁止在对话根仍是 `F:\ai工作区\...` 时调用 `vulcan.dev.finish`。** 必须先 `move_agent_to_root` 到该模块 Clio 主树 `main`，等到迁根成功回执且对话路径已离开 F 盘，再 `--cli vulcan.dev.finish`。finish 会删工作区；对话还钉在那条路径上时：Permission denied、半删残骸、之后每次迁根都报 `not a git repository`，**这一轮对话作废，救不回来**。宿主禁止走这三条。不要当 MCP 工具调。
+3. grok 必须 `move_agent_to_root` 迁进该工作区（手册四步：主树 detach → 迁根 → 工作区切回 `ai/...` → 主树回 main）。finish 前反向迁回主树 `main` 并确认成功。目录已经删了就不要再迁根。
 4. 留在本仓按绝对路径改邻接项目 = 没走工作区，禁止。
+5. **不许停宿主。** 不要 `vulcan.svc.stop` / `restart`、`vulcan.app.quit`，不要杀 `HistoryVulcan.exe`。那些要人工确认，会把这一轮卡住。模块热重载不关宿主。

@@ -225,4 +225,29 @@ public sealed class PipelineHardeningTests
             Directory.Delete(publish, recursive: true);
         }
     }
+
+    /// <summary>宿主的项目目录名常量必须与磁盘上的真实目录名一致。</summary>
+    /// <remarks>
+    /// 宿主是管线里唯一不在发布登记表里的目标，因此拿不到 projectDirectory，
+    /// 只能靠 ReleaseCommands.PipelineProjectName 这个常量。目录名带编号前缀
+    /// （2026-023-HistoryVulcan），常量一旦与真实目录脱节，发布第一步就会抛
+    /// DirectoryNotFoundException 说找不到 VulcanVersion.props——一个与真实原因
+    /// 毫无关系的报错。5.1.0 部署时正是这样卡住的：projectRoot 漏用了这个常量，
+    /// 退回默认的 moduleName，算出不存在的 HistoryClio/HistoryVulcan。
+    /// </remarks>
+    [Fact]
+    public void HostProjectDirectoryConstantMatchesTheRealDirectoryName()
+    {
+        var field = typeof(HistoryVulcan.Services.Development.ReleaseCommands).GetField(
+            "PipelineProjectName",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+        var declared = (string)field.GetRawConstantValue()!;
+
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory != null && !File.Exists(Path.Combine(directory.FullName, "HistoryVulcan.sln")))
+            directory = directory.Parent;
+
+        Assert.NotNull(directory);
+        Assert.Equal(directory!.Name, declared);
+    }
 }

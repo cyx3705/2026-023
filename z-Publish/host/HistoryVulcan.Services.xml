@@ -304,10 +304,63 @@
             <c>vulcan.module.install</c>. That is the same path as the Modules page 热重载 button.
             </summary>
         </member>
+        <member name="F:HistoryVulcan.Services.Development.Pipeline.QualityGates.HotspotLimit">
+            <summary>单个生产文件的行数上限。超限即发布失败，不是警告。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.Pipeline.QualityGates.OrphanRemovals(System.String,System.Collections.Generic.IReadOnlyList{System.String})">
+             <summary>
+             找出 Unshipped 里对不上任何已定版条目的 *REMOVED*。
+            
+             这类条目移除的是从未定版过的东西——某一轮加进 Unshipped、下一轮又删掉，
+             于是留下一条指向空处的移除记录。分析器不诊断它们，两个方向都编译得过，
+             账就这样一轮轮加下去：5.1.0 审查时 Core 有 146 条、Services 有 137 条，
+             占 Unshipped 的一半以上，把真正的净增埋在噪声里。
+             冻结是把 Unshipped 并进 Shipped，带着这些条目冻结等于封存一本乱账。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.Pipeline.ReleaseEngine.AssertNotSelfReplacing(System.String,System.String)">
+             <summary>
+             拒绝替换当前进程正在运行的那份包。
+            
+             宿主自替换按 DEC-053 走**手动操作**：不做影子目录，也不做独立重启器——
+             宿主往后极少更新，为一年一次的动作在发布路径里长出一套切换机制不划算。
+            
+             但「不自动」不等于「撞上去再说」。此前没有任何前置检查：从
+             z-Publish\host\HistoryVulcan.exe 起的宿主执行 vulcan.release.cycle
+             name=HistoryVulcan，会先跑完还原、单元测试、质量门禁、公开 API 门禁和一次完整
+             publish（几分钟），最后在 PromoteFlatHost 里撞上自己 exe 的文件锁而失败回滚。
+             结论正确，代价是几分钟白跑，而抛出的 IOException 说的是「文件被占用」，
+             没有一个字提到「你正在替换你自己」。
+            
+             现在在第一步就说破，并给出唯一可行的做法。
+             </summary>
+        </member>
         <member name="T:HistoryVulcan.Services.Development.Pipeline.ToolProcess">
             <summary>
             管线只拉起 git 与 dotnet。PowerShell 不再是发布引擎。
             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.Pipeline.ToolProcess.Execute(System.String,System.Collections.Generic.IReadOnlyList{System.String},System.String,System.IO.TextWriter,System.String,System.String@,System.String@)">
+             <summary>
+             拉起一个工具进程，读干两条输出流，等它退出。
+             </summary>
+             <remarks>
+             **两条流必须并发读，不能一条读完再读另一条。** 顺序读是这里此前的写法，也是
+             .NET 上的经典死锁：子进程往 stderr 写满管道缓冲区（约 4KB）就阻塞，
+             而父进程还卡在 <c>StandardOutput.ReadToEnd()</c> 上等 stdout 收尾，两边永久互等。
+             <c>dotnet build</c> 稍微多几条警告就能触发，而 PowerShell 管线退役之后，
+             这条路径是宿主唯一的发布通道——挂住就是整个发布挂住。
+            
+             用 <c>OutputDataReceived</c>/<c>ErrorDataReceived</c> 异步读：两条流各有自己的
+             泵，谁先满谁先被抽干。<c>WaitForExit()</c> 的无参重载在异步读之后还会等两个
+             流到达 EOF，因此不需要额外同步。
+            
+             超时是兜底而不是主要手段：正常的 <c>dotnet test</c> 可能跑几分钟，所以给得足够宽，
+             但绝不留「永远等下去」这个选项——发布卡死时使用者看到的只是一条没有回声的命令。
+             </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.Pipeline.ToolProcess.Timeout">
+            <summary>单个工具进程的上限。宽到不会误杀正常的 dotnet test，窄到不会无声挂死。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Development.ProjectLibraryRoot">
             <summary>
@@ -473,6 +526,23 @@
         <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.ManifestPath">
             <summary>Absolute manifest path when the module came from manifest discovery.</summary>
         </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.AttachFailures">
+             <summary>
+             上下文注入失败的原因；非空表示本模块**没有接上宿主**，它的指令一条都不会到位。
+             </summary>
+             <remarks>
+             5.0 收窄 <c>IModuleContext</c> 之后，按旧契约编译的模块会在 <c>Attach</c> 里抛
+             <c>MissingMethodException</c>。宿主此前把它记成一条 Warn 就继续，紧接着还打一个
+             ✓ 说装载成功——于是 <c>vulcan.module.list</c> 显示模块在位、版本正确、0 条指令，
+             而「为什么 0 条」只存在于日志里。
+            
+             宿主不为模块补契约：模块自己去适配。但宿主必须**说实话**——
+             接不上就是没装上，这一列就是那句实话，列在目录里而不是埋在日志里。
+             </remarks>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.Attached">
+            <summary>本模块是否真正接上了宿主。</summary>
+        </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleHost">
             <summary>
             模块宿主(MD-01~07):进程内移植自 b-Code-MyAPI-Lite 的 ModuleHost/Invoker 机制(D3)。
@@ -604,6 +674,9 @@
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.RegisteredNames">
             <summary>实际注册成功的指令名(热重载时按此注销)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.AttachFailures">
+            <summary>模块 owner → 上下文注入失败原因；非空即表示该模块没有真正接上宿主。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Metas">
             <summary>模块元信息(vulcan.module.list);CommandCount 在注册完成后定稿。</summary>

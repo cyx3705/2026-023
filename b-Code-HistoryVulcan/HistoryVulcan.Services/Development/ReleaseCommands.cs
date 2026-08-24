@@ -200,6 +200,20 @@ internal static class ReleaseCommands
         if (!known && !moduleName.Equals("HistoryVulcan", StringComparison.OrdinalIgnoreCase))
             return CommandResult.Fail($"{moduleName} 不在发布登记表里，见 vulcan.release.modules。");
 
+        if (!known)
+        {
+            // 走到这里 moduleName 一定是 HistoryVulcan。它不在登记表里，也就拿不到
+            // projectDirectory，于是 moduleProject 一路留着默认值「HistoryVulcan」，
+            // projectRoot 被算成 HistoryClio\HistoryVulcan——那个目录不存在，
+            // 项目目录名是带编号前缀的 2026-023-HistoryVulcan。
+            //
+            // 正确的常量本文件第一屏就有（PipelineProjectName），紧接着的 hostSnapshot
+            // 用的也正是它；唯独 projectRoot 漏掉了。症状是发布第一步就抛
+            // DirectoryNotFoundException 说找不到 VulcanVersion.props，
+            // 与真实原因（少了编号前缀）毫无关系，照着报错查会一路查到版本文件上去。
+            moduleProject = PipelineProjectName;
+        }
+
         // 工作区不写正式 Clio z：publish 只从主树来。无 publish 时管线把候选写入该工作树自己的 z-*。
         string? projectRootOverride = null;
         if (!string.IsNullOrWhiteSpace(worktree))
