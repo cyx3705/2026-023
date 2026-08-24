@@ -289,7 +289,13 @@ public static partial class ServiceComposer
                     host.Modules.Count == 0
                         ? "当前无已加载模块。请检查 vulcan.module.roots 与发现诊断。"
                         : string.Join('\n', host.Modules.Select(module =>
-                            $"{module.ModuleName} {module.Version} ({module.CommandCount} 条指令)")),
+                            module.Attached
+                                ? $"{module.ModuleName} {module.Version} ({module.CommandCount} 条指令)"
+                                // 接不上宿主的模块必须在目录里就看得出来。只报「0 条指令」
+                                // 会让人以为是模块本来就没指令，而真正的原因只在日志里。
+                                : $"{module.ModuleName} {module.Version} ✗ 未接上宿主，指令未注册"
+                                  + Environment.NewLine + "    "
+                                  + string.Join(Environment.NewLine + "    ", module.AttachFailures))),
                     host.Modules)),
         }, "framework:service");
 

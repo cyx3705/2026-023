@@ -23,7 +23,23 @@ public sealed partial class ModuleHost
             _current = Snapshot.Empty;
             PublishXamlContexts();
 
-            var next = Build();
+            Snapshot next;
+            try
+            {
+                next = Build();
+            }
+            catch (Exception ex)
+            {
+                // 拆旧在前是硬约束（同名程序集共存会打断 WPF 的 XAML 解析），所以这里
+                // 没有「回滚到旧快照」这个选项——旧的已经卸了。能做的是把宿主停在一个
+                // **说得清楚**的状态上：_current 已是 Empty，指令面为空，并且说破原因。
+                // 此前这条路径什么都不说，使用者看到的只是所有模块指令一起消失。
+                _log.Error("module",
+                    $"热重载失败，宿主当前没有装载任何模块；修好模块目录后再执行 vulcan.module.reload。原因: {ex.Message}");
+                SyncFileWatching();
+                throw;
+            }
+
             CommitSnapshot(old, next);
             SyncFileWatching();
         }
@@ -162,7 +178,15 @@ public sealed partial class ModuleHost
     {
         if (string.IsNullOrEmpty(name.Name))
             return null;
-        foreach (var package in _pinnedPackages)
+
+        // 读的是不可变快照，不是可变集合本身。
+        //
+        // 本回调挂在 AssemblyLoadContext.Default.Resolving 上，会在**任意**触发程序集
+        // 解析的线程上执行，而且按 ResolveFromModuleContexts 的注释所述不得取 _reloadLock。
+        // 装第二个 pinned 模块时 LoadPinned 正在写这份名单，若此处直接遍历一个普通
+        // HashSet，就是典型的并发读写：抛「集合已修改」或读到撕裂状态，
+        // 表现为随机的依赖解析失败——而失败点离真正的原因很远。
+        foreach (var package in Volatile.Read(ref _pinnedPackages))
         {
             var path = Path.Combine(package, name.Name + ".dll");
             if (File.Exists(path))
@@ -174,8 +198,13 @@ public sealed partial class ModuleHost
 
     private Assembly LoadPinned(ModuleDiscoveryEntry module)
     {
-        if (_pinnedPackages.Add(module.PackagePath))
+        var known = Volatile.Read(ref _pinnedPackages);
+        if (!known.Contains(module.PackagePath, StringComparer.OrdinalIgnoreCase))
         {
+            // 整体替换而不是就地追加：读方拿到的永远是一份完整、此后不再变化的数组。
+            // 本方法只在 _reloadLock 内被调用，因此写方之间不会互相竞争。
+            Volatile.Write(ref _pinnedPackages, [.. known, module.PackagePath]);
+
             if (!_pinnedResolverInstalled)
             {
                 _pinnedResolverInstalled = true;

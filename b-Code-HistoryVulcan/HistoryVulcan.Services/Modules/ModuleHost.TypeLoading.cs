@@ -57,7 +57,13 @@ public sealed partial class ModuleHost
             }
             catch (Exception ex)
             {
-                _log.Warn("module", $"注入模块上下文失败 ({contextType.FullName}): {ex.Message}");
+                // 记进快照而不只是打条日志：接不上宿主的模块不能被报成装载成功，
+                // 判定要能被 vulcan.module.list 读到，而不是只留在日志里。
+                var reason = $"{contextType.FullName}: {ex.GetType().Name}: {ex.Message}";
+                _log.Error("module", $"注入模块上下文失败 ({owner}) {reason}");
+                if (!snap.AttachFailures.TryGetValue(owner, out var failures))
+                    snap.AttachFailures[owner] = failures = [];
+                failures.Add(reason);
             }
         }
     }

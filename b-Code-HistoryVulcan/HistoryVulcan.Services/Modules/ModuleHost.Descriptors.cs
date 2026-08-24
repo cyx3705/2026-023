@@ -259,6 +259,10 @@ public sealed partial class ModuleHost
         /// <summary>实际注册成功的指令名(热重载时按此注销)。</summary>
         public List<string> RegisteredNames { get; } = new();
 
+        /// <summary>模块 owner → 上下文注入失败原因；非空即表示该模块没有真正接上宿主。</summary>
+        public Dictionary<string, List<string>> AttachFailures { get; }
+            = new(StringComparer.OrdinalIgnoreCase);
+
 
 
 
@@ -326,6 +330,9 @@ public sealed partial class ModuleHost
                 {
                     SourcePath = first.SourcePath,
                     ManifestPath = first.ManifestPath,
+                    AttachFailures = AttachFailures.GetValueOrDefault(first.Name) is { } reasons
+                        ? reasons.ToArray()
+                        : [],
                 });
             }
         }

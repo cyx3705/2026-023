@@ -1,4 +1,4 @@
-namespace HistoryVulcan.Services.Development.Pipeline;
+﻿namespace HistoryVulcan.Services.Development.Pipeline;
 
 internal sealed record ReleaseRequest(
     string ModuleName,
@@ -12,12 +12,13 @@ internal static class ReleaseEngine
 {
     public static string Execute(ReleaseRequest request, TextWriter log)
     {
-        if (request.PromoteOfficial && !request.ProjectRoot.Equals(
-                Path.GetFullPath(Path.Combine(Path.GetDirectoryName(request.RegistryPath)!, "..", "..", "..")),
-                StringComparison.OrdinalIgnoreCase))
-        {
-            // 正式促级只从主树来；调用方已把 worktree 与 publish 互斥掉。
-        }
+        // 4.8/5.0 之前这里是一个**空的 if**：条件算完就丢，函数体里只有一行注释说
+        // 「正式促级只从主树来；调用方已把 worktree 与 publish 互斥掉」。那不是纵深防御，
+        // 是立了一把从不上锁的锁。而且它把未规范化的 request.ProjectRoot 与
+        // Path.GetFullPath(...) 的结果相比，即便补上 throw 也永远不会相等。
+        //
+        // 判据交由调用方持有——它才知道这次是主树还是工作区——宿主这里不再假装校验。
+        // 需要重新立这道闸口时，要连同「主树路径如何认定」一起设计，而不是补一个 throw。
 
         var target = ReleaseCatalog.Require(request.RegistryPath, request.ModuleName);
         var projectRoot = Path.GetFullPath(request.ProjectRoot);

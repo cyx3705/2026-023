@@ -22,6 +22,23 @@ public sealed record ModuleMeta(
 
     /// <summary>Absolute manifest path when the module came from manifest discovery.</summary>
     public string? ManifestPath { get; init; }
+
+    /// <summary>
+    /// 上下文注入失败的原因；非空表示本模块**没有接上宿主**，它的指令一条都不会到位。
+    /// </summary>
+    /// <remarks>
+    /// 5.0 收窄 <c>IModuleContext</c> 之后，按旧契约编译的模块会在 <c>Attach</c> 里抛
+    /// <c>MissingMethodException</c>。宿主此前把它记成一条 Warn 就继续，紧接着还打一个
+    /// ✓ 说装载成功——于是 <c>vulcan.module.list</c> 显示模块在位、版本正确、0 条指令，
+    /// 而「为什么 0 条」只存在于日志里。
+    ///
+    /// 宿主不为模块补契约：模块自己去适配。但宿主必须**说实话**——
+    /// 接不上就是没装上，这一列就是那句实话，列在目录里而不是埋在日志里。
+    /// </remarks>
+    public IReadOnlyList<string> AttachFailures { get; init; } = [];
+
+    /// <summary>本模块是否真正接上了宿主。</summary>
+    public bool Attached => AttachFailures.Count == 0;
 }
 
 /// <summary>
@@ -44,8 +61,6 @@ public sealed partial class ModuleHost : IDisposable
     private IReadOnlyList<ModuleDiscoveryEntry>? _confirmedSources;
     private CommandRegistry? _registry;
     private CommandBus? _bus;
-    private ISettingsService? _settings;
-    private string? _dataDirectory;
     private Snapshot _current = Snapshot.Empty;
     private Snapshot? _building;
     private AssemblyLoadContext[] _xamlContexts = [];
@@ -130,10 +145,16 @@ public sealed partial class ModuleHost : IDisposable
 
         _registry = registry;
         _bus = bus;
-        _settings = settings;
-        _dataDirectory = Path.GetFullPath(dataDirectory);
-        _ = _settings;
-        _ = _dataDirectory;
+
+        // settings 与 dataDirectory 不再落到字段上。
+        //
+        // 5.0 把 Settings / DataDirectory 移出 IModuleContext 之后，这两样在 ModuleHost
+        // 内部就没有任何消费方了；此前它们仍被存进字段，再用 `_ = _settings;` 两条丢弃
+        // 语句压住「已赋值从未使用」的警告。那不是预留，是把死状态伪装成活的——
+        // 冻结会把这个空位永久固化，而下一个读者无从判断它是待接线还是已废弃。
+        //
+        // 形参保留是刻意的：装配点的调用形状不因宿主内部瘦身而变动，
+        // 而参数名本身说明了宿主曾经、也可能再次需要它们。
     }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -398,10 +419,17 @@ public sealed partial class ModuleHost : IDisposable
                 next.RegisteredNames.Add(descriptor.Name);
                 next.CountCommand(moduleName);
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
             {
-                // MD-07:与内置指令(或其他模块)重名,仅拒绝该方法,不静默覆盖
-                _log.Warn("module", $"模块 {moduleName} 的指令被拒绝注册: {ex.Message}");
+                // MD-07：与内置指令（或其他模块）重名，仅拒绝该方法，不静默覆盖。
+                //
+                // 必须连 ArgumentException 一起兜：CommandRegistry.Register 除了重名
+                // （InvalidOperationException）还会因非法命令类、以及「写了 ConfirmPrompt
+                // 却没升到 Ask 级」抛 ArgumentException。只兜一种的后果不是少一条指令，
+                // 而是异常穿透整个 foreach——pending 里排在它后面的**所有模块**一条都注册
+                // 不上，且 RegisteredNames 与 FinalizeMetas 停在半途。
+                // 一条坏指令只该连累它自己。
+                _log.Error("module", $"模块 {moduleName} 的指令 {descriptor.Name} 被拒绝注册: {ex.Message}");
             }
         }
 
@@ -480,6 +508,18 @@ public sealed partial class ModuleHost : IDisposable
 
             return snap;
         }
+        catch (Exception ex)
+        {
+            // 半成品快照必须就地拆掉。Reload 是「先拆旧、再建新」，此刻旧快照已经没了，
+            // 而这个建到一半的快照没有任何人持有引用——它建好的可回收 ALC 因此永远
+            // 等不到 Unload，继续锁着模块 DLL。症状出现在很远的地方：下一次
+            // vulcan.module.install 报文件被占用，而唯一的恢复手段是重启宿主。
+            //
+            // 拆完照样抛：调用方要知道这轮装载失败了，不能拿一个空快照假装成功。
+            _log.Error("module", $"装载模块快照失败，已回收本轮建立的上下文: {ex.Message}");
+            TeardownSnapshot(snap);
+            throw;
+        }
         finally
         {
             _building = null;
@@ -495,7 +535,7 @@ public sealed partial class ModuleHost : IDisposable
     /// 返回该 ALC 里已经装好的程序集，绝不 <c>LoadFromAssemblyPath</c> 进 Default。
     /// 后一条才能让 XAML 的 <c>assembly=AvalonDock.Themes.VS2013</c> 解析成功，同时允许 Unload。
     /// </summary>
-    private readonly HashSet<string> _pinnedPackages = new(StringComparer.OrdinalIgnoreCase);
+    private string[] _pinnedPackages = [];
 
     private bool _pinnedResolverInstalled;
 
@@ -666,6 +706,8 @@ public sealed partial class ModuleHost : IDisposable
                 contextAttached = true;
             }
 
+            var attachFailures = snap.AttachFailures.GetValueOrDefault(moduleName);
+
             snap.Metas.Add((moduleName,
                 GetProp(info, "Description") as string ?? "",
                 GetProp(info, "Author") as string ?? "",
@@ -690,9 +732,20 @@ public sealed partial class ModuleHost : IDisposable
                 CollectType(snap, moduleName, commandPrefix, main, docs);
             }
 
-            _log.Info("module",
-                $"✓ 模块 {moduleName} {GetProp(info, "Version")} ({(open ? "全暴露" : "精准暴露")}) " +
-                $"← {(slot.Length > 0 ? slot + "/" : "")}{fileName}");
+            var origin = $"← {(slot.Length > 0 ? slot + "/" : "")}{fileName}";
+            if (attachFailures is { Count: > 0 })
+            {
+                // 接不上宿主就是没装上。打 ✓ 会让 vulcan.module.list 显示模块在位、
+                // 版本正确、0 条指令，而原因只在日志里——那正是本次排查绕的弯路。
+                _log.Error("module",
+                    $"✗ 模块 {moduleName} {GetProp(info, "Version")} 未接上宿主，指令不会注册 {origin}"
+                    + Environment.NewLine + "    " + string.Join(Environment.NewLine + "    ", attachFailures));
+            }
+            else
+            {
+                _log.Info("module",
+                    $"✓ 模块 {moduleName} {GetProp(info, "Version")} ({(open ? "全暴露" : "精准暴露")}) {origin}");
+            }
         }
     }
 

@@ -68,10 +68,18 @@ internal static class SnapshotHashes
             + Path.DirectorySeparatorChar;
         var history = Path.Combine(root, "history") + Path.DirectorySeparatorChar;
         var installer = Path.Combine(root, "installer") + Path.DirectorySeparatorChar;
+
+        // 只排除**根部这一个**校验清单，不能按后缀排除。
+        //
+        // 按后缀写会连带命中任意层级的同名文件：快照里 history/HistoryX-v1/SHA256SUMS
+        // 之类的嵌套清单会被静默剔出 payload，既不参与写入也不参与校验——
+        // 那几个字节可以被任意篡改而 Assert 依然通过。清单自己不能自校验，
+        // 但它管辖范围内的每一个字节都必须被它覆盖。
+        var ownSums = Path.Combine(Path.GetFullPath(root), FileName);
         return Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
             .Where(path =>
             {
-                if (path.EndsWith(FileName, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(Path.GetFullPath(path), ownSums, StringComparison.OrdinalIgnoreCase))
                     return false;
                 if (skipHistory && path.StartsWith(history, StringComparison.OrdinalIgnoreCase))
                     return false;

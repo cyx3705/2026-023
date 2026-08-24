@@ -49,24 +49,46 @@ internal static class PublishLayout
             Directory.Delete(legacy, recursive: true);
         }
 
-        foreach (var current in Directory.GetDirectories(publishRoot, "History*-v*"))
-            Directory.Delete(current, recursive: true);
-        foreach (var item in Directory.GetFileSystemEntries(publishRoot))
+        // 腾空发布根之前先把旧内容挪进备份区，而不是直接删。
+        //
+        // 此前这里是「先删光，再 Relocate」：Relocate 一旦失败（目标被占用、跨卷复制中断），
+        // 发布根已经空了而新包没到位，模块的 z 快照当场变成一个空目录，且没有任何回滚。
+        // 同文件的 PromoteFlatHost 对完全相同的操作准备了 backup 与 catch 回滚——
+        // 两条促级路径的事务性必须对等，不能一条有安全网、一条裸奔。
+        var backup = Path.Combine(Path.GetTempPath(), "module-previous-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(backup);
+        var moved = new List<string>();
+        try
         {
-            var name = Path.GetFileName(item);
-            if (name.Equals("history", StringComparison.OrdinalIgnoreCase)
-                || name.Equals(Path.GetFileName(incoming), StringComparison.OrdinalIgnoreCase))
+            foreach (var item in Directory.GetFileSystemEntries(publishRoot))
             {
-                continue;
+                var name = Path.GetFileName(item);
+                if (name.Equals("history", StringComparison.OrdinalIgnoreCase)
+                    || name.Equals(Path.GetFileName(incoming), StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                Relocate(item, Path.Combine(backup, name));
+                moved.Add(name);
             }
 
-            if (Directory.Exists(item))
-                Directory.Delete(item, recursive: true);
-            else
-                File.Delete(item);
+            Relocate(incoming, destination);
+        }
+        catch
+        {
+            if (Directory.Exists(destination))
+                Directory.Delete(destination, recursive: true);
+            foreach (var name in moved)
+                Relocate(Path.Combine(backup, name), Path.Combine(publishRoot, name));
+            throw;
+        }
+        finally
+        {
+            if (Directory.Exists(backup))
+                Directory.Delete(backup, recursive: true);
         }
 
-        Relocate(incoming, destination);
         return destination;
     }
 
@@ -206,8 +228,15 @@ internal static class PublishLayout
     {
         if (!Directory.Exists(destination))
             return;
-        var sourceSums = File.ReadAllText(Path.Combine(source, SnapshotHashes.FileName)).Replace("\r\n", "\n");
-        var destinationSums = File.ReadAllText(Path.Combine(destination, SnapshotHashes.FileName)).Replace("\r\n", "\n");
+
+        // 缺 SHA256SUMS 的目标目录是上一轮中断留下的残包。直接 ReadAllText 会抛
+        // FileNotFoundException，把使用者引向一个与真实处境无关的栈。
+        if (!TryReadSums(source, out var sourceSums) || !TryReadSums(destination, out var destinationSums))
+        {
+            throw new InvalidOperationException(
+                $"历史包残缺（缺少 {SnapshotHashes.FileName}），无法判定是否可覆盖：{destination}");
+        }
+
         if (!sourceSums.Equals(destinationSums, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
@@ -221,14 +250,38 @@ internal static class PublishLayout
         var archive = Path.Combine(historyRoot, $"{identity.Name}-v{identity.Version}");
         if (Directory.Exists(archive))
         {
-            var sourceSums = File.ReadAllText(Path.Combine(package, SnapshotHashes.FileName)).Replace("\r\n", "\n");
-            var destinationSums = File.ReadAllText(Path.Combine(archive, SnapshotHashes.FileName)).Replace("\r\n", "\n");
-            if (sourceSums.Equals(destinationSums, StringComparison.OrdinalIgnoreCase))
+            if (TryReadSums(package, out var sourceSums)
+                && TryReadSums(archive, out var destinationSums)
+                && sourceSums.Equals(destinationSums, StringComparison.OrdinalIgnoreCase))
+            {
                 return;
-            archive = Path.Combine(historyRoot, $"{identity.Name}-v{identity.Version}-{DateTime.Now:yyyyMMdd-HHmmss}");
+            }
+
+            // 秒级时间戳不足以保证唯一：PromoteVersioned 会在同一轮里连续归档多个包，
+            // 同一秒内的两次归档算出同一个避让目录名，CopyDirectory 以 overwrite:true
+            // 把两份不同内容的历史混在一起，而且没有任何人会察觉。
+            var stamp = DateTime.Now.ToString(
+                "yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+            var baseName = $"{identity.Name}-v{identity.Version}-{stamp}";
+            archive = Path.Combine(historyRoot, baseName);
+            for (var ordinal = 2; Directory.Exists(archive); ordinal++)
+                archive = Path.Combine(historyRoot, $"{baseName}-{ordinal}");
         }
 
         SnapshotHashes.CopyDirectory(package, archive);
+    }
+
+    private static bool TryReadSums(string root, out string sums)
+    {
+        var path = Path.Combine(root, SnapshotHashes.FileName);
+        if (!File.Exists(path))
+        {
+            sums = "";
+            return false;
+        }
+
+        sums = File.ReadAllText(path).Replace("\r\n", "\n");
+        return true;
     }
 
     private static (string Name, string Version) ReadIdentity(string root)
@@ -241,7 +294,11 @@ internal static class PublishLayout
             using var document = JsonDocument.Parse(File.ReadAllText(path));
             var name = document.RootElement.GetProperty(pair.Item2).GetString() ?? "";
             var version = document.RootElement.GetProperty("version").GetString() ?? "";
-            if (name.Length > 0 && System.Text.RegularExpressions.Regex.IsMatch(version, @"^\d+\.\d+\.\d+$"))
+            // 预发布后缀必须放行：宿主自己的构建脚本一直接受 5.1.0-rc1 这种形状，
+            // 而这里拒了它之后抛的却是「包身份清单缺失或无效」——清单明明是好的，
+            // 使用者会照提示去找一个不存在的清单问题。
+            if (name.Length > 0 && System.Text.RegularExpressions.Regex.IsMatch(
+                    version, @"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$"))
                 return (name, version);
         }
 
