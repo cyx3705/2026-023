@@ -24,6 +24,7 @@ internal static class ReleaseEngine
         var projectRoot = Path.GetFullPath(request.ProjectRoot);
         var version = ReleaseCatalog.ReadVersion(projectRoot, target);
         var publishRoot = Path.Combine(projectRoot, target.CandidateDirectory);
+        AssertNotSelfReplacing(publishRoot, target.Name);
         var workRoot = Path.Combine(projectRoot, ".publish-stage", "module-release-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(workRoot);
 
@@ -89,6 +90,41 @@ internal static class ReleaseEngine
             if (Directory.Exists(workRoot))
                 Directory.Delete(workRoot, recursive: true);
         }
+    }
+
+    /// <summary>
+    /// 拒绝替换当前进程正在运行的那份包。
+    ///
+    /// 宿主自替换按 DEC-053 走**手动操作**：不做影子目录，也不做独立重启器——
+    /// 宿主往后极少更新，为一年一次的动作在发布路径里长出一套切换机制不划算。
+    ///
+    /// 但「不自动」不等于「撞上去再说」。此前没有任何前置检查：从
+    /// z-Publish\host\HistoryVulcan.exe 起的宿主执行 vulcan.release.cycle
+    /// name=HistoryVulcan，会先跑完还原、单元测试、质量门禁、公开 API 门禁和一次完整
+    /// publish（几分钟），最后在 PromoteFlatHost 里撞上自己 exe 的文件锁而失败回滚。
+    /// 结论正确，代价是几分钟白跑，而抛出的 IOException 说的是「文件被占用」，
+    /// 没有一个字提到「你正在替换你自己」。
+    ///
+    /// 现在在第一步就说破，并给出唯一可行的做法。
+    /// </summary>
+    private static void AssertNotSelfReplacing(string publishRoot, string targetName)
+    {
+        var running = Environment.ProcessPath;
+        if (string.IsNullOrEmpty(running))
+            return;
+
+        var root = Path.GetFullPath(publishRoot)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            + Path.DirectorySeparatorChar;
+        if (!Path.GetFullPath(running).StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        throw new InvalidOperationException(
+            $"拒绝发布 {targetName}：发布目标就是当前进程运行的目录。" + Environment.NewLine
+            + $"  当前进程：{running}" + Environment.NewLine
+            + $"  发布目标：{publishRoot}" + Environment.NewLine
+            + "宿主自替换按 DEC-053 走手动操作。请先停服，"
+            + "再从该目录之外的宿主（例如 App 项目的 bin/Release 开发构建）执行本次发布。");
     }
 
     private static void AssertGitState(

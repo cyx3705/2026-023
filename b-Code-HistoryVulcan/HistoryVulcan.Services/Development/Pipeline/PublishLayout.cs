@@ -10,14 +10,34 @@ internal static class PublishLayout
         ReleaseTarget target,
         string version)
     {
-        var packageName = $"{target.Name}-v{version}";
         var historyRoot = Path.Combine(publishRoot, "history");
         Directory.CreateDirectory(historyRoot);
         var incoming = Path.Combine(publishRoot, ".incoming-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            return PromoteVersionedCore(stagingRoot, publishRoot, target, version, incoming, historyRoot);
+        }
+        finally
+        {
+            // 同 HostSnapshotBuilder：中转目录建在发布根里，抛异常时留下的就是一份完整
+            // 副本，而发布根是纳入 git 的 z 快照。此前只有成功路径删得掉它。
+            if (Directory.Exists(incoming))
+                Directory.Delete(incoming, recursive: true);
+        }
+    }
+
+    private static string PromoteVersionedCore(
+        string stagingRoot,
+        string publishRoot,
+        ReleaseTarget target,
+        string version,
+        string incoming,
+        string historyRoot)
+    {
         SnapshotHashes.CopyDirectory(stagingRoot, incoming);
         ModuleSnapshotBuilder.AssertSnapshot(incoming, target, version);
 
-        var destination = Path.Combine(publishRoot, packageName);
+        var destination = Path.Combine(publishRoot, $"{target.Name}-v{version}");
         AssertImmutable(stagingRoot, destination);
 
         foreach (var current in Directory.GetDirectories(publishRoot, "History*-v*"))

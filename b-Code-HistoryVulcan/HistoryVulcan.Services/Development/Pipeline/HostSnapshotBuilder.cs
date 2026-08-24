@@ -95,9 +95,21 @@ internal static class HostSnapshotBuilder
 
             Directory.CreateDirectory(outputRoot);
             var incoming = Path.Combine(outputRoot, ".incoming-host-" + Guid.NewGuid().ToString("N"));
-            SnapshotHashes.CopyDirectory(staging, incoming);
-            PublishLayout.PromoteFlatHost(incoming, outputRoot, version);
-            Directory.Delete(incoming, recursive: true);
+            try
+            {
+                SnapshotHashes.CopyDirectory(staging, incoming);
+                PublishLayout.PromoteFlatHost(incoming, outputRoot, version);
+            }
+            finally
+            {
+                // 中转目录必须建在发布根里（同卷才能用 Move 促级），失败时不清理就留在
+                // z 快照里；而 z-* 是纳入 git 的正式快照，泄漏的中转目录会被一起提交。
+                // 5.1.0 审查时 z-Publish 下已有三个 .incoming-host-* 进了版本库，
+                // 每个带一份 745K 的宿主副本。promote 成功后此目录已空，失败时它是整包。
+                if (Directory.Exists(incoming))
+                    Directory.Delete(incoming, recursive: true);
+            }
+
             log.WriteLine($"已准备 HistoryVulcan {version} 宿主快照：{outputRoot}");
             return Path.GetFullPath(outputRoot);
         }

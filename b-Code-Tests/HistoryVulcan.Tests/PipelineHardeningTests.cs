@@ -147,4 +147,82 @@ public sealed class PipelineHardeningTests
             Assert.True(thrown is InvalidOperationException or ArgumentException);
         }
     }
+
+    /// <summary>
+    /// 发布目标就是当前进程运行的目录时，第一步就拒绝。
+    /// </summary>
+    /// <remarks>
+    /// 宿主自替换按 DEC-053 走手动操作。修复前没有任何前置检查：整轮还原、单元测试、
+    /// 两道门禁和一次完整 publish 跑完几分钟，才在 promote 阶段撞上自己 exe 的文件锁，
+    /// 抛的还是一句与处境无关的「文件被占用」。
+    ///
+    /// 顺带钉住前缀误判：z-Publish 与 z-Publish-old 是两个目录，不能因为字符串前缀
+    /// 相同就把后者也拦下——那会把一个正当的发布目标变成永远发不出去的目标。
+    /// </remarks>
+    [Fact]
+    public void ReleaseRefusesToReplaceTheDirectoryTheProcessRunsFrom()
+    {
+        var guard = typeof(ReleaseEngine).GetMethod(
+            "AssertNotSelfReplacing",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+
+        var running = Environment.ProcessPath;
+        Assert.False(string.IsNullOrEmpty(running));
+        var ownDirectory = Path.GetDirectoryName(running)!;
+
+        var refused = Assert.Throws<System.Reflection.TargetInvocationException>(
+            () => guard.Invoke(null, [ownDirectory, "HistoryVulcan"]));
+        var reason = Assert.IsType<InvalidOperationException>(refused.InnerException);
+        Assert.Contains("DEC-053", reason.Message, StringComparison.Ordinal);
+
+        // 前缀相同但不是同一个目录，以及完全无关的目录：都必须放行。
+        guard.Invoke(null, [ownDirectory + "-old", "HistoryVulcan"]);
+        guard.Invoke(null, [Path.GetTempPath(), "HistorySample"]);
+    }
+
+    /// <summary>促级失败不许把中转目录留在 z 快照里。</summary>
+    /// <remarks>
+    /// 中转目录必须建在发布根内（同卷才能用 Move 促级），而发布根是纳入 git 的 z 快照。
+    /// 修复前只有成功路径删得掉它：5.1.0 审查时 z-Publish 下有三个 .incoming-host-*
+    /// 已经进了版本库，每个带一份完整的宿主副本。
+    /// </remarks>
+    [Fact]
+    public void AbortedPromotionLeavesNoTransitDirectoryBehind()
+    {
+        var staging = Path.Combine(Path.GetTempPath(), "stage-" + Guid.NewGuid().ToString("N"));
+        var publish = Path.Combine(Path.GetTempPath(), "pub-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(staging);
+        Directory.CreateDirectory(publish);
+        try
+        {
+            // 缺 module.manifest.json：AssertSnapshot 必然拒收，促级停在中转之后。
+            File.WriteAllText(Path.Combine(staging, "payload.txt"), "x");
+
+            var target = new ReleaseTarget(
+                Name: "HistorySample",
+                Kind: "module",
+                ProjectDirectory: "",
+                VersionProps: "",
+                VersionProperty: "",
+                SourceManifest: "",
+                SnapshotManifest: "module.manifest.json",
+                IdentityProperty: "name",
+                CandidateDirectory: "z-Publish",
+                FormalDirectory: "z-Publish",
+                PackageDocuments: "",
+                Package: null,
+                Validation: [],
+                TestProject: "");
+
+            Assert.Throws<InvalidOperationException>(
+                () => PublishLayout.PromoteVersioned(staging, publish, target, "1.0.0"));
+
+            Assert.Empty(Directory.GetDirectories(publish, ".incoming-*"));
+        }
+        finally
+        {
+            Directory.Delete(staging, recursive: true);
+            Directory.Delete(publish, recursive: true);
+        }
+    }
 }

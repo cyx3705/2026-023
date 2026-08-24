@@ -115,12 +115,43 @@ internal static class QualityGates
             {
                 violations.Add($"{project}：Unshipped API 与已批准的 {version} 基线不一致。");
             }
+
+            var orphans = OrphanRemovals(Path.Combine(component, project, "PublicAPI.Shipped.txt"), actual);
+            if (orphans.Count > 0)
+            {
+                violations.Add(
+                    $"{project}：{orphans.Count} 条 *REMOVED* 对不上任何已定版条目（移除的是从未定版过的东西）："
+                    + Environment.NewLine + "  " + string.Join(Environment.NewLine + "  ", orphans.Take(5))
+                    + (orphans.Count > 5 ? Environment.NewLine + $"  …另有 {orphans.Count - 5} 条" : ""));
+            }
         }
 
         if (violations.Count > 0)
             throw new InvalidOperationException("公开 API 冻结门禁失败：\n  " + string.Join("\n  ", violations));
 
         log.WriteLine($"公开 API 基线门禁通过：{projects.Length} 份 Unshipped 与已批准的 {version} 基线一致。");
+    }
+
+    /// <summary>
+    /// 找出 Unshipped 里对不上任何已定版条目的 *REMOVED*。
+    ///
+    /// 这类条目移除的是从未定版过的东西——某一轮加进 Unshipped、下一轮又删掉，
+    /// 于是留下一条指向空处的移除记录。分析器不诊断它们，两个方向都编译得过，
+    /// 账就这样一轮轮加下去：5.1.0 审查时 Core 有 146 条、Services 有 137 条，
+    /// 占 Unshipped 的一半以上，把真正的净增埋在噪声里。
+    /// 冻结是把 Unshipped 并进 Shipped，带着这些条目冻结等于封存一本乱账。
+    /// </summary>
+    private static IReadOnlyList<string> OrphanRemovals(string shippedPath, IReadOnlyList<string> unshipped)
+    {
+        const string marker = "*REMOVED*";
+        var shipped = File.Exists(shippedPath)
+            ? new HashSet<string>(ReadApi(shippedPath), StringComparer.Ordinal)
+            : [];
+
+        return unshipped
+            .Where(line => line.StartsWith(marker, StringComparison.Ordinal)
+                && !shipped.Contains(line[marker.Length..]))
+            .ToList();
     }
 
     private static IReadOnlyList<string> ReadApi(string path)
