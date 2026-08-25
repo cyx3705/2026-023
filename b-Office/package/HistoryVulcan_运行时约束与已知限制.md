@@ -1,6 +1,6 @@
 # HistoryVulcan 运行时约束与已知限制
 
-适用版本：HistoryVulcan **5.0.0**；宿主从 `z-Publish/host` 运行，模块只从
+适用版本：HistoryVulcan **5.1.1**；宿主从 `z-Publish/host` 运行，模块只从
 `%AppData%\HistoryVulcan\Modules` 装载。`3.1.8` 是不受支持的内部过渡版本。
 3.3.0（DEC-022）：内置命令硬切为 `vulcan.<类>.<方法>`；全局快捷键（含 `GlobalShortcutService`）与命令工作台由 HistoryMercury 4.1.0 拥有。
 旧→新映射见 `../history/3.3.0-vulcan-command-rename.md`。
@@ -25,6 +25,13 @@
 - 输出没有水平滚动条；长文本只在视觉上随当前窗格宽度换行，复制和导出不插入软换行。
 
 ## 运行时边界
+
+`HistoryVulcan.Cli.exe --cli` 是不依赖运行宿主的离线恢复通道；每次结果声明
+`executionTarget=offline-composition`。`--runtime` 只通过当前用户 ACL 的命名管道访问正在运行的宿主，
+不会使用 MCP token、不会监听网络、不可达时退出码 3 且不降级。运行时白名单仅包括
+`portunus.mcp.status/start/stop` 与 `vulcan.module.list/reload`；start/stop/reload 必须给一次性 `--approve`。
+`--format json` 的 stdout 只包含一个结果对象，字段为 runId、success、exitCode、executionTarget、candidatePath、
+installedPath、runtimeAck、logPath、diagnostics。
 
 | 边界 | 结论 |
 |---|---|

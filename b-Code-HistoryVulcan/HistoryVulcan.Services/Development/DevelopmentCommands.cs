@@ -22,7 +22,7 @@ namespace HistoryVulcan.Services.Development;
 /// 恰恰是这些前提不成立的时刻。<c>--cli</c> 在本进程内执行，一样都不需要。
 ///
 /// 模块公开面是三条：<c>vulcan.dev.start</c> / <c>submit</c> / <c>finish</c>，
-/// <strong>不配 MCP</strong>，只走 <c>HistoryVulcan.exe --cli</c>。
+/// <strong>不配 MCP</strong>，只走同目录 Console <c>HistoryVulcan.Cli.exe --cli</c>；GUI EXE 入口仅作兼容。
 /// 工作区（<see cref="WorktreeCommands"/>）与发布（<see cref="ReleaseCommands"/>）仍注册，但对 MCP 隐藏；
 /// 宿主打包走 <c>--cli vulcan.release.cycle</c>。
 /// </remarks>

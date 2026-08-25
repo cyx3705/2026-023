@@ -34,6 +34,10 @@ public static class CliExposurePolicy
     /// </remarks>
     public static IReadOnlyList<string> ExposedCommands { get; } =
     [
+        // CLI 自发现：只描述这张名单，不绕过名单执行其它总线指令
+        "vulcan.cli.list",
+        "vulcan.cli.show",
+
         // 查目录：动手之前先看得见现状
         "vulcan.command.domains",
         "vulcan.command.list",
@@ -90,6 +94,6 @@ public static class CliExposurePolicy
     /// </remarks>
     public static string RefusalReason(string commandName)
         => $"指令 {commandName} 不在命令行面上。"
-           + $"命令行只开放开发管线与模块恢复共 {ExposedCommands.Count} 条，"
-           + "见 CliExposurePolicy.ExposedCommands。";
+           + $"命令行只开放开发管线、模块恢复和 CLI 自发现共 {ExposedCommands.Count} 条，"
+           + "见 CliExposurePolicy.ExposedCommands；请使用 --help、vulcan.cli.list，或运行宿主时使用 HistoryVulcan.Cli.exe --runtime。";
 }

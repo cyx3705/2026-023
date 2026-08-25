@@ -1,9 +1,9 @@
-# HistoryVulcan 5.0.1
+# HistoryVulcan 5.1.1
 
 本仓库是 OneHistory HistoryVulcan（原 AppShell，3.2.0 起改名）的独立源码、合同与发布资产真值。
 `3.0.3` 是 V3 冻结基线，冻结标签为 `v3.0.3`；版本线不再与 HistoryJanus 对齐，`0.7.x` 仅保留用于回滚。
 
-当前源码为 `5.0.1`。`HistoryVulcan.Core` 自 `3.9.0` 起的公开面冻结已在 4.0 解除（DEC-049）；
+当前源码为 `5.1.1`。`HistoryVulcan.Core` 自 `3.9.0` 起的公开面冻结已在 4.0 解除（DEC-049）；
 5.0（DEC-052）拆除宿主模块抽象，冻结面只留注册器、命令总线和开发总线。
 3.13.0（DEC-045）删除 Web 网关的局域网面：`WebGateway` 退回纯本机 IPC，固定监听 `127.0.0.1`，
 只接受同机前端 Shell，其余一律 401。设备鉴权与配对、令牌鉴权、绑定地址、CORS、限流，以及
@@ -29,7 +29,7 @@ HistoryAurora 现行合同 `../2026-026-HistoryAurora/b-Office/current/HistoryAu
 `vulcan.app.focusconsole`，由服务端、前端、远程中继和 `--focus-console` 启动共同复用；
 Mercury 的双 `/` 只绑定该命令，`mercury.shortcut.wakeconsole` 仅作为兼容包装。
 3.4.0（DEC-025）恢复受控的两段直接方法与域聚焦，`mercury.go` 是首个正式用例。
-3.3.2（DEC-023）指令类从 13 个收敛为 **9 类**
+3.3.2（DEC-023）指令类从 13 个收敛为 9 类；5.1.1 增加受限的 `cli` 类作为第 10 类，
 （`app`/`command`/`ui`/`log`/`mcp`/`module`/`prompt`/`svc`/`web`），退役影子域 `debug`；
 **模块指令域去掉 `History` 品牌前缀**（模块名仍叫 `HistoryJanus`，指令域是 `janus`）；
 测试项目不再跨仓库引用 HistoryMercury，CI 冻结门禁恢复可通过。
@@ -98,10 +98,10 @@ dotnet format .\HistoryVulcan.sln --verify-no-changes --no-restore
 
 ```text
 # 工作区候选：构建、门禁、写入该工作树 z-Publish
-HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=candidate worktree=<工作区>
+HistoryVulcan.Cli.exe --cli vulcan.release.cycle name=HistoryVulcan msg=candidate worktree=<工作区>
 
 # 正式提升：主树先部署后提交（须用户批准）
-HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=publish
+HistoryVulcan.Cli.exe --cli vulcan.release.cycle name=HistoryVulcan msg=publish
 
 # 可选：从正式 Z 快照生成 Windows 安装包与便携压缩包（需本机 Inno Setup 6 与 7-Zip）
 .\b-Code-Eng\Pack-HistoryVulcanInstaller.ps1

@@ -29,10 +29,17 @@ public static class CommandLineRunner
     /// </summary>
     /// <returns>0 成功；1 指令执行失败；2 参数错误或未声明暴露。</returns>
     public static int Run(string commandText, Assembly identityAssembly)
+        => Run(commandText, identityAssembly, HostOutputFormat.Human);
+
+    /// <summary>按指定格式执行一条离线 CLI 指令。</summary>
+    public static int Run(
+        string commandText,
+        Assembly identityAssembly,
+        HostOutputFormat format)
     {
         if (string.IsNullOrWhiteSpace(commandText))
         {
-            Console.Error.WriteLine("需要一条指令文本。");
+            WriteError($"原始命令: {commandText}\n需要一条指令文本。", format);
             return 2;
         }
 
@@ -41,12 +48,16 @@ public static class CommandLineRunner
         {
             var executable = Environment.ProcessPath ?? identityAssembly.Location;
             composition = ServiceComposer.Build(executable, identityAssembly);
+            // 离线 CLI 不具备桌面消息循环；UI 模块即使命令面未使用也可能在 Attach
+            // 阶段加载 WindowsDesktop 程序集，因此明确跳过它们。
+            if (composition.Modules is not null)
+                composition.Modules.EnableUiModules = false;
 
             // 先解析、先查声明，**再装载模块**：未声明的指令不该换来一次完整装载的副作用。
             var parsed = CommandParser.Parse(commandText);
             if (string.IsNullOrWhiteSpace(parsed.Name))
             {
-                Console.Error.WriteLine("无法从输入中解析出指令名。");
+                WriteError($"原始命令: {commandText}\n无法从输入中解析出指令名。", format);
                 return 2;
             }
 
@@ -71,21 +82,22 @@ public static class CommandLineRunner
             var missing = CliExposurePolicy.MissingCommands(composition.Registry);
             if (missing.Count > 0)
             {
-                Console.Error.WriteLine(
-                    "命令行名单与注册表对不上，以下指令已不存在: " + string.Join("、", missing));
-                Console.Error.WriteLine("请更新 CliExposurePolicy.ExposedCommands 后重试。");
+                WriteError(
+                    $"原始命令: {commandText}\n命令行名单与注册表对不上，以下指令已不存在: " + string.Join("、", missing)
+                    + "。请更新 CliExposurePolicy.ExposedCommands 后重试。", format);
                 return 2;
             }
 
             if (!composition.Registry.TryGet(parsed.Name, out _))
             {
-                Console.Error.WriteLine($"未知指令: {parsed.Name}");
+                WriteError($"原始命令: {commandText}\n未知指令: {parsed.Name}。请使用 --help 或 vulcan.cli.list。", format);
                 return 2;
             }
 
             if (!CliExposurePolicy.IsExposed(parsed.Name))
             {
-                Console.Error.WriteLine(CliExposurePolicy.RefusalReason(parsed.Name));
+                WriteError($"原始命令: {commandText}\n" + CliExposurePolicy.RefusalReason(parsed.Name)
+                    + "；需要运行宿主时请改用 HistoryVulcan.Cli.exe --runtime。", format);
                 return 2;
             }
 
@@ -94,12 +106,13 @@ public static class CommandLineRunner
                 .GetAwaiter()
                 .GetResult();
 
-            Print(result);
-            return result.Success ? 0 : 1;
+            var exitCode = ExitCodeOf(result);
+            Print(result, format, identityAssembly, exitCode);
+            return exitCode;
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"命令行执行失败: {ex.Message}");
+            WriteError($"原始命令: {commandText}\n命令行执行失败: {ex.Message}", format);
             return 1;
         }
         finally
@@ -113,8 +126,31 @@ public static class CommandLineRunner
     /// </summary>
     private const string Source = "cli:local";
 
-    private static void Print(CommandResult result)
+    private static void Print(
+        CommandResult result,
+        HostOutputFormat format,
+        Assembly identityAssembly,
+        int exitCode)
     {
+        if (format == HostOutputFormat.Json)
+        {
+            var data = result.Data;
+            var envelope = new CliResultEnvelope(
+                RunId: Guid.NewGuid().ToString("N"),
+                Success: result.Success,
+                ExitCode: exitCode,
+                ExecutionTarget: "offline-composition",
+                CandidatePath: ReadString(data, "CandidatePath", "Candidate"),
+                InstalledPath: ReadString(data, "InstalledPath", "Installed"),
+                RuntimeAck: ReadValue(data, "RuntimeAck", "Ack"),
+                LogPath: ReadString(data, "LogPath", "Log"),
+                Diagnostics: string.IsNullOrWhiteSpace(result.Message) ? [] : [result.Message]);
+            Console.WriteLine(JsonSerializer.Serialize(envelope, JsonOptions));
+            return;
+        }
+
+        Console.WriteLine($"executionTarget=offline-composition processId={Environment.ProcessId} "
+            + $"hostVersion={HistoryVulcan.Core.AppIdentity.From(identityAssembly).Version}");
         if (!string.IsNullOrEmpty(result.Message))
             Console.WriteLine(result.Message);
 
@@ -125,9 +161,32 @@ public static class CommandLineRunner
         Console.WriteLine(JsonSerializer.Serialize(result.Data, JsonOptions));
     }
 
+    private static void WriteError(string message, HostOutputFormat format)
+    {
+        if (format == HostOutputFormat.Json)
+        {
+            Console.WriteLine(JsonSerializer.Serialize(new CliResultEnvelope(
+                Guid.NewGuid().ToString("N"), false, 2, "offline-composition",
+                null, null, null, null, [message]), JsonOptions));
+            return;
+        }
+
+        Console.Error.WriteLine(message);
+    }
+
+    private static object? ReadValue(object? data, params string[] names)
+        => names.Select(name => data?.GetType().GetProperty(name)?.GetValue(data))
+            .FirstOrDefault(value => value != null);
+
+    private static string? ReadString(object? data, params string[] names)
+        => ReadValue(data, names)?.ToString();
+
+    private static int ExitCodeOf(CommandResult result)
+        => result.Success ? 0 : ReadValue(result.Data, "ExitCode") is int exitCode ? exitCode : 1;
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles,
     };

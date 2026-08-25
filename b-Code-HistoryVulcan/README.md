@@ -1,4 +1,4 @@
-# HistoryVulcan
+# HistoryVulcan 5.1.1
 
 HistoryVulcan 是独立维护的通用桌面应用框架，也是框架源码的唯一真值。
 
@@ -7,7 +7,8 @@ HistoryVulcan 是独立维护的通用桌面应用框架，也是框架源码的
 - `HistoryVulcan.Core`：指令、停靠、日志、MCP 和存储契约。
 - `HistoryVulcan.Services`：日志、设置、文件状态、MCP 与模块托管实现。
 - `HistoryVulcan.ServiceHost`：无窗 WPF 服务宿主、确认通道和 `svc.*` 生命周期。
-- `App`：独立宿主入口。桌面 Shell 已迁往 HistoryAurora。
+- `App`：HistoryVulcan WinExe 宿主入口。桌面 Shell 已迁往 HistoryAurora。
+- `Cli`：同目录 `HistoryVulcan.Cli.exe` Console 入口；`--cli` 是离线组合，`--runtime` 是不可降级的命名管道通道。
 - `../b-Code-Eng`：公开 API 基线、发布登记表、可选安装包脚本和 CI 失败摘要。
 - `../b-Office/package`：消费文档编辑源；`../b-Office` 根目录保留冻结合同和内部设计记录。
 - `../z-Publish`：唯一一份当前候选和完整发布测试结果。
@@ -24,9 +25,9 @@ dotnet build ..\HistoryVulcan.sln -c Release --no-restore
 
 正式 HistoryVulcan 从 Z 快照运行；需要兼容嵌入式框架消费时使用单独批准的固定版本包，不直接引用本目录源码。
 
-## 3.x 宿主
+## 5.1.1 宿主
 
-3.0.3 是冻结基线；当前源码目标为 3.3.0（DEC-022：命令硬切 `vulcan.<类>.<方法>`，快捷键/命令工作台由 HistoryMercury 4.1.0 拥有）。
+3.0.3 是冻结基线；当前源码目标为 5.1.1（CLI 合同、运行时 IPC 和十类命令分类已纳入现行基线；快捷键/命令工作台由 HistoryMercury 拥有）。
 3.1.8 是不受支持的内部过渡版本，
 不得作为新消费基线。当前正式交付物是 win-x64、依赖 .NET 8 Desktop
 Runtime 的 HistoryVulcan 宿主，不生成 NuGet 包。兼容包合同继续保留，但必须从单独批准的同版本包源消费。
@@ -35,8 +36,8 @@ Runtime 的 HistoryVulcan 宿主，不生成 NuGet 包。兼容包合同继续�
 整个 `z-Publish`。入口是宿主进程内管线：
 
 ```text
-HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=candidate worktree=<工作区>
-HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=publish
+HistoryVulcan.Cli.exe --cli vulcan.release.cycle name=HistoryVulcan msg=candidate worktree=<工作区>
+HistoryVulcan.Cli.exe --cli vulcan.release.cycle name=HistoryVulcan msg=publish
 ```
 
 当前交付物是宿主程序，不生成 NuGet 包。旧 `Publish-AppShell.ps1` 已于 3.3.2 退役（DEC-023）。

@@ -1,5 +1,7 @@
 ﻿#nullable enable
 *REMOVED*HistoryVulcan.Services.FileLayoutStore
+HistoryVulcan.Services.Modules.ModuleMeta.InstanceId.get -> string!
+HistoryVulcan.Services.Modules.ModuleMeta.InstanceId.init -> void
 *REMOVED*HistoryVulcan.Services.FileLayoutStore.DeleteCurrent() -> void
 *REMOVED*HistoryVulcan.Services.FileLayoutStore.FileLayoutStore(HistoryVulcan.Services.AppPaths! paths) -> void
 *REMOVED*HistoryVulcan.Services.FileLayoutStore.ListNamed() -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -9,8 +11,6 @@
 *REMOVED*HistoryVulcan.Services.FileLayoutStore.WriteNamed(string! name, string! payload) -> void
 *REMOVED*HistoryVulcan.Services.Modules.ModuleHost.CommandWorkbench.get -> HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchHost?
 *REMOVED*HistoryVulcan.Services.Modules.ModuleHost.CommandWorkbench.set -> void
-*REMOVED*HistoryVulcan.Services.Modules.ModuleHost.EnableUiModules.get -> bool
-*REMOVED*HistoryVulcan.Services.Modules.ModuleHost.EnableUiModules.set -> void
 *REMOVED*HistoryVulcan.Services.Modules.ModuleHost.ShellUi.get -> HistoryVulcan.Core.Modules.IShellUiRegistrar?
 *REMOVED*HistoryVulcan.Services.Modules.ModuleHost.ShellUi.set -> void
 *REMOVED*HistoryVulcan.Services.Modules.ModulePanelSync

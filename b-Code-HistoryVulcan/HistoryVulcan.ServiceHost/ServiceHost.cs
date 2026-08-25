@@ -62,6 +62,13 @@ public static class ServiceHost
             composition.Log.Warn("module", $"模块启动失败，远程网关将仅暴露成功注册的指令: {ex.Message}");
         }
 
+        // Runtime CLI 是本机、当前用户 ACL 的受限控制通道；它只连到这个实际服务循环，
+        // 不会把离线组合根误报成运行时热重载。
+        using var runtimePipe = RuntimePipeServer.Start(
+            composition,
+            HistoryVulcan.Core.AppIdentity.Current.Name,
+            HistoryVulcan.Core.AppIdentity.Current.Version);
+
         // Web 网关与 endpoint.json 已迁出至 HistoryPortunus 模块（4.3.0）。
         // 宿主不再持有任何对外 HTTP 监听：模块没装上时本机就没有 Web 入口，
         // 这一点由 endpoint.json 的存在与否如实反映。
@@ -109,6 +116,7 @@ public static class ServiceHost
         finally
         {
             // endpoint.json 的删除随模块拆除发生（ModuleHost 在卸载前 Dispose 模块实例）。
+            runtimePipe.Dispose();
             composition.Dispose();
             mutex.ReleaseMutex();
         }

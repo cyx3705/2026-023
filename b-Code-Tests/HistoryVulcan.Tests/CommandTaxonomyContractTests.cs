@@ -4,14 +4,14 @@ using Xunit;
 namespace HistoryVulcan.Tests;
 
 /// <summary>
-/// DEC-023 / REQ-CMD-010 / REQ-CMD-011:三段式九类分类法与模块域去品牌前缀。
+/// DEC-023 / REQ-CMD-010 / REQ-CMD-011:三段式十类分类法与模块域去品牌前缀。
 /// </summary>
 public sealed class CommandTaxonomyContractTests
 {
-    /// <summary>3.3.2 认可的九个内置类，见技术合同 REQ-CMD-010。</summary>
+    /// <summary>5.1.1 认可的十个内置类，见技术合同 REQ-CMD-010。</summary>
     private static readonly HashSet<string> BuiltinClasses = new(StringComparer.Ordinal)
     {
-        "app", "command", "ui", "log", "mcp", "module", "prompt", "svc", "web",
+        "app", "cli", "command", "ui", "log", "mcp", "module", "prompt", "svc", "web",
     };
 
     [Theory]

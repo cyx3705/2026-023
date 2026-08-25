@@ -21,7 +21,6 @@
       "formalDirectory": "z-Publish",
       "package": {
         "project": "b-Code-HistoryDiana\\HistoryDiana.csproj",
-        "outputDirectory": "b-Code-HistoryDiana\\bin\\Release\\net8.0-windows",
         "files": [
           "HistoryDiana.dll",
           "HistoryDiana.xml",
@@ -57,7 +56,6 @@
       "formalDirectory": "z-Publish",
       "package": {
         "project": "HistoryAurora.sln",
-        "outputDirectory": "b-Code-Studio\\Module\\bin\\Release\\net8.0-windows",
         "files": [
           "HistoryAurora.dll",
           "HistoryAurora.xml",
@@ -97,7 +95,6 @@
       "formalDirectory": "z-Publish",
       "package": {
         "project": "b-Code-Studio\\Module\\HistoryJanus.Module.csproj",
-        "outputDirectory": "b-Code-Studio\\Module\\bin\\Release\\net8.0-windows",
         "files": [
           "HistoryJanus.dll",
           "HistoryJanus.xml",
@@ -178,7 +175,6 @@
       "formalDirectory": "z-Publish",
       "package": {
         "project": "b-Code-MercuryDock\\HistoryMercury.csproj",
-        "outputDirectory": "b-Code-MercuryDock\\bin\\Release\\net8.0-windows",
         "files": [
           "HistoryMercury.dll",
           "HistoryMercury.xml",
@@ -214,7 +210,6 @@
       "formalDirectory": "z-Publish",
       "package": {
         "project": "b-Code-HistoryMinerva\\src\\HistoryMinerva\\HistoryMinerva.csproj",
-        "outputDirectory": "b-Code-HistoryMinerva\\src\\HistoryMinerva\\bin\\Release\\net8.0-windows",
         "files": [
           "HistoryMinerva.dll",
           "HistoryMinerva.xml",
@@ -285,7 +280,6 @@
       "formalDirectory": "z-Publish",
       "package": {
         "project": "b-Code-Portunus\\HistoryPortunus.csproj",
-        "outputDirectory": "b-Code-Portunus\\bin\\Release\\net8.0-windows",
         "files": [
           "HistoryPortunus.dll",
           "HistoryPortunus.xml",

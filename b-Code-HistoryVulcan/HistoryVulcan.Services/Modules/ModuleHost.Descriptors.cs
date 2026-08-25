@@ -328,6 +328,7 @@ public sealed partial class ModuleHost
                     first.Slot,
                     group.Any(meta => meta.Ui))
                 {
+                    InstanceId = Guid.NewGuid().ToString("N"),
                     SourcePath = first.SourcePath,
                     ManifestPath = first.ManifestPath,
                     AttachFailures = AttachFailures.GetValueOrDefault(first.Name) is { } reasons

@@ -5,7 +5,7 @@ namespace HistoryVulcan.Services.Development.Pipeline;
 
 internal sealed record PackageLayout(
     string Project,
-    string OutputDirectory,
+    string? PublishTargetFramework,
     IReadOnlyList<string> Files);
 
 internal sealed record ValidationStep(
@@ -90,8 +90,8 @@ internal static class ReleaseCatalog
         "b-Office\\package",
         new PackageLayout(
             "b-Code-HistoryVulcan\\App\\App.csproj",
-            "host",
-            ["HistoryVulcan.exe"]),
+            null,
+            ["HistoryVulcan.exe", "HistoryVulcan.Cli.exe"]),
         [],
         "b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj");
 
@@ -130,9 +130,10 @@ internal static class ReleaseCatalog
                 files.Add(file.GetString() ?? "");
         }
 
+        var publishTargetFramework = ReadString(package, "publishTargetFramework", fallback: "");
         return new PackageLayout(
             ReadString(package, "project"),
-            ReadString(package, "outputDirectory"),
+            string.IsNullOrWhiteSpace(publishTargetFramework) ? null : publishTargetFramework,
             files.Where(file => file.Length > 0).ToList());
     }
 

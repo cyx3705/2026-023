@@ -21,9 +21,18 @@ public sealed class ReleasePipelineTests
         Assert.Contains(targets, target => target.Name == "HistoryVulcan" && target.Kind == "host");
         var aurora = Assert.Single(targets, target => target.Name == "HistoryAurora");
         Assert.NotNull(aurora.Package);
+        Assert.Null(aurora.Package!.PublishTargetFramework);
         Assert.DoesNotContain(
             aurora.Validation,
             step => step.Tool.Contains("powershell", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void PackageRegistryDoesNotDuplicateTheBuildOutputDirectory()
+    {
+        var registry = Path.Combine(RepositoryPaths.Root(), "b-Code-Eng", "pipeline", "module-publish.manifest.json");
+        var text = File.ReadAllText(registry);
+        Assert.DoesNotContain("outputDirectory", text, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

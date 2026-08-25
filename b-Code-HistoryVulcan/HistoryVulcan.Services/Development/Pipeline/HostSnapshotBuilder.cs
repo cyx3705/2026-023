@@ -10,6 +10,7 @@ internal static class HostSnapshotBuilder
     {
         var solution = Path.Combine(projectRoot, "HistoryVulcan.sln");
         var project = Path.Combine(projectRoot, "b-Code-HistoryVulcan", "App", "App.csproj");
+        var cliProject = Path.Combine(projectRoot, "b-Code-HistoryVulcan", "Cli", "HistoryVulcan.Cli.csproj");
         var documentRoot = Path.Combine(projectRoot, "b-Office", "package");
         var catalogPath = Path.Combine(projectRoot, "b-Code-Eng", "release", "consumer-docs.json");
         var documentNames = ReadDocuments(catalogPath);
@@ -35,10 +36,17 @@ internal static class HostSnapshotBuilder
                     "-p:BaseOutputPath=" + buildOutput + Path.DirectorySeparatorChar,
                     "-p:NuGetAudit=false"],
                 projectRoot, log, "发布宿主");
+            ToolProcess.Run("dotnet", ["publish", cliProject, "-c", "Release", "--no-restore",
+                    "--self-contained", "false", "-r", "win-x64", "-o", hostDir,
+                    "-p:BaseOutputPath=" + buildOutput + Path.DirectorySeparatorChar,
+                    "-p:NuGetAudit=false"],
+                projectRoot, log, "发布 Console CLI");
 
             var exe = Path.Combine(hostDir, "HistoryVulcan.exe");
             if (!File.Exists(exe))
                 throw new InvalidOperationException($"宿主快照缺少 HistoryVulcan.exe：{hostDir}");
+            if (!File.Exists(Path.Combine(hostDir, "HistoryVulcan.Cli.exe")))
+                throw new InvalidOperationException($"宿主快照缺少 HistoryVulcan.Cli.exe：{hostDir}");
             var fileVersion = FileVersionInfo.GetVersionInfo(exe).FileVersion ?? "";
             if (fileVersion != expectedFileVersion)
                 throw new InvalidOperationException($"宿主可执行文件版本 {fileVersion} 与 {expectedFileVersion} 不一致。");
@@ -144,6 +152,8 @@ internal static class HostSnapshotBuilder
         var hostExe = Path.Combine(root, "host", "HistoryVulcan.exe");
         if (!File.Exists(hostExe))
             throw new InvalidOperationException("快照缺少 host/HistoryVulcan.exe。");
+        if (!File.Exists(Path.Combine(root, "host", "HistoryVulcan.Cli.exe")))
+            throw new InvalidOperationException("快照缺少 host/HistoryVulcan.Cli.exe。");
         var fileVersion = FileVersionInfo.GetVersionInfo(hostExe).FileVersion ?? "";
         if (fileVersion != expectedFileVersion)
             throw new InvalidOperationException($"宿主可执行文件版本 {fileVersion} 与 {expectedFileVersion} 不一致。");

@@ -15,7 +15,7 @@
       "package"
     ],
     "status": "active",
-    "version": "5.1.0",
+    "version": "5.1.1",
     "branch": "main",
     "freezeTag": "v3.0.3"
   },
@@ -107,8 +107,8 @@
     "test": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj -c Release --no-build --no-restore",
     "verify": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj -c Release --filter FullyQualifiedName~ReleasePipelineTests",
     "run": "dotnet run --project .\\b-Code-HistoryVulcan\\App\\App.csproj",
-    "package": "HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=package",
-    "deploy": "HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=deploy",
+    "package": "HistoryVulcan.Cli.exe --cli vulcan.release.cycle name=HistoryVulcan msg=package",
+    "deploy": "HistoryVulcan.Cli.exe --cli vulcan.release.cycle name=HistoryVulcan msg=deploy",
     "publicApiGate": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj --filter FullyQualifiedName~QualityGatesPassOnThisRepository",
     "qualityGate": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj --filter FullyQualifiedName~QualityGatesPassOnThisRepository"
   },

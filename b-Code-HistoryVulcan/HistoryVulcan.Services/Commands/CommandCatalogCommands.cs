@@ -93,11 +93,68 @@ public static class CommandCatalogCommands
     /// <summary>把目录查询指令注册进指定注册表。</summary>
     public static void RegisterAll(CommandRegistry registry, string source = "app")
     {
+        registry.Register(BuildCliList(), source);
+        registry.Register(BuildCliShow(), source);
         registry.Register(BuildList(registry), source);
         registry.Register(BuildShow(registry), source);
         registry.Register(BuildDomains(registry), source);
         registry.Register(BuildManual(registry), source);
     }
+
+    private static CommandDescriptor BuildCliList() => new()
+    {
+        Name = "vulcan.cli.list",
+        Domain = "vulcan",
+        CommandClass = "cli",
+        Summary = "列出 CLI 白名单、执行目标和副作用等级",
+        Readonly = true,
+        Example = "vulcan.cli.list",
+        Handler = CommandDescriptor.Sync(_ =>
+        {
+            var rows = CliExposurePolicy.ExposedCommands.Select(name => new
+            {
+                Name = name,
+                Mode = name.StartsWith("portunus.", StringComparison.OrdinalIgnoreCase)
+                    ? "runtime-only"
+                    : "offline",
+                SideEffect = name.EndsWith("list", StringComparison.OrdinalIgnoreCase)
+                    || name.EndsWith("show", StringComparison.OrdinalIgnoreCase)
+                    || name.Contains("status", StringComparison.OrdinalIgnoreCase)
+                    || name.Contains("domains", StringComparison.OrdinalIgnoreCase)
+                    ? "read"
+                    : "write",
+                ExitCodes = "0=success,1=execution-failure,2=usage/refused,3=runtime-unreachable",
+            }).ToList();
+            return CommandResult.Ok($"CLI 白名单: {rows.Count} 条\n"
+                + string.Join("\n", rows.Select(row => $"  {row.Name} [{row.Mode}/{row.SideEffect}]")), rows);
+        }),
+    };
+
+    private static CommandDescriptor BuildCliShow() => new()
+    {
+        Name = "vulcan.cli.show",
+        Domain = "vulcan",
+        CommandClass = "cli",
+        Summary = "查看一条 CLI 指令的参数和执行边界",
+        Readonly = true,
+        Example = "vulcan.cli.show name=vulcan.dev.submit",
+        Parameters = [StringParam("name", "CLI 指令名", required: true, position: 0)],
+        Handler = CommandDescriptor.Sync(context =>
+        {
+            var name = context.RequireString("name").Trim();
+            var exposed = CliExposurePolicy.ExposedCommands.FirstOrDefault(item =>
+                item.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (exposed == null)
+                return CommandResult.Fail($"指令 {name} 不在 CLI 白名单中；请使用 vulcan.cli.list。\n"
+                    + "运行中的宿主请改用 HistoryVulcan.Cli.exe --runtime。");
+            var mode = exposed.StartsWith("portunus.", StringComparison.OrdinalIgnoreCase)
+                ? "runtime-only" : "offline";
+            return CommandResult.Ok(
+                $"{exposed}\n执行目标: {mode}\n"
+                + "副作用: 由命令描述符确认级别决定；runtime 动作必须显式 --approve。",
+                new { Name = exposed, Mode = mode, Approval = mode == "runtime-only" ? "--approve for actions" : "none" });
+        }),
+    };
 
     /// <summary>按当前注册表生成目录快照。</summary>
     public static IReadOnlyList<CommandCatalogRow> Snapshot(CommandRegistry registry)

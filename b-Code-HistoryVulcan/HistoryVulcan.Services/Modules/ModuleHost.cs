@@ -17,6 +17,8 @@ public sealed record ModuleMeta(
     string ModuleName, string Description, string Author, string Version,
     bool Open, string AssemblyFile, int CommandCount, string Slot = "", bool Ui = false)
 {
+    /// <summary>当前加载快照中的唯一模块实例标识；重载后变化。</summary>
+    public string InstanceId { get; init; } = "";
     /// <summary>Absolute Z package path when the module came from manifest discovery.</summary>
     public string? SourcePath { get; init; }
 
@@ -98,6 +100,9 @@ public sealed partial class ModuleHost : IDisposable
 
     /// <summary>是否把模块方法注册到本进程指令表。无窗前端可关闭。</summary>
     public bool EnableCommands { get; set; } = true;
+
+    /// <summary>Whether modules marked as UI modules may be initialized.</summary>
+    public bool EnableUiModules { get; set; } = true;
 
     /// <summary>Whether this host owns filesystem change detection for the module directory.</summary>
     public bool EnableFileWatching { get; set; } = true;
@@ -541,6 +546,12 @@ public sealed partial class ModuleHost : IDisposable
 
     private void LoadDiscoveredModule(Snapshot snap, ModuleDiscoveryEntry module)
     {
+        if (module.Ui && !EnableUiModules)
+        {
+            _log.Info("module.discovery", $"离线组合跳过 UI 模块 {module.Name}: 当前执行目标不提供桌面运行时");
+            return;
+        }
+
         AssemblyLoadContext alc;
         Assembly assembly;
         try
@@ -597,6 +608,12 @@ public sealed partial class ModuleHost : IDisposable
 
     private void LoadGroup(Snapshot snap, string dir, string slot, bool uiEnabled)
     {
+        if (uiEnabled && !EnableUiModules)
+        {
+            _log.Info("module.discovery", $"离线组合跳过 UI 模块目录: {dir}");
+            return;
+        }
+
         var dlls = Directory.GetFiles(dir, "*.dll");
         if (dlls.Length == 0)
             return;

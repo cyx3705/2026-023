@@ -7,23 +7,23 @@ namespace HistoryVulcan.Services.Development;
 /// 模块开发管线的公开三步：开工作区、送审、通过后并回。
 /// </summary>
 /// <remarks>
-/// 图面只留三条，且<strong>不配 MCP</strong>：只走 <c>HistoryVulcan.exe --cli</c>。
+/// 图面只留三条，且<strong>不配 MCP</strong>：只走同目录 Console <c>HistoryVulcan.Cli.exe --cli</c>。
 /// 内部仍调用 <see cref="WorktreeCommands"/> 与 <see cref="ReleaseCommands"/>。
 /// HistoryVulcan 自身不走这三条，宿主打包用 <c>--cli vulcan.release.cycle</c>。
 /// </remarks>
 internal static class DevPipelineCommands
 {
     internal const string HostRejected =
-        "HistoryVulcan 不走模块开发管线。宿主打包用 HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=<说明>。";
+        "HistoryVulcan 不走模块开发管线。宿主打包用 HistoryVulcan.Cli.exe --cli vulcan.release.cycle name=HistoryVulcan msg=<说明>。";
 
     internal const string ModuleUseStart =
-        "模块请用 HistoryVulcan.exe --cli vulcan.dev.start。开发管线不走 MCP。";
+        "模块请用 HistoryVulcan.Cli.exe --cli vulcan.dev.start。开发管线不走 MCP。";
 
     internal const string ModuleUseFinish =
-        "模块请用 HistoryVulcan.exe --cli vulcan.dev.finish。开发管线不走 MCP。";
+        "模块请用 HistoryVulcan.Cli.exe --cli vulcan.dev.finish。开发管线不走 MCP。";
 
     internal const string ModuleUseSubmitFinish =
-        "模块请用 HistoryVulcan.exe --cli vulcan.dev.submit / vulcan.dev.finish。本条只打包宿主：HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=<说明>。";
+        "模块请用 HistoryVulcan.Cli.exe --cli vulcan.dev.submit / vulcan.dev.finish。本条只打包宿主：HistoryVulcan.Cli.exe --cli vulcan.release.cycle name=HistoryVulcan msg=<说明>。";
 
     internal const string MoveRootHint =
         "【迁根】Cursor 若有 move_agent_to_root（含 grok），现在把对话根迁进此工作区；其他 AI 不要迁根，按返回的绝对路径改文件。";
@@ -39,7 +39,7 @@ internal static class DevPipelineCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.dev.start",
-            HiddenReason = "开发管线不配 MCP，请用 HistoryVulcan.exe --cli vulcan.dev.start。",
+            HiddenReason = "开发管线不配 MCP，请用 HistoryVulcan.Cli.exe --cli vulcan.dev.start。",
             Domain = "vulcan",
             CommandClass = "dev",
             Summary = "模块开发第 1 步：开分支和工作区（宿主不走本管线）",
@@ -64,7 +64,7 @@ internal static class DevPipelineCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.dev.submit",
-            HiddenReason = "开发管线不配 MCP，请用 HistoryVulcan.exe --cli vulcan.dev.submit。",
+            HiddenReason = "开发管线不配 MCP，请用 HistoryVulcan.Cli.exe --cli vulcan.dev.submit。",
             Domain = "vulcan",
             CommandClass = "dev",
             Summary = "模块开发第 2 步：发布到 z、提交，并注册到宿主供审核",
@@ -74,12 +74,16 @@ internal static class DevPipelineCommands
                 Text("name", "已登记的模块名", required: true, position: 0),
                 Text("msg", "提交说明", required: true, position: 1),
                 Text("worktree", "vulcan.dev.start 返回的工作区目录名或绝对路径", required: true, position: 2),
+                Bool("allowDirty", "允许从有未提交变更的工作树提交", "false"),
+                Bool("dryRun", "只预检，不写文件、不构建、不提交、不热重载", "false"),
             ],
             Handler = async context => await SubmitAsync(
                 host,
                 context.RequireString("name"),
                 context.RequireString("msg"),
                 context.RequireString("worktree"),
+                context.GetBool("allowDirty"),
+                context.GetBool("dryRun"),
                 context.Progress,
                 context.Cancellation).ConfigureAwait(false),
         });
@@ -87,7 +91,7 @@ internal static class DevPipelineCommands
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.dev.finish",
-            HiddenReason = "开发管线不配 MCP，请用 HistoryVulcan.exe --cli vulcan.dev.finish。",
+            HiddenReason = "开发管线不配 MCP，请用 HistoryVulcan.Cli.exe --cli vulcan.dev.finish。",
             Domain = "vulcan",
             CommandClass = "dev",
             Summary = "模块开发第 3 步（审核通过后）：再发 z、提交、并回 main、删工作区、注册到宿主",
@@ -152,6 +156,8 @@ internal static class DevPipelineCommands
         string name,
         string message,
         string worktree,
+        bool allowDirty,
+        bool dryRun,
         IProgress<string>? progress,
         CancellationToken cancellation)
     {
@@ -159,7 +165,7 @@ internal static class DevPipelineCommands
             return CommandResult.Fail(HostRejected);
 
         var result = await ReleaseCommands.CycleAsync(
-            host, name, message, worktree, progress, cancellation).ConfigureAwait(false);
+            host, name, message, worktree, allowDirty, dryRun, progress, cancellation).ConfigureAwait(false);
         if (!result.Success)
             return result;
 
@@ -189,7 +195,8 @@ internal static class DevPipelineCommands
 
         progress?.Report(MoveRootBeforeFinish);
         var published = await ReleaseCommands.CycleAsync(
-            host, name, message, worktree, progress, cancellation).ConfigureAwait(false);
+            host, name, message, worktree, allowDirty: false, dryRun: false,
+            progress: progress, cancellation: cancellation).ConfigureAwait(false);
         if (!published.Success)
             return published;
 

@@ -233,7 +233,7 @@
              恰恰是这些前提不成立的时刻。<c>--cli</c> 在本进程内执行，一样都不需要。
             
              模块公开面是三条：<c>vulcan.dev.start</c> / <c>submit</c> / <c>finish</c>，
-             <strong>不配 MCP</strong>，只走 <c>HistoryVulcan.exe --cli</c>。
+             <strong>不配 MCP</strong>，只走同目录 Console <c>HistoryVulcan.Cli.exe --cli</c>；GUI EXE 入口仅作兼容。
              工作区（<see cref="T:HistoryVulcan.Services.Development.WorktreeCommands"/>）与发布（<see cref="T:HistoryVulcan.Services.Development.ReleaseCommands"/>）仍注册，但对 MCP 隐藏；
              宿主打包走 <c>--cli vulcan.release.cycle</c>。
              </remarks>
@@ -293,7 +293,7 @@
             模块开发管线的公开三步：开工作区、送审、通过后并回。
             </summary>
             <remarks>
-            图面只留三条，且<strong>不配 MCP</strong>：只走 <c>HistoryVulcan.exe --cli</c>。
+            图面只留三条，且<strong>不配 MCP</strong>：只走同目录 Console <c>HistoryVulcan.Cli.exe --cli</c>。
             内部仍调用 <see cref="T:HistoryVulcan.Services.Development.WorktreeCommands"/> 与 <see cref="T:HistoryVulcan.Services.Development.ReleaseCommands"/>。
             HistoryVulcan 自身不走这三条，宿主打包用 <c>--cli vulcan.release.cycle</c>。
             </remarks>
@@ -303,6 +303,9 @@
             Module test and deploy both call Vulcan's package hot-reload:
             <c>vulcan.module.install</c>. That is the same path as the Modules page 热重载 button.
             </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.Pipeline.MsBuildOutputResolver">
+            <summary>发布前从 MSBuild 查询模块的真实目标框架和输出目录。</summary>
         </member>
         <member name="F:HistoryVulcan.Services.Development.Pipeline.QualityGates.HotspotLimit">
             <summary>单个生产文件的行数上限。超限即发布失败，不是警告。</summary>
@@ -520,6 +523,9 @@
         <member name="M:HistoryVulcan.Services.Modules.ModuleMeta.#ctor(System.String,System.String,System.String,System.String,System.Boolean,System.String,System.Int32,System.String,System.Boolean)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.InstanceId">
+            <summary>当前加载快照中的唯一模块实例标识；重载后变化。</summary>
+        </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.SourcePath">
             <summary>Absolute Z package path when the module came from manifest discovery.</summary>
         </member>
@@ -571,6 +577,9 @@
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.EnableCommands">
             <summary>是否把模块方法注册到本进程指令表。无窗前端可关闭。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.EnableUiModules">
+            <summary>Whether modules marked as UI modules may be initialized.</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.EnableFileWatching">
             <summary>Whether this host owns filesystem change detection for the module directory.</summary>

@@ -102,6 +102,8 @@ internal static class ReleaseCommands
                 Text("name", "只接受宿主 HistoryVulcan；模块请用 vulcan.dev.submit / finish", required: true, position: 0),
                 Text("msg", "提交说明", required: true, position: 1),
                 Text("worktree", "AI 工作区目录名或绝对路径；省略则在主树正式促级后提交"),
+                Bool("allowDirty", "允许从有未提交变更的工作树提交", "false"),
+                Bool("dryRun", "只预检，不写文件、不构建、不提交、不热重载", "false"),
             ],
             Handler = async context =>
             {
@@ -113,6 +115,8 @@ internal static class ReleaseCommands
                     name,
                     context.RequireString("msg"),
                     context.GetString("worktree"),
+                    context.GetBool("allowDirty"),
+                    context.GetBool("dryRun"),
                     context.Progress,
                     context.Cancellation).ConfigureAwait(false);
             },
@@ -416,6 +420,8 @@ internal static class ReleaseCommands
         string name,
         string message,
         string? worktree,
+        bool allowDirty,
+        bool dryRun,
         IProgress<string>? progress,
         CancellationToken cancellation)
     {
@@ -442,6 +448,50 @@ internal static class ReleaseCommands
             repoRoot = mainProject;
             if (!Directory.Exists(repoRoot))
                 return CommandResult.Fail($"项目主树不存在：{repoRoot}");
+        }
+
+        var status = ToolProcess.Capture(
+            "git", ["status", "--porcelain", "--", $":!{module.FormalDirectory}/**"], repoRoot);
+        if (status.Length > 0 && !allowDirty)
+            return new CommandResult
+            {
+                Success = false,
+                Message = $"工作树不干净，已拒绝提交（退出码 2）。请传 allowDirty=true。\n{status}",
+                Data = new { ExitCode = 2, DirtyFiles = DirtyFiles(status) },
+            };
+
+        if (dryRun)
+        {
+            var stages = new[] { "contract", "build", "test", "candidate", "commit", "runtime-reload" };
+            var target = ReleaseCatalog.Require(RegistryPath(host.Settings), moduleName);
+            var candidatePath = Path.Combine(repoRoot, module.FormalDirectory);
+            var files = target.Package?.Files ?? [];
+            var tests = target.Validation.Select(step => step.Description).ToList();
+            var runtimeTarget = module.Kind.Equals("module", StringComparison.OrdinalIgnoreCase)
+                ? "runtime module package (no reload in dry-run)"
+                : "host candidate (restart required; no reload in dry-run)";
+            return CommandResult.Ok(
+                $"dry-run: {moduleName}\n项目: {repoRoot}\n候选: {candidatePath}\n运行时目标: {runtimeTarget}\n"
+                + $"测试: {(tests.Count == 0 ? "无额外模块测试" : string.Join("; ", tests))}\n"
+                + $"文件摘要: {(files.Count == 0 ? "由发布输出决定" : string.Join(", ", files))}\n将执行阶段: {string.Join(", ", stages)}\n"
+                + $"脏树: {(status.Length == 0 ? "否" : "是（已授权）")}\n"
+                + (status.Length == 0 ? "" : $"脏树文件:\n{status}")
+                + "不会写日志、候选、运行区、暂存区或触发热重载。",
+                new
+                {
+                    Run = Guid.NewGuid().ToString("N"),
+                    Module = moduleName,
+                    Project = repoRoot,
+                    CandidatePath = candidatePath,
+                    RuntimeTarget = runtimeTarget,
+                    Files = files,
+                    Tests = tests,
+                    Dirty = status.Length > 0,
+                    DirtyFiles = DirtyFiles(status),
+                    AllowDirty = allowDirty,
+                    DryRun = true,
+                    Stages = stages
+                });
         }
 
         var started = Start(
@@ -471,6 +521,8 @@ internal static class ReleaseCommands
         }
 
         var text = new StringBuilder($"cycle 完成：{moduleName} 已门禁通过并提交。\n仓库: {repoRoot}\nrun={run}");
+        if (status.Length > 0)
+            text.Append("\n已授权脏树文件:\n").Append(status);
         if (!string.Equals(module.Kind, "module", StringComparison.OrdinalIgnoreCase))
         {
             text.Append(isWorktree
@@ -553,6 +605,9 @@ internal static class ReleaseCommands
         var match = Regex.Match(started.Message, @"run=([A-Za-z0-9._-]+)");
         return match.Success ? match.Groups[1].Value : null;
     }
+
+    private static IReadOnlyList<string> DirtyFiles(string status)
+        => status.Split(['\r', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
     internal static bool TryResolveModule(ISettingsService settings, string name, out ReleaseModule module)
     {

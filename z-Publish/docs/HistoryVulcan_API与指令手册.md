@@ -1,18 +1,18 @@
 ﻿# HistoryVulcan API 与指令手册
 
-> 适用版本：HistoryVulcan **5.0.0**
+> 适用版本：HistoryVulcan **5.1.1**
 
 本手册给出当前正式公开 API 的常用入口和框架基础命令。正式宿主运行入口为
 `host/HistoryVulcan.exe`，程序集 XML 文档位于同一 `host/` 目录；兼容框架包的完整签名位于
-`lib/<TFM>/HistoryVulcan.*.xml`。源码仓中的三份 `PublicAPI.Unshipped.txt`（Core / Services / ServiceHost）对照 `b-Code-Eng/public-api-baselines/5.0.0/`。
+`lib/<TFM>/HistoryVulcan.*.xml`。源码仓中的三份 `PublicAPI.Unshipped.txt`（Core / Services / ServiceHost）对照 `b-Code-Eng/public-api-baselines/5.1.1/`。
 最终命令集合以应用运行时的 `vulcan.command.list`、`vulcan.command.show` 和 `vulcan.command.manual` 为准。
 
 3.3.0（DEC-022）将内置命令一次硬切为 `vulcan.<类>.<方法>`（全小写、无连字符、不留别名），Domain=`vulcan`；
 命令集表格列为域|类|方法|MCP|参数|说明。全局快捷键与命令工作台（目录会话、补全、命令集/详情）由 HistoryMercury 4.1.0 拥有；
 无 Mercury 时双 `/` 与命令集/详情不可用。
-**3.3.2（DEC-023）在此基础上把类收敛为九类、退役影子域 `debug`，并确立
+**3.3.2（DEC-023）在此基础上把类收敛为九类；5.1.1 新增 `cli` 类后现行合同为十类，继续退役影子域 `debug`，并确立
 模块注册名与指令域的去品牌前缀规则（见 §3.3.1）；3.4.0（DEC-025）恢复受控的两段直接方法与域聚焦。** 3.3.1 → 3.3.2 的逐条改名映射见
-§3.3.4 与 `HistoryVulcan_消费变更摘要.md`。当前源码为 **5.0.0**（宿主位于 `z-Publish/host`）。
+§3.3.4 与 `HistoryVulcan_消费变更摘要.md`。当前源码为 **5.1.1**（宿主位于 `z-Publish/host`）。
 3.1.9 是旧名 AppShell 的最后快照，已随 3.2.0 发布退役；3.1.8 不作为稳定支持版本。以下包表和最小宿主代码
 描述当前正式合同，但正式部署不提供 NuGet feed。
 
@@ -25,6 +25,9 @@
 | `OneHistory.HistoryVulcan.Core` | `net8.0` | `HistoryVulcan.Core.*` | 模块注册器与命令总线契约；日志/MCP/存储供宿主内部使用 |
 | `OneHistory.HistoryVulcan.Services` | `net8.0` | `HistoryVulcan.Services.*` | 设置、文件状态、日志、模块装载；MCP schema/手册生成为程序集内部 |
 | `OneHistory.HistoryVulcan.ServiceHost` | `net8.0-windows` | `HistoryVulcan.ServiceHost.*` | 无窗口服务循环、生命周期和登录自启 |
+
+独立 CLI 工程 `HistoryVulcan.Cli` 以同目录 `HistoryVulcan.Cli.exe` 发布，不作为新的 NuGet 包；它引用
+`ServiceHost`，提供离线 `--cli` 和不可降级的 `--runtime` 命名管道入口。
 
 桌面壳在 HistoryAurora，不在本仓。独立服务入口引用 ServiceHost；模块只引用 Core 契约（总线与注册器）。
 
@@ -117,7 +120,7 @@ registry.Register(new CommandDescriptor
 `<域>.<类>.<方法>`，域的直接方法使用 `<域>.<方法>`。两段直接方法只用于少量快捷入口，
 例如 `mercury.go`；它们在目录和控制台中显示为「无类」，但不参与类推导。
 
-- 框架内置命令：`vulcan.<类>.<方法>`，`Domain` 恒为 `vulcan`，类取 §3.3.2 九类之一。
+- 框架内置命令：`vulcan.<类>.<方法>`，`Domain` 恒为 `vulcan`，类取 §3.3.2 十类之一。
 - 模块命令默认使用 `<模块域>.<类>.<方法>`；确需直接方法时可使用 `<模块域>.<方法>`。
   模块域由 owner 强制（见 §3.3.1），模块不能冒用其他域。
 - 旧别名 `cls` 已删除；清屏仅 `vulcan.log.clear`。
@@ -161,13 +164,14 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 > 消费方注意：这条规则改变的是**域段文本**，不是模块身份。`z-*` 目录名、manifest `name`、
 > 程序集名、日志 owner 字段继续使用带前缀的 `HistoryXxx`。
 
-#### 3.3.2 九个类
+#### 3.3.2 十个类
 
 3.3.2 将 13 个类收敛为 9 个，并退役影子域 `debug`；3.4.0 起「无类」作为两段直接方法的受控显示类别回归：
 
 | 类 | 条数 | 职责 |
 |---|---|---|
 | `app` | 11 | 应用与前端生命周期、外观、配置项、数据目录、快捷键查阅 |
+| `cli` | 2 | CLI 白名单自发现；不扩张 MCP 或普通命令执行面 |
 | `command` | 8 | 指令目录、详情、手册、示例与执行原语 |
 | `ui` | 21 | 窗口、布局、面板与文件选择对话框 |
 | `log` | 11 | 控制台日志过滤、导出与承压注入 |
@@ -177,7 +181,7 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 | `svc` | 4 | 后台服务生命周期 |
 | `web` | 5 | Web 网关与设备确认 |
 
-合计 83 条。模块自定义类不受这九类约束——九类是 `vulcan` 域内的划分。模块应在自己的域内
+模块自定义类不受这十类约束——十类是 `vulcan` 域内的划分。模块应在自己的域内
 用同样的方式收敛，避免每个功能点单开一类；若同一域的直接方法超过 5 条，应重新评估是否建类。
 
 #### 3.3.3 直接方法是例外而非常态
@@ -375,7 +379,7 @@ WBall           → wball     wball.<类>.<方法>          （无品牌前缀�
 3.3.1→3.3.2 的 32 条改名映射见 `../history/3.3.2-vulcan-class-realign.md`；
 更早的 3.3.0 硬切见 `../history/3.3.0-vulcan-command-rename.md`。
 
-HistoryVulcan 自身只有一个域 `vulcan`，内置业务命令分为九类；新增内置业务命令必须归入其一，
+HistoryVulcan 自身只有一个域 `vulcan`，内置业务命令分为十类；新增内置业务命令必须归入其一，
 名称恒为 `vulcan.<类>.<方法>`。两段直接方法是受控例外，不得引入第二个内置域：
 
 | 域 | 类 | 条数 | 方法（命令范围） |

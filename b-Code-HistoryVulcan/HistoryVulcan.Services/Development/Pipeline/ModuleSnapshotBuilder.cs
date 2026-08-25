@@ -14,7 +14,7 @@ internal static class ModuleSnapshotBuilder
         TextWriter log)
     {
         if (target.Package is null)
-            throw new InvalidOperationException($"{target.Name} 未声明 package（project/outputDirectory/files）。");
+            throw new InvalidOperationException($"{target.Name} 未声明 package（project/publishTargetFramework/files）。");
 
         var sourceManifest = Path.Combine(projectRoot, target.SourceManifest);
         if (!File.Exists(sourceManifest))
@@ -29,17 +29,17 @@ internal static class ModuleSnapshotBuilder
 
         Environment.SetEnvironmentVariable("HISTORYVULCAN_PACKAGE_ROOT", hostSnapshotRoot);
         var project = Path.Combine(projectRoot, target.Package.Project);
+        var (targetFramework, output) = MsBuildOutputResolver.Resolve(projectRoot, target.Package, log);
         ToolProcess.Run(
             "dotnet",
-            ["build", project, "-c", "Release", "--nologo", "-p:NuGetAudit=false",
+            ["build", project, "-c", "Release", "-f", targetFramework, "--nologo", "-p:NuGetAudit=false",
                 "-p:HistoryVulcanPackageRoot=" + hostSnapshotRoot],
             projectRoot,
             log,
             "构建模块候选包");
 
-        var output = Path.Combine(projectRoot, target.Package.OutputDirectory);
         if (!Directory.Exists(output))
-            throw new InvalidOperationException($"构建输出不存在：{output}");
+            throw new InvalidOperationException($"构建后实际输出不存在：{output}");
 
         Directory.CreateDirectory(stagingRoot);
         foreach (var name in target.Package.Files)

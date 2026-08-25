@@ -20,6 +20,16 @@ public enum HostAction
 
     /// <summary>参数无法识别或缺少必需值。</summary>
     Error,
+
+    /// <summary>打印 CLI 帮助。</summary>
+    Help,
+
+    /// <summary>打印宿主版本。</summary>
+    Version,
+
+    /// <summary>连接已经运行的宿主执行受限运行时指令。</summary>
+    RunRuntime,
+
 }
 
 /// <summary>
@@ -28,7 +38,21 @@ public enum HostAction
 /// <param name="Action">要执行的动作。</param>
 /// <param name="Value">动作的参数：路径或指令文本；<see cref="HostAction.RunService"/> 时为空。</param>
 /// <param name="Error">仅 <see cref="HostAction.Error"/> 时有值。</param>
-public readonly record struct HostArguments(HostAction Action, string Value, string Error);
+public readonly record struct HostArguments(HostAction Action, string Value, string Error)
+{
+    /// <summary>结果格式；默认是人类可读文本。</summary>
+    public HostOutputFormat Format { get; init; } = HostOutputFormat.Human;
+
+    /// <summary>是否为运行时动作提供一次性本地批准。</summary>
+    public bool Approve { get; init; }
+}
+
+/// <summary>CLI 输出格式。</summary>
+public enum HostOutputFormat
+{
+    Human,
+    Json,
+}
 
 /// <summary>
 /// 入口参数判定。抽成纯函数是为了能被测试——理由见 <see cref="Parse"/>。
@@ -46,6 +70,21 @@ public static class HostArgumentParser
 
     /// <summary>执行一条指令。</summary>
     public const string CommandLineSwitch = "--cli";
+
+    /// <summary>连接正在运行的宿主。</summary>
+    public const string RuntimeSwitch = "--runtime";
+
+    /// <summary>打印帮助。</summary>
+    public const string HelpSwitch = "--help";
+
+    /// <summary>打印版本。</summary>
+    public const string VersionSwitch = "--version";
+
+    /// <summary>选择输出格式。</summary>
+    public const string FormatSwitch = "--format";
+
+    /// <summary>批准一次运行时动作。</summary>
+    public const string ApproveSwitch = "--approve";
 
     /// <summary>
     /// 双角色时代留下的兼容开关，识别并忽略。
@@ -70,6 +109,31 @@ public static class HostArgumentParser
     {
         ArgumentNullException.ThrowIfNull(args);
 
+        var format = ReadFormat(args, out var formatError);
+        if (formatError != null)
+            return new HostArguments(HostAction.Error, "", formatError);
+        var resolvedFormat = format ?? HostOutputFormat.Human;
+
+        var meta = IndexOf(args, HelpSwitch) >= 0 ? HelpSwitch :
+            IndexOf(args, VersionSwitch) >= 0 ? VersionSwitch : null;
+        if (meta != null)
+        {
+            var metaUnknown = args
+                .Select((argument, index) => (argument, index))
+                .Where(item => !item.argument.Equals(meta, StringComparison.OrdinalIgnoreCase)
+                    && !item.argument.Equals(ApproveSwitch, StringComparison.OrdinalIgnoreCase)
+                    && !item.argument.Equals(FormatSwitch, StringComparison.OrdinalIgnoreCase)
+                    && (item.index == 0 || !args[item.index - 1].Equals(FormatSwitch, StringComparison.OrdinalIgnoreCase)))
+                .Select(item => item.argument)
+                .ToArray();
+            if (metaUnknown.Length > 0)
+                return new HostArguments(HostAction.Error, "", $"无法识别的参数: {string.Join(' ', metaUnknown)}") { Format = resolvedFormat };
+            return new HostArguments(meta == HelpSwitch ? HostAction.Help : HostAction.Version, "", "")
+            { Format = resolvedFormat };
+        }
+
+        var approve = IndexOf(args, ApproveSwitch) >= 0;
+
         // 顺序即优先级：取值型开关先判，因为它们的「缺值」也要报错而不是退化成起服务。
         foreach (var name in new[] { ExportManualSwitch, InstallModuleSwitch })
         {
@@ -77,20 +141,29 @@ public static class HostArgumentParser
             if (index < 0)
                 continue;
             if (index + 1 >= args.Length)
-                return new HostArguments(HostAction.Error, "", $"{name} 需要一个路径参数。");
+                return new HostArguments(HostAction.Error, "", $"{name} 需要一个路径参数。") { Format = resolvedFormat };
 
             var action = name == ExportManualSwitch ? HostAction.ExportManual : HostAction.InstallModule;
-            return new HostArguments(action, args[index + 1], "");
+            return new HostArguments(action, args[index + 1], "") { Format = resolvedFormat };
+        }
+
+        var runtime = IndexOf(args, RuntimeSwitch);
+        if (runtime >= 0)
+        {
+            var text = JoinCommandArguments(args, runtime + 1);
+            return text.Length == 0
+                ? new HostArguments(HostAction.Error, "", $"{RuntimeSwitch} 需要一条指令文本。") { Format = resolvedFormat }
+                : new HostArguments(HostAction.RunRuntime, text, "") { Format = resolvedFormat, Approve = approve };
         }
 
         // --cli 吃掉其后的全部参数：指令带参数是常态，逐个引号转义只会让人在 shell 里踩坑。
         var cli = IndexOf(args, CommandLineSwitch);
         if (cli >= 0)
         {
-            var text = string.Join(' ', args.Skip(cli + 1)).Trim();
+            var text = JoinCommandArguments(args, cli + 1);
             return text.Length == 0
-                ? new HostArguments(HostAction.Error, "", $"{CommandLineSwitch} 需要一条指令文本。")
-                : new HostArguments(HostAction.RunCommand, text, "");
+                ? new HostArguments(HostAction.Error, "", $"{CommandLineSwitch} 需要一条指令文本。") { Format = resolvedFormat }
+                : new HostArguments(HostAction.RunCommand, text, "") { Format = resolvedFormat };
         }
 
         if (IndexOf(args, RepairAutostartSwitch) >= 0)
@@ -100,7 +173,7 @@ public static class HostArgumentParser
             .Where(argument => !argument.Equals(LegacyServiceSwitch, StringComparison.OrdinalIgnoreCase))
             .ToArray();
         return unknown.Length > 0
-            ? new HostArguments(HostAction.Error, "", $"无法识别的参数: {string.Join(' ', unknown)}")
+            ? new HostArguments(HostAction.Error, "", $"无法识别的参数: {string.Join(' ', unknown)}") { Format = resolvedFormat }
             : new HostArguments(HostAction.RunService, "", "");
     }
 
@@ -110,6 +183,10 @@ public static class HostArgumentParser
         "用法:",
         "  HistoryVulcan.exe                                 启动后台服务",
         $"  HistoryVulcan.exe {CommandLineSwitch} <指令 [参数...]>     执行一条已声明暴露的指令",
+        $"  HistoryVulcan.Cli.exe {RuntimeSwitch} <指令 [参数...]>     连接运行中的宿主",
+        $"  HistoryVulcan.Cli.exe {HelpSwitch} / {VersionSwitch}       查看 CLI 合同",
+        $"  ... {FormatSwitch} json                              输出单一 JSON 结果",
+        $"  ... {ApproveSwitch}                                  批准运行时动作",
         $"  HistoryVulcan.exe {InstallModuleSwitch} <包目录>    离线安装模块包（宿主起不来时用）",
         $"  HistoryVulcan.exe {ExportManualSwitch} <路径>",
         $"  HistoryVulcan.exe {RepairAutostartSwitch}",
@@ -117,4 +194,41 @@ public static class HostArgumentParser
 
     private static int IndexOf(string[] args, string name)
         => Array.FindIndex(args, argument => argument.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+    private static string JoinCommandArguments(string[] args, int start)
+        => string.Join(' ', args.Skip(start)
+            .Where((argument, index) =>
+                !argument.Equals(ApproveSwitch, StringComparison.OrdinalIgnoreCase)
+                && !argument.Equals(FormatSwitch, StringComparison.OrdinalIgnoreCase)
+                && !(index > 0 && args[start + index - 1].Equals(FormatSwitch, StringComparison.OrdinalIgnoreCase))))
+            .Trim();
+
+    private static HostOutputFormat ReadFormat(string[] args)
+        => ReadFormat(args, out _) ?? HostOutputFormat.Human;
+
+    private static HostOutputFormat? ReadFormat(string[] args, out string? error)
+    {
+        error = null;
+        var index = IndexOf(args, FormatSwitch);
+        if (index < 0)
+            return HostOutputFormat.Human;
+        if (index + 1 >= args.Length)
+        {
+            error = $"{FormatSwitch} 需要 human 或 json。";
+            return null;
+        }
+
+        return args[index + 1].ToLowerInvariant() switch
+        {
+            "human" => HostOutputFormat.Human,
+            "json" => HostOutputFormat.Json,
+            _ => SetFormatError($"{FormatSwitch} 只支持 human 或 json。", out error),
+        };
+    }
+
+    private static HostOutputFormat? SetFormatError(string message, out string? error)
+    {
+        error = message;
+        return null;
+    }
 }

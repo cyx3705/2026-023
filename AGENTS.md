@@ -1,6 +1,6 @@
 ﻿# HistoryVulcan AI 工作合同
 
-本文件适用于整个仓库。**当前源码为 5.0.1**；`HistoryVulcan.Core`
+本文件适用于整个仓库。**当前源码为 5.1.1**；`HistoryVulcan.Core`
 公开面自 4.0 起解冻并可演进，但删除必须进消费变更摘要并走主版本号。宿主冻结面只保留模块注册器、命令总线和开发总线（模块走 `--cli vulcan.dev.start/submit/finish`；宿主禁止走开发管线）。进入项目后先确认现行合同和修改边界，
 再按任务读取最小必要上下文。
 
@@ -9,7 +9,7 @@
 对话根在本仓时，只维护 HistoryVulcan 自己。**用户要开发、排查或修改其它编号模块时，必须走模块开发手册：开 F 盘工作区并把对话根迁进去。禁止留在本仓、按绝对路径改 `HistoryClio\<模块主树>`。** 那等于没走工作区，合并会改错树或锁死目录。不要等用户再提醒一次。
 
 1. `diana.docs.catalog`，再按节读 `diana.docs.vulcan file=docs/模块开发手册.md`。
-2. **开发管线只给模块、禁止 MCP。** 用命令行：`HistoryVulcan.exe --cli vulcan.dev.start project=<YYYY-NNN-模块> slug=<问题> agent=grok`。宿主禁止走这三条。改完 `--cli vulcan.dev.submit`。**禁止对话根还在 `F:\ai工作区` 时调用 `vulcan.dev.finish`。** grok 必须先 `move_agent_to_root` 到该模块 Clio 主树且该树在 `main`，等到迁根成功回执、对话路径已离开 F 盘，再 finish。finish 会删工作区；对话仍钉在上面时 Cursor 占路径删不掉，或目录已删后每次迁根都在死路径上 `git checkout --detach`，报 `not a git repository`，**这一轮对话作废，不要再迁根补救**。不要把这些指令当 MCP 工具调。
+2. **开发管线只给模块、禁止 MCP。** 用同目录 Console CLI：`HistoryVulcan.Cli.exe --cli vulcan.dev.start project=<YYYY-NNN-模块> slug=<问题> agent=grok`。宿主禁止走这三条。改完 `--cli vulcan.dev.submit`。**禁止对话根还在 `F:\ai工作区` 时调用 `vulcan.dev.finish`。** grok 必须先 `move_agent_to_root` 到该模块 Clio 主树且该树在 `main`，等到迁根成功回执、对话路径已离开 F 盘，再 finish。finish 会删工作区；对话仍钉在上面时 Cursor 占路径删不掉，或目录已删后每次迁根都在死路径上 `git checkout --detach`，报 `not a git repository`，**这一轮对话作废，不要再迁根补救**。不要把这些指令当 MCP 工具调。
 3. grok **必须**按手册四步迁进工作区：主树 `checkout --detach` → `move_agent_to_root` → 工作区切回 `ai/<项目>/<工作区名>` → 主树 `checkout main`。finish 前反向迁回主树 `main` 并确认成功。工作区目录已经没了就不要再迁根。
 4. 已发布合同用 `diana.docs.<通道>`。读实现和改代码都在 F 盘工作区，不在 Clio 主树。
 5. **不许停宿主。** 不要 `vulcan.svc.stop` / `restart`、`vulcan.app.quit`，不要杀 `HistoryVulcan.exe`。这些要人工确认，会把这一轮卡住。模块热重载不关宿主。
@@ -46,7 +46,7 @@
 
 ## 版本线与冻结边界
 
-- 当前开发线是 **5.0.x**，候选版本 5.0.1。**Core 冻结已于 4.0 解除**（DEC-049），5.0 起宿主不再为模块提供领域抽象（DEC-052）：
+- 当前开发线是 **5.1.x**，候选版本 5.1.1。**Core 冻结已于 4.0 解除**（DEC-049），5.0 起宿主不再为模块提供领域抽象（DEC-052）：
   公开面可以演进，但每一处删除都必须进消费变更摘要并走主版本号；其他稳定程序集的公开面变化必须进入对应版本的
   `PublicAPI.Unshipped.txt` 并由宿主进程内公开 API 门禁比对。
 - `v3.0.3` 是 V3 历史冻结标签，只对 3.0.x 维护分支有效：那条分支只接受致命崩溃、

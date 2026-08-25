@@ -1,19 +1,23 @@
 # HistoryVulcan 消费变更摘要
 
-适用版本：HistoryVulcan **5.0.1**。
+适用版本：HistoryVulcan **5.1.1**。
 
 本文按版本累积，不是单版本发布说明：下面的「破坏性变更」自 3.3.2 起逐条累加，每条都标注引入版本；
 「主要变化」是不需要改代码的增量。从 3.3.1 及更早升级的消费方需要通读破坏性变更全节。
 
 本文只记录会影响消费应用、模块作者和部署者的变化；源码施工、冻结审查、完整测试证据和发布操作不属于本文。
 
-> 本文抬头曾长期停留在旧版本；当前 5.0.1 变化列在本节顶部。
+> 本文抬头曾长期停留在旧版本；当前 5.1.1 变化列在本节顶部。
 > 版本线推进时必须同步本文抬头，这与同步 `project.manifest.json` 同等重要。
 
-## 主要变化（5.0.1）
+## 主要变化（5.1.1）
+
+- 同目录交付 `HistoryVulcan.Cli.exe`。`--cli` 始终是离线组合执行，成功回执声明 execution target、PID 和版本；`--runtime` 仅经当前用户命名管道连接已运行宿主，失败退出码为 3，绝不降级。
+- CLI 支持 `--help`、`--version`、`--format json`、`vulcan.cli.list/show`。JSON stdout 只输出最终结果对象；运行时 start/stop/reload 必须 `--approve`。
+- `vulcan.dev.submit` 的脏树默认拒绝，需 `allowDirty=true`；`dryRun=true` 不构建、不写候选、不暂存、不提交、不热重载。模块输出目录改从 MSBuild `TargetDir` 读取，多 TFM 项目必须声明 `publishTargetFramework`。
 
 开发管线改在宿主进程内执行，不再拉起 `Publish-OneHistoryModule.ps1`。
-开发管线只给模块：`HistoryVulcan.exe --cli vulcan.dev.start` → `submit` → `finish`。
+开发管线只给模块：`HistoryVulcan.Cli.exe --cli vulcan.dev.start` → `submit` → `finish`；`HistoryVulcan.exe --cli` 仍保留为兼容入口。
 宿主禁止走开发管线。模块三条禁止 MCP。宿主写入 z 候选用 `--cli vulcan.release.cycle`（发布入口，不是开发管线）。
 `vulcan.worktree.*` 与 `vulcan.release.modules/status/log` 不对 MCP 暴露。项目合同、质量门禁、公开 API 基线和打包都在 `HistoryVulcan.Services.Development.Pipeline`。
 模块包布局由登记表 `package` 字段描述，验证步骤只允许 `dotnet`。
