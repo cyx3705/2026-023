@@ -563,6 +563,36 @@ internal static class ReleaseCommands
             : CommandResult.Fail(text.ToString());
     }
 
+    /// <summary>
+    /// 复核 submit 已经写入工作区的不可变模块候选，供 finish 在合并前使用。
+    /// finish 不能再次构建同一版本：submit 在构建后提交源码，第二次构建可能因源修订元数据改变程序集，
+    /// 而不可变快照必须拒绝覆盖。
+    /// </summary>
+    internal static CommandResult VerifySubmittedCandidate(
+        DevelopmentContext host,
+        string moduleName,
+        string repoRoot)
+    {
+        var target = ReleaseCatalog.Require(RegistryPath(host.Settings), moduleName);
+        var version = ReleaseCatalog.ReadVersion(repoRoot, target);
+        var candidate = Path.Combine(repoRoot, target.CandidateDirectory, $"{target.Name}-v{version}");
+        if (!Directory.Exists(candidate))
+            return CommandResult.Fail($"未找到已审核候选：{candidate}。请先执行 vulcan.dev.submit。");
+
+        try
+        {
+            ProjectContract.Validate(repoRoot, target.Kind, instantiation: true, RegistryPath(host.Settings));
+            ModuleSnapshotBuilder.AssertSnapshot(candidate, target, version);
+            return CommandResult.Ok(
+                $"已复核 submit 候选：{target.Name} {version}\n候选: {candidate}",
+                new { Module = target.Name, Version = version, Candidate = candidate });
+        }
+        catch (Exception ex)
+        {
+            return CommandResult.Fail($"已审核候选不可用于 finish：{ex.Message}");
+        }
+    }
+
     private static async Task<(bool Finished, int ExitCode, string Tail)> WaitForRunAsync(
         DevelopmentContext host,
         string run,

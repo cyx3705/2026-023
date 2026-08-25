@@ -1,5 +1,6 @@
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Storage;
+using HistoryVulcan.Services.Development.Pipeline;
 
 namespace HistoryVulcan.Services.Development;
 
@@ -194,14 +195,16 @@ internal static class DevPipelineCommands
         }
 
         progress?.Report(MoveRootBeforeFinish);
-        var published = await ReleaseCommands.CycleAsync(
-            host, name, message, worktree, allowDirty: false, dryRun: false,
-            progress: progress, cancellation: cancellation).ConfigureAwait(false);
+        var worktreePath = WorktreeCommands.ResolveWorktreePath(
+            host.Settings, module.ProjectDirectory, worktree);
+        var status = ToolProcess.Capture("git", ["status", "--porcelain"], worktreePath);
+        if (status.Length > 0)
+            return CommandResult.Fail($"工作树不干净，finish 只能复用已提交的 submit 候选。\n{status}");
+
+        var published = ReleaseCommands.VerifySubmittedCandidate(host, module.Name, worktreePath);
         if (!published.Success)
             return published;
 
-        var worktreePath = WorktreeCommands.ResolveWorktreePath(
-            host.Settings, module.ProjectDirectory, worktree);
         var worktreeName = Directory.Exists(worktreePath)
             ? Path.GetFileName(worktreePath)
             : worktree.Trim();
