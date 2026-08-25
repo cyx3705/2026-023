@@ -164,6 +164,21 @@ public sealed class CommandTaxonomyContractTests
             declared.Order(StringComparer.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void ModuleInstallDoesNotRequireASecondConfirmation()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            RepositoryPaths.Root(),
+            "b-Code-HistoryVulcan",
+            "HistoryVulcan.ServiceHost",
+            "ServiceComposer.cs"));
+        var start = source.IndexOf("Name = \"vulcan.module.install\"", StringComparison.Ordinal);
+        var end = source.IndexOf("Name = \"vulcan.module.remove\"", start, StringComparison.Ordinal);
+
+        Assert.True(start >= 0 && end > start, "未找到模块安装命令声明。");
+        Assert.DoesNotContain("Level = CommandLevel.Ask", source[start..end], StringComparison.Ordinal);
+    }
+
     /// <summary>隐藏是描述符自己的声明，不再由指令名推导。</summary>
     /// <remarks>
     /// 按名字写的排除失效过四次，每次都是同一个原因：指令改了名，规则还盯着旧名字。

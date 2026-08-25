@@ -10,7 +10,7 @@ namespace HistoryVulcan.Tests;
 /// REQ-A2：服务进程不再自己弹确认框。
 ///
 /// 这里守的是**失败方向**：没有界面可问时必须拒绝。若这条退化成放行，
-/// MCP 侧「危险命令需确认」（vulcan.app.quit、module.install/remove、全部 mcp.*）
+/// MCP 侧「危险命令需确认」（vulcan.app.quit、module.remove、全部 mcp.*）
 /// 整条约束就会在无人值守时静默失效——而且不会有任何测试或日志提示它失效了。
 ///
 /// 4.2.0 起宿主自带的实现一律拒绝，能弹框的是承载界面的模块（Aurora 在装载时

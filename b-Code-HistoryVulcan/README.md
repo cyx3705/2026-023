@@ -1,4 +1,4 @@
-# HistoryVulcan 5.1.1
+# HistoryVulcan 5.1.2
 
 HistoryVulcan 是独立维护的通用桌面应用框架，也是框架源码的唯一真值。
 
@@ -25,9 +25,9 @@ dotnet build ..\HistoryVulcan.sln -c Release --no-restore
 
 正式 HistoryVulcan 从 Z 快照运行；需要兼容嵌入式框架消费时使用单独批准的固定版本包，不直接引用本目录源码。
 
-## 5.1.1 宿主
+## 5.1.2 宿主
 
-3.0.3 是冻结基线；当前源码目标为 5.1.1（CLI 合同、运行时 IPC 和十类命令分类已纳入现行基线；快捷键/命令工作台由 HistoryMercury 拥有）。
+3.0.3 是冻结基线；当前源码目标为 5.1.2（CLI 合同、运行时 IPC 和十类命令分类已纳入现行基线；快捷键/命令工作台由 HistoryMercury 拥有）。
 3.1.8 是不受支持的内部过渡版本，
 不得作为新消费基线。当前正式交付物是 win-x64、依赖 .NET 8 Desktop
 Runtime 的 HistoryVulcan 宿主，不生成 NuGet 包。兼容包合同继续保留，但必须从单独批准的同版本包源消费。

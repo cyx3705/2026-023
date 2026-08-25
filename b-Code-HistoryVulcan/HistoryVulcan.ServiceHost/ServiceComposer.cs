@@ -346,7 +346,6 @@ public static partial class ServiceComposer
             CommandClass = "module",
             Summary = "从已校验候选包原子安装并重载运行时模块",
             Example = "vulcan.module.install path=C:\\candidate\\HistoryJanus",
-            Level = CommandLevel.Ask,
             Parameters = [new ParameterSpec
             {
                 Name = "path",

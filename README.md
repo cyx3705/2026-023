@@ -1,9 +1,9 @@
-# HistoryVulcan 5.1.1
+# HistoryVulcan 5.1.2
 
 本仓库是 OneHistory HistoryVulcan（原 AppShell，3.2.0 起改名）的独立源码、合同与发布资产真值。
 `3.0.3` 是 V3 冻结基线，冻结标签为 `v3.0.3`；版本线不再与 HistoryJanus 对齐，`0.7.x` 仅保留用于回滚。
 
-当前源码为 `5.1.1`。`HistoryVulcan.Core` 自 `3.9.0` 起的公开面冻结已在 4.0 解除（DEC-049）；
+当前源码为 `5.1.2`。`HistoryVulcan.Core` 自 `3.9.0` 起的公开面冻结已在 4.0 解除（DEC-049）；
 5.0（DEC-052）拆除宿主模块抽象，冻结面只留注册器、命令总线和开发总线。
 3.13.0（DEC-045）删除 Web 网关的局域网面：`WebGateway` 退回纯本机 IPC，固定监听 `127.0.0.1`，
 只接受同机前端 Shell，其余一律 401。设备鉴权与配对、令牌鉴权、绑定地址、CORS、限流，以及
