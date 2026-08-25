@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace HistoryVulcan.Services.Development.Pipeline;
 
 /// <summary>发布前从 MSBuild 查询模块的真实目标框架和输出目录。</summary>
@@ -53,6 +55,23 @@ internal static class MsBuildOutputResolver
         arguments.AddRange(extra);
         var output = ToolProcess.Capture("dotnet", arguments, workingDirectory);
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        // .NET 9 emits -getProperty results as JSON. Keep the line parser for older
+        // SDKs so the release gate remains portable across the supported toolchains.
+        try
+        {
+            using var document = JsonDocument.Parse(output);
+            if (document.RootElement.TryGetProperty("Properties", out var properties))
+            {
+                foreach (var property in properties.EnumerateObject())
+                    values[property.Name] = property.Value.GetString() ?? string.Empty;
+                return values;
+            }
+        }
+        catch (JsonException)
+        {
+            // Fall through to the legacy key=value format.
+        }
+
         foreach (var line in output.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
         {
             var separator = line.IndexOf('=');
