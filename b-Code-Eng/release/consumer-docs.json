@@ -2,16 +2,12 @@
   "schemaVersion": 1,
   "documents": [
     {
-      "file": "HistoryVulcan_API与指令手册.md",
-      "title": "HistoryVulcan API 与指令手册"
+      "file": "HistoryVulcan_模块API.md",
+      "title": "HistoryVulcan 模块 API"
     },
     {
-      "file": "HistoryVulcan_运行时约束与已知限制.md",
-      "title": "HistoryVulcan 运行时约束与已知限制"
-    },
-    {
-      "file": "HistoryVulcan_消费变更摘要.md",
-      "title": "HistoryVulcan 消费变更摘要"
+      "file": "模块开发手册.md",
+      "title": "HistoryVulcan 模块开发手册"
     }
   ]
 }

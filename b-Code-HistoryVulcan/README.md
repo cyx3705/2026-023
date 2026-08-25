@@ -13,7 +13,7 @@ HistoryVulcan 是独立维护的通用桌面应用框架，也是框架源码的
 - `../b-Office/package`：消费文档编辑源；`../b-Office` 根目录保留冻结合同和内部设计记录。
 - `../z-Publish`：唯一一份当前候选和完整发布测试结果。
 - `../z-Publish/history`：按版本保存的 Z 级最小正式历史副本。
-- `../z-Publish/host`：当前正式 HistoryVulcan 宿主程序；Z 根目录同时保留精简复用说明和兼容消费资产。
+- `../z-Publish/host`：当前正式 HistoryVulcan 宿主程序；Z 根目录同时保留两份模块合同的发布副本。
 
 ## 构建
 
