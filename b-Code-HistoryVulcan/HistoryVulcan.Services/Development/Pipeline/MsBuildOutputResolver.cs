@@ -32,7 +32,10 @@ internal static class MsBuildOutputResolver
             _ => configured!,
         };
 
-        var output = ReadProperties(projectRoot, project, ["-p:TargetFramework=" + selected]);
+        var output = ReadProperties(
+            projectRoot,
+            project,
+            ["-p:Configuration=Release", "-p:TargetFramework=" + selected]);
         var targetDir = output.GetValueOrDefault("TargetDir");
         if (string.IsNullOrWhiteSpace(targetDir))
             throw new InvalidOperationException(
