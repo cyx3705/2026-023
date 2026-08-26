@@ -458,6 +458,13 @@
         <member name="F:HistoryVulcan.Services.Development.ReleaseCommands.PipelineDirectory">
             <summary>发布登记表在项目里的位置。管线实现已迁入宿主源码，不再调用 PowerShell 引擎脚本。</summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.VerifySubmittedCandidate(HistoryVulcan.Services.Development.DevelopmentContext,System.String,System.String)">
+            <summary>
+            复核 submit 已经写入工作区的不可变模块候选，供 finish 在合并前使用。
+            finish 不能再次构建同一版本：submit 在构建后提交源码，第二次构建可能因源修订元数据改变程序集，
+            而不可变快照必须拒绝覆盖。
+            </summary>
+        </member>
         <member name="T:HistoryVulcan.Services.Development.WorktreeCommands">
              <summary>
              AI 工作区的命令面：开分支工作树、列出、回收。
@@ -718,6 +725,12 @@
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.RemovePackage(System.String)">
             <summary>Atomically removes a named manifest package from the runtime module directory.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Uninstall(System.String)">
+            <summary>
+            Uninstalls a module package from the fixed AppData runtime directory.
+            This is the persistent counterpart to <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.Unload(System.String)"/>.
+            </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Reload">
             <summary>

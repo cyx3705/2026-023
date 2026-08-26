@@ -2,6 +2,7 @@
 *REMOVED*HistoryVulcan.Services.FileLayoutStore
 HistoryVulcan.Services.Modules.ModuleMeta.InstanceId.get -> string!
 HistoryVulcan.Services.Modules.ModuleMeta.InstanceId.init -> void
+HistoryVulcan.Services.Modules.ModuleHost.Uninstall(string! name) -> HistoryVulcan.Core.Commands.CommandResult!
 *REMOVED*HistoryVulcan.Services.FileLayoutStore.DeleteCurrent() -> void
 *REMOVED*HistoryVulcan.Services.FileLayoutStore.FileLayoutStore(HistoryVulcan.Services.AppPaths! paths) -> void
 *REMOVED*HistoryVulcan.Services.FileLayoutStore.ListNamed() -> System.Collections.Generic.IReadOnlyList<string!>!

@@ -202,6 +202,7 @@ public sealed class CommandLineEntryTests
                 "vulcan.module.list",
                 "vulcan.module.reload",
                 "vulcan.module.remove",
+                "vulcan.module.uninstall",
                 "vulcan.module.unload",
                 "vulcan.dev.start",
                 "vulcan.dev.submit",

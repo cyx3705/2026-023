@@ -161,6 +161,12 @@ public sealed partial class ModuleHost
         }
     }
 
+    /// <summary>
+    /// Uninstalls a module package from the fixed AppData runtime directory.
+    /// This is the persistent counterpart to <see cref="Unload"/>.
+    /// </summary>
+    public CommandResult Uninstall(string name) => RemovePackage(name);
+
     private bool TryGetRuntimeRoot(out string root, out string error)
     {
         if (_discoverySource is RuntimeModuleDiscoverySource runtime)

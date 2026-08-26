@@ -48,6 +48,7 @@ public static class CliExposurePolicy
         "vulcan.module.list",
         "vulcan.module.reload",
         "vulcan.module.remove",
+        "vulcan.module.uninstall",
         "vulcan.module.unload",
 
         // 模块开发三步：只走 --cli，不配 MCP

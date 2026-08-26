@@ -149,6 +149,7 @@ public sealed class CommandTaxonomyContractTests
                 "vulcan.command.run",
                 "vulcan.module.install",
                 "vulcan.module.remove",
+                "vulcan.module.uninstall",
                 "vulcan.dev.start",
                 "vulcan.dev.submit",
                 "vulcan.dev.finish",
@@ -177,6 +178,25 @@ public sealed class CommandTaxonomyContractTests
 
         Assert.True(start >= 0 && end > start, "未找到模块安装命令声明。");
         Assert.DoesNotContain("Level = CommandLevel.Ask", source[start..end], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ModuleUninstallRegistersTheModuleManagementButton()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            RepositoryPaths.Root(),
+            "b-Code-HistoryVulcan",
+            "HistoryVulcan.ServiceHost",
+            "ServiceComposer.cs"));
+        var start = source.IndexOf("Name = \"vulcan.module.uninstall\"", StringComparison.Ordinal);
+        var end = source.IndexOf("Name = \"vulcan.module.roots\"", start, StringComparison.Ordinal);
+
+        Assert.True(start >= 0 && end > start, "未找到模块卸载命令声明。");
+        var declaration = source[start..end];
+        Assert.Contains("[\"ui.button\"] = \"true\"", declaration, StringComparison.Ordinal);
+        Assert.Contains("[\"ui.button.label\"] = \"卸载模块\"", declaration, StringComparison.Ordinal);
+        Assert.Contains("[\"ui.button.command\"] = \"vulcan.module.uninstall\"", declaration, StringComparison.Ordinal);
+        Assert.Contains("[\"ui.button.confirm\"]", declaration, StringComparison.Ordinal);
     }
 
     /// <summary>隐藏是描述符自己的声明，不再由指令名推导。</summary>

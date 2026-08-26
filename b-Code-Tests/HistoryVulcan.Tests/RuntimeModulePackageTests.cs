@@ -83,7 +83,7 @@ public sealed class RuntimeModulePackageTests
             Assert.True(upgraded.Success, upgraded.Message);
             Assert.Equal("v2.0.0", Assert.Single(host.Modules).Version);
 
-            var removed = host.RemovePackage("contextfixture");
+            var removed = host.Uninstall("contextfixture");
             Assert.True(removed.Success, removed.Message);
             Assert.Empty(host.Modules);
             Assert.False(Directory.Exists(Path.Combine(runtime, "contextfixture")));

@@ -391,6 +391,39 @@ public static partial class ServiceComposer
 
         registry.Register(new CommandDescriptor
         {
+            Name = "vulcan.module.uninstall",
+            HiddenReason = "运行包变更只允许认证的本机宿主通道",
+            Domain = "vulcan",
+            CommandClass = "module",
+            Summary = "卸载模块并从 AppData 运行区删除完整模块包",
+            Example = "vulcan.module.uninstall name=HistoryJanus",
+            Level = CommandLevel.Ask,
+            Annotations = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["ui.button"] = "true",
+                ["ui.button.label"] = "卸载模块",
+                ["ui.button.command"] = "vulcan.module.uninstall",
+                ["ui.button.confirm"] = "确认卸载模块并删除其运行包？",
+            },
+            Parameters = [new ParameterSpec
+            {
+                Name = "name",
+                Description = "vulcan.module.list 中的模块名",
+                Required = true,
+                Position = 0,
+            }],
+            Handler = async ctx =>
+            {
+                if (!IsLocalModuleMutationSource(ctx.Source))
+                    return CommandResult.Fail("模块卸载只允许认证的本机宿主通道。");
+                var target = ctx.RequireString("name");
+                return await Task.Run(() => host.Uninstall(target), ctx.Cancellation)
+                    .ConfigureAwait(false);
+            },
+        }, "framework:service");
+
+        registry.Register(new CommandDescriptor
+        {
             Name = "vulcan.module.roots",
             Domain = "vulcan",
             CommandClass = "module",
