@@ -49,7 +49,8 @@ HistoryVulcan 源码工程；需要联调时显式提供项目自己的开关，
 ## 4. 模块运行包
 
 运行包只安装到 `%AppData%\HistoryVulcan\Modules\<模块名>`。安装会先校验 manifest 和完整 SHA256 清单，
-在运行区外暂存，卸载同名模块，原子替换，再建立新模块快照；失败时恢复原包。
+在运行区外暂存，卸载同名模块，原子替换，再只把这一包装回当前快照；失败时恢复原包。
+不要整仓 `vulcan.module.reload`：那会拆除全部模块，界面模块可能变成 0 条指令。
 
 模块作者不手工拷贝 AppData，也不改变发现根。模块管理页的“卸载模块”按钮调用
 `vulcan.module.uninstall name=`，宿主会先卸载内存实例，再从 `%AppData%\HistoryVulcan\Modules\<模块名>`
