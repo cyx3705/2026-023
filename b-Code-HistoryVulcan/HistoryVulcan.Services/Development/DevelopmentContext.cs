@@ -21,4 +21,15 @@ namespace HistoryVulcan.Services.Development;
 internal sealed record DevelopmentContext(
     CommandBus Bus,
     ISettingsService Settings,
-    string DataDirectory);
+    string DataDirectory)
+{
+    /// <summary>
+    /// 离线 CLI 用来把装包打到<strong>正在跑的</strong>宿主。空表示本进程就是活宿主，走 <see cref="Bus"/>。
+    /// </summary>
+    public LiveHostExecutor? LiveHost { get; set; }
+}
+
+/// <summary>把一条指令交给当前用户的活宿主执行。</summary>
+internal delegate Task<CommandResult> LiveHostExecutor(
+    string command,
+    CancellationToken cancellation);
