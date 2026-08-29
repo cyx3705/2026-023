@@ -59,6 +59,14 @@ public sealed class DevPipelineTests
         }
     }
 
+    [Fact]
+    public void FinishHintDoesNotBlockOtherAiOnADifferentLeftoverWorktree()
+    {
+        Assert.Contains("对话根不是那条工作区就可以 finish", DevPipelineCommands.MoveRootBeforeFinish, StringComparison.Ordinal);
+        Assert.Contains("不要因为对话根在另一条 F 盘残留目录就停住", DevPipelineCommands.MoveRootBeforeFinish, StringComparison.Ordinal);
+        Assert.DoesNotContain("其他 AI 本来就不在工作区里，可直接 finish", DevPipelineCommands.MoveRootBeforeFinish, StringComparison.Ordinal);
+    }
+
     private static string Git(string workingDirectory, params string[] arguments)
     {
         var start = new ProcessStartInfo("git")

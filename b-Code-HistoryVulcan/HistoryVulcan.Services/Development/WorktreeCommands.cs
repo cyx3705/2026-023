@@ -180,7 +180,7 @@ internal static class WorktreeCommands
         text.Append($"\n分支: {branch}（基于 {head}）");
         text.Append($"\n项目: {projectPath}");
         text.Append($"\n{overrideNote}");
-        text.Append("\ngrok 按手册四步把对话根迁进此工作区；其他 AI 不要切根，按上面的路径改文件。若对话根已在工作区内，finish 前先迁走再 vulcan.dev.finish。");
+        text.Append("\ngrok 按手册四步把对话根迁进此工作区；其他 AI 不要切根，按上面的路径改文件。若对话根就是此工作区，finish 前先迁走再 vulcan.dev.finish。对话根在另一条 F 盘残留目录上，finish 这条工作区不会删掉当前根。");
         return CommandResult.Ok(text.ToString(), new
         {
             Name = name,

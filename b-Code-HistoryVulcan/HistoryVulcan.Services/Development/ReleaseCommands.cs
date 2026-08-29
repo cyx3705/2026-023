@@ -549,7 +549,7 @@ internal static class ReleaseCommands
         if (isWorktree)
         {
             text.Append("\n可继续在此工作区开发。人审批通过后 vulcan.dev.finish。");
-            text.Append("\n若对话根已在工作区内（grok 切过根），finish 前先迁到该模块 Clio 主树。其他 AI 对话不在工作区里，可直接 finish。");
+            text.Append("\n若对话根已在工作区内（grok 切过根），finish 前先迁到该模块 Clio 主树。其他 AI 不迁根：对话根不是正在 finish 的那条工作区就可以 finish；不要因为对话根在另一条 F 盘残留目录就停住。");
         }
 
         return reload.Success

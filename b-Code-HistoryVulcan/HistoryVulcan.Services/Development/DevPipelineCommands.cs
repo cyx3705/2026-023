@@ -30,7 +30,7 @@ internal static class DevPipelineCommands
         "【迁根】Cursor 若有 move_agent_to_root（含 grok），现在把对话根迁进此工作区；其他 AI 不要迁根，按返回的绝对路径改文件。";
 
     internal const string MoveRootBeforeFinish =
-        "【迁根】Cursor/grok 若对话根已在工作区内，finish 会删除该目录——先迁到该模块 Clio 主树再调用。其他 AI 本来就不在工作区里，可直接 finish。";
+        "【迁根】Cursor/grok 若对话根就是正在 finish 的工作区，先迁到该模块 Clio 主树再调用。其他 AI 不迁根：对话根不是那条工作区就可以 finish；对话根就是那条路径则禁止 finish（换对话，或有迁根工具则先迁走）。不要因为对话根在另一条 F 盘残留目录就停住。";
 
     public static void Register(CommandRegistry registry, DevelopmentContext host)
     {
