@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "_hostsComment": "宿主的冻结标签期望值由 Diana 持有，刻意不放在宿主自己的 project.manifest.json 里：期望值与被守护值同处一文件时，同一次编辑会一起改动，闸口形同虚设。",
+  "_publishComment": "candidateDirectory / formalDirectory 是发布根 z-Publish，不是扁平包。模块当前候选由管线写成 z-Publish/HistoryX-vX.Y.Z/；宿主写成 z-Publish/host/。Diana 不发布。",
   "hosts": [
     {
       "name": "HistoryVulcan",
@@ -114,8 +115,6 @@
             "b-Code-Verify\\Contracts\\Contracts.csproj",
             "-c",
             "{configuration}",
-            "--no-build",
-            "--no-restore",
             "-p:NuGetAudit=false"
           ],
           "description": "Run module contracts ({configuration})"
@@ -132,8 +131,7 @@
             "b-Code-Verify\\Smoke\\Smoke.csproj",
             "-c",
             "{configuration}",
-            "--no-build",
-            "--no-restore",
+            "-p:NuGetAudit=false",
             "--",
             "--candidate-root",
             "{candidateRoot}"
@@ -152,8 +150,7 @@
             "b-Code-Verify\\ModuleSmoke\\ModuleSmoke.csproj",
             "-c",
             "{configuration}",
-            "--no-build",
-            "--no-restore",
+            "-p:NuGetAudit=false",
             "--",
             "{moduleOutput}"
           ],

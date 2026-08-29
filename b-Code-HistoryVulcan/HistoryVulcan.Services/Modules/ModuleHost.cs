@@ -598,13 +598,7 @@ public sealed partial class ModuleHost : IDisposable
     /// DLL 和 manifest，但不是活动模块，不能被扫描成第二个同名模块。
     /// </summary>
     private static bool IsModuleArtifactDirectory(string name)
-        => name.StartsWith(".", StringComparison.Ordinal)
-           || name.Contains("-rollback-", StringComparison.OrdinalIgnoreCase)
-           || name.Contains("-backup-", StringComparison.OrdinalIgnoreCase)
-           || name.Contains("-staging-", StringComparison.OrdinalIgnoreCase)
-           || name.EndsWith("-rollback", StringComparison.OrdinalIgnoreCase)
-           || name.EndsWith("-backup", StringComparison.OrdinalIgnoreCase)
-           || name.EndsWith("-staging", StringComparison.OrdinalIgnoreCase);
+        => RuntimeModuleDiscoverySource.IsTransientPackageDirectory(name);
 
     private void LoadGroup(Snapshot snap, string dir, string slot, bool uiEnabled)
     {
@@ -714,7 +708,12 @@ public sealed partial class ModuleHost : IDisposable
             if (discovered != null
                 && (!declaredName.Equals(discovered.Name, StringComparison.OrdinalIgnoreCase)
                     || !declaredVersion.Equals(discovered.Version, StringComparison.OrdinalIgnoreCase)))
+            {
+                _log.Warn("module",
+                    $"跳过 {fileName}：程序集声明 {declaredName} {declaredVersion}，"
+                    + $"与 manifest {discovered.Name} {discovered.Version} 不一致");
                 continue;
+            }
             var moduleName = discovered?.Name ?? declaredName;
             var commandPrefix = GetProp(info, "CommandPrefix") as string ?? moduleName;
             if (!contextAttached)

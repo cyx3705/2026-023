@@ -64,14 +64,15 @@ internal static class ReleaseEngine
                 ModuleSnapshotBuilder.Build(
                     projectRoot, target, version, staging, request.HostSnapshotRoot, log);
                 ModuleSnapshotBuilder.RunValidation(target, projectRoot, staging, log);
-                candidate = PublishLayout.PromoteVersioned(staging, publishRoot, target, version);
+                candidate = PublishLayout.PromoteVersioned(
+                    staging, publishRoot, target, version, replaceCurrent: !request.PromoteOfficial);
                 ModuleSnapshotBuilder.AssertSnapshot(candidate, target, version);
             }
 
             if (!request.PromoteOfficial)
             {
                 log.WriteLine($"工作区版本化候选已就绪：{candidate}");
-                log.WriteLine("vulcan.release.cycle 会用该候选严格替换 AppData 运行包。");
+                log.WriteLine("vulcan.dev.submit 会把该候选热重载进活宿主。");
                 return candidate;
             }
 

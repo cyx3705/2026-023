@@ -55,7 +55,9 @@ HistoryVulcan 源码工程；需要联调时显式提供项目自己的开关，
 `vulcan.module.uninstall name=`，宿主会先卸载内存实例，再从 `%AppData%\HistoryVulcan\Modules\<模块名>`
 删除完整运行包；失败时恢复原包。仅调用 `vulcan.module.unload` 只会移除当前内存快照，不删除磁盘包。
 正常开发使用 `vulcan.dev.submit` 和 `vulcan.dev.finish`：二者在
-候选构建、测试与提交成功后自动安装并热重载。运行时状态以 `vulcan.module.list` 为准。
+候选构建、测试与提交成功后，把刚写入的工作区（或主树）版本化候选经活宿主
+`vulcan.module.install` 安装并热重载。离线 CLI 写 AppData 不算热重载。
+运行时状态以 `vulcan.module.list` 为准。
 
 ## 5. CLI 合同
 
@@ -67,11 +69,14 @@ HistoryVulcan.Cli.exe --cli vulcan.dev.submit name=<模块> msg=<说明> worktre
 HistoryVulcan.Cli.exe --cli vulcan.dev.finish name=<模块> msg=<说明> worktree=<工作区>
 ```
 
-`--cli` 固定运行离线组合，不会连接或启动第二个宿主。开发三步只给模块，宿主自身使用
+`--cli` 固定运行离线组合来构建和写 z，不会另起第二个宿主。`submit`/`finish` 的装包
+再经 `--runtime` 同管道打到活宿主。开发三步只给模块，宿主自身使用
 `vulcan.release.cycle`。`submit` 脏树默认拒绝，版本或源码改动已经确认时显式传 `allowDirty=true`；
 `dryRun=true` 只报告计划，不构建、不写候选、不提交、不安装。
+工作区 `submit` 覆盖同版本当前候选；主树正式促级仍拒绝内容不同的同版本覆盖。
 
 脚本使用 `--format json` 时 stdout 只输出一个结果对象，字段固定为 `runId`、`success`、`exitCode`、
 `executionTarget`、`candidatePath`、`installedPath`、`runtimeAck`、`logPath`、`diagnostics`。
 
-`--runtime` 只用于查询已运行宿主的受限状态或执行批准过的 reload；管线安装由 `submit/finish` 负责。
+`--runtime` 只用于查询已运行宿主的受限状态，或执行批准过的 `reload` / `install`；
+模块开发的装包由 `submit`/`finish` 内部走同一条 `install`，不要单独调。

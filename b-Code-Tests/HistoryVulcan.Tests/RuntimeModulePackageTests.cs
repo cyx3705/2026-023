@@ -45,6 +45,20 @@ public sealed class RuntimeModulePackageTests
     }
 
     [Fact]
+    public void RollbackDirectoryIsIgnoredInsteadOfMakingTheLivePackageADuplicate()
+    {
+        using var temp = new TemporaryDirectory();
+        var root = Directory.CreateDirectory(Path.Combine(temp.Path, "Modules")).FullName;
+        CreatePackage(root, "HistoryAurora", "HistoryAurora", "v1.8.17");
+        CreatePackage(root, "HistoryAurora-rollback-20260827-102043", "HistoryAurora", "v1.8.16");
+
+        var snapshot = new RuntimeModuleDiscoverySource(root).Discover();
+
+        Assert.Equal("HistoryAurora", Assert.Single(snapshot.Modules).Name);
+        Assert.DoesNotContain(snapshot.Diagnostics, item => item.Code == "duplicate-name");
+    }
+
+    [Fact]
     public void InstallIsIdempotentUpgradesAndRemovesValidatedPackages()
     {
         using var temp = new TemporaryDirectory();
@@ -170,6 +184,47 @@ public sealed class RuntimeModulePackageTests
         }
     }
 
+    [Fact]
+    public void OfflineCompositionKeepsUiPackageOnDiskWithoutRequiringInMemorySnapshot()
+    {
+        using var temp = new TemporaryDirectory();
+        var runtime = Path.Combine(temp.Path, "HistoryVulcan", "Modules");
+        var candidates = Directory.CreateDirectory(Path.Combine(temp.Path, "candidates")).FullName;
+        var first = CreatePackage(candidates, "first", "contextfixture", "v1.0.0", ui: true);
+        var second = CreatePackage(candidates, "second", "contextfixture", "v2.0.0", ui: true);
+        var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable);
+
+        using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), new TestLog())
+        {
+            EnableFileWatching = false,
+            EnableUiModules = false,
+        };
+
+        try
+        {
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
+            host.Start();
+            var installed = host.InstallPackage(first);
+            Assert.True(installed.Success, installed.Message);
+            Assert.Empty(host.Modules);
+            Assert.True(RuntimeModuleDiscoverySource.TryReadPackage(
+                Path.Combine(runtime, "contextfixture"), out var onDisk, out _, out _));
+            Assert.Equal("v1.0.0", onDisk.Version);
+
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v2.0.0");
+            var upgraded = host.InstallPackage(second);
+            Assert.True(upgraded.Success, upgraded.Message);
+            Assert.DoesNotContain("未形成后台确认的运行快照", upgraded.Message, StringComparison.Ordinal);
+            Assert.True(RuntimeModuleDiscoverySource.TryReadPackage(
+                Path.Combine(runtime, "contextfixture"), out var upgradedDisk, out _, out _));
+            Assert.Equal("v2.0.0", upgradedDisk.Version);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, previous);
+        }
+    }
+
     internal static string CreatePackage(
         string parent,
         string directoryName,
@@ -177,7 +232,8 @@ public sealed class RuntimeModulePackageTests
         string version,
         bool includeHistory = false,
         bool validAssembly = true,
-        bool pinned = false)
+        bool pinned = false,
+        bool ui = false)
     {
         var package = Directory.CreateDirectory(Path.Combine(parent, directoryName)).FullName;
         var artifact = Path.Combine(package, "ContextFixture.dll");
@@ -185,7 +241,7 @@ public sealed class RuntimeModulePackageTests
             File.Copy(typeof(ContextFixtureModuleInfo).Assembly.Location, artifact);
         else
             File.WriteAllText(artifact, "not a managed assembly");
-        WriteManifest(package, name, version, "ContextFixture.dll", pinned);
+        WriteManifest(package, name, version, "ContextFixture.dll", pinned, ui);
         Directory.CreateDirectory(Path.Combine(package, "docs"));
         File.WriteAllText(Path.Combine(package, "docs", "README.md"), $"# {name} {version}");
         if (includeHistory)
@@ -215,7 +271,8 @@ public sealed class RuntimeModulePackageTests
         string name,
         string version,
         string artifact,
-        bool pinned = false)
+        bool pinned = false,
+        bool ui = false)
         => File.WriteAllText(
             Path.Combine(package, "module.manifest.json"),
             JsonSerializer.Serialize(new
@@ -225,7 +282,7 @@ public sealed class RuntimeModulePackageTests
                 name,
                 version,
                 artifact,
-                ui = false,
+                ui,
                 pinned,
             }));
 

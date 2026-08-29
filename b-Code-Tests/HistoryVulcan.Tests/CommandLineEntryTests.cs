@@ -215,4 +215,20 @@ public sealed class CommandLineEntryTests
             }.Order(StringComparer.OrdinalIgnoreCase),
             CliExposurePolicy.ExposedCommands.Order(StringComparer.OrdinalIgnoreCase));
     }
+
+    [Fact]
+    public void RuntimeWhitelistIncludesModuleInstallAndCliSourcesAreLocal()
+    {
+        var pipe = File.ReadAllText(Path.Combine(
+            RepositoryPaths.Root(),
+            "b-Code-HistoryVulcan",
+            "HistoryVulcan.ServiceHost",
+            "RuntimePipeServer.cs"));
+        Assert.Contains("\"vulcan.module.install\"", pipe, StringComparison.Ordinal);
+
+        Assert.True(ServiceComposer.IsLocalModuleMutationSource("cli:runtime"));
+        Assert.True(ServiceComposer.IsLocalModuleMutationSource("cli:local"));
+        Assert.True(ServiceComposer.IsLocalModuleMutationSource("UI"));
+        Assert.False(ServiceComposer.IsLocalModuleMutationSource("mcp:agent"));
+    }
 }

@@ -28,16 +28,32 @@ internal static class ModulePackageHotReload
         if (!Directory.Exists(packagePath))
             return CommandResult.Fail($"发布包目录不存在：{packagePath}");
 
+        var command = $"vulcan.module.install path={CommandParser.QuoteArg(packagePath)}";
         try
         {
-            var result = await host.Bus.ExecuteAsync(
-                    $"vulcan.module.install path={CommandParser.QuoteArg(packagePath)}",
-                    source,
-                    cancellation)
-                .ConfigureAwait(false);
+            CommandResult result;
+            if (host.LiveHost is not null)
+            {
+                result = await host.LiveHost(command, cancellation).ConfigureAwait(false);
+            }
+            else
+            {
+                result = await host.Bus.ExecuteAsync(command, source, cancellation)
+                    .ConfigureAwait(false);
+                if (result.Success
+                    && (result.Message.Contains("不装载 UI 模块", StringComparison.Ordinal)
+                        || result.Message.Contains("不是活宿主热重载", StringComparison.Ordinal)))
+                {
+                    return CommandResult.Fail(
+                        "离线 CLI 只写了磁盘，没有重载活宿主。"
+                        + " HistoryVulcan.Cli.exe --cli 必须把装包打到正在跑的宿主；活宿主不可达时不要把写入运行区说成热重载。"
+                        + "\n" + result.Message);
+                }
+            }
+
             return result.Success
                 ? CommandResult.Ok(
-                    $"已热重载到 Vulcan 运行区。\n来源: {packagePath}\n{result.Message}",
+                    $"已热重载到活宿主。\n来源: {packagePath}\n{result.Message}",
                     result.Data)
                 : CommandResult.Fail($"Vulcan 热重载失败：{result.Message}");
         }

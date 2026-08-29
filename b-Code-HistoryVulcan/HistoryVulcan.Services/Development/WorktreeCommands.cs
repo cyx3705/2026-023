@@ -279,7 +279,7 @@ internal static class WorktreeCommands
         if (statusError != null)
             return CommandResult.Fail($"读取工作区状态失败：{statusError}");
         if (!string.IsNullOrWhiteSpace(status))
-            return CommandResult.Fail("工作区还有未提交改动，先 vulcan.release.cycle。");
+            return CommandResult.Fail("工作区还有未提交改动，先 vulcan.dev.submit。");
 
         var mainHead = ReadBranch(projectPath);
         if (!string.Equals(mainHead, "main", StringComparison.Ordinal))

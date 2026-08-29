@@ -1,4 +1,7 @@
 using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Core.Logging;
+using HistoryVulcan.Core.Storage;
+using HistoryVulcan.Services.Development;
 using HistoryVulcan.Services.Development.Pipeline;
 using Xunit;
 
@@ -249,5 +252,167 @@ public sealed class PipelineHardeningTests
 
         Assert.NotNull(directory);
         Assert.Equal(directory!.Name, declared);
+    }
+
+    [Fact]
+    public void WorktreePromotionReplacesSameVersionWhenContentChanges()
+    {
+        var stagingA = Path.Combine(Path.GetTempPath(), "stage-a-" + Guid.NewGuid().ToString("N"));
+        var stagingB = Path.Combine(Path.GetTempPath(), "stage-b-" + Guid.NewGuid().ToString("N"));
+        var publish = Path.Combine(Path.GetTempPath(), "pub-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(publish);
+        try
+        {
+            WriteMiniPackage(stagingA, "HistorySample", "1.0.0", "first");
+            WriteMiniPackage(stagingB, "HistorySample", "1.0.0", "second");
+            var target = MiniTarget();
+
+            var first = PublishLayout.PromoteVersioned(stagingA, publish, target, "1.0.0");
+            Assert.Equal(Path.Combine(publish, "HistorySample-v1.0.0"), first);
+
+            var blocked = Assert.Throws<InvalidOperationException>(
+                () => PublishLayout.PromoteVersioned(stagingB, publish, target, "1.0.0"));
+            Assert.Contains("请升版本", blocked.Message, StringComparison.Ordinal);
+
+            var replaced = PublishLayout.PromoteVersioned(
+                stagingB, publish, target, "1.0.0", replaceCurrent: true);
+            Assert.Equal(Path.Combine(publish, "HistorySample-v1.0.0"), replaced);
+            Assert.Contains("second", File.ReadAllText(Path.Combine(replaced, "HistorySample.dll")), StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (Directory.Exists(stagingA))
+                Directory.Delete(stagingA, recursive: true);
+            if (Directory.Exists(stagingB))
+                Directory.Delete(stagingB, recursive: true);
+            if (Directory.Exists(publish))
+                Directory.Delete(publish, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task PipelineInstallUsesLiveHostAndDoesNotCallOfflineBus()
+    {
+        var package = Path.Combine(Path.GetTempPath(), "pkg-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(package);
+        File.WriteAllText(Path.Combine(package, "marker.txt"), "ok");
+        var busFired = false;
+        var liveFired = false;
+        try
+        {
+            var registry = new CommandRegistry();
+            registry.Register(new CommandDescriptor
+            {
+                Name = "vulcan.module.install",
+                Summary = "test",
+                Parameters = [new ParameterSpec { Name = "path", Description = "pkg", Required = true, Position = 0 }],
+                Handler = CommandDescriptor.Sync(_ =>
+                {
+                    busFired = true;
+                    return CommandResult.Ok("离线组合不装载 UI 模块，且磁盘包未就位");
+                }),
+            });
+            var context = new DevelopmentContext(
+                new CommandBus(registry, new NullLog()),
+                new MemorySettings(),
+                package)
+            {
+                LiveHost = (_, _) =>
+                {
+                    liveFired = true;
+                    return Task.FromResult(CommandResult.Ok("已安装并重载 HistorySample 1.0.0"));
+                },
+            };
+
+            var result = await ModulePackageHotReload.InstallAsync(
+                context, package, "host:vulcan.release.cycle", CancellationToken.None);
+
+            Assert.True(result.Success, result.Message);
+            Assert.Contains("已热重载到活宿主", result.Message, StringComparison.Ordinal);
+            Assert.True(liveFired);
+            Assert.False(busFired);
+        }
+        finally
+        {
+            Directory.Delete(package, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task OfflineUiSkipMessageIsNotReportedAsLiveReload()
+    {
+        var package = Path.Combine(Path.GetTempPath(), "pkg-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(package);
+        try
+        {
+            var registry = new CommandRegistry();
+            registry.Register(new CommandDescriptor
+            {
+                Name = "vulcan.module.install",
+                Summary = "test",
+                Parameters = [new ParameterSpec { Name = "path", Description = "pkg", Required = true, Position = 0 }],
+                Handler = CommandDescriptor.Sync(_ =>
+                    CommandResult.Ok("已写入运行区 HistorySample 1.0.0: x。这是磁盘恢复，不是活宿主热重载。")),
+            });
+            var context = new DevelopmentContext(
+                new CommandBus(registry, new NullLog()),
+                new MemorySettings(),
+                package);
+
+            var result = await ModulePackageHotReload.InstallAsync(
+                context, package, "cli:local", CancellationToken.None);
+
+            Assert.False(result.Success);
+            Assert.Contains("没有重载活宿主", result.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("已热重载到活宿主", result.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(package, recursive: true);
+        }
+    }
+
+    private static ReleaseTarget MiniTarget()
+        => new(
+            Name: "HistorySample",
+            Kind: "module",
+            ProjectDirectory: "",
+            VersionProps: "",
+            VersionProperty: "",
+            SourceManifest: "",
+            SnapshotManifest: "module.manifest.json",
+            IdentityProperty: "name",
+            CandidateDirectory: "z-Publish",
+            FormalDirectory: "z-Publish",
+            PackageDocuments: "",
+            Package: null,
+            Validation: [],
+            TestProject: "");
+
+    private static void WriteMiniPackage(string root, string name, string version, string payload)
+    {
+        Directory.CreateDirectory(root);
+        File.WriteAllText(
+            Path.Combine(root, "module.manifest.json"),
+            $$"""
+            {"schemaVersion":1,"type":"HistoryVulcan.Module","name":"{{name}}","version":"{{version}}","artifact":"{{name}}.dll"}
+            """);
+        File.WriteAllText(Path.Combine(root, name + ".dll"), payload);
+        SnapshotHashes.Write(root);
+    }
+
+    private sealed class MemorySettings : ISettingsService
+    {
+        public string? Get(string key) => null;
+        public int GetInt(string key, int fallback) => fallback;
+        public void Set(string key, string value) { }
+        public IReadOnlyList<KeyValuePair<string, string>> All() => [];
+    }
+
+    private sealed class NullLog : IShellLog
+    {
+        public void Log(ShellLogLevel level, string category, string message) { }
+        public event EventHandler<ShellLogEntry>? EntryAdded { add { } remove { } }
+        public IReadOnlyList<ShellLogEntry> Snapshot() => [];
     }
 }

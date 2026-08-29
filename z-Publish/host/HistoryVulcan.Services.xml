@@ -245,6 +245,9 @@
             <param name="settings">宿主设置；项目库根与工作区根可配。</param>
             <param name="dataDirectory">应用数据根；发布日志以它为基准。</param>
         </member>
+        <member name="P:HistoryVulcan.Services.Development.DevelopmentCommands.LastRegistered">
+            <summary>最近一次 <see cref="M:HistoryVulcan.Services.Development.DevelopmentCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Core.Storage.ISettingsService,System.String)"/> 写下的上下文；离线 CLI 用来接活宿主装包。</summary>
+        </member>
         <member name="T:HistoryVulcan.Services.Development.DevelopmentContext">
              <summary>
              开发路线指令所需的宿主服务。
@@ -287,6 +290,14 @@
         </member>
         <member name="P:HistoryVulcan.Services.Development.DevelopmentContext.DataDirectory">
             <summary>应用数据根，发布日志以它为基准。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Development.DevelopmentContext.LiveHost">
+            <summary>
+            离线 CLI 用来把装包打到<strong>正在跑的</strong>宿主。空表示本进程就是活宿主，走 <see cref="P:HistoryVulcan.Services.Development.DevelopmentContext.Bus"/>。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.LiveHostExecutor">
+            <summary>把一条指令交给当前用户的活宿主执行。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Development.DevPipelineCommands">
             <summary>
@@ -842,6 +853,12 @@
         </member>
         <member name="M:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.Discover">
             <inheritdoc />
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.IsTransientPackageDirectory(System.String)">
+            <summary>
+            运行区里由发布/回滚工具留下的暂存目录。它们不是活动模块，
+            不能被扫描成第二个同名包。
+            </summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.RuntimeModulePackageStore">
              <summary>

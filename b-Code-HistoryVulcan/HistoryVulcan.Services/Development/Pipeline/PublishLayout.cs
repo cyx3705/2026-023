@@ -8,14 +8,16 @@ internal static class PublishLayout
         string stagingRoot,
         string publishRoot,
         ReleaseTarget target,
-        string version)
+        string version,
+        bool replaceCurrent = false)
     {
         var historyRoot = Path.Combine(publishRoot, "history");
         Directory.CreateDirectory(historyRoot);
         var incoming = Path.Combine(publishRoot, ".incoming-" + Guid.NewGuid().ToString("N"));
         try
         {
-            return PromoteVersionedCore(stagingRoot, publishRoot, target, version, incoming, historyRoot);
+            return PromoteVersionedCore(
+                stagingRoot, publishRoot, target, version, incoming, historyRoot, replaceCurrent);
         }
         finally
         {
@@ -32,13 +34,15 @@ internal static class PublishLayout
         ReleaseTarget target,
         string version,
         string incoming,
-        string historyRoot)
+        string historyRoot,
+        bool replaceCurrent)
     {
         SnapshotHashes.CopyDirectory(stagingRoot, incoming);
         ModuleSnapshotBuilder.AssertSnapshot(incoming, target, version);
 
         var destination = Path.Combine(publishRoot, $"{target.Name}-v{version}");
-        AssertImmutable(stagingRoot, destination);
+        if (!replaceCurrent)
+            AssertImmutable(stagingRoot, destination);
 
         foreach (var current in Directory.GetDirectories(publishRoot, "History*-v*"))
             Archive(current, historyRoot);

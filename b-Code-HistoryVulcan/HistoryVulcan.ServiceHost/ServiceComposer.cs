@@ -467,11 +467,13 @@ public static partial class ServiceComposer
         }, "framework:service");
     }
 
-    private static bool IsLocalModuleMutationSource(string source)
+    internal static bool IsLocalModuleMutationSource(string source)
         => source.StartsWith("Shell:", StringComparison.OrdinalIgnoreCase)
            || source.Equals("UI", StringComparison.OrdinalIgnoreCase)
            || source.Equals("手动", StringComparison.OrdinalIgnoreCase)
            || source.StartsWith("脚本:", StringComparison.OrdinalIgnoreCase)
            || source.StartsWith("host:", StringComparison.OrdinalIgnoreCase)
-           || source.StartsWith("diana.", StringComparison.OrdinalIgnoreCase);
+           || source.StartsWith("diana.", StringComparison.OrdinalIgnoreCase)
+           || source.Equals("cli:runtime", StringComparison.OrdinalIgnoreCase)
+           || source.Equals("cli:local", StringComparison.OrdinalIgnoreCase);
 }

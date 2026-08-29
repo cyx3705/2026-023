@@ -69,12 +69,31 @@ public sealed partial class ModuleHost
                 }
 
                 _watcher.Stop();
-                if (_current.Modules.Any(module =>
+                if (EnableUiModules
+                    && _current.Modules.Any(module =>
                         module.ModuleName.Equals(package.Name, StringComparison.OrdinalIgnoreCase)))
                     UnloadFromSnapshot(package.Name);
                 if (Directory.Exists(target))
                     Directory.Move(target, backup);
                 Directory.Move(staging, target);
+
+                if (!EnableUiModules)
+                {
+                    if (!RuntimeModuleDiscoverySource.TryReadPackage(
+                            target, out var onDisk, out _, out var diskError)
+                        || !onDisk.Name.Equals(package.Name, StringComparison.OrdinalIgnoreCase)
+                        || !onDisk.Version.Equals(package.Version, StringComparison.OrdinalIgnoreCase)
+                        || !string.Equals(onDisk.PackagePath, target, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException(
+                            $"离线组合不装载 UI 模块，且磁盘包未就位：{diskError ?? onDisk?.Version ?? "(空)"}");
+                    }
+
+                    return CommandResult.Ok(
+                        $"已写入运行区 {package.Name} {package.Version}: {target}"
+                        + "。这是磁盘恢复，不是活宿主热重载。",
+                        onDisk);
+                }
 
                 Reload();
                 var loaded = _current.Modules.FirstOrDefault(module =>
@@ -83,7 +102,10 @@ public sealed partial class ModuleHost
                     || !loaded.Version.Equals(package.Version, StringComparison.OrdinalIgnoreCase)
                     || !string.Equals(loaded.SourcePath, target, StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new InvalidOperationException("新包未形成后台确认的运行快照。");
+                    throw new InvalidOperationException(
+                        "新包未形成后台确认的运行快照。"
+                        + $" 期望 {package.Name} {package.Version} @ {target}；"
+                        + $" 实际 {(loaded == null ? "未装载" : $"{loaded.Version} @ {loaded.SourcePath}")}。");
                 }
 
                 if (Directory.Exists(backup))

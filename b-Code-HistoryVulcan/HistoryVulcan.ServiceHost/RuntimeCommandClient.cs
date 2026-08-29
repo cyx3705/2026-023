@@ -24,7 +24,8 @@ public static class RuntimeCommandClient
         var runId = Guid.NewGuid().ToString("N");
         try
         {
-            var result = ExecuteAsync(commandText, identityAssembly, approve).GetAwaiter().GetResult();
+            var result = ExecuteAsync(commandText, identityAssembly, approve, CancellationToken.None)
+                .GetAwaiter().GetResult();
             var exitCode = result.Success ? 0 : 1;
             Write(result, runId, exitCode, format);
             return exitCode;
@@ -46,16 +47,53 @@ public static class RuntimeCommandClient
         }
     }
 
+    /// <summary>
+    /// 开发管线把刚写入的工作区 z 装进活宿主。连接失败不降级成离线写盘。
+    /// </summary>
+    internal static async Task<CommandResult> ExecutePipelineAsync(
+        string commandText,
+        Assembly identityAssembly,
+        CancellationToken cancellation)
+    {
+        try
+        {
+            var result = await ExecuteAsync(commandText, identityAssembly, approve: true, cancellation)
+                .ConfigureAwait(false);
+            return result.Success
+                ? CommandResult.Ok(result.Message, result.Data)
+                : CommandResult.Fail(result.Message);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (TimeoutException ex)
+        {
+            return CommandResult.Fail(
+                $"活宿主不可达：{ex.Message}。候选若已写入工作区 z，不要把它当成已经热重载。");
+        }
+        catch (IOException ex)
+        {
+            return CommandResult.Fail(
+                $"活宿主不可达：{ex.Message}。请确认 HistoryVulcan 后台正在运行；runtime 不会降级为离线写盘。");
+        }
+        catch (Exception ex)
+        {
+            return CommandResult.Fail($"活宿主装包失败 {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
     private static async Task<RuntimeResponse> ExecuteAsync(
         string commandText,
         Assembly identityAssembly,
-        bool approve)
+        bool approve,
+        CancellationToken cancellation)
     {
         var identity = AppIdentity.From(identityAssembly);
         using var pipe = new NamedPipeClientStream(
             ".", RuntimePipeProtocol.PipeName(identity.Name), PipeDirection.InOut,
             PipeOptions.Asynchronous);
-        await pipe.ConnectAsync(1500).ConfigureAwait(false);
+        await pipe.ConnectAsync(1500, cancellation).ConfigureAwait(false);
         using var reader = new StreamReader(pipe, leaveOpen: true);
         using var writer = new StreamWriter(pipe, leaveOpen: true) { AutoFlush = true };
 

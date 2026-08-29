@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Services.Development;
 
 namespace HistoryVulcan.ServiceHost;
 
@@ -8,18 +9,20 @@ namespace HistoryVulcan.ServiceHost;
 /// 命令行入口：在本进程内执行一条已声明暴露的指令，打印结果后退出。
 /// </summary>
 /// <remarks>
-/// **它不连接任何正在运行的宿主，也不开任何监听。** 它自己装配一份组合根、装载模块、
-/// 执行一条指令、退出。这不是省事，是这条路存在的理由：
+/// <c>--cli</c> 自己装配一份离线组合根、执行一条指令、退出。这不是省事，是恢复通道
+/// 不能依赖「某个模块已经装载成功」或「活宿主已经起来」。
 ///
 /// 走 MCP 要 agent 的会话活着，走 Web 要 HistoryPortunus 装载成功——而需要用命令行的时刻，
-/// 恰恰是「某个模块坏了」或者「宿主起不来」。让恢复通道依赖被恢复的东西，等于没有通道。
-/// 本进程内执行不需要端口、不需要令牌、不需要 endpoint.json，也不需要另一个进程活着。
+/// 恰恰是「某个模块坏了」或者「宿主起不来」。本进程内执行不需要端口、不需要令牌、
+/// 不需要 endpoint.json。
 ///
-/// 代价是**它操作的是磁盘状态，不是活着的宿主**：装包、查指令面都成立，
-/// 而「让正在跑的那个宿主重载」不成立——那要走 <c>vulcan.module.install</c>。
-/// 两者的分工写在 <see cref="OfflineModuleInstall"/> 的注释里。
+/// 模块开发的 <c>vulcan.dev.submit</c> / <c>finish</c> 是例外：构建、写工作区 z、提交
+/// 仍在离线组合里完成；装包必须再经当前用户命名管道打到<strong>正在跑的</strong>宿主
+/// 执行 <c>vulcan.module.install</c>。不能把「本进程写了 AppData」说成热重载。
+/// 活宿主不可达时这条指令失败，不降级。宿主起不来时的磁盘恢复仍走
+/// <see cref="HistoryVulcan.Services.Modules.OfflineModuleInstall"/>。
 ///
-/// 暴露面见 <see cref="CliExposurePolicy"/>：一份 16 条的名单，恰好是开发管线与模块恢复。
+/// 暴露面见 <see cref="CliExposurePolicy"/>：一份名单，恰好是开发管线与模块恢复。
 /// 它是三个消费面里唯一不由描述符声明的——理由与那份名单的代价都写在该类注释里。
 /// </remarks>
 public static class CommandLineRunner
@@ -52,6 +55,11 @@ public static class CommandLineRunner
             // 阶段加载 WindowsDesktop 程序集，因此明确跳过它们。
             if (composition.Modules is not null)
                 composition.Modules.EnableUiModules = false;
+            if (DevelopmentCommands.LastRegistered is { } pipeline)
+            {
+                pipeline.LiveHost = (command, cancellation) =>
+                    RuntimeCommandClient.ExecutePipelineAsync(command, identityAssembly, cancellation);
+            }
 
             // 先解析、先查声明，**再装载模块**：未声明的指令不该换来一次完整装载的副作用。
             var parsed = CommandParser.Parse(commandText);

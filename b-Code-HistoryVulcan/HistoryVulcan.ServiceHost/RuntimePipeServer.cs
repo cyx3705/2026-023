@@ -15,6 +15,7 @@ internal sealed class RuntimePipeServer : IDisposable
         "portunus.mcp.stop",
         "vulcan.module.list",
         "vulcan.module.reload",
+        "vulcan.module.install",
     };
 
     private readonly ServiceComposition _composition;
@@ -105,7 +106,8 @@ internal sealed class RuntimePipeServer : IDisposable
 
         var action = name.Equals("portunus.mcp.start", StringComparison.OrdinalIgnoreCase)
             || name.Equals("portunus.mcp.stop", StringComparison.OrdinalIgnoreCase)
-            || name.Equals("vulcan.module.reload", StringComparison.OrdinalIgnoreCase);
+            || name.Equals("vulcan.module.reload", StringComparison.OrdinalIgnoreCase)
+            || name.Equals("vulcan.module.install", StringComparison.OrdinalIgnoreCase);
         if (action && !request.Approve)
         {
             await WriteAsync(writer, new RuntimeResponse(false,
