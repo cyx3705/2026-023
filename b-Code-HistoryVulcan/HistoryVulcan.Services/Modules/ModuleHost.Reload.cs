@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Runtime.Loader;
+using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 
 namespace HistoryVulcan.Services.Modules;
@@ -47,15 +48,120 @@ public sealed partial class ModuleHost
         ReloadCompleted?.Invoke();
     }
 
+    /// <summary>
+    /// 只把刚换上的那一个包装进当前快照。不要走 <see cref="Reload"/>：
+    /// 整仓拆除会拆掉 Aurora 等其它模块的界面与指令。
+    /// 调用方必须已持有 <c>_reloadLock</c>。
+    /// </summary>
+    private void LoadOne(string packagePath)
+    {
+        if (!RuntimeModuleDiscoverySource.TryReadPackage(
+                packagePath, out var entry, out _, out var error))
+        {
+            throw new InvalidOperationException($"无法装载刚安装的包: {error}");
+        }
+
+        if (ReferenceEquals(_current, Snapshot.Empty))
+            _current = new Snapshot();
+
+        var snap = _current;
+        var pendingBefore = snap.PendingCommands.Count;
+        _building = snap;
+        try
+        {
+            PublishXamlContexts();
+            LoadDiscoveredModule(snap, entry);
+            CommitAddedCommands(snap, pendingBefore, entry.Name);
+        }
+        catch
+        {
+            TeardownAddedModule(snap, entry.Name, pendingBefore);
+            throw;
+        }
+        finally
+        {
+            _building = null;
+            PublishXamlContexts();
+        }
+    }
+
+    private void CommitAddedCommands(Snapshot snap, int pendingBefore, string moduleName)
+    {
+        void Commit()
+        {
+            if (_registry == null)
+            {
+                snap.ReplaceModuleMeta(moduleName);
+                return;
+            }
+
+            for (var i = pendingBefore; i < snap.PendingCommands.Count; i++)
+            {
+                var (descriptor, owner) = snap.PendingCommands[i];
+                try
+                {
+                    var ownedDescriptor = ModuleCommandTaxonomy.Apply(descriptor, owner);
+                    _registry.Register(ownedDescriptor, $"module:{owner}");
+                    snap.RegisteredNames.Add(descriptor.Name);
+                    snap.CountCommand(owner);
+                }
+                catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+                {
+                    _log.Error("module", $"模块 {owner} 的指令 {descriptor.Name} 被拒绝注册: {ex.Message}");
+                }
+            }
+
+            snap.ReplaceModuleMeta(moduleName);
+        }
+
+        var ui = UiContext;
+        if (ui == null)
+            Commit();
+        else
+            ui.Send(_ => Commit(), null);
+
+        _log.Info("module", $"已装入模块 {moduleName}，未拆除其它模块");
+    }
+
+    private void TeardownAddedModule(Snapshot snap, string moduleName, int pendingBefore)
+    {
+        if (snap.PendingCommands.Count > pendingBefore)
+            snap.PendingCommands.RemoveRange(pendingBefore, snap.PendingCommands.Count - pendingBefore);
+        snap.Metas.RemoveAll(meta =>
+            meta.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
+        if (snap.ContextsByOwner.Remove(moduleName, out var alc)
+            && snap.ContextsByOwner.Values.All(remaining => !ReferenceEquals(remaining, alc))
+            && !ReferenceEquals(alc, AssemblyLoadContext.Default))
+        {
+            DisposeInstances(snap.InstancesFrom(alc));
+            snap.DropInstancesFrom(alc);
+            snap.Contexts.Remove(alc);
+            alc.Unload();
+        }
+    }
+
     private void TeardownSnapshot(Snapshot old)
     {
         if (old.Modules.Count > 0 || old.Contexts.Count > 0)
             _log.Info("module", "热重载：先拆除旧界面并卸载可回收上下文，再装新包");
 
+        // 必须在 Build / Attach 之前把旧模块指令从活登记表拿掉。
+        // HistoryAurora 的 RegisterCommands 看见 live.TryGet 为真就会跳过；
+        // 若拆实例后仍留着旧指令，重载后界面命令数会变成 0，且 attachFailures 为空。
+        UnregisterSnapshotCommands(old);
         DisposeInstances(old.Instances);
 
         foreach (var alc in old.Contexts)
             alc.Unload();
+    }
+
+    private void UnregisterSnapshotCommands(Snapshot old)
+    {
+        if (_registry == null)
+            return;
+
+        foreach (var name in old.RegisteredNames.ToList())
+            _registry.Unregister(name);
     }
 
     /// <summary>

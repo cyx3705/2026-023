@@ -76,7 +76,8 @@ HistoryVulcan.Cli.exe --cli vulcan.dev.finish name=<模块> msg=<说明> worktre
 工作区 `submit` 覆盖同版本当前候选；主树正式促级仍拒绝内容不同的同版本覆盖。
 
 脚本使用 `--format json` 时 stdout 只输出一个结果对象，字段固定为 `runId`、`success`、`exitCode`、
-`executionTarget`、`candidatePath`、`installedPath`、`runtimeAck`、`logPath`、`diagnostics`。
+`executionTarget`、`candidatePath`、`installedPath`、`runtimeAck`、`logPath`、`diagnostics`、`data`。
+`vulcan.module.list` 的模块名、版本、`instanceId`、`commandCount` 在 `data`。
 
 `--runtime` 只用于查询已运行宿主的受限状态，或执行批准过的 `reload` / `install`；
 模块开发的装包由 `submit`/`finish` 内部走同一条 `install`，不要单独调。

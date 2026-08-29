@@ -373,7 +373,7 @@ namespace HistoryVulcan.Tests
         /// <summary>按模块卸载：vulcan.module.unload / install / remove 的必经之路。</summary>
         PerModuleUnload,
 
-        /// <summary>整快照热重载：装包与 vulcan.module.reload 的公共尾段。</summary>
+        /// <summary>整快照热重载：vulcan.module.reload。装包走 LoadOne，不走这条。</summary>
         FullReload,
     }
 
@@ -381,8 +381,10 @@ namespace HistoryVulcan.Tests
     {
         public const string EnabledVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_ENABLED";
         public const string VersionVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_VERSION";
+        public const string NameVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_NAME";
 
-        public override string ModuleName => "contextfixture";
+        public override string ModuleName
+            => Environment.GetEnvironmentVariable(NameVariable) ?? "contextfixture";
 
         public override string Version
             => Environment.GetEnvironmentVariable(VersionVariable) ?? "v1.0.0";

@@ -231,4 +231,27 @@ public sealed class CommandLineEntryTests
         Assert.True(ServiceComposer.IsLocalModuleMutationSource("UI"));
         Assert.False(ServiceComposer.IsLocalModuleMutationSource("mcp:agent"));
     }
+
+    [Fact]
+    public void JsonEnvelopeCarriesCommandDataForRuntimeList()
+    {
+        var envelope = new CliResultEnvelope(
+            "run",
+            true,
+            0,
+            "runtime-host",
+            null,
+            null,
+            new { hostVersion = "5.1.2", moduleInstanceIds = new[] { "abc" } },
+            null,
+            [],
+            new[] { new { moduleName = "HistoryJanus", version = "5.4.8", instanceId = "abc", commandCount = 41 } });
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            envelope,
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+        Assert.Contains("\"data\"", json, StringComparison.Ordinal);
+        Assert.Contains("HistoryJanus", json, StringComparison.Ordinal);
+        Assert.Contains("5.4.8", json, StringComparison.Ordinal);
+        Assert.Contains("commandCount", json, StringComparison.Ordinal);
+    }
 }

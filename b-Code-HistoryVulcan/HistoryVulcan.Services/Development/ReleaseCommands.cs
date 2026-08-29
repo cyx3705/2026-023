@@ -548,8 +548,8 @@ internal static class ReleaseCommands
         text.Append("\n测试不通过时，从主树候选或 z-Publish/history 再调同一热重载接口，不会自动恢复。");
         if (isWorktree)
         {
-            text.Append("\n可继续在此工作区开发，或 vulcan.worktree.merge 并回主线。");
-            text.Append("\n若对话根已在工作区内（grok 切过根），合并前先迁到宿主主树或该模块 Clio 主树再 merge；合并会删工作区目录。其他 AI 对话不在工作区里，可直接 merge。");
+            text.Append("\n可继续在此工作区开发。人审批通过后 vulcan.dev.finish。");
+            text.Append("\n若对话根已在工作区内（grok 切过根），finish 前先迁到该模块 Clio 主树。其他 AI 对话不在工作区里，可直接 finish。");
         }
 
         return reload.Success

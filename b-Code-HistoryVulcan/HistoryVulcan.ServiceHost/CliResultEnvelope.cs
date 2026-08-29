@@ -10,4 +10,5 @@ public sealed record CliResultEnvelope(
     string? InstalledPath,
     object? RuntimeAck,
     string? LogPath,
-    IReadOnlyList<string> Diagnostics);
+    IReadOnlyList<string> Diagnostics,
+    object? Data = null);

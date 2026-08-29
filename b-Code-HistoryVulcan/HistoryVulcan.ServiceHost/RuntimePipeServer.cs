@@ -34,6 +34,7 @@ internal sealed class RuntimePipeServer : IDisposable
             hostVersion,
             Guid.NewGuid().ToString("N"),
             "",
+            [],
             []);
         _loop = Task.Run(ServeAsync);
     }
@@ -143,12 +144,23 @@ internal sealed class RuntimePipeServer : IDisposable
         {
             RequestId = requestId,
             ModuleInstanceIds = CurrentModuleInstanceIds(),
+            Modules = CurrentModules(),
         };
 
     private IReadOnlyList<string> CurrentModuleInstanceIds()
-        => _composition.Modules?.Modules
+        => CurrentModules()
             .Select(module => module.InstanceId)
             .Where(instanceId => !string.IsNullOrWhiteSpace(instanceId))
+            .ToList();
+
+    private IReadOnlyList<RuntimeModuleAck> CurrentModules()
+        => _composition.Modules?.Modules
+            .Select(module => new RuntimeModuleAck(
+                module.ModuleName,
+                module.Version,
+                module.CommandCount,
+                module.InstanceId,
+                module.Attached))
             .ToList() ?? [];
 
     private static async Task<T?> ReadAsync<T>(StreamReader reader)

@@ -1,6 +1,7 @@
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Storage;
+using HistoryVulcan.Services.Commands;
 using HistoryVulcan.Services.Development;
 using HistoryVulcan.Services.Development.Pipeline;
 using Xunit;
@@ -288,6 +289,33 @@ public sealed class PipelineHardeningTests
             if (Directory.Exists(publish))
                 Directory.Delete(publish, recursive: true);
         }
+    }
+
+    [Fact]
+    public async Task CliShowListsSubmitParametersIncludingOptionalWorktree()
+    {
+        var registry = new CommandRegistry();
+        CommandCatalogCommands.RegisterAll(registry);
+        registry.Register(new CommandDescriptor
+        {
+            Name = "vulcan.dev.submit",
+            Summary = "模块开发第 2 步",
+            Example = "vulcan.dev.submit name=HistoryJanus msg=fix worktree=abc",
+            Parameters =
+            [
+                new ParameterSpec { Name = "name", Required = true, Description = "已登记的模块名" },
+                new ParameterSpec { Name = "msg", Required = true, Description = "提交说明" },
+                new ParameterSpec { Name = "worktree", Required = false, Description = "省略则走主树" },
+                new ParameterSpec { Name = "allowDirty", Required = false, Default = "false", Description = "允许脏树" },
+            ],
+            Handler = CommandDescriptor.Sync(_ => CommandResult.Ok()),
+        });
+        var bus = new CommandBus(registry, new NullLog());
+        var result = await bus.ExecuteAsync("vulcan.cli.show name=vulcan.dev.submit", "test");
+        Assert.True(result.Success, result.Message);
+        Assert.Contains("worktree", result.Message, StringComparison.Ordinal);
+        Assert.Contains("可省略", result.Message, StringComparison.Ordinal);
+        Assert.Contains("allowDirty", result.Message, StringComparison.Ordinal);
     }
 
     [Fact]

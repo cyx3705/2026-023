@@ -311,6 +311,36 @@ public sealed partial class ModuleHost
             }
         }
 
+        public void ReplaceModuleMeta(string moduleName)
+        {
+            Modules.RemoveAll(module =>
+                module.ModuleName.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
+            var group = Metas
+                .Where(meta => meta.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (group.Count == 0)
+                return;
+            var first = group.First();
+            Modules.Add(new ModuleMeta(
+                first.Name,
+                string.Join("; ", group.Select(meta => meta.Desc).Where(value => value.Length > 0)),
+                first.Author,
+                first.Version,
+                group.Any(meta => meta.Open),
+                first.File,
+                _commandCounts.GetValueOrDefault(first.Name),
+                first.Slot,
+                group.Any(meta => meta.Ui))
+            {
+                InstanceId = Guid.NewGuid().ToString("N"),
+                SourcePath = first.SourcePath,
+                ManifestPath = first.ManifestPath,
+                AttachFailures = AttachFailures.GetValueOrDefault(first.Name) is { } reasons
+                    ? reasons.ToArray()
+                    : [],
+            });
+        }
+
         public void FinalizeMetas()
         {
             Modules.Clear();

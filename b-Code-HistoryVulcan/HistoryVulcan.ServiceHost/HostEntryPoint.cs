@@ -11,6 +11,7 @@ public static class HostEntryPoint
 {
     public static int Run(string[] args, Assembly identityAssembly)
     {
+        EnsureUtf8Console();
         var parsed = HostArgumentParser.Parse(args);
         if (IsGuiWithoutConsole(identityAssembly, parsed.Action))
             return RunToReleaseLog(parsed, identityAssembly);
@@ -94,6 +95,19 @@ public static class HostEntryPoint
             Console.SetError(originalError);
             output.Dispose();
             error.Dispose();
+        }
+    }
+
+    private static void EnsureUtf8Console()
+    {
+        try
+        {
+            Console.OutputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            Console.InputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+        }
+        catch (IOException)
+        {
+            // 无控制台的 GUI 入口不改编码。
         }
     }
 

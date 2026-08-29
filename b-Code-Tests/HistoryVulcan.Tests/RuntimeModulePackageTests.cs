@@ -109,6 +109,51 @@ public sealed class RuntimeModulePackageTests
     }
 
     [Fact]
+    public void InstallSwapsOneModuleWithoutTearingDownTheWholeSnapshot()
+    {
+        using var temp = new TemporaryDirectory();
+        var runtime = Path.Combine(temp.Path, "HistoryVulcan", "Modules");
+        var candidates = Directory.CreateDirectory(Path.Combine(temp.Path, "candidates")).FullName;
+        var first = CreatePackage(candidates, "first", "contextfixture", "v1.0.0");
+        var second = CreatePackage(candidates, "second", "contextfixture", "v2.0.0");
+        var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable);
+
+        var registry = new CommandRegistry();
+        var log = new TestLog();
+        var settings = new MemorySettings();
+        var bus = new CommandBus(registry, log);
+        using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
+        {
+            EnableFileWatching = false,
+        };
+
+        try
+        {
+            host.Attach(registry, bus, settings, Path.Combine(temp.Path, "data"));
+            host.Start();
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
+            Assert.True(host.InstallPackage(first).Success);
+            var firstId = Assert.Single(host.Modules).InstanceId;
+
+            log.Entries.Clear();
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v2.0.0");
+            var upgraded = host.InstallPackage(second);
+            Assert.True(upgraded.Success, upgraded.Message);
+            Assert.DoesNotContain(log.Entries, entry =>
+                entry.Message.Contains("先拆除旧界面", StringComparison.Ordinal));
+            Assert.Contains(log.Entries, entry =>
+                entry.Message.Contains("未拆除其它模块", StringComparison.Ordinal));
+            var loaded = Assert.Single(host.Modules);
+            Assert.Equal("v2.0.0", loaded.Version);
+            Assert.NotEqual(firstId, loaded.InstanceId);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, previous);
+        }
+    }
+
+    [Fact]
     public void FailedUpgradeRestoresThePreviouslyLoadedPackage()
     {
         using var temp = new TemporaryDirectory();
@@ -222,6 +267,61 @@ public sealed class RuntimeModulePackageTests
         finally
         {
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, previous);
+        }
+    }
+
+    [Fact]
+    public void InstallingOnePackageDoesNotDropANeighborModulesCommands()
+    {
+        using var temp = new TemporaryDirectory();
+        var runtime = Path.Combine(temp.Path, "HistoryVulcan", "Modules");
+        var candidates = Directory.CreateDirectory(Path.Combine(temp.Path, "candidates")).FullName;
+        var first = CreatePackage(candidates, "first", "contextfixture", "v1.0.0");
+        var neighbor = CreatePackage(candidates, "neighbor", "neighbor", "v1.0.0");
+        var upgraded = CreatePackage(candidates, "upgraded", "contextfixture", "v2.0.0");
+        var previousVersion = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable);
+        var previousName = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.NameVariable);
+
+        var registry = new CommandRegistry();
+        var log = new TestLog();
+        var settings = new MemorySettings();
+        var bus = new CommandBus(registry, log);
+        using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
+        {
+            EnableFileWatching = false,
+        };
+
+        try
+        {
+            host.Attach(registry, bus, settings, Path.Combine(temp.Path, "data"));
+            host.Start();
+
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.NameVariable, "contextfixture");
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
+            Assert.True(host.InstallPackage(first).Success);
+            Assert.True(registry.TryGet("contextfixture.Probe", out _));
+
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.NameVariable, "neighbor");
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
+            Assert.True(host.InstallPackage(neighbor).Success);
+            Assert.Equal(2, host.Modules.Count);
+            Assert.True(registry.TryGet("contextfixture.Probe", out _));
+            Assert.True(registry.TryGet("neighbor.Probe", out _));
+            var neighborId = host.Modules.Single(module => module.ModuleName == "neighbor").InstanceId;
+
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.NameVariable, "contextfixture");
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v2.0.0");
+            var result = host.InstallPackage(upgraded);
+            Assert.True(result.Success, result.Message);
+            Assert.Equal("v2.0.0", host.Modules.Single(module => module.ModuleName == "contextfixture").Version);
+            Assert.Equal(neighborId, host.Modules.Single(module => module.ModuleName == "neighbor").InstanceId);
+            Assert.True(registry.TryGet("neighbor.Probe", out _));
+            Assert.True(registry.TryGet("contextfixture.Probe", out _));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, previousVersion);
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.NameVariable, previousName);
         }
     }
 

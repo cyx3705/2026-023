@@ -302,7 +302,8 @@ public sealed partial class ModuleHost : IDisposable
             }
         }
 
-        snap.FinalizeMetas();
+        snap.Modules.RemoveAll(module =>
+            module.ModuleName.Equals(owner, StringComparison.OrdinalIgnoreCase));
         _log.Info("module", $"已卸载模块: {owner}");
         return CommandResult.Ok($"已卸载模块: {owner}");
     }

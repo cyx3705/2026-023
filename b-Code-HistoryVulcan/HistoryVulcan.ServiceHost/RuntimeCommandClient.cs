@@ -128,7 +128,7 @@ public static class RuntimeCommandClient
         {
             Console.WriteLine(JsonSerializer.Serialize(new CliResultEnvelope(
                 runId, result.Success, exitCode, "runtime-host", null, null,
-                result.RuntimeAck, null, result.Success ? [] : [result.Message]), JsonOptions));
+                result.RuntimeAck, null, result.Success ? [] : [result.Message], result.Data), JsonOptions));
             return;
         }
 
@@ -191,7 +191,15 @@ internal sealed record RuntimeAck(
     string HostVersion,
     string InstanceId,
     string RequestId,
-    IReadOnlyList<string> ModuleInstanceIds);
+    IReadOnlyList<string> ModuleInstanceIds,
+    IReadOnlyList<RuntimeModuleAck> Modules);
+
+internal sealed record RuntimeModuleAck(
+    string Name,
+    string Version,
+    int CommandCount,
+    string InstanceId,
+    bool Attached);
 
 internal sealed record RuntimeResponse(
     bool Success,

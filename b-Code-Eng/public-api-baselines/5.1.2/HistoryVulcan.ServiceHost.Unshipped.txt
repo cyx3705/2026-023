@@ -52,7 +52,9 @@ static HistoryVulcan.ServiceHost.CommandLineRunner.Run(string! commandText, Syst
 static HistoryVulcan.ServiceHost.HostArgumentParser.Parse(string![]! args) -> HistoryVulcan.ServiceHost.HostArguments
 static HistoryVulcan.ServiceHost.HostArgumentParser.UsageLines.get -> System.Collections.Generic.IReadOnlyList<string!>!
 HistoryVulcan.ServiceHost.CliResultEnvelope
-HistoryVulcan.ServiceHost.CliResultEnvelope.CliResultEnvelope(string! RunId, bool Success, int ExitCode, string! ExecutionTarget, string? CandidatePath, string? InstalledPath, object? RuntimeAck, string? LogPath, System.Collections.Generic.IReadOnlyList<string!>! Diagnostics) -> void
+HistoryVulcan.ServiceHost.CliResultEnvelope.CliResultEnvelope(string! RunId, bool Success, int ExitCode, string! ExecutionTarget, string? CandidatePath, string? InstalledPath, object? RuntimeAck, string? LogPath, System.Collections.Generic.IReadOnlyList<string!>! Diagnostics, object? Data = null) -> void
+HistoryVulcan.ServiceHost.CliResultEnvelope.Data.get -> object?
+HistoryVulcan.ServiceHost.CliResultEnvelope.Data.init -> void
 HistoryVulcan.ServiceHost.CliResultEnvelope.RunId.get -> string!
 HistoryVulcan.ServiceHost.CliResultEnvelope.RunId.init -> void
 HistoryVulcan.ServiceHost.CliResultEnvelope.Success.get -> bool

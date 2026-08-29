@@ -152,7 +152,8 @@ public static class CommandLineRunner
                 InstalledPath: ReadString(data, "InstalledPath", "Installed"),
                 RuntimeAck: ReadValue(data, "RuntimeAck", "Ack"),
                 LogPath: ReadString(data, "LogPath", "Log"),
-                Diagnostics: string.IsNullOrWhiteSpace(result.Message) ? [] : [result.Message]);
+                Diagnostics: string.IsNullOrWhiteSpace(result.Message) ? [] : [result.Message],
+                Data: data);
             Console.WriteLine(JsonSerializer.Serialize(envelope, JsonOptions));
             return;
         }

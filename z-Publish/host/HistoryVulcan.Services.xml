@@ -750,6 +750,13 @@
             程序集；默认上下文的 Resolving 钩子会命中旧的那份，新窗口的 XAML 随即解析失败。
             </summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.LoadOne(System.String)">
+            <summary>
+            只把刚换上的那一个包装进当前快照。不要走 <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.Reload"/>：
+            整仓拆除会拆掉 Aurora 等其它模块的界面与指令。
+            调用方必须已持有 <c>_reloadLock</c>。
+            </summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.DisposeInstances(System.Collections.Generic.IReadOnlyList{System.Object})">
              <summary>
              回收模块实例持有的进程级资源。

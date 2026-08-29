@@ -47,7 +47,6 @@ public sealed partial class ModuleHost
                 && installed.Version.Equals(package.Version, StringComparison.OrdinalIgnoreCase)
                 && RuntimeModulePackageStore.ChecksumsEqual(source, target))
             {
-                Reload();
                 return CommandResult.Ok($"{package.Name} {package.Version} 已安装，内容一致，无需替换。");
             }
 
@@ -95,7 +94,7 @@ public sealed partial class ModuleHost
                         onDisk);
                 }
 
-                Reload();
+                LoadOne(target);
                 var loaded = _current.Modules.FirstOrDefault(module =>
                     module.ModuleName.Equals(package.Name, StringComparison.OrdinalIgnoreCase));
                 if (loaded == null
@@ -117,7 +116,11 @@ public sealed partial class ModuleHost
                                        or InvalidOperationException)
             {
                 var rollback = RuntimeModulePackageStore.RestorePackage(target, backup);
-                try { Reload(); }
+                try
+                {
+                    if (Directory.Exists(target))
+                        LoadOne(target);
+                }
                 catch (Exception reloadEx) { rollback += $"；恢复后重载失败: {reloadEx.Message}"; }
                 return CommandResult.Fail($"安装失败: {ex.Message}{rollback}");
             }
@@ -157,7 +160,6 @@ public sealed partial class ModuleHost
                         module.ModuleName.Equals(moduleName, StringComparison.OrdinalIgnoreCase)))
                     UnloadFromSnapshot(moduleName);
                 Directory.Move(target, backup);
-                Reload();
                 if (_current.Modules.Any(module =>
                         module.ModuleName.Equals(moduleName, StringComparison.OrdinalIgnoreCase)))
                 {
@@ -171,7 +173,11 @@ public sealed partial class ModuleHost
                                        or InvalidOperationException)
             {
                 var rollback = RuntimeModulePackageStore.RestorePackage(target, backup);
-                try { Reload(); }
+                try
+                {
+                    if (Directory.Exists(target))
+                        LoadOne(target);
+                }
                 catch (Exception reloadEx) { rollback += $"；恢复后重载失败: {reloadEx.Message}"; }
                 return CommandResult.Fail($"移除失败: {ex.Message}{rollback}");
             }

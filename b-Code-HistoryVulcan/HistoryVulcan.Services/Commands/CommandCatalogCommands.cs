@@ -94,7 +94,7 @@ public static class CommandCatalogCommands
     public static void RegisterAll(CommandRegistry registry, string source = "app")
     {
         registry.Register(BuildCliList(), source);
-        registry.Register(BuildCliShow(), source);
+        registry.Register(BuildCliShow(registry), source);
         registry.Register(BuildList(registry), source);
         registry.Register(BuildShow(registry), source);
         registry.Register(BuildDomains(registry), source);
@@ -130,7 +130,7 @@ public static class CommandCatalogCommands
         }),
     };
 
-    private static CommandDescriptor BuildCliShow() => new()
+    private static CommandDescriptor BuildCliShow(CommandRegistry registry) => new()
     {
         Name = "vulcan.cli.show",
         Domain = "vulcan",
@@ -149,10 +149,48 @@ public static class CommandCatalogCommands
                     + "运行中的宿主请改用 HistoryVulcan.Cli.exe --runtime。");
             var mode = exposed.StartsWith("portunus.", StringComparison.OrdinalIgnoreCase)
                 ? "runtime-only" : "offline";
+            var approval = mode == "runtime-only" ? "--approve for actions" : "none";
+            if (!registry.TryGet(exposed, out var descriptor))
+            {
+                return CommandResult.Ok(
+                    $"{exposed}\n执行目标: {mode}\n"
+                    + "副作用: 由命令描述符确认级别决定；runtime 动作必须显式 --approve。\n"
+                    + "当前注册表尚未装入该指令，无法列出参数。",
+                    new { Name = exposed, Mode = mode, Approval = approval, Parameters = Array.Empty<object>() });
+            }
+
+            var parameters = descriptor.Parameters.Select(parameter => new
+            {
+                parameter.Name,
+                Type = parameter.Type.ToString().ToLowerInvariant(),
+                parameter.Required,
+                parameter.Default,
+                parameter.Position,
+                parameter.Description,
+            }).ToList();
+            var text = new StringBuilder($"{exposed}\n执行目标: {mode}\n")
+                .Append("副作用: 由命令描述符确认级别决定；runtime 动作必须显式 --approve。\n")
+                .Append(descriptor.Summary);
+            if (!string.IsNullOrWhiteSpace(descriptor.Example))
+                text.Append($"\n示例: {descriptor.Example}");
+            foreach (var parameter in descriptor.Parameters)
+            {
+                var required = parameter.Required ? "必填" : "可省略";
+                var def = string.IsNullOrWhiteSpace(parameter.Default) ? "" : $" 默认={parameter.Default}";
+                text.Append($"\n  {parameter.Name} ({required}{def}): {parameter.Description}");
+            }
+
             return CommandResult.Ok(
-                $"{exposed}\n执行目标: {mode}\n"
-                + "副作用: 由命令描述符确认级别决定；runtime 动作必须显式 --approve。",
-                new { Name = exposed, Mode = mode, Approval = mode == "runtime-only" ? "--approve for actions" : "none" });
+                text.ToString(),
+                new
+                {
+                    Name = exposed,
+                    Mode = mode,
+                    Approval = approval,
+                    descriptor.Summary,
+                    descriptor.Example,
+                    Parameters = parameters,
+                });
         }),
     };
 
