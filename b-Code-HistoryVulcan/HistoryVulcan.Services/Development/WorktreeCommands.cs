@@ -149,17 +149,12 @@ internal static class WorktreeCommands
         var projectRoot = Path.Combine(root, projectName);
         Directory.CreateDirectory(projectRoot);
 
-        // 同一提交上常并行开多个尝试，序号取当前已存在的同 SHA 工作区数加一。
-        var ordinal = Directory.Exists(projectRoot)
-            ? Directory.GetDirectories(projectRoot)
-                .Count(dir => Path.GetFileName(dir).StartsWith(head + "-", StringComparison.Ordinal)) + 1
-            : 1;
-        var name = $"{head}-{ordinal}-{author}-{identifier}";
-        var worktreePath = Path.Combine(projectRoot, name);
-        var branch = $"ai/{projectName}/{name}";
-
-        if (Directory.Exists(worktreePath))
-            return CommandResult.Fail($"工作区已存在：{worktreePath}");
+        // 同一提交上常并行开多个尝试。序号跳过已有目录，也跳过 finish 留下的同名分支
+        // （分支一律保留，目录会删掉；只数目录会一直撞 -1- 的旧分支名）。
+        if (!TryAllocateName(
+                projectPath, projectRoot, projectName, head, author, identifier,
+                out var name, out var worktreePath, out var branch, out var allocateError))
+            return CommandResult.Fail(allocateError);
 
         // 克制闸门：对话窗口随时废弃，但工作区留在盘上。已经有一个"开了没干活"的工作区时，
         // 默认拒绝再开一个——那多半是上一轮对话的残留，应该接着用或先回收，而不是又堆一个。
@@ -169,7 +164,7 @@ internal static class WorktreeCommands
             if (idle != null)
             {
                 return CommandResult.Fail(
-                    $"项目已有闲置工作区 {idle}（无提交、无改动）。接着用它，或先 vulcan.worktree.merge 回收；"
+                    $"项目已有闲置工作区 {idle}（无提交、无改动）。接着用它，或先 vulcan.dev.finish 回收；"
                     + "确实需要并行再开时传 confirm=true。");
             }
         }
@@ -185,7 +180,7 @@ internal static class WorktreeCommands
         text.Append($"\n分支: {branch}（基于 {head}）");
         text.Append($"\n项目: {projectPath}");
         text.Append($"\n{overrideNote}");
-        text.Append("\ngrok 按手册四步把对话根迁进此工作区；其他 AI 不要切根，按上面的路径改文件。若对话根已在工作区内，合并前先迁走再 vulcan.worktree.merge。");
+        text.Append("\ngrok 按手册四步把对话根迁进此工作区；其他 AI 不要切根，按上面的路径改文件。若对话根已在工作区内，finish 前先迁走再 vulcan.dev.finish。");
         return CommandResult.Ok(text.ToString(), new
         {
             Name = name,
@@ -233,6 +228,49 @@ internal static class WorktreeCommands
         }
     }
 
+
+    /// <summary>
+    /// 分配未被目录占用、也未被残留分支占用的工作区名。finish 后分支保留、目录删除，
+    /// 只数目录会反复撞上 <c>-1-</c> 的旧分支。
+    /// </summary>
+    internal static bool TryAllocateName(
+        string projectPath,
+        string projectRoot,
+        string projectName,
+        string head,
+        string author,
+        string identifier,
+        out string name,
+        out string worktreePath,
+        out string branch,
+        out string error)
+    {
+        name = "";
+        worktreePath = "";
+        branch = "";
+        error = "";
+        for (var ordinal = 1; ordinal <= 99; ordinal++)
+        {
+            var candidate = $"{head}-{ordinal}-{author}-{identifier}";
+            var path = Path.Combine(projectRoot, candidate);
+            var candidateBranch = $"ai/{projectName}/{candidate}";
+            if (Directory.Exists(path) || BranchExists(projectPath, candidateBranch))
+                continue;
+            name = candidate;
+            worktreePath = path;
+            branch = candidateBranch;
+            return true;
+        }
+
+        error = $"无法分配工作区名：{head}-*-{author}-{identifier} 的目录或同名分支已占满 1–99。换一个 slug 再 vulcan.dev.start。";
+        return false;
+    }
+
+    private static bool BranchExists(string projectPath, string branch)
+    {
+        var (_, error) = Git(projectPath, "show-ref", "--verify", "--quiet", "refs/heads/" + branch);
+        return error == null;
+    }
 
     /// <summary>找出"开了但没干活"的工作区：既无未提交改动，其分支也没有领先主干的提交。</summary>
     private static string? FindIdleWorktree(string projectPath, string projectRoot)

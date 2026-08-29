@@ -500,6 +500,12 @@
             因此工作树从诞生起就是干净的；项目侧没有 Directory.Build.props 时不写，避免留下无人 Import 的孤儿文件。
             </remarks>
         </member>
+        <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.TryAllocateName(System.String,System.String,System.String,System.String,System.String,System.String,System.String@,System.String@,System.String@,System.String@)">
+            <summary>
+            分配未被目录占用、也未被残留分支占用的工作区名。finish 后分支保留、目录删除，
+            只数目录会反复撞上 <c>-1-</c> 的旧分支。
+            </summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.FindIdleWorktree(System.String,System.String)">
             <summary>找出"开了但没干活"的工作区：既无未提交改动，其分支也没有领先主干的提交。</summary>
         </member>
