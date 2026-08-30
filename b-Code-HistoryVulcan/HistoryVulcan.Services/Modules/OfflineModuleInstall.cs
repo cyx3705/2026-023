@@ -91,6 +91,7 @@ public static class OfflineModuleInstall
             if (Directory.Exists(target))
                 Directory.Move(target, backup);
             Directory.Move(staging, target);
+            RuntimeModulePackageStore.PreserveMutableData(backup, target);
 
             if (Directory.Exists(backup))
                 Directory.Delete(backup, recursive: true);

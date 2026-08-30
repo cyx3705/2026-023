@@ -23,6 +23,8 @@ internal sealed class RuntimePipeServer : IDisposable
     private readonly RuntimeAck _ack;
     private readonly CancellationTokenSource _shutdown = new();
     private readonly Task _loop;
+    private NamedPipeServerStream? _activePipe;
+    private int _disposed;
 
     private RuntimePipeServer(ServiceComposition composition, string identityName, string hostVersion)
     {
@@ -56,14 +58,23 @@ internal sealed class RuntimePipeServer : IDisposable
                     PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly,
                     4096,
                     4096);
-                await pipe.WaitForConnectionAsync(_shutdown.Token).ConfigureAwait(false);
-                await HandleAsync(pipe).ConfigureAwait(false);
+                Interlocked.Exchange(ref _activePipe, pipe);
+                try
+                {
+                    await pipe.WaitForConnectionAsync(_shutdown.Token).ConfigureAwait(false);
+                    await HandleAsync(pipe).ConfigureAwait(false);
+                }
+                finally
+                {
+                    Interlocked.CompareExchange(ref _activePipe, null, pipe);
+                }
             }
             catch (OperationCanceledException) when (_shutdown.IsCancellationRequested)
             {
                 return;
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException
+                                       or JsonException or InvalidDataException)
             {
                 if (!_shutdown.IsCancellationRequested)
                     await Task.Delay(100, _shutdown.Token).ConfigureAwait(false);
@@ -80,27 +91,48 @@ internal sealed class RuntimePipeServer : IDisposable
             "hello", challenge, _ack.ProcessId, _ack.StartedUtc, _ack.HostVersion, _ack.InstanceId,
             CurrentModuleInstanceIds());
         await writer.WriteLineAsync(JsonSerializer.Serialize(hello, JsonOptions)).ConfigureAwait(false);
-        var request = await ReadAsync<RuntimeRequest>(reader).ConfigureAwait(false);
+        RuntimeRequest? request;
+        try
+        {
+            request = await ReadAsync<RuntimeRequest>(reader, _shutdown.Token).ConfigureAwait(false);
+        }
+        catch (JsonException ex)
+        {
+            await WriteAsync(writer, new RuntimeResponse(
+                false, $"运行时请求 JSON 无效：{ex.Message}", null, null)).ConfigureAwait(false);
+            return;
+        }
         if (request is null)
             return;
 
-        var name = CommandParser.Parse(request.Command).Name;
-        if (!request.Type.Equals(RuntimePipeProtocol.RequestType, StringComparison.OrdinalIgnoreCase)
-            || !request.Challenge.Equals(challenge, StringComparison.Ordinal)
+        var command = request.Command ?? "";
+        string name;
+        try
+        {
+            name = CommandParser.Parse(command).Name;
+        }
+        catch (CommandSyntaxException ex)
+        {
+            await WriteAsync(writer, new RuntimeResponse(
+                false, $"原始命令: {command}\n运行时指令无效：{ex.Message}", null, null)).ConfigureAwait(false);
+            return;
+        }
+        if (!string.Equals(request.Type, RuntimePipeProtocol.RequestType, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(request.Challenge, challenge, StringComparison.Ordinal)
             || request.HostProcessId != _ack.ProcessId
             || request.HostStartedUtc != _ack.StartedUtc
-            || !request.HostInstanceId.Equals(_ack.InstanceId, StringComparison.Ordinal)
+            || !string.Equals(request.HostInstanceId, _ack.InstanceId, StringComparison.Ordinal)
             || string.IsNullOrWhiteSpace(name))
         {
             await WriteAsync(writer, new RuntimeResponse(false,
-                $"原始命令: {request.Command}\n运行时握手或请求无效。", null, null)).ConfigureAwait(false);
+                $"原始命令: {command}\n运行时握手或请求无效。", null, null)).ConfigureAwait(false);
             return;
         }
 
         if (!Allowed.Contains(name))
         {
             await WriteAsync(writer, new RuntimeResponse(false,
-                $"原始命令: {request.Command}\n指令 {name} 不在 runtime 白名单中；请使用 GUI 控制台或 --cli 离线恢复。", null,
+                $"原始命令: {command}\n指令 {name} 不在 runtime 白名单中；请使用 GUI 控制台或 --cli 离线恢复。", null,
                 Ack(request.RequestId))).ConfigureAwait(false);
             return;
         }
@@ -112,7 +144,7 @@ internal sealed class RuntimePipeServer : IDisposable
         if (action && !request.Approve)
         {
             await WriteAsync(writer, new RuntimeResponse(false,
-                $"原始命令: {request.Command}\n指令 {name} 是运行时动作，必须显式提供 --approve。", null,
+                $"原始命令: {command}\n指令 {name} 是运行时动作，必须显式提供 --approve。", null,
                 Ack(request.RequestId))).ConfigureAwait(false);
             return;
         }
@@ -127,7 +159,7 @@ internal sealed class RuntimePipeServer : IDisposable
 
         try
         {
-            var result = await _composition.Bus.ExecuteAsync(request.Command, "cli:runtime")
+            var result = await _composition.Bus.ExecuteAsync(command, "cli:runtime")
                 .ConfigureAwait(false);
             await WriteAsync(writer, new RuntimeResponse(
                 result.Success, result.Message, result.Data, Ack(request.RequestId))).ConfigureAwait(false);
@@ -135,7 +167,7 @@ internal sealed class RuntimePipeServer : IDisposable
         catch (Exception ex)
         {
             await WriteAsync(writer, new RuntimeResponse(false,
-                $"原始命令: {request.Command}\n运行时执行失败：{ex.Message}", null, Ack(request.RequestId))).ConfigureAwait(false);
+                $"原始命令: {command}\n运行时执行失败：{ex.Message}", null, Ack(request.RequestId))).ConfigureAwait(false);
         }
     }
 
@@ -163,9 +195,9 @@ internal sealed class RuntimePipeServer : IDisposable
                 module.Attached))
             .ToList() ?? [];
 
-    private static async Task<T?> ReadAsync<T>(StreamReader reader)
+    private static async Task<T?> ReadAsync<T>(StreamReader reader, CancellationToken cancellation)
     {
-        var line = await reader.ReadLineAsync().ConfigureAwait(false);
+        var line = await reader.ReadLineAsync(cancellation).ConfigureAwait(false);
         return string.IsNullOrWhiteSpace(line)
             ? default
             : JsonSerializer.Deserialize<T>(line, JsonOptions);
@@ -176,9 +208,15 @@ internal sealed class RuntimePipeServer : IDisposable
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
+
         _shutdown.Cancel();
+        Interlocked.Exchange(ref _activePipe, null)?.Dispose();
         try { _loop.GetAwaiter().GetResult(); }
         catch (OperationCanceledException) { }
+        catch (IOException) { }
+        catch (JsonException) { }
         _shutdown.Dispose();
     }
 }

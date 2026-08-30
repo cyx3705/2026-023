@@ -625,6 +625,9 @@
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Modules">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.CurrentContextCount">
+            <summary>当前快照持有的加载上下文数量，供服务内回滚诊断使用。</summary>
+        </member>
         <member name="E:HistoryVulcan.Services.Modules.ModuleHost.ReloadCompleted">
             <summary>每次整体重载完成后触发(在重载线程上);MD-08 面板同步等旁路逻辑挂此处。</summary>
         </member>
@@ -858,6 +861,9 @@
         <member name="F:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.ChecksumFileName">
             <summary>The integrity manifest required at the root of every module package.</summary>
         </member>
+        <member name="F:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.MutableDataDirectoryName">
+            <summary>Runtime-owned state is kept beside the immutable package payload.</summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.#ctor(System.String)">
             <summary>Creates a scanner for one absolute runtime module directory.</summary>
         </member>
@@ -888,6 +894,9 @@
              两条编排不同，但**校验、拷贝与回滚必须是同一份**——这几步一旦分叉，
              代价是用户的模块目录。编排各自保留，原语共用。
              </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.RuntimeModulePackageStore.PreserveMutableData(System.String,System.String)">
+            <summary>Moves runtime-owned state from the replaced package into the new package.</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry">
             <summary>A validated module artifact discovered from an explicit Z-level manifest.</summary>

@@ -124,6 +124,9 @@ public sealed partial class ModuleHost : IDisposable
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public IReadOnlyList<ModuleMeta> Modules => _current.Modules;
 
+    /// <summary>当前快照持有的加载上下文数量，供服务内回滚诊断使用。</summary>
+    internal int CurrentContextCount => _current.Contexts.Count;
+
     /// <summary>每次整体重载完成后触发(在重载线程上);MD-08 面板同步等旁路逻辑挂此处。</summary>
     public event Action? ReloadCompleted;
 

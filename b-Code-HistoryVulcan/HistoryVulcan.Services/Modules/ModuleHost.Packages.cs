@@ -47,7 +47,24 @@ public sealed partial class ModuleHost
                 && installed.Version.Equals(package.Version, StringComparison.OrdinalIgnoreCase)
                 && RuntimeModulePackageStore.ChecksumsEqual(source, target))
             {
-                return CommandResult.Ok($"{package.Name} {package.Version} 已安装，内容一致，无需替换。");
+                var loaded = _current.Modules.FirstOrDefault(module =>
+                    module.ModuleName.Equals(package.Name, StringComparison.OrdinalIgnoreCase));
+                if (loaded != null)
+                    return CommandResult.Ok($"{package.Name} {package.Version} 已安装，内容一致，无需替换。", loaded);
+
+                try
+                {
+                    LoadOne(target);
+                    loaded = _current.Modules.FirstOrDefault(module =>
+                        module.ModuleName.Equals(package.Name, StringComparison.OrdinalIgnoreCase));
+                    return loaded == null
+                        ? CommandResult.Fail($"{package.Name} {package.Version} 内容一致，但未能恢复运行快照。")
+                        : CommandResult.Ok($"{package.Name} {package.Version} 内容一致，已恢复运行快照。", loaded);
+                }
+                catch (Exception ex) when (ex is IOException or InvalidOperationException or ArgumentException)
+                {
+                    return CommandResult.Fail($"{package.Name} {package.Version} 内容一致，但恢复运行快照失败: {ex.Message}");
+                }
             }
 
             var transactionRoot = RuntimeModulePackageStore.CreateTransactionRoot(runtimeRoot);
@@ -75,6 +92,7 @@ public sealed partial class ModuleHost
                 if (Directory.Exists(target))
                     Directory.Move(target, backup);
                 Directory.Move(staging, target);
+                RuntimeModulePackageStore.PreserveMutableData(backup, target);
 
                 if (!EnableUiModules)
                 {

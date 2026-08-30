@@ -45,6 +45,40 @@ public sealed class RuntimeModulePackageTests
     }
 
     [Fact]
+    public void RuntimeDataDoesNotInvalidateAnInstalledPackage()
+    {
+        using var temp = new TemporaryDirectory();
+        var root = Directory.CreateDirectory(Path.Combine(temp.Path, "Modules")).FullName;
+        var package = CreatePackage(root, "HistoryJanus", "HistoryJanus", "v5.4.8");
+        var state = Path.Combine(package, "data", "state");
+        Directory.CreateDirectory(state);
+        File.WriteAllText(Path.Combine(state, "push-history.jsonl"), "runtime state");
+
+        var snapshot = new RuntimeModuleDiscoverySource(root).Discover();
+
+        Assert.Equal("HistoryJanus", Assert.Single(snapshot.Modules).Name);
+        Assert.DoesNotContain(snapshot.Diagnostics, item => item.Code == "invalid-checksum");
+    }
+
+    [Fact]
+    public void RuntimeDataCannotContainAnUnverifiedArtifact()
+    {
+        using var temp = new TemporaryDirectory();
+        var root = Directory.CreateDirectory(Path.Combine(temp.Path, "Modules")).FullName;
+        var package = Directory.CreateDirectory(Path.Combine(root, "HistoryJanus")).FullName;
+        Directory.CreateDirectory(Path.Combine(package, "data"));
+        File.Copy(typeof(ContextFixtureModuleInfo).Assembly.Location,
+            Path.Combine(package, "data", "HistoryJanus.dll"));
+        WriteManifest(package, "HistoryJanus", "v5.4.8", "data/HistoryJanus.dll");
+        WriteChecksums(package);
+
+        var snapshot = new RuntimeModuleDiscoverySource(root).Discover();
+
+        Assert.Empty(snapshot.Modules);
+        Assert.Contains(snapshot.Diagnostics, item => item.Code == "invalid-artifact");
+    }
+
+    [Fact]
     public void RollbackDirectoryIsIgnoredInsteadOfMakingTheLivePackageADuplicate()
     {
         using var temp = new TemporaryDirectory();
@@ -88,6 +122,10 @@ public sealed class RuntimeModulePackageTests
             Assert.Equal("v1.0.0", Assert.Single(host.Modules).Version);
             Assert.False(Directory.Exists(Path.Combine(runtime, "contextfixture", "history")));
 
+            var state = Path.Combine(runtime, "contextfixture", "data", "state");
+            Directory.CreateDirectory(state);
+            File.WriteAllText(Path.Combine(state, "push-history.jsonl"), "keep me");
+
             var idempotent = host.InstallPackage(first);
             Assert.True(idempotent.Success, idempotent.Message);
             Assert.Contains("无需替换", idempotent.Message, StringComparison.Ordinal);
@@ -96,11 +134,54 @@ public sealed class RuntimeModulePackageTests
             var upgraded = host.InstallPackage(second);
             Assert.True(upgraded.Success, upgraded.Message);
             Assert.Equal("v2.0.0", Assert.Single(host.Modules).Version);
+            Assert.Equal("keep me",
+                File.ReadAllText(Path.Combine(runtime, "contextfixture", "data", "state", "push-history.jsonl")));
 
             var removed = host.Uninstall("contextfixture");
             Assert.True(removed.Success, removed.Message);
             Assert.Empty(host.Modules);
             Assert.False(Directory.Exists(Path.Combine(runtime, "contextfixture")));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, previous);
+        }
+    }
+
+    [Fact]
+    public void IdenticalInstallRestoresAnUnloadedModule()
+    {
+        using var temp = new TemporaryDirectory();
+        var runtime = Path.Combine(temp.Path, "HistoryVulcan", "Modules");
+        var candidates = Directory.CreateDirectory(Path.Combine(temp.Path, "candidates")).FullName;
+        var package = CreatePackage(candidates, "same", "contextfixture", "v1.0.0");
+        var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable);
+
+        var registry = new CommandRegistry();
+        var log = new TestLog();
+        var settings = new MemorySettings();
+        var bus = new CommandBus(registry, log);
+        using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
+        {
+            EnableFileWatching = false,
+        };
+
+        try
+        {
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
+            host.Attach(registry, bus, settings, Path.Combine(temp.Path, "data"));
+            host.Start();
+            Assert.True(host.InstallPackage(package).Success);
+            var firstId = Assert.Single(host.Modules).InstanceId;
+
+            Assert.True(host.Unload("contextfixture").Success);
+            Assert.Empty(host.Modules);
+
+            var restored = host.InstallPackage(package);
+            Assert.True(restored.Success, restored.Message);
+            var loaded = Assert.Single(host.Modules);
+            Assert.NotEqual(firstId, loaded.InstanceId);
+            Assert.True(registry.TryGet("contextfixture.Probe", out _));
         }
         finally
         {
@@ -179,14 +260,11 @@ public sealed class RuntimeModulePackageTests
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
             Assert.True(host.InstallPackage(good).Success);
 
-            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v2.0.0");
             var failed = host.InstallPackage(broken);
             Assert.False(failed.Success);
             Assert.Contains("旧包已恢复", failed.Message, StringComparison.Ordinal);
-
-            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
-            host.Reload();
             Assert.Equal("v1.0.0", Assert.Single(host.Modules).Version);
+            Assert.Equal(1, host.CurrentContextCount);
             Assert.True(registry.TryGet("contextfixture.Probe", out _));
         }
         finally

@@ -60,6 +60,20 @@ internal static class RuntimeModulePackageStore
         }
     }
 
+    /// <summary>Moves runtime-owned state from the replaced package into the new package.</summary>
+    internal static void PreserveMutableData(string backup, string target)
+    {
+        var source = Path.Combine(backup, RuntimeModuleDiscoverySource.MutableDataDirectoryName);
+        if (!Directory.Exists(source))
+            return;
+
+        var destination = Path.Combine(target, RuntimeModuleDiscoverySource.MutableDataDirectoryName);
+        if (Directory.Exists(destination))
+            throw new IOException($"运行态目录已存在，无法保留旧数据: {destination}");
+
+        Directory.Move(source, destination);
+    }
+
     internal static bool ChecksumsEqual(string first, string second)
     {
         var left = File.ReadAllText(Path.Combine(first, RuntimeModuleDiscoverySource.ChecksumFileName));

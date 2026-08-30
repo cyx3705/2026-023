@@ -66,16 +66,23 @@ public sealed partial class ModuleHost
 
         var snap = _current;
         var pendingBefore = snap.PendingCommands.Count;
+        var registeredBefore = snap.RegisteredNames.Count;
+        var contextsBefore = snap.Contexts.ToHashSet();
         _building = snap;
         try
         {
             PublishXamlContexts();
             LoadDiscoveredModule(snap, entry);
+            if (!snap.Metas.Any(meta =>
+                    meta.Name.Equals(entry.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException($"模块 {entry.Name} 未形成可用加载快照。");
+            }
             CommitAddedCommands(snap, pendingBefore, entry.Name);
         }
         catch
         {
-            TeardownAddedModule(snap, entry.Name, pendingBefore);
+            TeardownAddedModule(snap, entry.Name, pendingBefore, registeredBefore, contextsBefore);
             throw;
         }
         finally
@@ -123,16 +130,35 @@ public sealed partial class ModuleHost
         _log.Info("module", $"已装入模块 {moduleName}，未拆除其它模块");
     }
 
-    private void TeardownAddedModule(Snapshot snap, string moduleName, int pendingBefore)
+    private void TeardownAddedModule(
+        Snapshot snap,
+        string moduleName,
+        int pendingBefore,
+        int registeredBefore,
+        IReadOnlySet<AssemblyLoadContext> contextsBefore)
     {
+        if (_registry != null)
+        {
+            foreach (var name in snap.RegisteredNames.Skip(registeredBefore).ToList())
+                _registry.Unregister(name);
+        }
+        if (snap.RegisteredNames.Count > registeredBefore)
+            snap.RegisteredNames.RemoveRange(
+                registeredBefore, snap.RegisteredNames.Count - registeredBefore);
         if (snap.PendingCommands.Count > pendingBefore)
             snap.PendingCommands.RemoveRange(pendingBefore, snap.PendingCommands.Count - pendingBefore);
         snap.Metas.RemoveAll(meta =>
             meta.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
-        if (snap.ContextsByOwner.Remove(moduleName, out var alc)
-            && snap.ContextsByOwner.Values.All(remaining => !ReferenceEquals(remaining, alc))
-            && !ReferenceEquals(alc, AssemblyLoadContext.Default))
+        snap.AttachFailures.Remove(moduleName);
+        snap.ClearCommandCount(moduleName);
+        snap.ContextsByOwner.Remove(moduleName);
+
+        foreach (var alc in snap.Contexts.Where(context => !contextsBefore.Contains(context)).ToList())
         {
+            if (snap.ContextsByOwner.Values.Any(remaining => ReferenceEquals(remaining, alc))
+                || ReferenceEquals(alc, AssemblyLoadContext.Default))
+                continue;
+
             DisposeInstances(snap.InstancesFrom(alc));
             snap.DropInstancesFrom(alc);
             snap.Contexts.Remove(alc);

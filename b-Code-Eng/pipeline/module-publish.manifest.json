@@ -56,7 +56,7 @@
       "candidateDirectory": "z-Publish",
       "formalDirectory": "z-Publish",
       "package": {
-        "project": "HistoryAurora.sln",
+        "project": "b-Code-Studio\\Module\\HistoryAurora.Module.csproj",
         "files": [
           "HistoryAurora.dll",
           "HistoryAurora.xml",
