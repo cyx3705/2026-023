@@ -332,6 +332,15 @@
              冻结是把 Unshipped 并进 Shipped，带着这些条目冻结等于封存一本乱账。
              </summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Development.Pipeline.ReleaseCatalog.RequireHost(System.String,System.String)">
+             <summary>
+             Resolves the host entry without parsing module entries.
+            
+             The module list is intentionally extensible data for the development and module
+             release pipeline. A malformed or newly added module entry must not prevent a host
+             candidate from being built or its freeze tag from being checked.
+             </summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Development.Pipeline.ReleaseEngine.AssertNotSelfReplacing(System.String,System.String)">
              <summary>
              拒绝替换当前进程正在运行的那份包。
