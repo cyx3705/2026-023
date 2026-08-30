@@ -300,6 +300,43 @@
           "description": "Run Portunus contract tests"
         }
       ]
+    },
+    {
+      "name": "HistoryJuno",
+      "kind": "module",
+      "projectDirectory": "2026-029-HistoryJuno",
+      "versionProps": "b-Code\\HistoryJuno\\HistoryJunoVersion.props",
+      "versionProperty": "HistoryJunoVersion",
+      "sourceManifest": "b-Code\\HistoryJuno\\module.manifest.json",
+      "snapshotManifest": "module.manifest.json",
+      "identityProperty": "name",
+      "candidateDirectory": "z-Publish",
+      "formalDirectory": "z-Publish",
+      "package": {
+        "project": "b-Code\\HistoryJuno\\HistoryJuno.csproj",
+        "files": [
+          "HistoryJuno.dll",
+          "HistoryJuno.xml",
+          "module.manifest.json"
+        ]
+      },
+      "packageDocuments": "b-Office\\package",
+      "validation": [
+        {
+          "tool": "dotnet.exe",
+          "configurations": [
+            "Release"
+          ],
+          "arguments": [
+            "build",
+            "b-Code\\HistoryJuno\\HistoryJuno.csproj",
+            "-c",
+            "{configuration}",
+            "-p:NuGetAudit=false"
+          ],
+          "description": "Run HistoryJuno Release build ({configuration})"
+        }
+      ]
     }
   ]
 }

@@ -36,13 +36,16 @@ internal static class ReleaseCatalog
 {
     public static IReadOnlyList<ReleaseTarget> Load(string registryPath)
     {
-        if (!File.Exists(registryPath))
-            throw new InvalidOperationException($"找不到发布登记表：{registryPath}");
+        var targets = LoadModules(registryPath).ToDictionary(
+            target => target.Name,
+            StringComparer.OrdinalIgnoreCase);
+        Add(targets, HostTarget());
+        return targets.Values.OrderBy(target => target.Name, StringComparer.Ordinal).ToList();
+    }
 
-        using var document = JsonDocument.Parse(File.ReadAllText(registryPath));
-        if (!document.RootElement.TryGetProperty("schemaVersion", out var schema) || schema.GetInt32() != 1)
-            throw new InvalidOperationException("不支持的发布登记表 schema。");
-
+    public static IReadOnlyList<ReleaseTarget> LoadModules(string registryPath)
+    {
+        using var document = Open(registryPath);
         var targets = new Dictionary<string, ReleaseTarget>(StringComparer.OrdinalIgnoreCase);
         if (document.RootElement.TryGetProperty("modules", out var modules))
         {
@@ -50,13 +53,37 @@ internal static class ReleaseCatalog
                 Add(targets, ReadModule(entry));
         }
 
-        Add(targets, HostTarget());
         return targets.Values.OrderBy(target => target.Name, StringComparer.Ordinal).ToList();
     }
 
     public static ReleaseTarget Require(string registryPath, string name)
-        => Load(registryPath).FirstOrDefault(target => target.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-           ?? throw new InvalidOperationException($"{name} 不在发布登记表里。");
+        => name.Equals("HistoryVulcan", StringComparison.OrdinalIgnoreCase)
+            ? RequireHost(registryPath, name)
+            : LoadModules(registryPath).FirstOrDefault(target =>
+                target.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+              ?? throw new InvalidOperationException($"{name} 不在发布登记表里。");
+
+    /// <summary>
+    /// Resolves the host entry without parsing module entries.
+    ///
+    /// The module list is intentionally extensible data for the development and module
+    /// release pipeline. A malformed or newly added module entry must not prevent a host
+    /// candidate from being built or its freeze tag from being checked.
+    /// </summary>
+    public static ReleaseTarget RequireHost(string registryPath, string name = "HistoryVulcan")
+    {
+        using var document = Open(registryPath);
+        if (!document.RootElement.TryGetProperty("hosts", out var hosts)
+            || hosts.ValueKind != JsonValueKind.Array
+            || !hosts.EnumerateArray().Any(entry =>
+                ReadString(entry, "name").Equals(name, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException($"发布登记表没有 {name} 的宿主条目。");
+        }
+
+        return HostTarget();
+    }
+
 
     public static string ReadVersion(string projectRoot, ReleaseTarget target)
     {
@@ -94,6 +121,23 @@ internal static class ReleaseCatalog
             ["HistoryVulcan.exe", "HistoryVulcan.Cli.exe"]),
         [],
         "b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj");
+
+    private static JsonDocument Open(string registryPath)
+    {
+        if (!File.Exists(registryPath))
+            throw new InvalidOperationException($"找不到发布登记表：{registryPath}");
+
+        var document = JsonDocument.Parse(File.ReadAllText(registryPath));
+        if (!document.RootElement.TryGetProperty("schemaVersion", out var schema)
+            || schema.ValueKind != JsonValueKind.Number
+            || schema.GetInt32() != 1)
+        {
+            document.Dispose();
+            throw new InvalidOperationException("不支持的发布登记表 schema。");
+        }
+
+        return document;
+    }
 
     private static ReleaseTarget ReadModule(JsonElement entry)
     {

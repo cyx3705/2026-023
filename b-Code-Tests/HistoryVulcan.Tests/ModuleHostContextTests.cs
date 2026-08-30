@@ -11,6 +11,40 @@ namespace HistoryVulcan.Tests
     public sealed class ModuleHostContextTests
     {
         [Fact]
+        public void EmptyRuntimeDirectoryStartsWithoutModules()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));
+            var modulesDirectory = Path.Combine(root, "modules");
+            Directory.CreateDirectory(modulesDirectory);
+            var registry = new CommandRegistry();
+            var log = new TestLog();
+            var bus = new CommandBus(registry, log);
+            using var host = new ModuleHost(modulesDirectory, log)
+            {
+                EnableFileWatching = false,
+            };
+
+            host.Attach(
+                registry,
+                bus,
+                new MemorySettings(),
+                Path.Combine(root, "data"));
+            host.Start();
+
+            try
+            {
+                Assert.Empty(host.Modules);
+                Assert.Equal(0, host.CurrentContextCount);
+            }
+            finally
+            {
+                host.Dispose();
+                if (Directory.Exists(root))
+                    Directory.Delete(root, recursive: true);
+            }
+        }
+
+        [Fact]
         public async Task ContextAwareModuleRegistersCommandsOnlyThroughTheBus()
         {
             var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));

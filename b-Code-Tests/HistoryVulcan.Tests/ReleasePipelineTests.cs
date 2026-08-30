@@ -1,3 +1,4 @@
+using System.Text.Json;
 using HistoryVulcan.Services.Development.Pipeline;
 using Xunit;
 
@@ -25,6 +26,71 @@ public sealed class ReleasePipelineTests
         Assert.DoesNotContain(
             aurora.Validation,
             step => step.Tool.Contains("powershell", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void HostResolutionIgnoresExtensibleModuleEntries()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "vulcan-host-catalog-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var registry = Path.Combine(root, "module-publish.manifest.json");
+            File.WriteAllText(registry, """
+                {
+                  "schemaVersion": 1,
+                  "hosts": [{ "name": "HistoryVulcan", "freezeTag": "v5.1.2" }],
+                  "modules": [{ "name": "FutureModule" }, { "kind": "not-a-module" }]
+                }
+                """);
+
+            var target = ReleaseCatalog.RequireHost(registry);
+
+            Assert.Equal("HistoryVulcan", target.Name);
+            Assert.Equal("host", target.Kind);
+            Assert.Equal(target.Name, ReleaseCatalog.Require(registry, "HistoryVulcan").Name);
+
+            File.WriteAllText(registry, """
+                {
+                  "schemaVersion": 1,
+                  "hosts": [{ "name": "HistoryVulcan", "freezeTag": "v5.1.2" }],
+                  "modules": []
+                }
+                """);
+            Assert.Equal("HistoryVulcan", ReleaseCatalog.RequireHost(registry).Name);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void HostPipelineSourcesDoNotNameAConcreteModule()
+    {
+        var root = RepositoryPaths.Root();
+        var sources = new[]
+        {
+            Path.Combine(root, "b-Code-HistoryVulcan", "HistoryVulcan.Services", "Development", "Pipeline", "ReleaseCatalog.cs"),
+            Path.Combine(root, "b-Code-HistoryVulcan", "HistoryVulcan.Services", "Development", "Pipeline", "ReleaseEngine.cs"),
+            Path.Combine(root, "b-Code-HistoryVulcan", "HistoryVulcan.Services", "Development", "Pipeline", "HostSnapshotBuilder.cs"),
+        };
+        var registryPath = Path.Combine(root, "b-Code-Eng", "pipeline", "module-publish.manifest.json");
+        using var registry = JsonDocument.Parse(File.ReadAllText(registryPath));
+        var concreteModules = registry.RootElement
+            .GetProperty("modules")
+            .EnumerateArray()
+            .Select(entry => entry.GetProperty("name").GetString() ?? "")
+            .Where(name => name.Length > 0)
+            .ToArray();
+
+        foreach (var source in sources)
+        {
+            var text = File.ReadAllText(source);
+            foreach (var module in concreteModules)
+                Assert.DoesNotContain(module, text, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     [Fact]
