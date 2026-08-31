@@ -8,10 +8,14 @@
 
 对话根在本仓时，只维护 HistoryVulcan 自己。**用户要开发、排查或修改其它编号模块时，必须走模块开发手册：开 F 盘工作区并把对话根迁进去。禁止留在本仓、按绝对路径改 `HistoryClio\<模块主树>`。** 那等于没走工作区，合并会改错树或锁死目录。不要等用户再提醒一次。
 
-1. `diana.docs.catalog`，再按节读 `diana.docs.vulcan file=docs/模块开发手册.md`。
+1. `diana.docs.catalog`，把完整输出留在对话中，再按节读
+   `diana.docs.vulcan file=docs/模块开发手册.md`。只有 **Diana MCP 工具未暴露或调用失败**时，
+   才能记录具体原因后降级读取目标项目正式 `z-Publish/docs`；禁止打开邻接项目的
+   `b-Office/current`、`package` 或 worktree 补文档。
 2. **开发管线只给模块、禁止 MCP。** 用同目录 Console CLI：`HistoryVulcan.Cli.exe --cli vulcan.dev.start project=<YYYY-NNN-模块> slug=<问题> agent=grok`。宿主禁止走这三条。改完 `--cli vulcan.dev.submit`。**禁止对话根还在正在 `finish` 的那条 `F:\ai工作区` 工作区时调用 `vulcan.dev.finish`。** grok 必须先 `move_agent_to_root` 到该模块 Clio 主树且该树在 `main`，等到迁根成功回执、对话路径已离开 F 盘，再 finish。其他 AI 不迁根；可见路径只是另一条 F 盘残留 ≠ 禁止。finish 会删工作区；对话仍钉在**那一条**上面时 Cursor 占路径删不掉，或目录已删后每次迁根都在死路径上 `git checkout --detach`，报 `not a git repository`，**这一轮对话作废，不要再迁根补救**。不要把这些指令当 MCP 工具调。
 3. grok **必须**按手册四步迁进工作区：主树 `checkout --detach` → `move_agent_to_root` → 工作区切回 `ai/<项目>/<工作区名>` → 主树 `checkout main`。finish 前反向迁回主树 `main` 并确认成功。工作区目录已经没了就不要再迁根。
-4. 已发布合同用 `diana.docs.<通道>`。读实现和改代码都在 F 盘工作区，不在 Clio 主树。
+4. 已发布合同默认用 catalog 返回的 `diana.docs.<通道>`；不得猜通道、手写文件表或把
+   `diana.docs.*` 当开发管线。读实现和改代码都在 F 盘工作区，不在 Clio 主树。
 5. **不许停宿主。** 不要 `vulcan.svc.stop` / `restart`、`vulcan.app.quit`，不要杀 `HistoryVulcan.exe`。这些要人工确认，会把这一轮卡住。模块热重载不关宿主。
 
 手册编辑源：`b-Office/package/模块开发手册.md`。
@@ -30,7 +34,9 @@
 4. 只进入 manifest 声明的活动目录。`z-Publish/`、`bin/`、`obj/`
    和 `artifacts/` 默认不进入源码维护上下文。
 5. 跨项目说明书：先执行 `diana.docs.catalog`，把完整输出留在本对话中，再调用其中一条
-   `diana.docs.<通道>`。不要打开邻接项目仓库的 `package`，也不要依赖手写文件表。
+   `diana.docs.<通道>`。只有 **Diana MCP 工具未暴露或调用失败**时，才能记录具体原因后
+   降级读取目标项目正式 `z-Publish/docs`；不要打开邻接项目仓库的 `b-Office/current`、
+   `package` 或 worktree，也不要依赖手写文件表。
 6. **其它模块的开发/排查**：停在本条，改走上文「模块开发必须走手册」；不要对本仓「只进入活动目录」
    做例外、去扫邻接 Clio 主树。
 

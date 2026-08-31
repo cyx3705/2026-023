@@ -110,6 +110,26 @@ public sealed class ReleasePipelineTests
     }
 
     [Fact]
+    public void DevelopmentManualMakesDianaThePrimaryDocumentationChannel()
+    {
+        var root = RepositoryPaths.Root();
+        var agents = File.ReadAllText(Path.Combine(root, "AGENTS.md"));
+        var manual = File.ReadAllText(Path.Combine(root, "b-Office", "package", "模块开发手册.md"));
+
+        foreach (var contract in new[] { agents, manual })
+        {
+            Assert.Contains("diana.docs.catalog", contract, StringComparison.Ordinal);
+            Assert.Contains("Diana MCP 工具未暴露或调用失败", contract, StringComparison.Ordinal);
+            Assert.Contains("正式 `z-Publish/docs`", contract, StringComparison.Ordinal);
+        }
+
+        Assert.DoesNotContain("若本机 Cursor 已接上 Diana MCP，可以再", manual, StringComparison.Ordinal);
+        Assert.DoesNotContain("MCP 可用时再", manual, StringComparison.Ordinal);
+        Assert.DoesNotContain("`diana.docs.*` | 可选", manual, StringComparison.Ordinal);
+        Assert.DoesNotContain("HistoryAurora `b-Office/current/", manual, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void QualityGatesPassOnThisRepository()
     {
         var root = RepositoryPaths.Root();
