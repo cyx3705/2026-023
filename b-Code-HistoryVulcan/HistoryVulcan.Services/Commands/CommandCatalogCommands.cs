@@ -72,14 +72,6 @@ public sealed record CommandCatalogDetail(
 /// <param name="Count">该域下的指令数。</param>
 public sealed record CommandDomainInfo(string Domain, int Count);
 
-/// <summary>命令手册预览：路径、条数、哈希与是否已写入。</summary>
-internal sealed record CommandManualPreview(
-    string Path,
-    int CommandCount,
-    string Sha256,
-    string Markdown,
-    bool Applied);
-
 /// <summary>V2.1.3 全指令结构化目录，注册表是唯一上游。</summary>
 public static class CommandCatalogCommands
 {
@@ -98,7 +90,6 @@ public static class CommandCatalogCommands
         registry.Register(BuildList(registry), source);
         registry.Register(BuildShow(registry), source);
         registry.Register(BuildDomains(registry), source);
-        registry.Register(BuildManual(registry), source);
     }
 
     private static CommandDescriptor BuildCliList() => new()
@@ -207,7 +198,7 @@ public static class CommandCatalogCommands
         builder.AppendLine();
         builder.AppendLine("> [!IMPORTANT]");
         builder.AppendLine("> 本文件由运行时指令注册表自动生成。禁止手工增删或改写下方指令条目；");
-        builder.AppendLine("> 需要更新时，请在程序控制台执行 `vulcan.command.manual file=<相对 Markdown 路径> apply=true`。");
+        builder.AppendLine("> 需要更新时，请从宿主外执行 `HistoryVulcan.exe --export-command-manual <Markdown 路径>`。");
         builder.AppendLine();
         builder.AppendLine($"> 版本：{AppIdentity.Current.Version}");
         builder.AppendLine("> 来源：运行时 `CommandRegistry` 自动生成；请勿手工维护指令条目。");
@@ -422,74 +413,6 @@ public static class CommandCatalogCommands
                 .ToList();
             return CommandResult.Ok(
                 "指令域:" + string.Concat(rows.Select(item => $"\n  {item.Domain,-16} {item.Count}")), rows);
-        }),
-    };
-
-    private static CommandDescriptor BuildManual(CommandRegistry registry) => new()
-    {
-        Name = "vulcan.command.manual",
-        Domain = "vulcan",
-        CommandClass = "command",
-        Summary = "从运行时注册表预览或生成 Markdown 命令手册",
-        Example = "vulcan.command.manual file=command-manual.md apply=false",
-        Parameters =
-        [
-            new ParameterSpec
-            {
-                Name = "file",
-                Description = "相对当前工作目录的 Markdown 输出路径",
-                Required = true,
-                Position = 0,
-            },
-            new ParameterSpec
-            {
-                Name = "apply",
-                Description = "false 仅预览；true 经本地确认后原子写入",
-                Type = ParamType.Bool,
-                Default = "false",
-            },
-        ],
-        Level = CommandLevel.Ask,
-        ConfirmPrompt = context => context.GetBool("apply")
-            ? $"确认生成命令手册 {context.GetString("file")}？只允许写入当前工作目录边界内的 .md 文件。"
-            : null,
-        Handler = CommandDescriptor.Sync(context =>
-        {
-            var relative = context.RequireString("file").Trim();
-            if (Path.IsPathRooted(relative) || !relative.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
-                return CommandResult.Fail("file 必须是当前工作目录内的相对 .md 路径");
-
-            var root = Path.GetFullPath(Environment.CurrentDirectory);
-            var target = Path.GetFullPath(Path.Combine(root, relative));
-            var rootPrefix = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                             + Path.DirectorySeparatorChar;
-            if (!target.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase))
-                return CommandResult.Fail("命令手册路径越出当前工作目录");
-
-            var markdown = RenderManual(registry);
-            var preview = new CommandManualPreview(
-                target, registry.All().Count, Sha256(markdown),
-                markdown, context.GetBool("apply"));
-            if (!context.GetBool("apply"))
-                return CommandResult.Ok(
-                    $"命令手册预览: {preview.CommandCount} 条，SHA-256 {preview.Sha256}，尚未写入\n{target}",
-                    preview);
-
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            var temp = target + $".tmp-{Guid.NewGuid():N}";
-            try
-            {
-                File.WriteAllText(temp, markdown, new UTF8Encoding(false));
-                File.Move(temp, target, overwrite: true);
-            }
-            finally
-            {
-                if (File.Exists(temp))
-                    File.Delete(temp);
-            }
-            return CommandResult.Ok(
-                $"命令手册已生成: {preview.CommandCount} 条，SHA-256 {preview.Sha256}\n{target}",
-                preview);
         }),
     };
 

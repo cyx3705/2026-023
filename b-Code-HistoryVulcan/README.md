@@ -27,7 +27,8 @@ dotnet build ..\HistoryVulcan.sln -c Release --no-restore
 
 ## 5.1.2 宿主
 
-3.0.3 是冻结基线；当前源码目标为 5.1.2（CLI 合同、运行时 IPC 和十类命令分类已纳入现行基线；快捷键/命令工作台由 HistoryMercury 拥有）。
+5.1.2 是当前宿主冻结基线，标签名为 `v5.1.2`；3.0.3 只保留为 V3 历史基线。
+CLI 合同、运行时 IPC 和十类命令分类已纳入冻结面；快捷键/命令工作台由 HistoryMercury 拥有。
 3.1.8 是不受支持的内部过渡版本，
 不得作为新消费基线。当前正式交付物是 win-x64、依赖 .NET 8 Desktop
 Runtime 的 HistoryVulcan 宿主，不生成 NuGet 包。兼容包合同继续保留，但必须从单独批准的同版本包源消费。

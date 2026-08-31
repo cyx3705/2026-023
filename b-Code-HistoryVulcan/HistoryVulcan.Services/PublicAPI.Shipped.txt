@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 HistoryVulcan.Services.AppPaths
 HistoryVulcan.Services.AppPaths.AppPaths(string! appName, bool createBusinessDirectories = true) -> void
 HistoryVulcan.Services.AppPaths.AppPaths(string! appName, string! rootDirectory, bool createBusinessDirectories = true) -> void
@@ -8,14 +8,6 @@ HistoryVulcan.Services.AppPaths.LogsDir.get -> string!
 HistoryVulcan.Services.AppPaths.ModulesDir.get -> string!
 HistoryVulcan.Services.AppPaths.PanelsDir.get -> string!
 HistoryVulcan.Services.AppPaths.Root.get -> string!
-HistoryVulcan.Services.FileLayoutStore
-HistoryVulcan.Services.FileLayoutStore.DeleteCurrent() -> void
-HistoryVulcan.Services.FileLayoutStore.FileLayoutStore(HistoryVulcan.Services.AppPaths! paths) -> void
-HistoryVulcan.Services.FileLayoutStore.ListNamed() -> System.Collections.Generic.IReadOnlyList<string!>!
-HistoryVulcan.Services.FileLayoutStore.ReadCurrent() -> string?
-HistoryVulcan.Services.FileLayoutStore.ReadNamed(string! name) -> string?
-HistoryVulcan.Services.FileLayoutStore.WriteCurrent(string! payload) -> void
-HistoryVulcan.Services.FileLayoutStore.WriteNamed(string! name, string! payload) -> void
 HistoryVulcan.Services.Modules.IModuleDiscoverySource
 HistoryVulcan.Services.Modules.IModuleDiscoverySource.Discover() -> HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot!
 HistoryVulcan.Services.Modules.IModuleDiscoverySource.Roots.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -60,8 +52,6 @@ HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.Com
 HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Commands.CommandBus! bus, HistoryVulcan.Core.Storage.ISettingsService! settings, string! dataDirectory) -> void
 HistoryVulcan.Services.Modules.ModuleHost.ChangeDirectory(string! newDir) -> void
 HistoryVulcan.Services.Modules.ModuleHost.ChangeDiscoveryRoots(System.Collections.Generic.IEnumerable<string!>! roots) -> void
-HistoryVulcan.Services.Modules.ModuleHost.CommandWorkbench.get -> HistoryVulcan.Extensibility.Modules.IShellCommandWorkbenchHost?
-HistoryVulcan.Services.Modules.ModuleHost.CommandWorkbench.set -> void
 HistoryVulcan.Services.Modules.ModuleHost.DiscoveryDiagnostics.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic!>!
 HistoryVulcan.Services.Modules.ModuleHost.DiscoveryRoots.get -> System.Collections.Generic.IReadOnlyList<string!>!
 HistoryVulcan.Services.Modules.ModuleHost.Dispose() -> void
@@ -82,8 +72,6 @@ HistoryVulcan.Services.Modules.ModuleHost.ReloadConfirmedSources(System.Collecti
 HistoryVulcan.Services.Modules.ModuleHost.RemovePackage(string! name) -> HistoryVulcan.Core.Commands.CommandResult!
 HistoryVulcan.Services.Modules.ModuleHost.RequireConfirmedSources.get -> bool
 HistoryVulcan.Services.Modules.ModuleHost.RequireConfirmedSources.set -> void
-HistoryVulcan.Services.Modules.ModuleHost.ShellUi.get -> HistoryVulcan.Core.Modules.IShellUiRegistrar?
-HistoryVulcan.Services.Modules.ModuleHost.ShellUi.set -> void
 HistoryVulcan.Services.Modules.ModuleHost.Start() -> void
 HistoryVulcan.Services.Modules.ModuleHost.UiContext.get -> System.Threading.SynchronizationContext?
 HistoryVulcan.Services.Modules.ModuleHost.UiContext.set -> void
@@ -112,7 +100,6 @@ HistoryVulcan.Services.Modules.ModuleMeta.Ui.get -> bool
 HistoryVulcan.Services.Modules.ModuleMeta.Ui.init -> void
 HistoryVulcan.Services.Modules.ModuleMeta.Version.get -> string!
 HistoryVulcan.Services.Modules.ModuleMeta.Version.init -> void
-HistoryVulcan.Services.Modules.ModulePanelSync
 HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource
 HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.Discover() -> HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot!
 HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.Roots.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -133,77 +120,121 @@ HistoryVulcan.Services.ShellLog.EntryAdded -> System.EventHandler<HistoryVulcan.
 HistoryVulcan.Services.ShellLog.Log(HistoryVulcan.Core.Logging.ShellLogLevel level, string! category, string! message) -> void
 HistoryVulcan.Services.ShellLog.ShellLog(HistoryVulcan.Services.AppPaths! paths, int retainDays = 30) -> void
 HistoryVulcan.Services.ShellLog.Snapshot() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Logging.ShellLogEntry!>!
-HistoryVulcan.Services.Web.ShellConnectionState
-HistoryVulcan.Services.Web.ShellConnectionState.Connecting = 1 -> HistoryVulcan.Services.Web.ShellConnectionState
-HistoryVulcan.Services.Web.ShellConnectionState.Disconnected = 0 -> HistoryVulcan.Services.Web.ShellConnectionState
-HistoryVulcan.Services.Web.ShellConnectionState.PairingRequired = 2 -> HistoryVulcan.Services.Web.ShellConnectionState
-HistoryVulcan.Services.Web.ShellConnectionState.Ready = 3 -> HistoryVulcan.Services.Web.ShellConnectionState
-HistoryVulcan.Services.Web.ShellConnectionState.Rejected = 4 -> HistoryVulcan.Services.Web.ShellConnectionState
-HistoryVulcan.Services.Web.ShellConnectionState.VersionMismatch = 5 -> HistoryVulcan.Services.Web.ShellConnectionState
-HistoryVulcan.Services.Web.ShellEndpointProfile
-HistoryVulcan.Services.Web.ShellEndpointProfile.AccessTokenProvider.get -> System.Func<string?>?
-HistoryVulcan.Services.Web.ShellEndpointProfile.AccessTokenProvider.init -> void
-HistoryVulcan.Services.Web.ShellEndpointProfile.BaseUri.get -> System.Uri!
-HistoryVulcan.Services.Web.ShellEndpointProfile.BaseUri.init -> void
-HistoryVulcan.Services.Web.ShellEndpointProfile.CertificateFingerprint.get -> string?
-HistoryVulcan.Services.Web.ShellEndpointProfile.CertificateFingerprint.init -> void
-HistoryVulcan.Services.Web.ShellEndpointProfile.ConnectTimeout.get -> System.TimeSpan?
-HistoryVulcan.Services.Web.ShellEndpointProfile.ConnectTimeout.init -> void
-HistoryVulcan.Services.Web.ShellEndpointProfile.DeviceId.get -> string!
-HistoryVulcan.Services.Web.ShellEndpointProfile.DeviceId.init -> void
-HistoryVulcan.Services.Web.ShellEndpointProfile.EffectiveConnectTimeout.get -> System.TimeSpan
-HistoryVulcan.Services.Web.ShellEndpointProfile.ServerId.get -> string?
-HistoryVulcan.Services.Web.ShellEndpointProfile.ServerId.init -> void
-HistoryVulcan.Services.Web.ShellEndpointProfile.ShellEndpointProfile(System.Uri! BaseUri, string! DeviceId, System.Func<string?>? AccessTokenProvider = null, string? CertificateFingerprint = null, System.TimeSpan? ConnectTimeout = null, string? ServerId = null) -> void
-HistoryVulcan.Services.Web.ShellEndpointProfile.ValidateCertificate(System.Security.Cryptography.X509Certificates.X509Certificate2? certificate) -> bool
-HistoryVulcan.Services.Web.ShellServiceClient
-HistoryVulcan.Services.Web.ShellServiceClient.DataDeserializer.get -> System.Func<string!, System.Text.Json.JsonElement, object?>?
-HistoryVulcan.Services.Web.ShellServiceClient.DataDeserializer.set -> void
-HistoryVulcan.Services.Web.ShellServiceClient.Dispose() -> void
-HistoryVulcan.Services.Web.ShellServiceClient.ExecuteAsync(string! text, string! source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
-HistoryVulcan.Services.Web.ShellServiceClient.LogReceived -> System.EventHandler<HistoryVulcan.Core.Logging.ShellLogEntry!>?
-HistoryVulcan.Services.Web.ShellServiceClient.ModuleRevisionReceived -> System.Action<long>?
-HistoryVulcan.Services.Web.ShellServiceClient.ReconnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
-HistoryVulcan.Services.Web.ShellServiceClient.RunEventLoopAsync(HistoryVulcan.Core.Commands.CommandBus! localBus, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-HistoryVulcan.Services.Web.ShellServiceClient.ShellServiceClient(HistoryVulcan.Services.Web.ShellEndpointProfile! profile, string! name) -> void
-HistoryVulcan.Services.Web.ShellServiceClient.ShellServiceClient(System.Uri! baseUri, string! name) -> void
-HistoryVulcan.Services.Web.ShellServiceClient.State.get -> HistoryVulcan.Services.Web.ShellConnectionState
-HistoryVulcan.Services.Web.ShellServiceClient.StateChanged -> System.Action<HistoryVulcan.Services.Web.ShellConnectionState>?
-HistoryVulcan.Services.Web.ShellServiceClient.WaitForReadyAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
-HistoryVulcan.Services.Web.WebGateway
-HistoryVulcan.Services.Web.WebGateway.AccessToken.get -> string!
-HistoryVulcan.Services.Web.WebGateway.ConnectedClients.get -> int
-HistoryVulcan.Services.Web.WebGateway.ConnectedShells.get -> int
-HistoryVulcan.Services.Web.WebGateway.Dispose() -> void
-HistoryVulcan.Services.Web.WebGateway.IsRunning.get -> bool
-HistoryVulcan.Services.Web.WebGateway.Port.get -> int
-HistoryVulcan.Services.Web.WebGateway.PublishModuleRevision(long revision) -> void
-HistoryVulcan.Services.Web.WebGateway.RelayFrontendCommandAsync(string! text, string! source, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
-HistoryVulcan.Services.Web.WebGateway.RequestShellConfirmation(string! prompt, System.TimeSpan timeout) -> bool
-HistoryVulcan.Services.Web.WebGateway.RequestWebConfirmation(string! prompt, string! source, System.TimeSpan timeout) -> bool
-HistoryVulcan.Services.Web.WebGateway.ServerId.get -> string!
-HistoryVulcan.Services.Web.WebGateway.ServerId.set -> void
-HistoryVulcan.Services.Web.WebGateway.Start(int? port = null) -> (bool Success, string! Message)
-HistoryVulcan.Services.Web.WebGateway.Stop() -> (bool Success, string! Message)
-HistoryVulcan.Services.Web.WebGateway.TryGetSession(string! source, out HistoryVulcan.Core.Clients.ClientSession! session) -> bool
-HistoryVulcan.Services.Web.WebGateway.WebGateway(System.Func<HistoryVulcan.Core.Commands.CommandBus?>! busAccessor, HistoryVulcan.Core.Storage.ISettingsService! settings, HistoryVulcan.Core.Logging.IShellLog! log) -> void
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.AutomaticRootNotFound = "未能向上找到含多个编号项目目录的项目库根。" -> string!
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.DefaultLibraryRoot = "C:\\OneHistory\\HistoryClio" -> string!
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.LegacyVestaLibrary = "C:\\OneHistory\\HistoryVesta" -> string!
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ManifestFileName = "module.manifest.json" -> string!
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ManifestType = "HistoryVulcan.Module" -> string!
 const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ProjectDirectoryPattern = "*-History*" -> string!
-const HistoryVulcan.Services.Web.WebGateway.KeyFrontendCatalog = "web.frontendcatalog" -> string!
-const HistoryVulcan.Services.Web.WebGateway.KeyFrontendCatalogLimit = "web.frontendcataloglimit" -> string!
-const HistoryVulcan.Services.Web.WebGateway.KeyPort = "web.port" -> string!
-const HistoryVulcan.Services.Web.WebGateway.KeyPortRetries = "web.portretries" -> string!
-const HistoryVulcan.Services.Web.WebGateway.LoopbackAddress = "127.0.0.1" -> string!
 static HistoryVulcan.Services.AppPaths.GetDataDir(string! root) -> string!
 static HistoryVulcan.Services.AppPaths.GetModulesDir(string! root) -> string!
 static HistoryVulcan.Services.AppPaths.GetPanelsDir(string! root) -> string!
 static HistoryVulcan.Services.Modules.ModuleHost.FindModuleDomainConflicts(System.Collections.Generic.IEnumerable<string!>! reservedCommandNames, System.Collections.Generic.IEnumerable<string!>! moduleCommandNames) -> System.Collections.Generic.IReadOnlySet<string!>!
-static HistoryVulcan.Services.Modules.ModulePanelSync.SyncFiles(string! modulesDir, string! panelsDir, HistoryVulcan.Core.Logging.IShellLog! log) -> bool
 static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.CoerceConfiguredRoot(string! path) -> string!
 static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.FindAutomaticRoot(string! startPath) -> string?
 static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ResolveAutomaticRoot() -> string?
-static HistoryVulcan.Services.Web.ShellEndpointProfile.NormalizeFingerprint(string? value) -> string!
+HistoryVulcan.Services.Modules.ModuleMeta.InstanceId.get -> string!
+HistoryVulcan.Services.Modules.ModuleMeta.InstanceId.init -> void
+HistoryVulcan.Services.Modules.ModuleHost.Uninstall(string! name) -> HistoryVulcan.Core.Commands.CommandResult!
+HistoryVulcan.Services.Commands.CommandCatalogCommands
+HistoryVulcan.Services.Commands.CommandCatalogDetail
+HistoryVulcan.Services.Commands.CommandCatalogDetail.Annotations.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+HistoryVulcan.Services.Commands.CommandCatalogDetail.Annotations.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogDetail.Command.get -> HistoryVulcan.Services.Commands.CommandCatalogRow!
+HistoryVulcan.Services.Commands.CommandCatalogDetail.Command.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogDetail.CommandCatalogDetail(HistoryVulcan.Services.Commands.CommandCatalogRow! Command, System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Commands.CommandParameterInfo!>! Parameters) -> void
+HistoryVulcan.Services.Commands.CommandCatalogDetail.Parameters.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Commands.CommandParameterInfo!>!
+HistoryVulcan.Services.Commands.CommandCatalogDetail.Parameters.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow
+HistoryVulcan.Services.Commands.CommandCatalogRow.CommandCatalogRow(string! CommandName, string! Domain, string! Summary, string? Example, int ParameterCount, string! Source, string? SourceDetail, bool Dangerous, bool RequiresUiThread, bool Readonly, string? HiddenReason) -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow.CommandClass.get -> string!
+HistoryVulcan.Services.Commands.CommandCatalogRow.CommandClass.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow.CommandName.get -> string!
+HistoryVulcan.Services.Commands.CommandCatalogRow.CommandName.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow.Dangerous.get -> bool
+HistoryVulcan.Services.Commands.CommandCatalogRow.Dangerous.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow.Domain.get -> string!
+HistoryVulcan.Services.Commands.CommandCatalogRow.Domain.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow.Example.get -> string?
+HistoryVulcan.Services.Commands.CommandCatalogRow.Example.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow.HiddenReason.get -> string?
+HistoryVulcan.Services.Commands.CommandCatalogRow.HiddenReason.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow.Method.get -> string!
+HistoryVulcan.Services.Commands.CommandCatalogRow.Method.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow.ParameterCount.get -> int
+HistoryVulcan.Services.Commands.CommandCatalogRow.ParameterCount.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow.Readonly.get -> bool
+HistoryVulcan.Services.Commands.CommandCatalogRow.Readonly.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow.RequiresUiThread.get -> bool
+HistoryVulcan.Services.Commands.CommandCatalogRow.RequiresUiThread.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow.Source.get -> string!
+HistoryVulcan.Services.Commands.CommandCatalogRow.Source.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow.SourceDetail.get -> string?
+HistoryVulcan.Services.Commands.CommandCatalogRow.SourceDetail.init -> void
+HistoryVulcan.Services.Commands.CommandCatalogRow.Summary.get -> string!
+HistoryVulcan.Services.Commands.CommandCatalogRow.Summary.init -> void
+HistoryVulcan.Services.Commands.CommandDomainInfo
+HistoryVulcan.Services.Commands.CommandDomainInfo.CommandDomainInfo(string! Domain, int Count) -> void
+HistoryVulcan.Services.Commands.CommandDomainInfo.Count.get -> int
+HistoryVulcan.Services.Commands.CommandDomainInfo.Count.init -> void
+HistoryVulcan.Services.Commands.CommandDomainInfo.Domain.get -> string!
+HistoryVulcan.Services.Commands.CommandDomainInfo.Domain.init -> void
+HistoryVulcan.Services.Commands.CommandParameterInfo
+HistoryVulcan.Services.Commands.CommandParameterInfo.AllowedValues.get -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Services.Commands.CommandParameterInfo.AllowedValues.init -> void
+HistoryVulcan.Services.Commands.CommandParameterInfo.CommandParameterInfo(string! Name, string! Type, bool Required, string? Default, int? Position, System.Collections.Generic.IReadOnlyList<string!>! AllowedValues, string! Description) -> void
+HistoryVulcan.Services.Commands.CommandParameterInfo.Default.get -> string?
+HistoryVulcan.Services.Commands.CommandParameterInfo.Default.init -> void
+HistoryVulcan.Services.Commands.CommandParameterInfo.Description.get -> string!
+HistoryVulcan.Services.Commands.CommandParameterInfo.Description.init -> void
+HistoryVulcan.Services.Commands.CommandParameterInfo.Name.get -> string!
+HistoryVulcan.Services.Commands.CommandParameterInfo.Name.init -> void
+HistoryVulcan.Services.Commands.CommandParameterInfo.Position.get -> int?
+HistoryVulcan.Services.Commands.CommandParameterInfo.Position.init -> void
+HistoryVulcan.Services.Commands.CommandParameterInfo.Required.get -> bool
+HistoryVulcan.Services.Commands.CommandParameterInfo.Required.init -> void
+HistoryVulcan.Services.Commands.CommandParameterInfo.Type.get -> string!
+HistoryVulcan.Services.Commands.CommandParameterInfo.Type.init -> void
+HistoryVulcan.Services.Development.DevelopmentCommands
+HistoryVulcan.Services.Development.ProjectLibraryRoot
+HistoryVulcan.Services.Development.PublishPackages
+HistoryVulcan.Services.Development.PublishPackages.PublishedPackage
+HistoryVulcan.Services.Development.PublishPackages.PublishedPackage.ManifestPath.get -> string!
+HistoryVulcan.Services.Development.PublishPackages.PublishedPackage.ManifestPath.init -> void
+HistoryVulcan.Services.Development.PublishPackages.PublishedPackage.Name.get -> string!
+HistoryVulcan.Services.Development.PublishPackages.PublishedPackage.Name.init -> void
+HistoryVulcan.Services.Development.PublishPackages.PublishedPackage.Path.get -> string!
+HistoryVulcan.Services.Development.PublishPackages.PublishedPackage.Path.init -> void
+HistoryVulcan.Services.Development.PublishPackages.PublishedPackage.PublishedPackage(string! Name, string! Version, string! Path, string! ManifestPath) -> void
+HistoryVulcan.Services.Development.PublishPackages.PublishedPackage.Version.get -> string!
+HistoryVulcan.Services.Development.PublishPackages.PublishedPackage.Version.init -> void
+HistoryVulcan.Services.Modules.ModuleMeta.AttachFailures.get -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Services.Modules.ModuleMeta.AttachFailures.init -> void
+HistoryVulcan.Services.Modules.ModuleMeta.Attached.get -> bool
+HistoryVulcan.Services.Modules.OfflineModuleInstall
+HistoryVulcan.Services.Modules.OfflineModuleInstall.Result
+HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.ExitCode.get -> int
+HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.ExitCode.init -> void
+HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.Message.get -> string!
+HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.Message.init -> void
+HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.Result() -> void
+HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.Result(int ExitCode, string! Message) -> void
+const HistoryVulcan.Services.Development.ProjectLibraryRoot.KeyLibraryRoot = "proj.libraryroot" -> string!
+const HistoryVulcan.Services.Development.ProjectLibraryRoot.KeyWorktreeRoot = "proj.worktreeroot" -> string!
+const HistoryVulcan.Services.Development.PublishPackages.HistoryDirectoryName = "history" -> string!
+const HistoryVulcan.Services.Development.PublishPackages.PublishDirectoryName = "z-Publish" -> string!
+static HistoryVulcan.Services.Commands.CommandCatalogCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, string! source = "app") -> void
+static HistoryVulcan.Services.Commands.CommandCatalogCommands.RegisterCore(HistoryVulcan.Core.Commands.CommandRegistry! registry, string! source = "app") -> void
+static HistoryVulcan.Services.Commands.CommandCatalogCommands.RenderManual(HistoryVulcan.Core.Commands.CommandRegistry! registry) -> string!
+static HistoryVulcan.Services.Commands.CommandCatalogCommands.Sha256(string! markdown) -> string!
+static HistoryVulcan.Services.Commands.CommandCatalogCommands.Snapshot(HistoryVulcan.Core.Commands.CommandRegistry! registry) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Commands.CommandCatalogRow!>!
+static HistoryVulcan.Services.Development.DevelopmentCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Commands.CommandBus! bus, HistoryVulcan.Core.Storage.ISettingsService! settings, string! dataDirectory) -> void
+static HistoryVulcan.Services.Development.ProjectLibraryRoot.Coerce(string! path) -> string!
+static HistoryVulcan.Services.Development.ProjectLibraryRoot.IsGitProject(string! projectPath) -> bool
+static HistoryVulcan.Services.Development.ProjectLibraryRoot.Resolve(HistoryVulcan.Core.Storage.ISettingsService! settings) -> string!
+static HistoryVulcan.Services.Development.PublishPackages.EnumerateCurrent(string! publishRoot) -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Development.PublishPackages.PublishedPackage!>!
+static HistoryVulcan.Services.Development.PublishPackages.PackageDirectoryName(string! name, string! version) -> string!
+static HistoryVulcan.Services.Development.PublishPackages.ResolveCurrent(string! projectRoot, string! expectedName) -> string!
+static HistoryVulcan.Services.Development.PublishPackages.ResolveHostSnapshot(string! vulcanProjectRoot) -> string!
+static HistoryVulcan.Services.Development.PublishPackages.TryRead(string! path, out HistoryVulcan.Services.Development.PublishPackages.PublishedPackage! package) -> bool
+static HistoryVulcan.Services.Modules.OfflineModuleInstall.Install(string! runtimeRoot, string! sourcePath) -> HistoryVulcan.Services.Modules.OfflineModuleInstall.Result

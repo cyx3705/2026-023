@@ -35,8 +35,7 @@ public static partial class ServiceComposer
     /// 使用的那条装载路径——同一套模块发现、同一套命令注册、同一套 MCP 暴露策略。
     /// 另起一套轻量装配会得到一份"看起来对"但与实际不符的手册，那比没有手册更糟。
     ///
-    /// 与 <c>vulcan.command.manual</c> 的分工：那条命令带本地二次确认，供人在控制台按需
-    /// 生成；本入口无人值守，供发布管线在每次模块部署后刷新。两者调用同一个生成器。
+    /// 本入口是冻结后的唯一手册生成入口，供发布管线在模块部署后从宿主进程外刷新。
     /// </summary>
     public static int ExportCommandManual(string outputPath, Assembly identityAssembly)
     {
@@ -105,7 +104,7 @@ public static partial class ServiceComposer
         RegisterServiceModuleCommands(registry, modules, settings, bus);
         RegisterServiceMcpSettingCommands(registry, settings);
 
-        // 指令自省面（vulcan.command.list / show / domains / manual）随宿主装配，
+        // 指令自省面（vulcan.command.list / show / domains）随宿主装配，
         // 目录与手册只读注册表。远端暴露由指令自己的 HiddenReason / Level / Readonly 声明，
         // 宿主不再另做一层 MCP 投影或策略锁。
         // 模块开发路线（4.6.0 从 HistoryDiana 迁入）：工作区、发布、装机。

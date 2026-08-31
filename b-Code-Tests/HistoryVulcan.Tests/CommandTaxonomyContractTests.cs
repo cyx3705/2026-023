@@ -1,4 +1,5 @@
 ﻿using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Services.Commands;
 using Xunit;
 
 namespace HistoryVulcan.Tests;
@@ -235,6 +236,18 @@ public sealed class CommandTaxonomyContractTests
             "vulcan.log.flood",
             BuiltinCommandDefinitions.Names,
             StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void InteractiveManualGenerationIsNotPartOfTheFrozenHostCatalog()
+    {
+        var registry = new CommandRegistry();
+
+        CommandCatalogCommands.RegisterAll(registry);
+
+        Assert.DoesNotContain(
+            registry.All(),
+            descriptor => descriptor.Name.Equals("vulcan.command.manual", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
