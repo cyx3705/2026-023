@@ -121,8 +121,12 @@ public sealed class ReleasePipelineTests
             Assert.Contains("diana.docs.catalog", contract, StringComparison.Ordinal);
             Assert.Contains("Diana MCP 工具未暴露或调用失败", contract, StringComparison.Ordinal);
             Assert.Contains("正式 `z-Publish/docs`", contract, StringComparison.Ordinal);
+            Assert.Contains("diana.view.windows", contract, StringComparison.Ordinal);
+            Assert.Contains("diana.view.capture", contract, StringComparison.Ordinal);
         }
 
+        Assert.Contains("禁止为只读观察调用 Computer Use", manual, StringComparison.Ordinal);
+        Assert.Contains("不移动鼠标、不切换前台", manual, StringComparison.Ordinal);
         Assert.DoesNotContain("若本机 Cursor 已接上 Diana MCP，可以再", manual, StringComparison.Ordinal);
         Assert.DoesNotContain("MCP 可用时再", manual, StringComparison.Ordinal);
         Assert.DoesNotContain("`diana.docs.*` | 可选", manual, StringComparison.Ordinal);
