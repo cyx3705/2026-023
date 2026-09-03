@@ -7,7 +7,10 @@ using Xunit;
 
 namespace HistoryVulcan.Tests
 {
-
+    // 与 RuntimeModulePackageTests 共用同一串行集合：本类同样把测试程序集复制进模块槽，
+    // 并用进程级环境变量控制夹具身份。此前它不在任何集合里，靠「只有它开这些开关」侥幸成立；
+    // 5.1.3 加入第二组夹具后这条侥幸不再成立，装载结果开始随并行调度漂移。
+    [Collection(RuntimeModulePackageCollection.Name)]
     public sealed class ModuleHostContextTests
     {
         [Fact]

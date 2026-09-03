@@ -373,43 +373,53 @@ public sealed partial class ModuleHost : IDisposable
         return targets;
     }
 
-    private void SwapRegistrations(Snapshot old, Snapshot next)
+    /// <summary>
+    /// 拆掉旧快照的登记，给新快照让位。
+    ///
+    /// 5.1.3 之前这里同时做「拆旧」和「装新」，而装新是一次性的：全部模块接完之后
+    /// 才有第一条模块指令进活登记表。现在装新按模块拆开，交给
+    /// <c>AttachPhase</c> → <see cref="RegisterModuleCommands"/> 逐个进行；
+    /// 拆旧仍必须整体先做——同名指令不能新旧并存。
+    /// </summary>
+    private void ClearOldRegistrations(Snapshot old)
     {
-
         if (_registry == null)
-        {
-            next.FinalizeMetas();
             return;
-        }
+
+        foreach (var name in old.RegisteredNames)
+            _registry.Unregister(name);
+    }
+
+    /// <summary>
+    /// 把一个刚接入的模块暂存的指令登记进活登记表。
+    ///
+    /// 取的是快照里属于该 owner、且尚未登记的全部条目：装载阶段收集的反射指令，
+    /// 与该模块 <c>Attach</c> 时经 <c>RegisterCommands</c> 暂存的指令，都在其中。
+    /// </summary>
+    private void RegisterModuleCommands(Snapshot snap, string owner)
+    {
+        if (_registry == null)
+            return;
+
+        var registered = snap.RegisteredNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // UI-only 前端(EnableCommands=false)不装反射业务指令，但仍须把
         // RegisterCommands 暂存的 RequiresUiThread 页面状态命令写入本机总线；
         // 否则 HistoryMinerva.convert 一类点击会被 RemoteExecutor 转到服务侧静默失败。
-        var pending = EnableCommands
-            ? next.PendingCommands
-            : next.PendingCommands
-                .Where(item => item.Descriptor.RequiresUiThread)
-                .ToList();
-
-        if (pending.Count == 0 && !EnableCommands)
-        {
-            foreach (var name in old.RegisteredNames)
-                _registry.Unregister(name);
-            next.FinalizeMetas();
+        var pending = snap.PendingCommands
+            .Where(item =>
+                item.ModuleName.Equals(owner, StringComparison.OrdinalIgnoreCase)
+                && !registered.Contains(item.Descriptor.Name)
+                && (EnableCommands || item.Descriptor.RequiresUiThread))
+            .ToList();
+        if (pending.Count == 0)
             return;
-        }
-
-        // 模块只能占用自己的一级域。先移除旧模块和同名前端代理，再用真实命令
-        // 元数据推导宿主保留域，避免维护一份会随功能漂移的名称名单。
-        var pendingNames = pending
-            .Select(item => item.Descriptor.Name)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var name in old.RegisteredNames)
-            _registry.Unregister(name);
 
         // ShellServiceClient 会把前端模块命令投影成 frontend:* 代理。代理不是宿主保留命令，
         // 重载时必须让新模块实现接管同名命令，否则 vulcan.module.list 与 vulcan.command.list 会数量不一致。
+        var pendingNames = pending
+            .Select(item => item.Descriptor.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var command in _registry.All()
                      .Where(command =>
                          _registry.GetSource(command.Name)
@@ -425,8 +435,8 @@ public sealed partial class ModuleHost : IDisposable
             {
                 var ownedDescriptor = ModuleCommandTaxonomy.Apply(descriptor, moduleName);
                 _registry.Register(ownedDescriptor, $"module:{moduleName}");
-                next.RegisteredNames.Add(descriptor.Name);
-                next.CountCommand(moduleName);
+                snap.RegisteredNames.Add(descriptor.Name);
+                snap.CountCommand(moduleName);
             }
             catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
             {
@@ -435,14 +445,12 @@ public sealed partial class ModuleHost : IDisposable
                 // 必须连 ArgumentException 一起兜：CommandRegistry.Register 除了重名
                 // （InvalidOperationException）还会因非法命令类、以及「写了 ConfirmPrompt
                 // 却没升到 Ask 级」抛 ArgumentException。只兜一种的后果不是少一条指令，
-                // 而是异常穿透整个 foreach——pending 里排在它后面的**所有模块**一条都注册
-                // 不上，且 RegisteredNames 与 FinalizeMetas 停在半途。
+                // 而是异常穿透整个 foreach——本模块排在它后面的**所有指令**一条都注册不上，
+                // 且 RegisteredNames 与模块元信息停在半途。
                 // 一条坏指令只该连累它自己。
                 _log.Error("module", $"模块 {moduleName} 的指令 {descriptor.Name} 被拒绝注册: {ex.Message}");
             }
         }
-
-        next.FinalizeMetas();
     }
 
 
@@ -490,7 +498,7 @@ public sealed partial class ModuleHost : IDisposable
                 _discoveryDiagnostics = discovery.Diagnostics;
                 foreach (var diagnostic in discovery.Diagnostics)
                     _log.Warn("module.discovery", $"[{diagnostic.Code}] {diagnostic.Path}: {diagnostic.Message}");
-                foreach (var module in discovery.Modules)
+                foreach (var module in OrderForStartup(discovery.Modules))
                     LoadDiscoveredModule(snap, module);
                 return snap;
             }
@@ -720,13 +728,6 @@ public sealed partial class ModuleHost : IDisposable
             }
             var moduleName = discovered?.Name ?? declaredName;
             var commandPrefix = GetProp(info, "CommandPrefix") as string ?? moduleName;
-            if (!contextAttached)
-            {
-                AttachModuleContexts(snap, types, moduleName);
-                contextAttached = true;
-            }
-
-            var attachFailures = snap.AttachFailures.GetValueOrDefault(moduleName);
 
             snap.Metas.Add((moduleName,
                 GetProp(info, "Description") as string ?? "",
@@ -752,19 +753,20 @@ public sealed partial class ModuleHost : IDisposable
                 CollectType(snap, moduleName, commandPrefix, main, docs);
             }
 
-            var origin = $"← {(slot.Length > 0 ? slot + "/" : "")}{fileName}";
-            if (attachFailures is { Count: > 0 })
+            // 5.1.3：Attach 不在扫描期发生。装载阶段只负责把程序集读进来、把反射指令
+            // 收进快照；接入宿主与登记指令统一由 AttachPhase 按依赖序逐个进行，
+            // 于是任何模块 Attach 时，排在它前面的模块指令都已经可以调用。
+            // ✓ / ✗ 那行日志随之后移——「装上了没有」在接上之前还不成立。
+            if (!contextAttached)
             {
-                // 接不上宿主就是没装上。打 ✓ 会让 vulcan.module.list 显示模块在位、
-                // 版本正确、0 条指令，而原因只在日志里——那正是本次排查绕的弯路。
-                _log.Error("module",
-                    $"✗ 模块 {moduleName} {GetProp(info, "Version")} 未接上宿主，指令不会注册 {origin}"
-                    + Environment.NewLine + "    " + string.Join(Environment.NewLine + "    ", attachFailures));
-            }
-            else
-            {
-                _log.Info("module",
-                    $"✓ 模块 {moduleName} {GetProp(info, "Version")} ({(open ? "全暴露" : "精准暴露")}) {origin}");
+                snap.PendingAttach.Add(new PendingModule(
+                    moduleName,
+                    commandPrefix,
+                    types,
+                    open ? "全暴露" : "精准暴露",
+                    GetProp(info, "Version") as string ?? declaredVersion,
+                    $"← {(slot.Length > 0 ? slot + "/" : "")}{fileName}"));
+                contextAttached = true;
             }
         }
     }

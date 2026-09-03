@@ -19,6 +19,10 @@ public sealed partial class ModuleHost
             if (_disposed)
                 return;
 
+            // 装载期间指令面是不完整的，就绪标志必须先落下：这是
+            // vulcan.module.ready 的唯一真值，模块据此判断现在看到的目录算不算数。
+            _ready = false;
+
             var old = _current;
             TeardownSnapshot(old);
             _current = Snapshot.Empty;
@@ -43,9 +47,11 @@ public sealed partial class ModuleHost
 
             CommitSnapshot(old, next);
             SyncFileWatching();
+            _ready = true;
         }
 
         ReloadCompleted?.Invoke();
+        AnnounceReady();
     }
 
     /// <summary>
@@ -78,7 +84,12 @@ public sealed partial class ModuleHost
             {
                 throw new InvalidOperationException($"模块 {entry.Name} 未形成可用加载快照。");
             }
-            CommitAddedCommands(snap, pendingBefore, entry.Name);
+
+            // 5.1.3：装载不再顺带接入，单包热装也走同一条接入阶段——它已经包含
+            // 「接上宿主 → 登记该模块的指令 → 刷新元信息」三步，因此这里不再另做一次
+            // 登记；再做一次只会把同名指令撞进重名分支，报一串「被拒绝注册」。
+            AttachPhase(snap, onlyOwner: entry.Name);
+            _log.Info("module", $"已装入模块 {entry.Name}，未拆除其它模块");
         }
         catch
         {
@@ -90,44 +101,6 @@ public sealed partial class ModuleHost
             _building = null;
             PublishXamlContexts();
         }
-    }
-
-    private void CommitAddedCommands(Snapshot snap, int pendingBefore, string moduleName)
-    {
-        void Commit()
-        {
-            if (_registry == null)
-            {
-                snap.ReplaceModuleMeta(moduleName);
-                return;
-            }
-
-            for (var i = pendingBefore; i < snap.PendingCommands.Count; i++)
-            {
-                var (descriptor, owner) = snap.PendingCommands[i];
-                try
-                {
-                    var ownedDescriptor = ModuleCommandTaxonomy.Apply(descriptor, owner);
-                    _registry.Register(ownedDescriptor, $"module:{owner}");
-                    snap.RegisteredNames.Add(descriptor.Name);
-                    snap.CountCommand(owner);
-                }
-                catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
-                {
-                    _log.Error("module", $"模块 {owner} 的指令 {descriptor.Name} 被拒绝注册: {ex.Message}");
-                }
-            }
-
-            snap.ReplaceModuleMeta(moduleName);
-        }
-
-        var ui = UiContext;
-        if (ui == null)
-            Commit();
-        else
-            ui.Send(_ => Commit(), null);
-
-        _log.Info("module", $"已装入模块 {moduleName}，未拆除其它模块");
     }
 
     private void TeardownAddedModule(
@@ -149,6 +122,8 @@ public sealed partial class ModuleHost
             snap.PendingCommands.RemoveRange(pendingBefore, snap.PendingCommands.Count - pendingBefore);
         snap.Metas.RemoveAll(meta =>
             meta.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
+        snap.PendingAttach.RemoveAll(module =>
+            module.Owner.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
         snap.AttachFailures.Remove(moduleName);
         snap.ClearCommandCount(moduleName);
         snap.ContextsByOwner.Remove(moduleName);
@@ -217,20 +192,25 @@ public sealed partial class ModuleHost
         }
     }
 
+    /// <summary>
+    /// 换上新快照，然后按依赖序逐个接入模块。
+    ///
+    /// 拆旧登记、切换 <c>_current</c>、发布 XAML 上下文三件事必须先整体做完：
+    /// 模块 <c>Attach</c> 里开窗、解析 XAML、调用别的模块都是正常写法，
+    /// 那时它必须看到的是**新**快照。接入本身留在重载线程上跑，只把登记表写入
+    /// 编组过去——5.1.2 的线程边界不因这次改动而移动。
+    /// </summary>
     private void CommitSnapshot(Snapshot old, Snapshot next)
     {
-        void Commit()
+        MarshalToUi(() =>
         {
-            SwapRegistrations(old, next);
+            ClearOldRegistrations(old);
             _current = next;
             PublishXamlContexts();
-        }
+            next.FinalizeMetas();
+        });
 
-        var ui = UiContext;
-        if (ui == null)
-            Commit();
-        else
-            ui.Send(_ => Commit(), null);
+        AttachPhase(next);
 
         _log.Info("module",
             $"模块装载完成: {next.Modules.Count} 个模块,{next.RegisteredNames.Count} 条指令");

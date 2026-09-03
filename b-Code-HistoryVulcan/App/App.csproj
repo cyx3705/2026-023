@@ -20,6 +20,13 @@
     <SelfContained>false</SelfContained>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <StartupObject>HistoryVulcan.App.Program</StartupObject>
+    <!--
+      5.1.3：可执行文件图标取 OneHistory 深底标识（b-Office/onehistory-logo-dark.png）。
+      源图是 640x228 的横向字标，按比例居中放进正方画布、四周透明补边生成多尺寸 .ico；
+      16/20/24/32/40/48/64/128 为 BMP 帧，256 为 PNG 帧——GDI+ 解不了 PNG 帧，
+      小尺寸留 BMP 才能被 WinForms/GDI+ 一类调用方读出来。
+    -->
+    <ApplicationIcon>HistoryVulcan.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

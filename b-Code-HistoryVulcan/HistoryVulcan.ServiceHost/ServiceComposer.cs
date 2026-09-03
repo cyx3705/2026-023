@@ -298,6 +298,35 @@ public static partial class ServiceComposer
 
         registry.Register(new CommandDescriptor
         {
+            Name = "vulcan.module.ready",
+            Domain = "vulcan",
+            CommandClass = "module",
+            Summary = "查询本轮模块装载是否已经全部接上宿主",
+            Example = "vulcan.module.ready",
+            Readonly = true,
+            Handler = CommandDescriptor.Sync(_ =>
+            {
+                // 装载中看到的指令目录是不完整的。5.1.2 之前没有任何办法问出这件事，
+                // 于是消费方只能靠「等一会儿再拉一次」猜——猜错的那次就是少几个模块。
+                var attached = host.Modules.Count(module => module.Attached);
+                if (!host.IsReady)
+                {
+                    return CommandResult.Ok(
+                        $"装载中：已接上 {attached} 个模块，目录尚不完整。", false);
+                }
+
+                var pending = host.Modules.Where(module => !module.Attached).ToList();
+                return CommandResult.Ok(
+                    pending.Count == 0
+                        ? $"就绪：{attached} 个模块全部接上宿主。"
+                        : $"就绪：{attached} 个模块接上宿主；未接上 "
+                          + string.Join("、", pending.Select(module => module.ModuleName)),
+                    true);
+            }),
+        }, "framework:service");
+
+        registry.Register(new CommandDescriptor
+        {
             Name = "vulcan.module.reload",
             Domain = "vulcan",
             CommandClass = "module",

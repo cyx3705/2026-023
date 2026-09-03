@@ -586,6 +586,27 @@
             与 Lite 的差异:端点表 → CommandRegistry 注册/注销;Console → IShellLog;
             注册表变更经 WPF Dispatcher 序列化到 UI 线程。
             </summary>
+             <summary>
+             装载次序与就绪屏障（5.1.3）。
+            
+             5.1.2 之前，一轮装载是「扫描时逐个 <c>Attach</c>，最后一次性把全部指令换进活登记表」。
+             两件事之间隔着整整一轮装载：先接上的模块已经在跑，而它要调用的其它模块的指令
+             一条都还没登记。模块自己开线程（界面模块必然如此）时，这段窗口的长短取决于
+             剩余模块的装载耗时，于是同一台机器上「有时全都在、有时少几个」——
+             日志里留下的是成片的 <c>未知指令: aurora.ui.actions</c> 和只建了一半的页面。
+            
+             5.1.3 把这条时间线改成两段，并给出一个可被询问、可被通知的完成点：
+             <list type="number">
+             <item>装载阶段只读程序集、收指令，不接入任何模块；</item>
+             <item>接入阶段按**声明的依赖序**逐个 <c>Attach</c>，每接上一个就立刻把它的指令
+             登记进活登记表——于是任何模块 <c>Attach</c> 时，排在它前面的模块指令都已可调用；</item>
+             <item>全部接上后置 <see cref="P:HistoryVulcan.Services.Modules.ModuleHost.IsReady"/>，并按命令名通知声明了就绪钩子的模块。</item>
+             </list>
+            
+             依赖写在模块自己的 <c>module.manifest.json</c> 里（<c>dependsOn</c>），与
+             <c>ui</c> / <c>pinned</c> 同一模式由宿主直读：<see cref="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry"/>
+             是已定版记录，为一个可选字段改它的构造函数是破坏性变更。
+             </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.#ctor(System.String,HistoryVulcan.Core.Logging.IShellLog)">
             <summary>按模块目录与日志建立宿主；装载与命令注册由 Attach/Start 触发。</summary>
@@ -660,6 +681,24 @@
             下次 <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.Reload"/> 或文件变化会按运行区当前包再装回来。
             </summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ClearOldRegistrations(HistoryVulcan.Services.Modules.ModuleHost.Snapshot)">
+             <summary>
+             拆掉旧快照的登记，给新快照让位。
+            
+             5.1.3 之前这里同时做「拆旧」和「装新」，而装新是一次性的：全部模块接完之后
+             才有第一条模块指令进活登记表。现在装新按模块拆开，交给
+             <c>AttachPhase</c> → <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.RegisterModuleCommands(HistoryVulcan.Services.Modules.ModuleHost.Snapshot,System.String)"/> 逐个进行；
+             拆旧仍必须整体先做——同名指令不能新旧并存。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.RegisterModuleCommands(HistoryVulcan.Services.Modules.ModuleHost.Snapshot,System.String)">
+             <summary>
+             把一个刚接入的模块暂存的指令登记进活登记表。
+            
+             取的是快照里属于该 owner、且尚未登记的全部条目：装载阶段收集的反射指令，
+             与该模块 <c>Attach</c> 时经 <c>RegisterCommands</c> 暂存的指令，都在其中。
+             </summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.FindModuleDomainConflicts(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String})">
             <summary>
             返回按旧命令名前缀计算的冲突集合。仅保留给旧消费方诊断；
@@ -717,6 +756,14 @@
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.AttachFailures">
             <summary>模块 owner → 上下文注入失败原因；非空即表示该模块没有真正接上宿主。</summary>
         </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.PendingAttach">
+             <summary>
+             待接入模块，按本轮装载次序排列（5.1.3）。
+            
+             装载阶段只把程序集读进来并收集反射指令；接入与指令登记留到
+             <c>AttachPhase</c> 逐个进行，次序由 manifest 的 <c>dependsOn</c> 决定。
+             </summary>
+        </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Metas">
             <summary>模块元信息(vulcan.module.list);CommandCount 在注册完成后定稿。</summary>
         </member>
@@ -732,6 +779,24 @@
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.InstancesFrom(System.Runtime.Loader.AssemblyLoadContext)">
             <summary>取出由指定加载上下文装载的全部实例，供按模块卸载时回收资源。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleHost.PendingModule">
+             <summary>
+             一个已装载、尚未接入宿主的模块。
+            
+             <c>Types</c> 是该程序集的类型表，接入阶段据此找 <c>IModuleContextAware</c> 实现；
+             其余字段只为接入完成后那一行 ✓ / ✗ 日志——它必须在接入之后打印，
+             因为「装上了没有」这句话在接上之前还不成立。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.PendingModule.#ctor(System.String,System.String,System.Collections.Generic.IReadOnlyList{System.Type},System.String,System.String,System.String)">
+             <summary>
+             一个已装载、尚未接入宿主的模块。
+            
+             <c>Types</c> 是该程序集的类型表，接入阶段据此找 <c>IModuleContextAware</c> 实现；
+             其余字段只为接入完成后那一行 ✓ / ✗ 日志——它必须在接入之后打印，
+             因为「装上了没有」这句话在接上之前还不成立。
+             </summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleHost.ModuleLoadContext">
             <summary>可回收的加载上下文:模块及其依赖全部从内存流加载,不锁磁盘文件。</summary>
@@ -780,6 +845,16 @@
              那会让宿主停在一个既没有旧快照也没有新快照的状态上。
              </summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.CommitSnapshot(HistoryVulcan.Services.Modules.ModuleHost.Snapshot,HistoryVulcan.Services.Modules.ModuleHost.Snapshot)">
+             <summary>
+             换上新快照，然后按依赖序逐个接入模块。
+            
+             拆旧登记、切换 <c>_current</c>、发布 XAML 上下文三件事必须先整体做完：
+             模块 <c>Attach</c> 里开窗、解析 XAML、调用别的模块都是正常写法，
+             那时它必须看到的是**新**快照。接入本身留在重载线程上跑，只把登记表写入
+             编组过去——5.1.2 的线程边界不因这次改动而移动。
+             </summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ResolveFromModuleContexts(System.Runtime.Loader.AssemblyLoadContext,System.Reflection.AssemblyName)">
             <summary>
             XAML 按程序集简单名走默认上下文。把可回收 ALC 里已装载的同名程序集交回去；
@@ -798,11 +873,82 @@
              它引用的 AvalonDock 却找不到。只用于 <c>pinned: true</c>。
              </summary>
         </member>
+        <member name="F:HistoryVulcan.Services.Modules.ModuleHost.ReadyHookSuffix">
+            <summary>模块可选声明的就绪钩子后缀：<c>&lt;域&gt;.host.ready</c>。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Modules.ModuleHost.ReadySource">
+            <summary>就绪通知的来源标签；走安静通道，不进指令历史。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Modules.ModuleHost.DependsOnField">
+            <summary>manifest 里声明模块级前置依赖的字段名。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.IsReady">
+             <summary>
+             当前快照是否已完成「全部模块接上宿主、指令登记完毕」。
+            
+             装载中为 false。这是 <c>vulcan.module.ready</c> 的唯一真值：模块与远端据此
+             判断现在看到的指令面是不是完整的，而不必靠「等一会儿再试」猜。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ReadDependsOn(System.String)">
+             <summary>
+             读 manifest 的 <c>dependsOn</c>：本模块要求先接上的其它模块名。
+            
+             只影响**接入次序**，不构成硬前置：依赖缺失时本模块照样装载，只是记一条发现诊断。
+             宿主不替模块决定「少了谁就不能跑」——那是模块自己的判断，而把它做成硬失败会让
+             一个模块的缺席连累整棵依赖树。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.OrderByDependencies``1(System.Collections.Generic.IReadOnlyList{``0},System.Func{``0,System.String},System.Func{``0,System.Collections.Generic.IReadOnlyList{System.String}},System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Modules.ModuleOrderProblem}@)">
+             <summary>
+             按声明的依赖关系排出接入次序：依赖在前，其余保持名称序。
+            
+             名称序是**基准序**而不是兜底：没有任何声明时结果与 5.1.2 完全一致，
+             升级不会凭空改变既有次序；有声明时只把必要的模块前移，其余仍然稳定。
+             未知依赖与依赖环都不失败——它们各记一条诊断，剩余模块按基准序补齐，
+             因为「排不出次序」不该等于「谁都不装」。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.OrderForStartup(System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Modules.ModuleDiscoveryEntry})">
+            <summary>按 manifest 的 dependsOn 排出本轮装载次序，并把排序问题记进发现诊断。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.AttachPhase(HistoryVulcan.Services.Modules.ModuleHost.Snapshot,System.String)">
+             <summary>
+             接入阶段：按装载次序逐个接上宿主，每接上一个立刻登记它的指令。
+            
+             逐个登记是这次修复的关键。一次性登记意味着「全部接完之前，谁的指令都不在」，
+             而模块的 <c>Attach</c> 恰恰是它开始干活的地方；逐个登记则把这段窗口收敛成
+             「只看不见排在我后面的模块」，而那正是 <c>dependsOn</c> 能表达的事。
+             </summary>
+             <param name="snap">当前已提交的快照。</param>
+             <param name="onlyOwner">只接入这一个模块（单包热装路径）；null 表示整轮。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.AnnounceReady">
+             <summary>
+             通知声明了就绪钩子的模块：本轮装载已经完整。
+            
+             界面模块在 <c>Attach</c> 里就开了自己的线程，它拉目录的时刻不由宿主决定，
+             因此仅靠次序修不好——必须有一个「现在可以了」的信号。钩子是可选的：
+             没声明就跳过，宿主不因为模块没实现它而改变任何行为。
+            
+             走安静通道并且离开 <c>_reloadLock</c> 之后再发：钩子里回调宿主（重载、
+             装包、编组到 UI 线程）是完全正常的写法，在锁内同步发就会把它变成死锁。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.MarshalToUi(System.Action)">
+            <summary>把回调编组到注册表消费线程；未装配 UI 上下文时就地执行。</summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.LoadTypes(System.Reflection.Assembly)">
             <summary>取程序集的类型表;缺失依赖只丢掉受影响的类型,不让整个模块下线(MD-06)。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.CollectType(HistoryVulcan.Services.Modules.ModuleHost.Snapshot,System.String,System.String,System.Type,HistoryVulcan.Services.Modules.XmlDocs)">
             <summary>把一个业务类的公共方法收集为待注册指令(MD-03/04)。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleOrderProblem">
+            <summary>装载次序无法按声明排定时留下的说明；不构成失败。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleOrderProblem.#ctor(System.String,System.String,System.String)">
+            <summary>装载次序无法按声明排定时留下的说明；不构成失败。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.XmlDocs">
             <summary>

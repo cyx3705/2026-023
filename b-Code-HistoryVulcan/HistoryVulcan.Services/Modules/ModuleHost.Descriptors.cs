@@ -203,6 +203,7 @@ public sealed partial class ModuleHost
                 return;
 
             _disposed = true;
+            _ready = false;
         }
 
         _watcher.Dispose();
@@ -262,6 +263,14 @@ public sealed partial class ModuleHost
         /// <summary>模块 owner → 上下文注入失败原因；非空即表示该模块没有真正接上宿主。</summary>
         public Dictionary<string, List<string>> AttachFailures { get; }
             = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// 待接入模块，按本轮装载次序排列（5.1.3）。
+        ///
+        /// 装载阶段只把程序集读进来并收集反射指令；接入与指令登记留到
+        /// <c>AttachPhase</c> 逐个进行，次序由 manifest 的 <c>dependsOn</c> 决定。
+        /// </summary>
+        public List<PendingModule> PendingAttach { get; } = new();
 
 
 
@@ -368,6 +377,21 @@ public sealed partial class ModuleHost
             }
         }
     }
+
+    /// <summary>
+    /// 一个已装载、尚未接入宿主的模块。
+    ///
+    /// <c>Types</c> 是该程序集的类型表，接入阶段据此找 <c>IModuleContextAware</c> 实现；
+    /// 其余字段只为接入完成后那一行 ✓ / ✗ 日志——它必须在接入之后打印，
+    /// 因为「装上了没有」这句话在接上之前还不成立。
+    /// </summary>
+    private sealed record PendingModule(
+        string Owner,
+        string CommandPrefix,
+        IReadOnlyList<Type> Types,
+        string Exposure,
+        string Version,
+        string Origin);
 
     private sealed class ModuleContext(
         Snapshot snapshot,
