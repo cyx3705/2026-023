@@ -117,12 +117,10 @@ public sealed class CommandDescriptor
         = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>读取一条消费方注解;不存在时返回 null。</summary>
+    // 5.2 删掉了配套的 HasAnnotation（把注解按 bool 解析）：注解的语义由消费方定义，
+    // 宿主只负责原样携带，替消费方猜「哪些键是布尔」本就越界；全仓与七个已部署模块无人调用。
     public string? Annotation(string key)
         => key != null && Annotations.TryGetValue(key, out var value) ? value : null;
-
-    /// <summary>判定一条布尔注解是否为真;缺省与非法值均视为 false。</summary>
-    public bool HasAnnotation(string key)
-        => bool.TryParse(Annotation(key), out var value) && value;
 
     /// <summary>执行体。长任务应内部 await 后台工作并经 Progress 上报(§5.2 约束)。</summary>
     public required Func<CommandContext, Task<CommandResult>> Handler { get; init; }
