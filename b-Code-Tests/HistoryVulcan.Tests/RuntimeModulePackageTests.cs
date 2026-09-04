@@ -182,6 +182,12 @@ public sealed class RuntimeModulePackageTests
             var loaded = Assert.Single(host.Modules);
             Assert.NotEqual(firstId, loaded.InstanceId);
             Assert.True(registry.TryGet("contextfixture.Probe", out _));
+
+            // 「指令回来了」不等于「模块接上了」：卸载残留的待接入条目会让 AttachPhase
+            // 用旧类型先接一遍，指令因此照样在，而新实例撞重名后 attached=false。
+            // 这条路径与 HotInstallOverALoadedModuleAttachesItExactlyOnce 是同一个不变量的两条入口。
+            Assert.True(loaded.Attached, string.Join("；", loaded.AttachFailures));
+            Assert.Equal(2, loaded.CommandCount);
         }
         finally
         {
@@ -400,6 +406,77 @@ public sealed class RuntimeModulePackageTests
         {
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, previousVersion);
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.NameVariable, previousName);
+        }
+    }
+
+    /// <summary>
+    /// 同一进程内「boot → 热装同一模块」必须只接入一次，并且指令数等于新包的实际指令数。
+    /// </summary>
+    /// <remarks>
+    /// 按模块卸载此前不清 <c>PendingAttach</c>：装同名新包时快照里同时留着旧条目和新条目，
+    /// <c>AttachPhase(onlyOwner)</c> 于是接两遍——第一遍用已卸载 ALC 的旧类型把**旧**指令面
+    /// 注册回去，第二遍的 <c>RegisterCommands</c> 撞在重复暂存检查上抛异常。现场表现是
+    /// vulcan.module.list 显示新版本号、旧指令数、attached=false，而 attachFailures 里
+    /// 只有一句「重复暂存指令」，看不出是宿主自己接了两遍。重装同一个包也不能自愈：
+    /// 内容一致会短路，内容不同则每装一次再多攒一条。
+    ///
+    /// 因此这里连装三个版本：第二次证明不再接两遍，第三次证明条目不会逐次累积。
+    /// </remarks>
+    [Fact]
+    public void HotInstallOverALoadedModuleAttachesItExactlyOnce()
+    {
+        using var temp = new TemporaryDirectory();
+        var runtime = Path.Combine(temp.Path, "HistoryVulcan", "Modules");
+        var candidates = Directory.CreateDirectory(Path.Combine(temp.Path, "candidates")).FullName;
+        var first = CreatePackage(candidates, "first", "contextfixture", "v1.0.0");
+        var second = CreatePackage(candidates, "second", "contextfixture", "v2.0.0");
+        var third = CreatePackage(candidates, "third", "contextfixture", "v3.0.0");
+        var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable);
+
+        var registry = new CommandRegistry();
+        var log = new TestLog();
+        var settings = new MemorySettings();
+        var bus = new CommandBus(registry, log);
+        using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
+        {
+            EnableFileWatching = false,
+        };
+
+        try
+        {
+            host.Attach(registry, bus, settings, Path.Combine(temp.Path, "data"));
+            host.Start();
+
+            foreach (var (package, version) in new[]
+                     {
+                         (first, "v1.0.0"),
+                         (second, "v2.0.0"),
+                         (third, "v3.0.0"),
+                     })
+            {
+                Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, version);
+                var installed = host.InstallPackage(package);
+                Assert.True(installed.Success, installed.Message);
+
+                var loaded = Assert.Single(host.Modules);
+                Assert.Equal(version, loaded.Version);
+                Assert.True(
+                    loaded.Attached,
+                    $"{version} 未接上宿主: {string.Join("；", loaded.AttachFailures)}");
+
+                // 夹具恰好两条：Attach 里显式注册的 context-probe，与反射投影的 Probe。
+                // 数错了就说明接入阶段把别的一份指令面也算了进来。
+                Assert.Equal(2, loaded.CommandCount);
+                Assert.True(registry.TryGet("contextfixture.context-probe", out _));
+                Assert.True(registry.TryGet("contextfixture.Probe", out _));
+                Assert.Equal(2, registry.All().Count(command =>
+                    registry.GetSource(command.Name)
+                        .Equals("module:contextfixture", StringComparison.OrdinalIgnoreCase)));
+            }
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, previous);
         }
     }
 

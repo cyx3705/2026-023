@@ -120,13 +120,7 @@ public sealed partial class ModuleHost
                 registeredBefore, snap.RegisteredNames.Count - registeredBefore);
         if (snap.PendingCommands.Count > pendingBefore)
             snap.PendingCommands.RemoveRange(pendingBefore, snap.PendingCommands.Count - pendingBefore);
-        snap.Metas.RemoveAll(meta =>
-            meta.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
-        snap.PendingAttach.RemoveAll(module =>
-            module.Owner.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
-        snap.AttachFailures.Remove(moduleName);
-        snap.ClearCommandCount(moduleName);
-        snap.ContextsByOwner.Remove(moduleName);
+        snap.ForgetModule(moduleName);
 
         foreach (var alc in snap.Contexts.Where(context => !contextsBefore.Contains(context)).ToList())
         {

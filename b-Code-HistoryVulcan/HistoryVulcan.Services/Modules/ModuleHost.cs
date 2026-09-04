@@ -277,11 +277,13 @@ public sealed partial class ModuleHost : IDisposable
 
         snap.PendingCommands.RemoveAll(item =>
             item.ModuleName.Equals(owner, StringComparison.OrdinalIgnoreCase));
-        snap.Metas.RemoveAll(meta =>
-            meta.Name.Equals(owner, StringComparison.OrdinalIgnoreCase));
-        snap.ClearCommandCount(owner);
 
-        if (snap.ContextsByOwner.Remove(owner, out var alc)
+        // 元信息、待接入条目、接入失败与指令计数一并抹掉：清单只在 ForgetModule 里写一遍。
+        // 这里此前自己列了一份，漏掉 PendingAttach 的代价不出现在卸载这一刻，
+        // 而出现在下一次装同名包——AttachPhase 会把同一个模块接两遍。
+        var alc = snap.ForgetModule(owner);
+
+        if (alc != null
             && snap.ContextsByOwner.Values.All(remaining => !ReferenceEquals(remaining, alc)))
         {
             // 钉住的上下文不可回收，卸载会抛；它的实例也要留着——模块正持有进程级状态

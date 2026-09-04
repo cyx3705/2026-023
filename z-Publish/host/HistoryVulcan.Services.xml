@@ -774,6 +774,26 @@
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.InstancesFrom(System.Runtime.Loader.AssemblyLoadContext)">
             <summary>取出由指定加载上下文装载的全部实例，供按模块卸载时回收资源。</summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.ForgetModule(System.String)">
+             <summary>
+             抹掉一个模块在本快照里的按模块登记，并交出装载它的上下文（没有则为 null）。
+             </summary>
+             <remarks>
+             「一个模块在快照里留下哪些痕迹」只在这里写一遍。此前按模块卸载
+             （<c>UnloadFromSnapshot</c>）与单包装载回滚（<c>TeardownAddedModule</c>）
+             各自列了一份清单，两份逐渐不一致：卸载那份漏掉了 <see cref="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.PendingAttach"/>
+             与 <see cref="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.AttachFailures"/>。漏掉的代价不出现在卸载那一刻——
+             装同名新包时旧的待接入条目还在，<c>AttachPhase</c> 于是把同一个模块接两遍：
+             第一遍用已卸载 ALC 的旧类型把**旧**指令面注册回去，第二遍撞在
+             <c>ModuleContext.RegisterCommands</c> 的重名检查上抛异常，
+             模块最终 attached=false、指令数停在旧值，而重装同一个包也不能自愈。
+            
+             指令表（<see cref="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.PendingCommands"/> / <see cref="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.RegisteredNames"/>）
+             与 <see cref="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Modules"/> 不在这里：前者两个调用方各有取舍（一个按活登记表
+             注销、一个按本次装载的区间回滚），后者由注册表消费线程改写，
+             不能在未编组的回滚路径上顺手动。
+             </remarks>
+        </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleHost.PendingModule">
              <summary>
              一个已装载、尚未接入宿主的模块。

@@ -1,0 +1,2 @@
+#nullable enable
+*REMOVED*static HistoryVulcan.Services.Modules.ModuleHost.FindModuleDomainConflicts(System.Collections.Generic.IEnumerable<string!>! reservedCommandNames, System.Collections.Generic.IEnumerable<string!>! moduleCommandNames) -> System.Collections.Generic.IReadOnlySet<string!>!
