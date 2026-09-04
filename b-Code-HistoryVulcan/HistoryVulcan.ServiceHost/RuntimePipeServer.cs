@@ -14,6 +14,10 @@ internal sealed class RuntimePipeServer : IDisposable
         "portunus.mcp.start",
         "portunus.mcp.stop",
         "vulcan.module.list",
+        // 只读的就绪查询，与 module.list 同一档。5.1.3 加了这条命令时两份名单都没改，
+        // 5.2 先补了 CliExposurePolicy（--cli）才发现 --runtime 另有这一份——
+        // 同一件事写在两处，改一处漏一处只是时间问题。新增查询类指令时两份都要过一遍。
+        "vulcan.module.ready",
         "vulcan.module.reload",
         "vulcan.module.install",
     };
