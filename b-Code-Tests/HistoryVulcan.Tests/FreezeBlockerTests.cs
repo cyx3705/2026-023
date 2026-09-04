@@ -178,49 +178,6 @@ public sealed class FreezeBlockerTests
             }),
         };
 
-    private static async Task SendTextAsync(WebSocket socket, string text)
-    {
-        var bytes = Encoding.UTF8.GetBytes(text);
-        await socket.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
-    }
-
-    private static async Task<JsonDocument> ReceiveJsonAsync(WebSocket socket)
-    {
-        var buffer = new byte[4096];
-        using var payload = new MemoryStream();
-        while (true)
-        {
-            var result = await socket.ReceiveAsync(buffer, CancellationToken.None);
-            Assert.NotEqual(WebSocketMessageType.Close, result.MessageType);
-            payload.Write(buffer, 0, result.Count);
-            if (result.EndOfMessage)
-                return JsonDocument.Parse(payload.ToArray());
-        }
-    }
-
-    private static async Task<HttpResponseMessage> PostCommandAsync(HttpClient client, string command)
-    {
-        using var body = new StringContent(
-            JsonSerializer.Serialize(new { text = command }), Encoding.UTF8, "application/json");
-        return await client.PostAsync("api/command", body);
-    }
-
-    private static void ConfigureShellSocket(
-        ClientWebSocket socket, string sessionId, string name, string accessToken)
-    {
-        socket.Options.SetRequestHeader("X-HistoryVulcan-Client", "Shell");
-        socket.Options.SetRequestHeader("X-Client-Name", name);
-        socket.Options.SetRequestHeader("X-Session-Id", sessionId);
-        socket.Options.SetRequestHeader("Authorization", $"Bearer {accessToken}");
-    }
-
-    private static int FreePort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        return ((IPEndPoint)listener.LocalEndpoint).Port;
-    }
-
     private sealed class MemorySettings : ISettingsService
     {
         private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);

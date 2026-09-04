@@ -64,6 +64,29 @@ HistoryVulcan 源码工程；需要联调时显式提供项目自己的开关，
 界面模块尤其要注意：`Attach` 里开的线程会立刻去拉命令目录和各模块页面描述。
 那个时刻目录必然是不完整的——把这类工作挪进 `host.ready`。
 
+## 2.2 5.2 消费变更摘要（公开面移除）
+
+5.2 移除以下成员。**这十条在宿主源码、测试与七个已部署模块的二进制里都是零引用**，
+因此对现有模块没有迁移动作；列出来是为了让将来编译不过的人知道去处。
+
+| 移除 | 替代 |
+| --- | --- |
+| `CommandBus.ShouldUseRemote` | `CommandBus.ShouldUseRemoteCommand`（多一个命令文本参数） |
+| `CommandDescriptor.HasAnnotation(key)` | `bool.TryParse(descriptor.Annotation(key), out var v) && v`；注解语义本就由消费方定义 |
+| `CommandRegistry.DomainsOf(names)` | 无。域由 `CommandRegistry.GetDomain` / `Domains()` 给出，不再按命令名前缀猜 |
+| `CommandRegistry.LegacyDomain(name)` | `registry.GetDomain(name)` |
+| `CommandRegistry.LegacyClass(name)` | `registry.GetCommandClass(name)`（未注册名走的正是同一条推导） |
+| `CommandRegistry.LegacyMethod(name)` | `CommandRegistry.GetMethod(name)`（两者原本逐字相同） |
+| `CommandClassLabels.IsNone(value)` | `string.IsNullOrWhiteSpace(value)` |
+| `DomainFocus.WouldPrefix(...)` | `DomainFocus.Resolve(...)` 的返回值与输入不等，即表示拼了前缀 |
+| `ModuleHost.FindModuleDomainConflicts(...)` | 无。模块域由 module owner 决定，见 `CommandRegistry.ResolveDomain` |
+
+同批还有一项**不改签名的行为收紧**：指令文本解析失败时，回显会遮掉命令名之后的整段
+（此前按正则逐个遮）。那种输入执行不了，遮全是唯一不需要判断的安全答案。
+
+命令行面新增 `vulcan.module.ready`：5.1.3 加了这条就绪查询却漏进白名单，
+现已补上，`HistoryVulcan.Cli.exe --runtime vulcan.module.ready` 可用。
+
 ## 3. 命令契约
 
 模块命令恒为三段式小写名称：`<模块域>.<类>.<方法>`。模块域去掉 `History` 前缀，例如

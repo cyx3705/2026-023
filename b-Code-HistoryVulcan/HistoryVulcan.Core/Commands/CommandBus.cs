@@ -1,5 +1,4 @@
 ﻿using System.Globalization;
-using System.Text.RegularExpressions;
 using HistoryVulcan.Core.Logging;
 
 namespace HistoryVulcan.Core.Commands;
@@ -11,6 +10,13 @@ namespace HistoryVulcan.Core.Commands;
 /// 指令回显与普通日志共用 IShellLog 管道、不同类别(L-03):
 ///   回显 = "cmd:来源",结果 = "cmd:result:域",进度 = "cmd:progress:域"。
 /// </summary>
+/// <remarks>
+/// 5.2 起**一行指令只解析一次**。此前回显脱敏、分类、执行、结果脱敏、载荷风险判定
+/// 各自 <c>CommandParser.Parse</c> 一遍——同一行文本解析五次，配五个
+/// <c>catch (CommandSyntaxException)</c>，每个分支各自决定语法错误时怎么办。
+/// 现在解析结果随 <see cref="Request"/> 走完全程：语法错误只判定一次，
+/// 后续环节读的是同一份 <see cref="ParsedCommand"/>，不再有「这里当错、那里当对」的空间。
+/// </remarks>
 public sealed class CommandBus
 {
     /// <summary>回显类别前缀;控制台按此前缀识别指令行。</summary>
@@ -20,6 +26,8 @@ public sealed class CommandBus
     public const string ResultCategory = "cmd:result";
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public const string ProgressCategory = "cmd:progress";
+
+    private const string RedactedMarker = "[REDACTED]";
 
     private readonly CommandRegistry _registry;
     private readonly IShellLog _log;
@@ -33,36 +41,6 @@ public sealed class CommandBus
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public CommandRegistry Registry => _registry;
-
-    /// <summary>
-    /// Validates a command text against the current registry without routing, logging, confirmation, or execution.
-    /// UI surfaces use this to reject stale menu references at construction time.
-    ///
-    /// 配置了 <see cref="RemoteExecutor"/> 时，本地查不到的指令判为**无法在本进程判定**
-    /// 而不是无效：权威注册表在服务进程，<see cref="ExecuteAsync"/> 也会把这类指令中继过去。
-    /// 4.0.0 前两者口径不一致——`ExecuteAsync` 中继、`Validate` 报"未知指令"——
-    /// 因此一条命令从前端搬到服务侧后，引用它的菜单会在构建期直接抛异常，
-    /// 尽管点下去其实能正常执行。
-    ///
-    /// 嵌入模式（无远端）下仍然硬报错：那时本地注册表就是权威，笔误必须当场暴露。
-    /// </summary>
-    public string? Validate(string text)
-    {
-        ParsedCommand parsed;
-        try
-        {
-            parsed = CommandParser.Parse(text);
-        }
-        catch (CommandSyntaxException ex)
-        {
-            return $"语法错误: {ex.Message}";
-        }
-
-        if (!_registry.TryGet(parsed.Name, out var descriptor))
-            return RemoteExecutor != null ? null : $"未知指令: {parsed.Name}";
-
-        return BindArguments(descriptor, parsed, out _);
-    }
 
     /// <summary>二次确认通道;未注入时带确认位的指令一律拒绝执行(安全缺省)。</summary>
     public IConfirmationService? Confirmation { get; set; }
@@ -93,19 +71,45 @@ public sealed class CommandBus
     public Func<string, string, CancellationToken, Task<CommandResult>>? FrontendExecutor { get; set; }
 
     /// <summary>
-    /// 客户端模式下的远程总线。ShouldUseRemote 返回 true 时整条命令交给服务，
-    /// 服务经界面中继发回的 UI 命令可用来源标签绕过此路由并在本地执行。
+    /// 客户端模式下的远程总线。<see cref="ShouldUseRemoteCommand"/> 返回 true 时整条命令
+    /// 交给服务；服务经界面中继发回的 UI 命令可用来源标签绕过此路由并在本地执行。
     /// </summary>
     public Func<string, string, CancellationToken, Task<CommandResult>>? RemoteExecutor { get; set; }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public Func<string, bool>? ShouldUseRemote { get; set; }
-
-    /// <summary>按命令文本和来源决定是否走远端；设置后优先于仅按来源的兼容委托。</summary>
+    /// <summary>
+    /// 按命令文本和来源决定是否走远端；未设置时配了 <see cref="RemoteExecutor"/> 即整体走远端。
+    /// </summary>
+    /// <remarks>
+    /// 5.2 删掉了并列的 <c>ShouldUseRemote</c>（只看来源的兼容委托）：宿主、测试和
+    /// 已部署的七个模块里没有任何一处给它赋过值，它只是让这条判定多了一层
+    /// <c>?? ... ?? true</c> 的三段回退，读的人要先确认前两层都没接才敢下结论。
+    /// </remarks>
     public Func<string, string, bool>? ShouldUseRemoteCommand { get; set; }
 
     /// <summary>每条指令执行完毕后触发(状态栏摘要,S-03);在执行线程上引发。</summary>
     public event Action<string, string, CommandResult>? Executed;
+
+    /// <summary>
+    /// Validates a command text against the current registry without routing, logging, confirmation, or execution.
+    /// UI surfaces use this to reject stale menu references at construction time.
+    ///
+    /// 配置了 <see cref="RemoteExecutor"/> 时，本地查不到的指令判为**无法在本进程判定**
+    /// 而不是无效：权威注册表在服务进程，<see cref="ExecuteAsync"/> 也会把这类指令中继过去。
+    /// 4.0.0 前两者口径不一致——`ExecuteAsync` 中继、`Validate` 报"未知指令"——
+    /// 因此一条命令从前端搬到服务侧后，引用它的菜单会在构建期直接抛异常，
+    /// 尽管点下去其实能正常执行。
+    ///
+    /// 嵌入模式（无远端）下仍然硬报错：那时本地注册表就是权威，笔误必须当场暴露。
+    /// </summary>
+    public string? Validate(string text)
+    {
+        var request = Request.Of(text);
+        if (request.SyntaxError != null)
+            return request.SyntaxError;
+        if (!_registry.TryGet(request.Name, out var descriptor))
+            return RemoteExecutor != null ? null : $"未知指令: {request.Name}";
+        return BindArguments(descriptor, request.Parsed!, out _);
+    }
 
     /// <summary>
     /// 安静调用通道:执行指令但不回显、不入历史、不触发 <see cref="Executed"/>。
@@ -126,14 +130,10 @@ public sealed class CommandBus
         string source,
         CancellationToken cancellation = default)
     {
-        var trimmed = text.Trim();
+        var request = Request.Of(text);
         try
         {
-            return await ExecuteCoreAsync(
-                trimmed,
-                source,
-                TaxonomyOfCommandText(trimmed),
-                cancellation).ConfigureAwait(false);
+            return await ExecuteCoreAsync(request, source, cancellation).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -143,12 +143,7 @@ public sealed class CommandBus
         {
             // 与 ExecuteAsync 同样的兜底(N-05):总线自身缺陷不得击穿宿主。
             // 安静通道不回显,但内部错误仍需留痕,否则故障会静默消失。
-            var safeError = ex.GetType().Name;
-            _log.Log(
-                ShellLogLevel.Error,
-                EchoCategoryPrefix + "internal",
-                $"总线内部错误({safeError}) 于安静调用: {TaxonomyOfCommandText(trimmed).Domain}");
-            return CommandResult.Fail($"总线内部错误: {safeError}");
+            return InternalFault(ex, $"安静调用 {Taxonomy(request).Domain}");
         }
     }
 
@@ -161,16 +156,17 @@ public sealed class CommandBus
         string source,
         CancellationToken cancellation = default)
     {
+        var request = Request.Of(text);
+        var taxonomy = Taxonomy(request);
+
         // 1. 回显
-        var trimmed = text.Trim();
-        var displayText = RedactSensitiveArguments(trimmed);
-        var taxonomy = TaxonomyOfCommandText(trimmed);
+        var displayText = RedactArguments(request);
         _log.Log(ShellLogLevel.Info, EchoCategoryPrefix + source, displayText);
 
         CommandResult result;
         try
         {
-            result = await ExecuteCoreAsync(trimmed, source, taxonomy, cancellation).ConfigureAwait(false);
+            result = await ExecuteCoreAsync(request, source, cancellation).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -179,15 +175,10 @@ public sealed class CommandBus
         catch (Exception ex)
         {
             // 最后一道兜底(N-05):总线自身缺陷也不允许击穿宿主
-            var safeError = ex.GetType().Name;
-            result = CommandResult.Fail($"总线内部错误: {safeError}");
-            _log.Log(
-                ShellLogLevel.Error,
-                EchoCategoryPrefix + "internal",
-                $"总线内部错误({ex.GetType().Name}): {safeError}");
+            result = InternalFault(ex, taxonomy.Domain);
         }
 
-        result = RedactCommandResult(trimmed, result);
+        result = RedactResult(request, result);
 
         // 2. 结果回显(错误红色高亮由控制台按级别渲染,C-02)
         _log.Log(
@@ -199,185 +190,49 @@ public sealed class CommandBus
         return result;
     }
 
-    private string RedactSensitiveArguments(string text)
+    /// <summary>
+    /// 总线自身故障的统一出口：日志与返回值都只带异常**类型名**。
+    /// </summary>
+    /// <remarks>
+    /// 不带 <c>ex.Message</c> 是安全约束：处理器的异常消息里可能夹着入参，而这条日志进文件、进控制台，
+    /// 结果还会回到远端（<c>FreezeBlockerTests.CommandExceptionsDoNotExposeSensitiveValues</c> 守这条）。
+    /// 5.2 之前这里把同一个类型名打两遍——<c>总线内部错误(X): X</c>——读起来像「类型 X、原因 X」。
+    /// </remarks>
+    private CommandResult InternalFault(Exception ex, string where)
     {
-        ParsedCommand parsed;
-        try
-        {
-            parsed = CommandParser.Parse(text);
-        }
-        catch (CommandSyntaxException)
-        {
-            return RedactSensitiveFallback(text);
-        }
-
-        var redactValue = IsSecretSettingCommand(parsed);
-        var parts = new List<string> { parsed.Name };
-        parts.AddRange(parsed.Positionals.Select((value, index) =>
-            CommandParser.QuoteArg(IsSensitivePosition(parsed, index)
-                ? "[REDACTED]"
-                : value)));
-        parts.AddRange(parsed.Named.Select(pair =>
-            $"{pair.Key}={CommandParser.QuoteArg(IsSensitiveArgument(pair.Key) ||
-                                                  redactValue && pair.Key.Equals(
-                                                      "value", StringComparison.OrdinalIgnoreCase)
-                ? "[REDACTED]"
-                : pair.Value)}"));
-        return string.Join(' ', parts);
-    }
-
-    private string RedactSensitiveResult(string commandText, string message)
-    {
-        try
-        {
-            var parsed = CommandParser.Parse(commandText);
-            foreach (var value in SensitiveValues(parsed)
-                         .Where(value => !string.IsNullOrEmpty(value))
-                         .Distinct(StringComparer.Ordinal)
-                         .OrderByDescending(value => value.Length))
-            {
-                message = message.Replace(value, "[REDACTED]", StringComparison.Ordinal);
-            }
-            return message;
-        }
-        catch (CommandSyntaxException)
-        {
-            return RedactSensitiveFallback(message);
-        }
-    }
-
-    private IEnumerable<string> SensitiveValues(ParsedCommand parsed)
-    {
-        foreach (var pair in parsed.Named)
-        {
-            if (IsSensitiveArgument(pair.Key) ||
-                IsSecretSettingCommand(parsed) && pair.Key.Equals("value", StringComparison.OrdinalIgnoreCase))
-                yield return pair.Value;
-        }
-
-        for (var index = 0; index < parsed.Positionals.Count; index++)
-        {
-            if (IsSensitivePosition(parsed, index))
-                yield return parsed.Positionals[index];
-        }
-    }
-
-    private static bool IsSecretSettingCommand(ParsedCommand parsed)
-    {
-        if (parsed.Name.Equals("vulcan.web.token", StringComparison.OrdinalIgnoreCase) ||
-            parsed.Name.Equals("vulcan.mcp.token", StringComparison.OrdinalIgnoreCase))
-            return true;
-        if (!parsed.Name.Equals("vulcan.app.set", StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        var key = parsed.Named.GetValueOrDefault("key") ?? parsed.Positionals.FirstOrDefault();
-        return key != null && IsSensitiveSettingKey(key);
-    }
-
-    private bool IsSensitivePosition(ParsedCommand parsed, int position)
-    {
-        if (parsed.Name.Equals("vulcan.app.set", StringComparison.OrdinalIgnoreCase))
-            return IsSecretSettingCommand(parsed) && position == 1;
-        if (parsed.Name.Equals("vulcan.web.token", StringComparison.OrdinalIgnoreCase)
-            || parsed.Name.Equals("vulcan.mcp.token", StringComparison.OrdinalIgnoreCase))
-            return position == 0;
-        return Registry.TryGet(parsed.Name, out var descriptor)
-               && descriptor.Parameters.Any(parameter =>
-                   parameter.Position == position && IsSensitiveArgument(parameter.Name));
-    }
-
-    private static bool IsSensitiveArgument(string name)
-    {
-        var normalized = NormalizeSensitiveName(name);
-        return normalized.Equals("code", StringComparison.OrdinalIgnoreCase)
-               || normalized.EndsWith("token", StringComparison.OrdinalIgnoreCase)
-               || normalized.EndsWith("password", StringComparison.OrdinalIgnoreCase)
-               || normalized.EndsWith("passwd", StringComparison.OrdinalIgnoreCase)
-               || normalized.EndsWith("secret", StringComparison.OrdinalIgnoreCase)
-               || normalized.EndsWith("privatekey", StringComparison.OrdinalIgnoreCase)
-               || normalized.EndsWith("connectionstring", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool IsSensitiveSettingKey(string key)
-        => IsSensitiveArgument(key);
-
-    private static string NormalizeSensitiveName(string name)
-        => name.Replace(".", "", StringComparison.Ordinal)
-            .Replace("_", "", StringComparison.Ordinal)
-            .Replace("-", "", StringComparison.Ordinal);
-
-    private string RedactSensitiveFallback(string text)
-    {
-        var redacted = Regex.Replace(
-            text,
-            "(?i)(\\b(?:code|(?:[a-z0-9_.-]*(?:token|password|passwd|secret|private[_-]?key|connection[_-]?string))|value)\\s*=\\s*)(?:\"[^\"]*\"|'[^']*'|[^\\s]+)",
-            "$1[REDACTED]",
-            RegexOptions.CultureInvariant,
-            TimeSpan.FromMilliseconds(100));
-
-        var commandMatch = Regex.Match(
-            text,
-            "^\\s*(?<name>[A-Za-z_][\\w-]*(?:\\.[A-Za-z_][\\w-]*)*)(?=\\s|$)",
-            RegexOptions.CultureInvariant,
-            TimeSpan.FromMilliseconds(100));
-        if (!commandMatch.Success)
-            return redacted;
-
-        var commandName = commandMatch.Groups["name"].Value;
-        var mayContainSensitiveArguments = commandName.Equals("vulcan.app.set", StringComparison.OrdinalIgnoreCase)
-                                           || IsSensitiveArgument(commandName)
-                                           || Registry.TryGet(commandName, out var descriptor)
-                                           && descriptor.Parameters.Any(parameter =>
-                                               IsSensitiveArgument(parameter.Name));
-        var argumentsStart = commandMatch.Index + commandMatch.Length;
-        if (!mayContainSensitiveArguments ||
-            string.IsNullOrWhiteSpace(text[argumentsStart..]))
-            return redacted;
-
-        // Parsing failed, so positional boundaries are no longer trustworthy. Mask the complete
-        // remainder for commands that can carry secrets instead of risking a partial disclosure.
-        return text[..argumentsStart] + " [REDACTED]";
+        var typeName = ex.GetType().Name;
+        _log.Log(ShellLogLevel.Error, EchoCategoryPrefix + "internal", $"总线内部错误于 {where}: {typeName}");
+        return CommandResult.Fail($"总线内部错误: {typeName}");
     }
 
     private async Task<CommandResult> ExecuteCoreAsync(
-        string text,
+        Request request,
         string source,
-        (string Domain, string CommandClass) taxonomy,
         CancellationToken cancellation)
     {
         var remote = RemoteExecutor;
-        if (remote != null
-            && (ShouldUseRemoteCommand?.Invoke(text, source)
-                ?? ShouldUseRemote?.Invoke(source)
-                ?? true))
-            return await remote(text, source, cancellation).ConfigureAwait(false);
+        if (remote != null && (ShouldUseRemoteCommand?.Invoke(request.Text, source) ?? true))
+            return await remote(request.Text, source, cancellation).ConfigureAwait(false);
 
-        // 解析
-        ParsedCommand parsed;
-        try
-        {
-            parsed = CommandParser.Parse(text);
-        }
-        catch (CommandSyntaxException ex)
-        {
-            return CommandResult.Fail($"语法错误: {ex.Message}");
-        }
+        if (request.SyntaxError != null)
+            return CommandResult.Fail(request.SyntaxError);
 
         // 查注册表(未知指令给出候选,§5.2 P1)
-        if (!_registry.TryGet(parsed.Name, out var descriptor))
+        if (!_registry.TryGet(request.Name, out var descriptor))
         {
-            var suggestions = _registry.Suggest(parsed.Name);
+            var suggestions = _registry.Suggest(request.Name);
             var hint = suggestions.Count > 0
                 ? $"\n你是不是想输入: {string.Join(" / ", suggestions)} ?"
                 : "\n输入 help 查看全部指令。";
-            return CommandResult.Fail($"未知指令: {parsed.Name}{hint}");
+            return CommandResult.Fail($"未知指令: {request.Name}{hint}");
         }
 
         // 参数校验
-        var bindError = BindArguments(descriptor, parsed, out var values);
+        var bindError = BindArguments(descriptor, request.Parsed!, out var values);
         if (bindError != null)
             return CommandResult.Fail($"{bindError}\n{FormatUsage(descriptor)}");
 
+        var taxonomy = Taxonomy(request);
         var progress = new Progress<string>(line =>
             _log.Log(
                 ShellLogLevel.Info,
@@ -385,11 +240,11 @@ public sealed class CommandBus
                 line));
         var context = new CommandContext(descriptor, values, source, progress, cancellation);
 
-        // 拦截:二次确认(§5.2;T-08/R-06 需要询问的操作在“手输指令路径”的统一闸口)
+        // 拦截:二次确认(§5.2;T-08/R-06 需要询问的操作在「手输指令路径」的统一闸口)
         //
         // 问不问由 Level 决定,提示语才由 ConfirmPrompt 提供。两者的分工要点在于
-        // **null 的含义不同**:没有 ConfirmPrompt 是“没写文案”,由这里补一句缺省的;
-        // 而 ConfirmPrompt 调用后返回 null 是“这次不用问”(按参数动态豁免)。
+        // **null 的含义不同**:没有 ConfirmPrompt 是「没写文案」,由这里补一句缺省的;
+        // 而 ConfirmPrompt 调用后返回 null 是「这次不用问」(按参数动态豁免)。
         // 若把两种 null 混同,janus.github.identity 在 apply=false 那次也会弹框。
         var prompt = descriptor.Level != CommandLevel.Ask
             ? null
@@ -426,68 +281,13 @@ public sealed class CommandBus
         }
         catch (Exception ex)
         {
-            var safeError = ex.GetType().Name;
+            // 处理器异常同样只报类型名，理由见 InternalFault。
+            var typeName = ex.GetType().Name;
             _log.Log(
                 ShellLogLevel.Error,
                 EchoCategoryPrefix + "internal",
-                $"{descriptor.Name} 执行异常({ex.GetType().Name}): {safeError}");
-            return CommandResult.Fail($"{descriptor.Name} 执行异常: {safeError}");
-        }
-    }
-
-    private (string Domain, string CommandClass) TaxonomyOfCommandText(string text)
-    {
-        string name;
-        try
-        {
-            name = CommandParser.Parse(text).Name;
-        }
-        catch (CommandSyntaxException)
-        {
-            var separator = text.IndexOfAny([' ', '\t', '\r', '\n']);
-            name = separator >= 0 ? text[..separator] : text;
-        }
-
-        if (_registry.TryGet(name, out _))
-            return (_registry.GetDomain(name), _registry.GetCommandClass(name));
-        var dot = name.IndexOf('.');
-        return (dot > 0 ? name[..dot] : "core", "core");
-    }
-
-    private CommandResult RedactCommandResult(string commandText, CommandResult result)
-    {
-        var message = RedactSensitiveResult(commandText, result.Message);
-        var data = result.Data is string text
-            ? RedactSensitiveResult(commandText, text)
-            : result.Data != null && HasSensitiveResultRisk(commandText)
-                ? null
-                : result.Data;
-        if (message.Equals(result.Message, StringComparison.Ordinal)
-            && ReferenceEquals(data, result.Data))
-            return result;
-        return new CommandResult
-        {
-            Success = result.Success,
-            Message = message,
-            Data = data,
-        };
-    }
-
-    private bool HasSensitiveResultRisk(string commandText)
-    {
-        try
-        {
-            var parsed = CommandParser.Parse(commandText);
-            if (SensitiveValues(parsed).Any(value => !string.IsNullOrEmpty(value)))
-                return true;
-            if (!parsed.Name.Equals("vulcan.app.get", StringComparison.OrdinalIgnoreCase))
-                return false;
-            var key = parsed.Named.GetValueOrDefault("key") ?? parsed.Positionals.FirstOrDefault();
-            return key != null && IsSensitiveSettingKey(key);
-        }
-        catch (CommandSyntaxException)
-        {
-            return false;
+                $"{descriptor.Name} 执行异常: {typeName}");
+            return CommandResult.Fail($"{descriptor.Name} 执行异常: {typeName}");
         }
     }
 
@@ -508,6 +308,171 @@ public sealed class CommandBus
             },
             null);
         return tcs.Task;
+    }
+
+    private (string Domain, string CommandClass) Taxonomy(Request request)
+    {
+        var name = request.Name;
+        if (_registry.TryGet(name, out _))
+            return (_registry.GetDomain(name), _registry.GetCommandClass(name));
+        var dot = name.IndexOf('.');
+        return (dot > 0 ? name[..dot] : "core", "core");
+    }
+
+    // ---------------------------------------------------------------- 敏感值脱敏
+
+    /// <summary>回显用的指令文本：把声明为敏感的参数值换成占位符。</summary>
+    private string RedactArguments(Request request)
+    {
+        if (request.Parsed is not { } parsed)
+            return MaskEverythingAfterName(request.Text);
+
+        var carriesSecretValue = CarriesSecretSettingValue(parsed);
+        var parts = new List<string> { parsed.Name };
+        parts.AddRange(parsed.Positionals.Select((value, index) =>
+            CommandParser.QuoteArg(IsSensitivePosition(parsed, index) ? RedactedMarker : value)));
+        parts.AddRange(parsed.Named.Select(pair =>
+            $"{pair.Key}={CommandParser.QuoteArg(
+                IsSensitiveName(pair.Key)
+                || (carriesSecretValue && pair.Key.Equals("value", StringComparison.OrdinalIgnoreCase))
+                    ? RedactedMarker
+                    : pair.Value)}"));
+        return string.Join(' ', parts);
+    }
+
+    /// <summary>
+    /// 解析不了就把命令名之后整段遮掉。
+    /// </summary>
+    /// <remarks>
+    /// 5.2 之前是两条带超时的正则：先按 <c>键=值</c> 逐个遮，再判断该命令「可能带密钥」才整体遮。
+    /// 但**解析失败时参数边界本就不可信**，而那个判断还要先查注册表——查不到的坏命令只被逐个遮，
+    /// 正则没盖住的部分照样进日志。解析失败的命令一定执行不了，保留参数没有用处，遮全才是唯一不需要判断的答案。
+    /// </remarks>
+    private static string MaskEverythingAfterName(string text)
+    {
+        var separator = text.IndexOfAny([' ', '\t', '\r', '\n']);
+        return separator < 0
+            ? text
+            : string.Concat(text.AsSpan(0, separator), " ", RedactedMarker);
+    }
+
+    /// <summary>结果脱敏：把入参里的敏感值从消息里抹掉，必要时连结构化载荷一并丢弃。</summary>
+    private CommandResult RedactResult(Request request, CommandResult result)
+    {
+        // 解析失败的命令没有可信的入参，也就答不出「哪个值要抹」；
+        // 它的结果只会是一句语法错误，原样返回。
+        if (request.Parsed is not { } parsed)
+            return result;
+
+        var secrets = SensitiveValues(parsed)
+            .Where(value => !string.IsNullOrEmpty(value))
+            .Distinct(StringComparer.Ordinal)
+            .OrderByDescending(value => value.Length)
+            .ToList();
+
+        var message = Mask(result.Message, secrets);
+        var data = result.Data is string text
+            ? Mask(text, secrets)
+            : result.Data != null && HasSensitiveResultRisk(parsed, secrets)
+                ? null
+                : result.Data;
+
+        if (message.Equals(result.Message, StringComparison.Ordinal) && ReferenceEquals(data, result.Data))
+            return result;
+
+        return new CommandResult
+        {
+            Success = result.Success,
+            Message = message,
+            Data = data,
+        };
+    }
+
+    private static string Mask(string text, IReadOnlyList<string> secrets)
+    {
+        foreach (var secret in secrets)
+            text = text.Replace(secret, RedactedMarker, StringComparison.Ordinal);
+        return text;
+    }
+
+    /// <summary>
+    /// 结构化载荷是否可能带出密钥。
+    ///
+    /// 除了入参里带了密钥的情形，还要防住 <c>vulcan.app.get key=&lt;敏感键&gt;</c>——
+    /// 那条命令的入参不敏感，返回值才是密钥本身。
+    /// </summary>
+    private static bool HasSensitiveResultRisk(ParsedCommand parsed, IReadOnlyList<string> secrets)
+    {
+        if (secrets.Count > 0)
+            return true;
+        if (!parsed.Name.Equals("vulcan.app.get", StringComparison.OrdinalIgnoreCase))
+            return false;
+        var key = parsed.Named.GetValueOrDefault("key") ?? parsed.Positionals.FirstOrDefault();
+        return key != null && IsSensitiveName(key);
+    }
+
+    private IEnumerable<string> SensitiveValues(ParsedCommand parsed)
+    {
+        var carriesSecretValue = CarriesSecretSettingValue(parsed);
+        foreach (var pair in parsed.Named)
+        {
+            if (IsSensitiveName(pair.Key)
+                || (carriesSecretValue && pair.Key.Equals("value", StringComparison.OrdinalIgnoreCase)))
+            {
+                yield return pair.Value;
+            }
+        }
+
+        for (var index = 0; index < parsed.Positionals.Count; index++)
+        {
+            if (IsSensitivePosition(parsed, index))
+                yield return parsed.Positionals[index];
+        }
+    }
+
+    /// <summary>这条命令的 <c>value</c> 参数是不是在写一个密钥（<c>vulcan.app.set key=…</c>）。</summary>
+    private static bool CarriesSecretSettingValue(ParsedCommand parsed)
+    {
+        if (!parsed.Name.Equals("vulcan.app.set", StringComparison.OrdinalIgnoreCase))
+            return false;
+        var key = parsed.Named.GetValueOrDefault("key") ?? parsed.Positionals.FirstOrDefault();
+        return key != null && IsSensitiveName(key);
+    }
+
+    /// <summary>
+    /// 位置参数是否敏感。
+    /// </summary>
+    /// <remarks>
+    /// 5.2 之前这里另有一份写死的命令名单（<c>vulcan.web.token</c> / <c>vulcan.mcp.token</c>）：
+    /// 两条命令分别在 3.13.0 与 4.4.0 就没了，名单守着两个不会再出现的名字，
+    /// 而**任何新的 <c>*.token</c> 命令它都盖不住**（冻结合同点名批过这类按名字写的规则）。
+    /// 现在把敏感名判据用在**命令名**上：叫 <c>…token</c> 的命令，第一个位置参数就是那个密钥。
+    /// </remarks>
+    private bool IsSensitivePosition(ParsedCommand parsed, int position)
+    {
+        if (CarriesSecretSettingValue(parsed))
+            return position == 1;
+        if (IsSensitiveName(parsed.Name))
+            return position == 0;
+        return _registry.TryGet(parsed.Name, out var descriptor)
+               && descriptor.Parameters.Any(parameter =>
+                   parameter.Position == position && IsSensitiveName(parameter.Name));
+    }
+
+    /// <summary>参数名、配置键或命令名是否表示一个密钥。分隔符不参与判断。</summary>
+    private static bool IsSensitiveName(string name)
+    {
+        var normalized = name
+            .Replace(".", "", StringComparison.Ordinal)
+            .Replace("_", "", StringComparison.Ordinal)
+            .Replace("-", "", StringComparison.Ordinal);
+        return normalized.Equals("code", StringComparison.OrdinalIgnoreCase)
+               || normalized.EndsWith("token", StringComparison.OrdinalIgnoreCase)
+               || normalized.EndsWith("password", StringComparison.OrdinalIgnoreCase)
+               || normalized.EndsWith("passwd", StringComparison.OrdinalIgnoreCase)
+               || normalized.EndsWith("secret", StringComparison.OrdinalIgnoreCase)
+               || normalized.EndsWith("privatekey", StringComparison.OrdinalIgnoreCase)
+               || normalized.EndsWith("connectionstring", StringComparison.OrdinalIgnoreCase);
     }
 
     // ---------------------------------------------------------------- 参数绑定与校验
@@ -606,6 +571,29 @@ public sealed class CommandBus
             return p.Required ? core : $"[{core}]";
         });
         return $"用法: {d.Name} {string.Join(" ", parts)}".TrimEnd();
+    }
+
+    /// <summary>
+    /// 一行指令解析一次的结果，贯穿回显、脱敏、分类与执行。<see cref="Parsed"/> 为 null 即语法错误，
+    /// 此时 <see cref="Name"/> 退化为首个 token——够给日志分类，不足以当作参数边界。
+    /// </summary>
+    private readonly record struct Request(string Text, ParsedCommand? Parsed, string? SyntaxError, string Name)
+    {
+        internal static Request Of(string text)
+        {
+            var trimmed = text.Trim();
+            try
+            {
+                var parsed = CommandParser.Parse(trimmed);
+                return new Request(trimmed, parsed, null, parsed.Name);
+            }
+            catch (CommandSyntaxException ex)
+            {
+                var separator = trimmed.IndexOfAny([' ', '\t', '\r', '\n']);
+                var name = separator >= 0 ? trimmed[..separator] : trimmed;
+                return new Request(trimmed, null, $"语法错误: {ex.Message}", name);
+            }
+        }
     }
 }
 

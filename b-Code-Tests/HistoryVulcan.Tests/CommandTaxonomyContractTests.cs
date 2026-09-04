@@ -254,10 +254,15 @@ public sealed class CommandTaxonomyContractTests
     public void TwoSegmentNamesAreClasslessDirectMethods()
     {
         // DEC-025：两段名是「域.方法」，判为无类；首段是域而不是类。
-        Assert.Equal(string.Empty, CommandRegistry.LegacyClass("mercury.go"));
-        Assert.Equal(string.Empty, CommandRegistry.LegacyClass("fixture.cell"));
-        Assert.Equal("core", CommandRegistry.LegacyClass("ping"));
-        Assert.Equal("ui", CommandRegistry.LegacyClass("vulcan.ui.dock"));
+        //
+        // 5.2 起从公开入口 GetCommandClass 问：未注册名走的正是那条按名推导，
+        // 而它才是消费方真正会调用的东西。此前这里直接点 CommandRegistry.LegacyClass，
+        // 那是实现细节——它公开着的唯一理由就是这几条断言。
+        var registry = new CommandRegistry();
+        Assert.Equal(string.Empty, registry.GetCommandClass("mercury.go"));
+        Assert.Equal(string.Empty, registry.GetCommandClass("fixture.cell"));
+        Assert.Equal("core", registry.GetCommandClass("ping"));
+        Assert.Equal("ui", registry.GetCommandClass("vulcan.ui.dock"));
         Assert.Equal("dock", CommandRegistry.GetMethod("vulcan.ui.dock"));
     }
 
@@ -277,7 +282,6 @@ public sealed class CommandTaxonomyContractTests
             "module:FixtureModule");
 
         Assert.Equal(string.Empty, registry.GetCommandClass("fixture.go"));
-        Assert.True(CommandClassLabels.IsNone(registry.GetCommandClass("fixture.go")));
         Assert.Equal(
             CommandClassLabels.None,
             CommandClassLabels.Display(registry.GetCommandClass("fixture.go")));
@@ -292,7 +296,7 @@ public sealed class CommandTaxonomyContractTests
         Assert.Equal("ui", CommandClassLabels.Display("ui"));
         Assert.Equal(string.Empty, CommandClassLabels.ToKey(CommandClassLabels.None));
         Assert.Equal("ui", CommandClassLabels.ToKey("ui"));
-        Assert.True(CommandClassLabels.IsNone(CommandRegistry.LegacyClass("mercury.go")));
+        Assert.Equal(string.Empty, new CommandRegistry().GetCommandClass("mercury.go"));
     }
 
     [Fact]
@@ -344,8 +348,10 @@ public sealed class CommandTaxonomyContractTests
         var registered = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "janus", "vulcan" };
         Assert.Equal("", DomainFocus.Resolve("", "janus", registered.Contains));
         Assert.Equal("   ", DomainFocus.Resolve("   ", "janus", registered.Contains));
-        Assert.False(DomainFocus.WouldPrefix("", "janus", registered.Contains));
-        Assert.True(DomainFocus.WouldPrefix("proj.list", "janus", registered.Contains));
-        Assert.False(DomainFocus.WouldPrefix("vulcan.ui.reset", "janus", registered.Contains));
+
+        // 「拼没拼前缀」不需要单独的判定函数：Resolve 的返回值与输入不等即为拼了。
+        // 5.2 据此删掉 WouldPrefix，这三条断言改问同一个函数。
+        Assert.Equal("janus.proj.list", DomainFocus.Resolve("proj.list", "janus", registered.Contains));
+        Assert.Equal("vulcan.ui.reset", DomainFocus.Resolve("vulcan.ui.reset", "janus", registered.Contains));
     }
 }

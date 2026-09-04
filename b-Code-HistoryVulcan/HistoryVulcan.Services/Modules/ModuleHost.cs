@@ -457,24 +457,11 @@ public sealed partial class ModuleHost : IDisposable
 
 
 
-    /// <summary>
-    /// 返回按旧命令名前缀计算的冲突集合。仅保留给旧消费方诊断；
-    /// 3.2.1 起模块实际域由 module owner 决定，装载路径不再调用本方法。
-    /// </summary>
-    public static IReadOnlySet<string> FindModuleDomainConflicts(
-        IEnumerable<string> reservedCommandNames,
-        IEnumerable<string> moduleCommandNames)
-    {
-        ArgumentNullException.ThrowIfNull(reservedCommandNames);
-        ArgumentNullException.ThrowIfNull(moduleCommandNames);
-
-        var reserved = CommandRegistry.DomainsOf(reservedCommandNames);
-        var moduleDomains = new HashSet<string>(
-            CommandRegistry.DomainsOf(moduleCommandNames),
-            StringComparer.OrdinalIgnoreCase);
-        moduleDomains.IntersectWith(reserved);
-        return moduleDomains;
-    }
+    // 5.2 删掉了 FindModuleDomainConflicts。它自 3.2.1 起就写着「装载路径不再调用本方法」，
+    // 之后四年没有任何调用方——宿主、测试、七个已部署模块都没有——而它是
+    // CommandRegistry.DomainsOf 的唯一消费方，两者一并退役。
+    // 模块的实际域由 module owner 决定（见 CommandRegistry.ResolveDomain），
+    // 按命令名前缀猜域这件事本身已经不成立了。
 
     // ---------------------------------------------------------------- 快照构建
 

@@ -134,14 +134,6 @@ public static class ServiceHost
         }
     }
 
-    private static void LogResult(IShellLog log, string category, bool success, string message)
-    {
-        if (success)
-            log.Info(category, message);
-        else
-            log.Warn(category, message);
-    }
-
     private static string Sanitize(string value)
         => string.Concat(value.Select(character => char.IsLetterOrDigit(character) ? character : '_'));
 

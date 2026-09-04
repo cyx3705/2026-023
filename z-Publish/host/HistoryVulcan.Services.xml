@@ -699,12 +699,6 @@
              与该模块 <c>Attach</c> 时经 <c>RegisterCommands</c> 暂存的指令，都在其中。
              </summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.FindModuleDomainConflicts(System.Collections.Generic.IEnumerable{System.String},System.Collections.Generic.IEnumerable{System.String})">
-            <summary>
-            返回按旧命令名前缀计算的冲突集合。仅保留给旧消费方诊断；
-            3.2.1 起模块实际域由 module owner 决定，装载路径不再调用本方法。
-            </summary>
-        </member>
         <member name="F:HistoryVulcan.Services.Modules.ModuleHost._pinnedPackages">
              <summary>
              钉住模块的包目录。

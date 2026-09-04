@@ -200,6 +200,7 @@ public sealed class CommandLineEntryTests
                 "vulcan.command.show",
                 "vulcan.module.install",
                 "vulcan.module.list",
+                "vulcan.module.ready",
                 "vulcan.module.reload",
                 "vulcan.module.remove",
                 "vulcan.module.uninstall",

@@ -46,6 +46,9 @@ public static class CliExposurePolicy
         // 换包与装载：恢复路径本身
         "vulcan.module.install",
         "vulcan.module.list",
+        // 装载是否已经完整。5.1.3 加了这条查询却漏了本名单，于是只有 GUI 控制台和 MCP
+        // 问得到——而「模块没装齐」恰恰是 GUI 可能起不来、MCP 可能没装载的那种时刻。
+        "vulcan.module.ready",
         "vulcan.module.reload",
         "vulcan.module.remove",
         "vulcan.module.uninstall",

@@ -104,6 +104,13 @@
             指令回显与普通日志共用 IShellLog 管道、不同类别(L-03):
               回显 = "cmd:来源",结果 = "cmd:result:域",进度 = "cmd:progress:域"。
             </summary>
+            <remarks>
+            5.2 起**一行指令只解析一次**。此前回显脱敏、分类、执行、结果脱敏、载荷风险判定
+            各自 <c>CommandParser.Parse</c> 一遍——同一行文本解析五次，配五个
+            <c>catch (CommandSyntaxException)</c>，每个分支各自决定语法错误时怎么办。
+            现在解析结果随 <see cref="T:HistoryVulcan.Core.Commands.CommandBus.Request"/> 走完全程：语法错误只判定一次，
+            后续环节读的是同一份 <see cref="T:HistoryVulcan.Core.Commands.ParsedCommand"/>，不再有「这里当错、那里当对」的空间。
+            </remarks>
         </member>
         <member name="F:HistoryVulcan.Core.Commands.CommandBus.EchoCategoryPrefix">
             <summary>回显类别前缀;控制台按此前缀识别指令行。</summary>
@@ -119,20 +126,6 @@
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.Registry">
             <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandBus.Validate(System.String)">
-             <summary>
-             Validates a command text against the current registry without routing, logging, confirmation, or execution.
-             UI surfaces use this to reject stale menu references at construction time.
-            
-             配置了 <see cref="P:HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor"/> 时，本地查不到的指令判为**无法在本进程判定**
-             而不是无效：权威注册表在服务进程，<see cref="M:HistoryVulcan.Core.Commands.CommandBus.ExecuteAsync(System.String,System.String,System.Threading.CancellationToken)"/> 也会把这类指令中继过去。
-             4.0.0 前两者口径不一致——`ExecuteAsync` 中继、`Validate` 报"未知指令"——
-             因此一条命令从前端搬到服务侧后，引用它的菜单会在构建期直接抛异常，
-             尽管点下去其实能正常执行。
-            
-             嵌入模式（无远端）下仍然硬报错：那时本地注册表就是权威，笔误必须当场暴露。
-             </summary>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.Confirmation">
             <summary>二次确认通道;未注入时带确认位的指令一律拒绝执行(安全缺省)。</summary>
@@ -164,18 +157,36 @@
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor">
             <summary>
-            客户端模式下的远程总线。ShouldUseRemote 返回 true 时整条命令交给服务，
-            服务经界面中继发回的 UI 命令可用来源标签绕过此路由并在本地执行。
+            客户端模式下的远程总线。<see cref="P:HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemoteCommand"/> 返回 true 时整条命令
+            交给服务；服务经界面中继发回的 UI 命令可用来源标签绕过此路由并在本地执行。
             </summary>
         </member>
-        <member name="P:HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemote">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemoteCommand">
-            <summary>按命令文本和来源决定是否走远端；设置后优先于仅按来源的兼容委托。</summary>
+            <summary>
+            按命令文本和来源决定是否走远端；未设置时配了 <see cref="P:HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor"/> 即整体走远端。
+            </summary>
+            <remarks>
+            5.2 删掉了并列的 <c>ShouldUseRemote</c>（只看来源的兼容委托）：宿主、测试和
+            已部署的七个模块里没有任何一处给它赋过值，它只是让这条判定多了一层
+            <c>?? ... ?? true</c> 的三段回退，读的人要先确认前两层都没接才敢下结论。
+            </remarks>
         </member>
         <member name="E:HistoryVulcan.Core.Commands.CommandBus.Executed">
             <summary>每条指令执行完毕后触发(状态栏摘要,S-03);在执行线程上引发。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.Validate(System.String)">
+             <summary>
+             Validates a command text against the current registry without routing, logging, confirmation, or execution.
+             UI surfaces use this to reject stale menu references at construction time.
+            
+             配置了 <see cref="P:HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor"/> 时，本地查不到的指令判为**无法在本进程判定**
+             而不是无效：权威注册表在服务进程，<see cref="M:HistoryVulcan.Core.Commands.CommandBus.ExecuteAsync(System.String,System.String,System.Threading.CancellationToken)"/> 也会把这类指令中继过去。
+             4.0.0 前两者口径不一致——`ExecuteAsync` 中继、`Validate` 报"未知指令"——
+             因此一条命令从前端搬到服务侧后，引用它的菜单会在构建期直接抛异常，
+             尽管点下去其实能正常执行。
+            
+             嵌入模式（无远端）下仍然硬报错：那时本地注册表就是权威，笔误必须当场暴露。
+             </summary>
         </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandBus.InvokeAsync(System.String,System.String,System.Threading.CancellationToken)">
              <summary>
@@ -199,8 +210,71 @@
             返回值在指令(含异步长任务)完成后才落定;方法自身不抛异常。
             </summary>
         </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.InternalFault(System.Exception,System.String)">
+            <summary>
+            总线自身故障的统一出口：日志与返回值都只带异常**类型名**。
+            </summary>
+            <remarks>
+            不带 <c>ex.Message</c> 是安全约束：处理器的异常消息里可能夹着入参，而这条日志进文件、进控制台，
+            结果还会回到远端（<c>FreezeBlockerTests.CommandExceptionsDoNotExposeSensitiveValues</c> 守这条）。
+            5.2 之前这里把同一个类型名打两遍——<c>总线内部错误(X): X</c>——读起来像「类型 X、原因 X」。
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.RedactArguments(HistoryVulcan.Core.Commands.CommandBus.Request)">
+            <summary>回显用的指令文本：把声明为敏感的参数值换成占位符。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.MaskEverythingAfterName(System.String)">
+            <summary>
+            解析不了就把命令名之后整段遮掉。
+            </summary>
+            <remarks>
+            5.2 之前是两条带超时的正则：先按 <c>键=值</c> 逐个遮，再判断该命令「可能带密钥」才整体遮。
+            但**解析失败时参数边界本就不可信**，而那个判断还要先查注册表——查不到的坏命令只被逐个遮，
+            正则没盖住的部分照样进日志。解析失败的命令一定执行不了，保留参数没有用处，遮全才是唯一不需要判断的答案。
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.RedactResult(HistoryVulcan.Core.Commands.CommandBus.Request,HistoryVulcan.Core.Commands.CommandResult)">
+            <summary>结果脱敏：把入参里的敏感值从消息里抹掉，必要时连结构化载荷一并丢弃。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.HasSensitiveResultRisk(HistoryVulcan.Core.Commands.ParsedCommand,System.Collections.Generic.IReadOnlyList{System.String})">
+             <summary>
+             结构化载荷是否可能带出密钥。
+            
+             除了入参里带了密钥的情形，还要防住 <c>vulcan.app.get key=&lt;敏感键&gt;</c>——
+             那条命令的入参不敏感，返回值才是密钥本身。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.CarriesSecretSettingValue(HistoryVulcan.Core.Commands.ParsedCommand)">
+            <summary>这条命令的 <c>value</c> 参数是不是在写一个密钥（<c>vulcan.app.set key=…</c>）。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.IsSensitivePosition(HistoryVulcan.Core.Commands.ParsedCommand,System.Int32)">
+            <summary>
+            位置参数是否敏感。
+            </summary>
+            <remarks>
+            5.2 之前这里另有一份写死的命令名单（<c>vulcan.web.token</c> / <c>vulcan.mcp.token</c>）：
+            两条命令分别在 3.13.0 与 4.4.0 就没了，名单守着两个不会再出现的名字，
+            而**任何新的 <c>*.token</c> 命令它都盖不住**（冻结合同点名批过这类按名字写的规则）。
+            现在把敏感名判据用在**命令名**上：叫 <c>…token</c> 的命令，第一个位置参数就是那个密钥。
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.IsSensitiveName(System.String)">
+            <summary>参数名、配置键或命令名是否表示一个密钥。分隔符不参与判断。</summary>
+        </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandBus.FormatUsage(HistoryVulcan.Core.Commands.CommandDescriptor)">
             <summary>用法行,如 "用法: vulcan.command.help name= pos=left/right/top/bottom/tab [target=] [ratio=]"。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandBus.Request">
+            <summary>
+            一行指令解析一次的结果，贯穿回显、脱敏、分类与执行。<see cref="P:HistoryVulcan.Core.Commands.CommandBus.Request.Parsed"/> 为 null 即语法错误，
+            此时 <see cref="P:HistoryVulcan.Core.Commands.CommandBus.Request.Name"/> 退化为首个 token——够给日志分类，不足以当作参数边界。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.Request.#ctor(System.String,HistoryVulcan.Core.Commands.ParsedCommand,System.String,System.String)">
+            <summary>
+            一行指令解析一次的结果，贯穿回显、脱敏、分类与执行。<see cref="P:HistoryVulcan.Core.Commands.CommandBus.Request.Parsed"/> 为 null 即语法错误，
+            此时 <see cref="P:HistoryVulcan.Core.Commands.CommandBus.Request.Name"/> 退化为首个 token——够给日志分类，不足以当作参数边界。
+            </summary>
         </member>
         <member name="T:HistoryVulcan.Core.Commands.IConfirmationService">
             <summary>
@@ -210,29 +284,6 @@
         </member>
         <member name="M:HistoryVulcan.Core.Commands.IConfirmationService.Confirm(System.String)">
             <summary>返回 true 表示用户确认继续。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Commands.CommandClassLabels">
-            <summary>
-            「无类」显示标签的唯一真源（DEC-025）。两段名 <c>&lt;域&gt;.&lt;方法&gt;</c> 是该域的
-            无类直接方法，其类为空串；目录、控制台与命令集都用这里的标签显示与筛选。
-            </summary>
-            <remarks>
-            这里**只做显示层翻译**，不承担任何类推导。类推导的唯一入口是
-            <see cref="M:HistoryVulcan.Core.Commands.CommandRegistry.LegacyClass(System.String)"/>；3.3.2 曾有一个同时管显示和推导的
-            <c>CommandClassNames</c>，两职合一导致筛选值与注册值互相污染，故拆开。
-            </remarks>
-        </member>
-        <member name="F:HistoryVulcan.Core.Commands.CommandClassLabels.None">
-            <summary>无类直接方法在界面上的类名。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandClassLabels.Display(System.String)">
-            <summary>把类键翻译成显示标签：空串 → <see cref="F:HistoryVulcan.Core.Commands.CommandClassLabels.None"/>。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandClassLabels.ToKey(System.String)">
-            <summary>把显示标签翻译回类键：<see cref="F:HistoryVulcan.Core.Commands.CommandClassLabels.None"/> → 空串。筛选比较前调用。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandClassLabels.IsNone(System.String)">
-            <summary>该类键是否代表无类直接方法。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Commands.CommandContext">
             <summary>
@@ -386,9 +437,6 @@
         <member name="M:HistoryVulcan.Core.Commands.CommandDescriptor.Annotation(System.String)">
             <summary>读取一条消费方注解;不存在时返回 null。</summary>
         </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandDescriptor.HasAnnotation(System.String)">
-            <summary>判定一条布尔注解是否为真;缺省与非法值均视为 false。</summary>
-        </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandDescriptor.Handler">
             <summary>执行体。长任务应内部 await 后台工作并经 Progress 上报(§5.2 约束)。</summary>
         </member>
@@ -473,6 +521,79 @@
         </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandHistory.Save">
             <summary>持久化到文件(退出时调用)。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.ModuleDomainNaming">
+            <summary>
+            模块名 → 指令域的唯一归一化真值（DEC-023）。
+            模块名保留 <c>History</c> 品牌前缀，指令域去掉它：<c>HistoryJanus</c> → <c>janus</c>。
+            品牌前缀标识产品族归属，在域段里对所有模块都相同，不携带区分信息。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.ModuleDomainNaming.ToDomain(System.String)">
+            <summary>
+            把模块名归一化为指令域：大小写不敏感地剥离开头的 <c>History</c> 并转小写；
+            剥离后为空时退回原名小写；不以 <c>History</c> 开头的原样转小写。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.CommandClassLabels">
+             <summary>
+             「无类」显示标签的唯一真源（DEC-025）。两段名 <c>&lt;域&gt;.&lt;方法&gt;</c> 是该域的
+             无类直接方法，其类为空串；目录、控制台与命令集都用这里的标签显示与筛选。
+             </summary>
+             <remarks>
+             这里**只做显示层翻译**，不承担任何类推导。类推导的唯一入口是
+             <c>CommandRegistry.LegacyClass</c>；3.3.2 曾有一个同时管显示和推导的
+             <c>CommandClassNames</c>，两职合一导致筛选值与注册值互相污染，故拆开。
+            
+             5.2 删掉了 <c>IsNone</c>：它是 <c>string.IsNullOrWhiteSpace</c> 换了个名字，
+             全仓与七个已部署模块无人调用，只有两条测试在维持它活着。
+             </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.CommandClassLabels.None">
+            <summary>无类直接方法在界面上的类名。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandClassLabels.Display(System.String)">
+            <summary>把类键翻译成显示标签：空串 → <see cref="F:HistoryVulcan.Core.Commands.CommandClassLabels.None"/>。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandClassLabels.ToKey(System.String)">
+            <summary>把显示标签翻译回类键：<see cref="F:HistoryVulcan.Core.Commands.CommandClassLabels.None"/> → 空串。筛选比较前调用。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.DomainFocus">
+             <summary>
+             域聚焦下的输入解析（DEC-025 / REQ-CMD-012）。纯函数，不持有注册表也不碰界面，
+             控制台与 Mercury 补全引擎共用同一份判定，避免两侧各写一套导致行为漂移。
+             </summary>
+             <remarks>
+             只有两条规则：输入首段命中**已注册域**时按绝对名解析；否则补上当前聚焦域前缀。
+             「退出聚焦」因此不需要任何域提供指令——<c>mercury.go</c>、<c>vulcan.*</c>
+             的首段本身就是已注册域，在任何聚焦状态下都能直接输入。
+            
+             5.2 删掉了 <c>WouldPrefix</c>：它把 <see cref="M:HistoryVulcan.Core.Commands.DomainFocus.Resolve(System.String,System.String,System.Func{System.String,System.Boolean})"/> 的判定逐句抄了一遍，
+             只为回答「刚才那次拼没拼前缀」——而 <c>Resolve</c> 的返回值与输入是否相等就是答案。
+             同一条规则写在两处，改一处漏一处只是时间问题；全仓与七个已部署模块无人调用它。
+             </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.DomainFocus.All">
+            <summary>域筛选下拉里代表「不聚焦」的值。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.DomainFocus.IsUnfocused(System.String)">
+            <summary>该值是否表示未聚焦到任何域。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.DomainFocus.Resolve(System.String,System.String,System.Func{System.String,System.Boolean})">
+            <summary>
+            把用户输入解析成实际要执行的指令文本。返回值与输入不等，即表示拼了聚焦域前缀。
+            </summary>
+            <param name="input">用户在控制台输入的原文。</param>
+            <param name="focusedDomain">当前聚焦域；<see cref="F:HistoryVulcan.Core.Commands.DomainFocus.All"/> 或空表示未聚焦。</param>
+            <param name="isRegisteredDomain">
+            判断一个首段是否是已注册域。权威源必须是运行期注册表
+            （<see cref="M:HistoryVulcan.Core.Commands.CommandRegistry.IsRegisteredDomain(System.String)"/>），不得传入硬编码域清单。
+            </param>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.DomainFocus.HeadSegment(System.String)">
+            <summary>
+            取第一个 token 的首段（第一个点之前的部分）。没有点时整个 token 就是首段。
+            </summary>
         </member>
         <member name="T:HistoryVulcan.Core.Commands.CommandParser">
             <summary>
@@ -596,12 +717,6 @@
         <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.IsRegisteredDomain(System.String)">
             <summary>是否为已注册域；域聚焦据此判断输入首段该按绝对名还是拼前缀解析。</summary>
         </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.DomainsOf(System.Collections.Generic.IEnumerable{System.String})">
-            <summary>
-            从完整命令名提取一级域。无点号命令本身也是保留域，避免模块以
-            <c>help.foo</c> 或 <c>future.list</c> 的形式绕过根命令/现有域冲突检查。
-            </summary>
-        </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.LegacyDomain(System.String)">
             <summary>从命令名推导域：首段；无点则 <c>core</c>。</summary>
         </member>
@@ -617,11 +732,8 @@
             空串即「无类」，由显示层翻译成标签，不参与任何类推导。
             </remarks>
         </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.LegacyMethod(System.String)">
-            <summary>从命令名推导方法段：末段；无点则整名。</summary>
-        </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.GetMethod(System.String)">
-            <summary>同 <see cref="M:HistoryVulcan.Core.Commands.CommandRegistry.LegacyMethod(System.String)"/>。</summary>
+            <summary>从命令名推导方法段：末段；无点则整名。</summary>
         </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.Suggest(System.String)">
             <summary>
@@ -655,57 +767,6 @@
         </member>
         <member name="E:HistoryVulcan.Core.Commands.CommandSelectionState.Changed">
             <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Commands.DomainFocus">
-            <summary>
-            域聚焦下的输入解析（DEC-025 / REQ-CMD-012）。纯函数，不持有注册表也不碰界面，
-            控制台与 Mercury 补全引擎共用同一份判定，避免两侧各写一套导致行为漂移。
-            </summary>
-            <remarks>
-            只有两条规则：输入首段命中**已注册域**时按绝对名解析；否则补上当前聚焦域前缀。
-            「退出聚焦」因此不需要任何域提供指令——<c>mercury.go</c>、<c>vulcan.*</c>
-            的首段本身就是已注册域，在任何聚焦状态下都能直接输入。
-            </remarks>
-        </member>
-        <member name="F:HistoryVulcan.Core.Commands.DomainFocus.All">
-            <summary>域筛选下拉里代表「不聚焦」的值。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.DomainFocus.IsUnfocused(System.String)">
-            <summary>该值是否表示未聚焦到任何域。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.DomainFocus.Resolve(System.String,System.String,System.Func{System.String,System.Boolean})">
-            <summary>
-            把用户输入解析成实际要执行的指令文本。
-            </summary>
-            <param name="input">用户在控制台输入的原文。</param>
-            <param name="focusedDomain">当前聚焦域；<see cref="F:HistoryVulcan.Core.Commands.DomainFocus.All"/> 或空表示未聚焦。</param>
-            <param name="isRegisteredDomain">
-            判断一个首段是否是已注册域。权威源必须是运行期注册表
-            （<see cref="M:HistoryVulcan.Core.Commands.CommandRegistry.IsRegisteredDomain(System.String)"/>），不得传入硬编码域清单。
-            </param>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.DomainFocus.WouldPrefix(System.String,System.String,System.Func{System.String,System.Boolean})">
-            <summary>
-            输入是否会被拼上聚焦域前缀。界面据此提示「当前输入将解析为 &lt;域&gt;.…」。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.DomainFocus.HeadSegment(System.String)">
-            <summary>
-            取第一个 token 的首段（第一个点之前的部分）。没有点时整个 token 就是首段。
-            </summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Commands.ModuleDomainNaming">
-            <summary>
-            模块名 → 指令域的唯一归一化真值（DEC-023）。
-            模块名保留 <c>History</c> 品牌前缀，指令域去掉它：<c>HistoryJanus</c> → <c>janus</c>。
-            品牌前缀标识产品族归属，在域段里对所有模块都相同，不携带区分信息。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.ModuleDomainNaming.ToDomain(System.String)">
-            <summary>
-            把模块名归一化为指令域：大小写不敏感地剥离开头的 <c>History</c> 并转小写；
-            剥离后为空时退回原名小写；不以 <c>History</c> 开头的原样转小写。
-            </summary>
         </member>
         <member name="T:HistoryVulcan.Core.Logging.ShellLogLevel">
             <summary>日志级别(C-03 六级)。</summary>
