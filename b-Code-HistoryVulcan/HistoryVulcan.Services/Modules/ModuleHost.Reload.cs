@@ -89,6 +89,8 @@ public sealed partial class ModuleHost
             // 「接上宿主 → 登记该模块的指令 → 刷新元信息」三步，因此这里不再另做一次
             // 登记；再做一次只会把同名指令撞进重名分支，报一串「被拒绝注册」。
             AttachPhase(snap, onlyOwner: entry.Name);
+            if (snap.AttachFailures.GetValueOrDefault(entry.Name) is { Count: > 0 } failures)
+                throw new InvalidOperationException($"模块 {entry.Name} 接入失败: {string.Join("；", failures)}");
             _log.Info("module", $"已装入模块 {entry.Name}，未拆除其它模块");
         }
         catch
@@ -110,11 +112,15 @@ public sealed partial class ModuleHost
         int registeredBefore,
         IReadOnlySet<AssemblyLoadContext> contextsBefore)
     {
-        if (_registry != null)
+        MarshalToUi(() =>
         {
-            foreach (var name in snap.RegisteredNames.Skip(registeredBefore).ToList())
-                _registry.Unregister(name);
-        }
+            if (_registry != null)
+            {
+                foreach (var name in snap.RegisteredNames.Skip(registeredBefore).ToList())
+                    _registry.Unregister(name);
+            }
+            snap.Modules.RemoveAll(module => module.ModuleName.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
+        });
         if (snap.RegisteredNames.Count > registeredBefore)
             snap.RegisteredNames.RemoveRange(
                 registeredBefore, snap.RegisteredNames.Count - registeredBefore);

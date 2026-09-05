@@ -1,13 +1,18 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
-using System.Text.Json;
 using HistoryVulcan.Core.Logging;
 
 namespace HistoryVulcan.ServiceHost;
 
-/// <summary>无界面的用户会话服务宿主（4.0.0 起不再依赖 WPF，见 REQ-A4）。</summary>
+/// <summary>无界面的用户会话服务宿主，负责消息循环与通用模块装配。</summary>
 public static class ServiceHost
 {
+    internal static void InstallDefaultConfirmation(ServiceComposition composition)
+    {
+        composition.Bus.Confirmation = new DenyConfirmation(composition.Log);
+        composition.Bus.ConfirmationRouter = (_, prompt) => composition.Bus.Confirmation?.Confirm(prompt) ?? false;
+    }
+
     private static readonly TimeSpan RestartMutexWait = TimeSpan.FromSeconds(10);
 
     public static int Run(
@@ -33,25 +38,12 @@ public static class ServiceHost
                           ?? throw new InvalidOperationException("无法确定服务可执行文件路径");
         serviceArguments ??= [];
 
-        // 4.0.0（REQ-A2）：确认中继到前端，服务进程不再自己弹框。
-        // 前端未连接时拒绝而非放行——没有人可问就等于没得到批准。
-        var confirmation = new ShellRelayConfirmation(composition.Log);
-        composition.Bus.Confirmation = confirmation;
-        // 3.13.0 删除局域网面后，网关只接受同机前端 Shell（源形如 "Shell:v1.…"），
-        // 因此原先的两条远程分支都已不可达，一并退役：
-        //   - 非回环会话按 scope + lan.confirm 决定是否回问客户端。`lan.confirm` 这个键
-        //     从来没有任何代码写入过（唯一能写确认档的 WebCommands 写的是 web.confirm，
-        //     且它自己从未被注册），所以这条分支在任何配置下都只会返回 false。
-        // 剩下的唯一语义就是本机确认。
-        composition.Bus.ConfirmationRouter =
-            (_, prompt) => confirmation.Confirm(prompt);
+        InstallDefaultConfirmation(composition);
         // 服务指令已在 Build 时注册（4.5.0），这里只把「停机」这件唯一做不到的事接上。
         // 排到循环上再关：命令处理器跑在线程池上，同步关停会让循环在响应写回之前就排空退出。
         composition.RequestStop = () => loop.Post(() => loop.Shutdown());
 
-        // The module registry is authoritative for every gateway. Complete the first
-        // synchronous load before any listener is opened so the first remote catalog
-        // cannot observe a framework-only intermediate snapshot.
+        // Complete initial module discovery before exposing the runtime CLI.
         try
         {
             composition.Modules?.Attach(composition.Registry);
@@ -59,7 +51,7 @@ public static class ServiceHost
         }
         catch (Exception ex)
         {
-            composition.Log.Warn("module", $"模块启动失败，远程网关将仅暴露成功注册的指令: {ex.Message}");
+            composition.Log.Warn("module", $"模块启动失败，可通过本地 CLI 查询和恢复: {ex.Message}");
         }
 
         // Runtime CLI 是本机、当前用户 ACL 的受限控制通道；它只连到这个实际服务循环，
@@ -68,12 +60,6 @@ public static class ServiceHost
             composition,
             HistoryVulcan.Core.AppIdentity.Current.Name,
             HistoryVulcan.Core.AppIdentity.Current.Version);
-
-        // Web 网关与 endpoint.json 已迁出至 HistoryPortunus 模块（4.3.0）。
-        // 宿主不再持有任何对外 HTTP 监听：模块没装上时本机就没有 Web 入口，
-        // 这一点由 endpoint.json 的存在与否如实反映。
-        // MCP 的自启随网关迁往 HistoryPortunus（4.4.0）：mcp.autostart 由模块在装载时读。
-        // 宿主至此不再持有任何对外监听。
 
         if (composition.RegisterAutostartOnFirstRun && composition.Autostart != null)
         {
@@ -115,7 +101,6 @@ public static class ServiceHost
         }
         finally
         {
-            // endpoint.json 的删除随模块拆除发生（ModuleHost 在卸载前 Dispose 模块实例）。
             runtimePipe.Dispose();
             composition.Dispose();
             mutex.ReleaseMutex();

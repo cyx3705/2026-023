@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -13,16 +13,7 @@ using HistoryVulcan.Services.Modules;
 
 namespace HistoryVulcan.ServiceHost;
 
-/// <summary>
-/// 无头服务的组合根（4.0.0，REQ-A3）。
-///
-/// 这些成员此前住在 <c>App.xaml.cs</c> 里——一个 WPF <c>Application</c> 派生类——
-/// 于是"装配后台服务"和"启动前端窗口"共用同一个类型，服务进程被迫加载 WPF 程序集。
-/// 迁到 ServiceHost 后，前端只剩下"连上后台"这一条依赖，A4 可以把服务做成独立 exe。
-///
-/// 身份程序集由调用方显式传入：<c>AppIdentity</c> 决定数据根目录名、端口派生和服务名，
-/// 原实现取 <c>typeof(App).Assembly</c>，那在无头进程里不存在。
-/// </summary>
+/// <summary>Composes the host command bus, settings, module lifecycle and local development services.</summary>
 public static partial class ServiceComposer
 {
     /// <summary>服务随登录自启动的设置键。</summary>
@@ -32,7 +23,7 @@ public static partial class ServiceComposer
     /// 无头导出命令手册（<c>--export-command-manual &lt;路径&gt;</c>）。
     ///
     /// 复用后台装配：手册的价值在于它是**运行时注册表的忠实投影**，因此必须走宿主真正
-    /// 使用的那条装载路径——同一套模块发现、同一套命令注册、同一套 MCP 暴露策略。
+    /// 使用的那条装载路径——同一套模块发现、同一套命令注册。
     /// 另起一套轻量装配会得到一份"看起来对"但与实际不符的手册，那比没有手册更糟。
     ///
     /// 本入口是冻结后的唯一手册生成入口，供发布管线在模块部署后从宿主进程外刷新。
@@ -45,8 +36,7 @@ public static partial class ServiceComposer
             var executable = Environment.ProcessPath ?? identityAssembly.Location;
             composition = Build(executable, identityAssembly);
 
-            // 只装载模块，不启动 Web / MCP 监听：导出不需要对外服务，
-            // 顺带避免与正在运行的后台服务抢端口。
+            // 使用运行时注册表导出；模块自身的启动行为由模块合同约束。
             composition.Modules?.Start();
 
             var markdown = HistoryVulcan.Services.Commands.CommandCatalogCommands.RenderManual(
@@ -88,29 +78,15 @@ public static partial class ServiceComposer
         var servicePaths = new AppPaths(identity.Name, Path.Combine(paths.Root, "service"));
         var log = new ShellLog(servicePaths);
         var settings = new SettingsService(servicePaths);
-        MigrateLegacyMcpSettings(new SettingsService(paths), settings, log);
         var registry = new CommandRegistry();
         var bus = new CommandBus(registry, log);
-        // 全局快捷键不再由宿主装配。此前这里要先用 Assembly.LoadFrom 全盘预扫描模块 DLL
-        // （不进 ALC、不可卸载）找出 IGlobalShortcutHost 实现，再按约定构造签名反射构造——
-        // 为一个「按键 → 命令名」的能力付出了预扫描 + 类型契约 + 扫描驱动三重成本。
-        // 现由提供方自持并经 <域>.hotkey.* 命令暴露，宿主不需要知道快捷键这个概念存在。
         var modules = new ModuleHost(
-            new RuntimeModuleDiscoverySource(paths.ModulesDir), log)
-        {
-            EnableCommands = true,
-        };
+            new RuntimeModuleDiscoverySource(paths.ModulesDir), log);
         modules.Attach(registry, bus, settings, servicePaths.Root);
-        RegisterServiceModuleCommands(registry, modules, settings, bus);
-        RegisterServiceMcpSettingCommands(registry, settings);
+        RegisterServiceModuleCommands(registry, modules);
+        RegisterSettingCommands(registry, settings);
 
-        // 指令自省面（vulcan.command.list / show / domains）随宿主装配，
-        // 目录与手册只读注册表。远端暴露由指令自己的 HiddenReason / Level / Readonly 声明，
-        // 宿主不再另做一层 MCP 投影或策略锁。
-        // 模块开发路线（4.6.0 从 HistoryDiana 迁入）：工作区、发布、装机。
-        //
-        // 它此前住在模块里，于是每一轮模块开发都依赖那个模块装载成功——而它自己也要
-        // 走这条路线来改。放在宿主则相反：只要宿主活着，任何一个模块坏掉都能被单独修好。
+        // 开发恢复入口由宿主提供，不依赖业务模块装载成功。
         HistoryVulcan.Services.Development.DevelopmentCommands.RegisterAll(
             registry, bus, settings, paths.Root);
 
@@ -126,7 +102,7 @@ public static partial class ServiceComposer
             Settings = settings,
             Log = log,
             Modules = modules,
-            // 与前端此前的 DataDirectory 同值：脚本相对路径基准不变（REQ-A6）。
+            // 与前端此前的 DataDirectory 同值：脚本相对路径基准不变。
             DataDirectory = paths.Root,
             RegisterAutostartOnFirstRun = true,
             Autostart = new WindowsRunAutostartManager(),
@@ -181,7 +157,7 @@ public static partial class ServiceComposer
         key?.DeleteValue("AppShell.Backend", throwOnMissingValue: false);
     }
 
-    public static void RegisterServiceMcpSettingCommands(
+    internal static void RegisterSettingCommands(
         CommandRegistry registry,
         ISettingsService settings)
     {
@@ -190,8 +166,8 @@ public static partial class ServiceComposer
             CommandDescriptor.Sync(context =>
             {
                 var key = context.RequireString("key");
-                if (!key.StartsWith("mcp.", StringComparison.OrdinalIgnoreCase))
-                    return CommandResult.Fail("后台设置入口只接受 mcp.* 配置键");
+                if (string.IsNullOrWhiteSpace(key))
+                    return CommandResult.Fail("配置键不能为空。");
 
                 var value = context.RequireString("value");
                 settings.Set(key, value);
@@ -205,19 +181,15 @@ public static partial class ServiceComposer
                 var key = context.GetString("key");
                 if (key != null)
                 {
-                    if (!key.StartsWith("mcp.", StringComparison.OrdinalIgnoreCase))
-                        return CommandResult.Fail("后台设置入口只接受 mcp.* 配置键");
                     var value = settings.Get(key);
                     return value == null
                         ? CommandResult.Ok($"{key} (未设置)")
                         : CommandResult.Ok($"{key} = {DisplayServiceSettingValue(key, value)}");
                 }
 
-                var values = settings.All()
-                    .Where(item => item.Key.StartsWith("mcp.", StringComparison.OrdinalIgnoreCase))
-                    .ToList();
+                var values = settings.All();
                 return values.Count == 0
-                    ? CommandResult.Ok("(无 MCP 配置项)")
+                    ? CommandResult.Ok("(无配置项)")
                     : CommandResult.Ok(
                         $"共 {values.Count} 项:" + string.Concat(values.Select(item =>
                             $"\n  {item.Key} = {DisplayServiceSettingValue(item.Key, item.Value)}")));
@@ -230,7 +202,10 @@ public static partial class ServiceComposer
         var normalized = key.Replace(".", "", StringComparison.Ordinal)
             .Replace("_", "", StringComparison.Ordinal)
             .Replace("-", "", StringComparison.Ordinal);
-        return normalized.EndsWith("token", StringComparison.OrdinalIgnoreCase)
+        return normalized.Equals("code", StringComparison.OrdinalIgnoreCase)
+               || normalized.EndsWith("connectionstring", StringComparison.OrdinalIgnoreCase)
+               || normalized.EndsWith("passwd", StringComparison.OrdinalIgnoreCase)
+               || normalized.EndsWith("token", StringComparison.OrdinalIgnoreCase)
                || normalized.EndsWith("password", StringComparison.OrdinalIgnoreCase)
                || normalized.EndsWith("secret", StringComparison.OrdinalIgnoreCase)
                || normalized.EndsWith("privatekey", StringComparison.OrdinalIgnoreCase)
@@ -238,44 +213,10 @@ public static partial class ServiceComposer
             : value;
     }
 
-    private static readonly string[] LegacyMcpSettingKeys =
-    [
-        "mcp.port",
-        "mcp.policy",
-        "mcp.token",
-        "mcp.autostart",
-        "mcp.timeout",
-        "mcp.confirm",
-        "mcp.confirmtimeout",
-        "mcp.portretries",
-        "mcp.sessionlimit",
-    ];
-
-    public static void MigrateLegacyMcpSettings(
-        ISettingsService legacy,
-        ISettingsService service,
-        IShellLog log)
-    {
-        var migrated = 0;
-        foreach (var key in LegacyMcpSettingKeys)
-        {
-            if (service.Get(key) != null || legacy.Get(key) is not { } value)
-                continue;
-            service.Set(key, value);
-            migrated++;
-        }
-
-        if (migrated > 0)
-            log.Info("mcp", $"已迁移 {migrated} 项旧前端 MCP 配置到后台设置");
-    }
-
     private static void RegisterServiceModuleCommands(
         CommandRegistry registry,
-        ModuleHost host,
-        SettingsService settings,
-        CommandBus bus)
+        ModuleHost host)
     {
-        _ = settings;
         registry.Register(new CommandDescriptor
         {
             Name = "vulcan.module.list",
@@ -357,9 +298,6 @@ public static partial class ServiceComposer
             ],
             Handler = CommandDescriptor.Sync(ctx =>
             {
-                // 界面与后台在同一进程、同一张注册表里，卸载只有这一步。
-                // 双进程时代这里还要先中继到界面卸掉同名快照以释放文件锁，
-                // 那条中继在进程内会打回本命令上无限递归，已随进程外前端一并删除。
                 return host.Unload(ctx.RequireString("name"));
             }),
         }, "framework:service");

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using HistoryVulcan.Core.Commands;
@@ -17,7 +17,7 @@ public static class ServiceCommands
     {
         serviceArguments ??= [];
 
-        // REQ-A6：从前端搬回服务侧。它逐行把脚本喂给总线，只依赖 Bus 与数据根，
+        // 从前端搬回服务侧。它逐行把脚本喂给总线，只依赖 Bus 与数据根，
         // 没有任何 UI 依赖（原实现连 RequiresUiThread 都没标）。留在前端只会让
         // 一条纯总线能力随前端一起被切出去，还得为此在 aurora 域下重新命名。
         registry.Register(new CommandDescriptor
@@ -87,7 +87,7 @@ public static class ServiceCommands
             },
         }, source);
 
-        // REQ-A6 / DEC-006：与 command.run 同类——只查注册表并拼文本，无任何 UI 依赖。
+        // 与 command.run 同类——只查注册表并拼文本，无任何 UI 依赖。
         // 留在前端会让"查指令帮助"这种基础能力依赖界面进程在线，且它与服务侧已有的
         // command.list / show / domains 本属同一族（都是注册表查询），分处两个进程没有道理。
         // 服务侧注册表含前端投影的能力目录，因此这里的输出比前端版本更完整。

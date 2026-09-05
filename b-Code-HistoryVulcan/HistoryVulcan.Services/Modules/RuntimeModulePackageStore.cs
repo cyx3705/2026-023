@@ -60,7 +60,7 @@ internal static class RuntimeModulePackageStore
         }
     }
 
-    /// <summary>Moves runtime-owned state from the replaced package into the new package.</summary>
+    /// <summary>Copies runtime state while keeping the original available for rollback.</summary>
     internal static void PreserveMutableData(string backup, string target)
     {
         var source = Path.Combine(backup, RuntimeModuleDiscoverySource.MutableDataDirectoryName);
@@ -71,7 +71,22 @@ internal static class RuntimeModulePackageStore
         if (Directory.Exists(destination))
             throw new IOException($"运行态目录已存在，无法保留旧数据: {destination}");
 
-        Directory.Move(source, destination);
+        CopyData(source, destination);
+    }
+
+    private static void CopyData(string source, string destination)
+    {
+        if ((File.GetAttributes(source) & FileAttributes.ReparsePoint) != 0)
+            throw new IOException($"运行数据目录不能是重解析点: {source}");
+        Directory.CreateDirectory(destination);
+        foreach (var file in Directory.GetFiles(source))
+        {
+            if ((File.GetAttributes(file) & FileAttributes.ReparsePoint) != 0)
+                throw new IOException($"运行数据文件不能是重解析点: {file}");
+            File.Copy(file, Path.Combine(destination, Path.GetFileName(file)));
+        }
+        foreach (var directory in Directory.GetDirectories(source))
+            CopyData(directory, Path.Combine(destination, Path.GetFileName(directory)));
     }
 
     internal static bool ChecksumsEqual(string first, string second)
@@ -82,23 +97,7 @@ internal static class RuntimeModulePackageStore
             .Equals(right.Replace("\r\n", "\n", StringComparison.Ordinal), StringComparison.OrdinalIgnoreCase);
     }
 
-    internal static string RestorePackage(string target, string backup)
-    {
-        try
-        {
-            if (Directory.Exists(target))
-                Directory.Delete(target, recursive: true);
-            if (Directory.Exists(backup))
-                Directory.Move(backup, target);
-            return Directory.Exists(target) ? "；旧包已恢复" : "";
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return $"；回滚失败: {ex.Message}";
-        }
-    }
-
-    internal static void DeleteTransactionRoot(string root)
+    internal static string DeleteTransactionRoot(string root)
     {
         try
         {
@@ -108,14 +107,11 @@ internal static class RuntimeModulePackageStore
             if (parent != null && Directory.Exists(parent)
                                && !Directory.EnumerateFileSystemEntries(parent).Any())
                 Directory.Delete(parent);
+            return "";
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // Transaction residue is outside the watched directory and can be cleaned on a later run.
-        }
-        catch (UnauthorizedAccessException)
-        {
-            // Transaction residue is outside the watched directory and can be cleaned on a later run.
+            return $"；清理未完成，残留目录 {root}: {ex.Message}";
         }
     }
 }

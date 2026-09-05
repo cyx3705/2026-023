@@ -106,7 +106,7 @@ internal static class HostSnapshotBuilder
             try
             {
                 SnapshotHashes.CopyDirectory(staging, incoming);
-                PublishLayout.PromoteFlatHost(incoming, outputRoot, version);
+                PublishLayout.PromoteFlatHost(incoming, outputRoot, version, log);
             }
             finally
             {

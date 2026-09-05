@@ -312,6 +312,9 @@
         <member name="T:HistoryVulcan.Services.Development.Pipeline.MsBuildOutputResolver">
             <summary>发布前从 MSBuild 查询模块的真实目标框架和输出目录。</summary>
         </member>
+        <member name="T:HistoryVulcan.Services.Development.Pipeline.PublishTransaction">
+            <summary>Shares commit and recovery rules for module and flat host promotion.</summary>
+        </member>
         <member name="F:HistoryVulcan.Services.Development.Pipeline.QualityGates.HotspotLimit">
             <summary>单个生产文件的行数上限。超限即发布失败，不是警告。</summary>
         </member>
@@ -544,6 +547,33 @@
         <member name="M:HistoryVulcan.Services.Modules.ModuleDirectoryWatcher.IsRelevant(System.String)">
             <summary>是否值得为这个文件触发重载(模块本体、XML 注释、清单与模块旁面板)。</summary>
         </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry">
+            <summary>A validated module artifact discovered from a validated runtime manifest.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.#ctor(System.String,System.String,System.String,System.String,System.String,System.Boolean,System.String,System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>A validated module artifact discovered from a validated runtime manifest.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic">
+            <summary>A non-fatal diagnostic produced while discovering runtime module manifests.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic.#ctor(System.String,System.String,System.String)">
+            <summary>A non-fatal diagnostic produced while discovering runtime module manifests.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot">
+            <summary>The immutable result of one module discovery scan.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot.#ctor(System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Modules.ModuleDiscoveryEntry},System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic})">
+            <summary>The immutable result of one module discovery scan.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.IModuleDiscoverySource">
+            <summary>Discovers module artifacts without loading their assemblies.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.IModuleDiscoverySource.Roots">
+            <summary>Configured absolute discovery roots.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.IModuleDiscoverySource.Discover">
+            <summary>Scans the configured roots and validates explicit module manifests.</summary>
+        </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleMeta">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
@@ -554,10 +584,10 @@
             <summary>当前加载快照中的唯一模块实例标识；重载后变化。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.SourcePath">
-            <summary>Absolute Z package path when the module came from manifest discovery.</summary>
+            <summary>Absolute runtime package path.</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.ManifestPath">
-            <summary>Absolute manifest path when the module came from manifest discovery.</summary>
+            <summary>Absolute runtime manifest path.</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.AttachFailures">
              <summary>
@@ -577,15 +607,7 @@
             <summary>本模块是否真正接上了宿主。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleHost">
-            <summary>
-            模块宿主(MD-01~07):进程内移植自 b-Code-MyAPI-Lite 的 ModuleHost/Invoker 机制(D3)。
-            监听 Modules 目录,把含 BaseVariable.ModuleInfoBase 子类(鸭子类型,MD-02)的 DLL
-            的业务方法注册为总线指令「模块名.方法名」;XML 注释成为帮助文本(MD-03)。
-            DLL 从内存流加载不锁文件,覆盖/新增/删除触发整体热重载(800ms 防抖,MD-01);
-            与内置指令重名的方法拒绝注册并告警(MD-07);模块异常由总线兜底(MD-06)。
-            与 Lite 的差异:端点表 → CommandRegistry 注册/注销;Console → IShellLog;
-            注册表变更经 WPF Dispatcher 序列化到 UI 线程。
-            </summary>
+            <summary>Loads validated runtime packages and owns module commands, instances and reloads.</summary>
              <summary>
              装载次序与就绪屏障（5.1.3）。
             
@@ -608,23 +630,11 @@
              是已定版记录，为一个可选字段改它的构造函数是破坏性变更。
              </summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.#ctor(System.String,HistoryVulcan.Core.Logging.IShellLog)">
-            <summary>按模块目录与日志建立宿主；装载与命令注册由 Attach/Start 触发。</summary>
-        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.#ctor(HistoryVulcan.Services.Modules.IModuleDiscoverySource,HistoryVulcan.Core.Logging.IShellLog)">
-            <summary>Creates a module host backed by explicit Z-level manifest discovery.</summary>
+            <summary>Creates a module host backed by explicit runtime package discovery.</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.UiContext">
-            <summary>
-            UI 线程编组通道(0.4.4)。注册表是 UI 线程消费的普通字典,热重载换血必须编组过去。
-            原实现直接取 <c>System.Windows.Application.Current.Dispatcher</c>,使本类带上 WPF 依赖、
-            无法留在 net8.0 的 Services 层(违反 §14.2「只有 Shell 认识 WPF」)。
-            现与 <c>CommandBus.UiContext</c> 同一惯例,由装配点在 UI 线程赋值;
-            为 null 视为应用退出中,与原来 Dispatcher 为 null 的处置一致。
-            </summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.EnableCommands">
-            <summary>是否把模块方法注册到本进程指令表。无窗前端可关闭。</summary>
+            <summary>Marshals registry mutations to the consumer thread; null executes inline.</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.EnableUiModules">
             <summary>Whether modules marked as UI modules may be initialized.</summary>
@@ -632,16 +642,11 @@
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.EnableFileWatching">
             <summary>Whether this host owns filesystem change detection for the module directory.</summary>
         </member>
-        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.RequireConfirmedSources">
-            <summary>
-            When true, discovery-backed hosts remain empty until a backend-confirmed manifest set is supplied.
-            </summary>
-        </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.ModulesDirectory">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.DiscoveryRoots">
-            <summary>Configured Z-level discovery roots; empty for the legacy directory host.</summary>
+            <summary>Configured runtime package roots.</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.DiscoveryDiagnostics">
             <summary>Diagnostics from the most recent discovery scan.</summary>
@@ -656,24 +661,13 @@
             <summary>每次整体重载完成后触发(在重载线程上);MD-08 面板同步等旁路逻辑挂此处。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.CommandRegistry)">
-            <summary>接入指令注册表(ShellWindow 创建后调用,再 Start)。</summary>
+            <summary>接入指令注册表，再调用 Start；仅此重载不注入模块上下文。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Core.Storage.ISettingsService,System.String)">
             <summary>接入模块业务运行所需的完整宿主上下文。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Start">
             <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ChangeDirectory(System.String)">
-            <summary>module.dir path=:切换模块目录并整体重载。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ChangeDiscoveryRoots(System.Collections.Generic.IEnumerable{System.String})">
-            <summary>Replaces the configured Z discovery roots and immediately reloads modules.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ReloadConfirmedSources(System.Collections.Generic.IEnumerable{System.String})">
-            <summary>
-            Reloads UI modules from a backend-confirmed manifest set without performing an independent scan.
-            </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Unload(System.String)">
             <summary>
@@ -709,18 +703,12 @@
              后一条才能让 XAML 的 <c>assembly=AvalonDock.Themes.VS2013</c> 解析成功，同时允许 Unload。
              </summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.IsModuleArtifactDirectory(System.String)">
-            <summary>
-            模块目录同时承载热重载和发布工具的暂存内容。回滚/备份目录仍然包含
-            DLL 和 manifest，但不是活动模块，不能被扫描成第二个同名模块。
-            </summary>
-        </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ReadPinnedFlag(System.String)">
              <summary>
              读 manifest 的 <c>pinned</c> 标志：声明本模块**不可热重载**。
             
              不走 <see cref="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry"/>：那是已冻结的公开记录，为一个标志改它的
-             构造函数是破坏性变更。与 <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.ReadUiFlag(System.String)"/> 同一模式——宿主自己读文件。
+             构造函数是破坏性变更；宿主直接读取包声明。
              </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.IsModuleInfo(System.Type)">
@@ -970,6 +958,12 @@
             把方法的 &lt;summary&gt; / &lt;param&gt; 注释变成指令帮助文本(MD-03)。
             </summary>
         </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleManifestReader">
+            <summary>Reads package identity and contained paths independently of directory discovery.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModulePackageTransaction">
+            <summary>Tracks completed filesystem moves so recovery never deletes an untouched package.</summary>
+        </member>
         <member name="T:HistoryVulcan.Services.Modules.OfflineModuleInstall">
              <summary>
              不依赖运行中宿主的模块包安装。
@@ -1059,98 +1053,7 @@
              </remarks>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.RuntimeModulePackageStore.PreserveMutableData(System.String,System.String)">
-            <summary>Moves runtime-owned state from the replaced package into the new package.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry">
-            <summary>A validated module artifact discovered from an explicit Z-level manifest.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.#ctor(System.String,System.String,System.String,System.String,System.String,System.Boolean,System.String,System.Collections.Generic.IReadOnlyList{System.String},System.String)">
-            <summary>A validated module artifact discovered from an explicit Z-level manifest.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic">
-            <summary>A non-fatal diagnostic produced while discovering Z-level module manifests.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic.#ctor(System.String,System.String,System.String)">
-            <summary>A non-fatal diagnostic produced while discovering Z-level module manifests.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot">
-            <summary>The immutable result of one module discovery scan.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot.#ctor(System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Modules.ModuleDiscoveryEntry},System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic})">
-            <summary>The immutable result of one module discovery scan.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Modules.IModuleDiscoverySource">
-            <summary>Discovers module artifacts without loading their assemblies.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Modules.IModuleDiscoverySource.Roots">
-            <summary>Configured absolute discovery roots.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.IModuleDiscoverySource.Discover">
-            <summary>Scans the configured roots and validates explicit module manifests.</summary>
-        </member>
-        <member name="T:HistoryVulcan.Services.Modules.ZModuleDiscoverySource">
-            <summary>
-            Discovers <c>HistoryVulcan.Module</c> manifests from direct <c>z-*</c> children of projects.
-            Folder names locate candidates only; the manifest is the authority for module identity.
-            </summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ManifestType">
-            <summary>The only manifest type accepted as a HistoryVulcan module.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ManifestFileName">
-            <summary>The root-level manifest file name used by Z module packages.</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ProjectDirectoryPattern">
-             <summary>
-             参与模块发现的项目目录名模式。
-            
-             发现根通常就是整个项目库，而库里绝大多数编号项目（课程设计、实验、工具链等）
-             与本体系无关。用模式而不是白名单收窄：新模块只要按命名规范建目录就自动纳入，
-             不需要有人记得回来改配置——白名单迟早会漏更新，模式不会。
-            
-             匹配 &lt;编号&gt;-History&lt;名字&gt; 形态；命名规范由 OneHistory 的
-             「目录与命名规范」定义，宿主的 <c>ModuleDomainNaming.ToDomain</c> 也依赖同一约定。
-             </summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.DefaultLibraryRoot">
-            <summary>当前 OneHistory 项目库根。自动发现与旧 Vesta 路径迁移都落到这里。</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.LegacyVestaLibrary">
-            <summary>已退役的共享项目库根；配置里若仍指向它则改写到 <see cref="F:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.DefaultLibraryRoot"/>。</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.AutomaticRootNotFound">
-            <summary>自动发现失败时的说明：库根靠编号项目目录识别，不靠裸仓哨兵。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.#ctor(System.Collections.Generic.IEnumerable{System.String})">
-            <summary>Creates a scanner for one or more absolute project-library roots.</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.Roots">
-            <inheritdoc />
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.FindAutomaticRoot(System.String)">
-            <summary>
-            Walks upward until a directory contains at least two numbered project folders
-            (<c>YYYY-NNN-*</c>). Does not open <c>.git</c> and does not use a bare-repo sentinel.
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.CoerceConfiguredRoot(System.String)">
-            <summary>
-            Rewrites a configured discovery root: missing or retired Vesta paths become
-            <see cref="F:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.DefaultLibraryRoot"/> when that library exists.
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ResolveAutomaticRoot">
-            <summary>Walks from the process location, then the well-known Clio library.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.Discover">
-            <inheritdoc />
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.TryReadPackage(System.String,HistoryVulcan.Services.Modules.ModuleDiscoveryEntry@,System.String@)">
-            <summary>
-            按同一套清单规则校验单个 z 目录，供不经根扫描的候选装载复用（试用界面)。
-            复用 <see cref="M:HistoryVulcan.Services.Modules.ZModuleDiscoverySource.DiscoverPackage(System.String,System.Collections.Generic.ICollection{HistoryVulcan.Services.Modules.ModuleDiscoveryEntry},System.Collections.Generic.ICollection{HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic})"/> 而不是另写一份宽松解析:候选与正式模块必须
-            用同一把尺子量,否则会出现试用能装、正式发现却拒绝的分叉。
-            </summary>
+            <summary>Copies runtime state while keeping the original available for rollback.</summary>
         </member>
         <member name="T:HistoryVulcan.Services.SettingsService">
             <summary>

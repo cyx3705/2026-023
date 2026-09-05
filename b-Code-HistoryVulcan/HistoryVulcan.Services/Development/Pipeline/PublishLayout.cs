@@ -9,7 +9,8 @@ internal static class PublishLayout
         string publishRoot,
         ReleaseTarget target,
         string version,
-        bool replaceCurrent = false)
+        bool replaceCurrent = false,
+        TextWriter? log = null)
     {
         var historyRoot = Path.Combine(publishRoot, "history");
         Directory.CreateDirectory(historyRoot);
@@ -17,14 +18,13 @@ internal static class PublishLayout
         try
         {
             return PromoteVersionedCore(
-                stagingRoot, publishRoot, target, version, incoming, historyRoot, replaceCurrent);
+                stagingRoot, publishRoot, target, version, incoming, historyRoot, replaceCurrent, log);
         }
         finally
         {
             // 同 HostSnapshotBuilder：中转目录建在发布根里，抛异常时留下的就是一份完整
             // 副本，而发布根是纳入 git 的 z 快照。此前只有成功路径删得掉它。
-            if (Directory.Exists(incoming))
-                Directory.Delete(incoming, recursive: true);
+            PublishTransaction.Cleanup(incoming, log);
         }
     }
 
@@ -35,7 +35,8 @@ internal static class PublishLayout
         string version,
         string incoming,
         string historyRoot,
-        bool replaceCurrent)
+        bool replaceCurrent,
+        TextWriter? log)
     {
         SnapshotHashes.CopyDirectory(stagingRoot, incoming);
         ModuleSnapshotBuilder.AssertSnapshot(incoming, target, version);
@@ -73,55 +74,18 @@ internal static class PublishLayout
             Directory.Delete(legacy, recursive: true);
         }
 
-        // 腾空发布根之前先把旧内容挪进备份区，而不是直接删。
-        //
-        // 此前这里是「先删光，再 Relocate」：Relocate 一旦失败（目标被占用、跨卷复制中断），
-        // 发布根已经空了而新包没到位，模块的 z 快照当场变成一个空目录，且没有任何回滚。
-        // 同文件的 PromoteFlatHost 对完全相同的操作准备了 backup 与 catch 回滚——
-        // 两条促级路径的事务性必须对等，不能一条有安全网、一条裸奔。
-        var backup = Path.Combine(Path.GetTempPath(), "module-previous-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(backup);
-        var moved = new List<string>();
-        try
-        {
-            foreach (var item in Directory.GetFileSystemEntries(publishRoot))
-            {
-                var name = Path.GetFileName(item);
-                if (name.Equals("history", StringComparison.OrdinalIgnoreCase)
-                    || name.Equals(Path.GetFileName(incoming), StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                Relocate(item, Path.Combine(backup, name));
-                moved.Add(name);
-            }
-
-            Relocate(incoming, destination);
-        }
-        catch
-        {
-            if (Directory.Exists(destination))
-                Directory.Delete(destination, recursive: true);
-            foreach (var name in moved)
-                Relocate(Path.Combine(backup, name), Path.Combine(publishRoot, name));
-            throw;
-        }
-        finally
-        {
-            if (Directory.Exists(backup))
-                Directory.Delete(backup, recursive: true);
-        }
+        var existing = Directory.GetFileSystemEntries(publishRoot)
+            .Where(path => !Path.GetFileName(path).Equals("history", StringComparison.OrdinalIgnoreCase)
+                && !path.Equals(incoming, StringComparison.OrdinalIgnoreCase)).ToList();
+        PublishTransaction.Run(publishRoot, existing, [(incoming, destination)], log);
 
         return destination;
     }
 
-    public static string PromoteFlatHost(string stagingRoot, string publishRoot, string version)
+    public static string PromoteFlatHost(string stagingRoot, string publishRoot, string version, TextWriter? log = null)
     {
         var historyRoot = Path.Combine(publishRoot, "history");
         Directory.CreateDirectory(historyRoot);
-        var backup = Path.Combine(Path.GetTempPath(), "host-previous-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(backup);
 
         var currentManifest = Path.Combine(publishRoot, "manifest.json");
         var currentSums = Path.Combine(publishRoot, SnapshotHashes.FileName);
@@ -157,96 +121,15 @@ internal static class PublishLayout
             Archive(legacy, historyRoot);
         }
 
-        var movedExisting = new List<string>();
-        var movedIncoming = new List<string>();
-        try
-        {
-            Directory.CreateDirectory(publishRoot);
-            foreach (var item in Directory.GetFileSystemEntries(publishRoot))
-            {
-                var name = Path.GetFileName(item);
-                if (name.Equals("history", StringComparison.OrdinalIgnoreCase)
-                    || name.StartsWith(".incoming-", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                var dest = Path.Combine(backup, name);
-                Relocate(item, dest);
-                movedExisting.Add(name);
-            }
-
-            foreach (var item in Directory.GetFileSystemEntries(stagingRoot))
-            {
-                var name = Path.GetFileName(item);
-                var dest = Path.Combine(publishRoot, name);
-                Relocate(item, dest);
-                movedIncoming.Add(name);
-            }
-        }
-        catch
-        {
-            foreach (var name in movedIncoming)
-            {
-                var path = Path.Combine(publishRoot, name);
-                if (Directory.Exists(path))
-                    Directory.Delete(path, recursive: true);
-                else if (File.Exists(path))
-                    File.Delete(path);
-            }
-
-            foreach (var name in movedExisting)
-            {
-                var path = Path.Combine(backup, name);
-                var dest = Path.Combine(publishRoot, name);
-                Relocate(path, dest);
-            }
-
-            throw;
-        }
-        finally
-        {
-            if (Directory.Exists(backup))
-                Directory.Delete(backup, recursive: true);
-        }
+        var existing = Directory.GetFileSystemEntries(publishRoot)
+            .Where(path => !Path.GetFileName(path).Equals("history", StringComparison.OrdinalIgnoreCase)
+                && !Path.GetFileName(path).StartsWith(".incoming-", StringComparison.OrdinalIgnoreCase)).ToList();
+        var incoming = Directory.GetFileSystemEntries(stagingRoot)
+            .Select(path => (path, Path.Combine(publishRoot, Path.GetFileName(path)))).ToList();
+        PublishTransaction.Run(publishRoot, existing, incoming, log);
 
         return Path.GetFullPath(publishRoot);
     }
-
-    private static void Relocate(string source, string destination)
-    {
-        if (Directory.Exists(source))
-        {
-            if (Directory.Exists(destination))
-                Directory.Delete(destination, recursive: true);
-            if (SameVolume(source, destination))
-                Directory.Move(source, destination);
-            else
-            {
-                SnapshotHashes.CopyDirectory(source, destination);
-                Directory.Delete(source, recursive: true);
-            }
-
-            return;
-        }
-
-        var parent = Path.GetDirectoryName(destination);
-        if (!string.IsNullOrEmpty(parent))
-            Directory.CreateDirectory(parent);
-        if (SameVolume(source, destination))
-            File.Move(source, destination, overwrite: true);
-        else
-        {
-            File.Copy(source, destination, overwrite: true);
-            File.Delete(source);
-        }
-    }
-
-    private static bool SameVolume(string left, string right)
-        => string.Equals(
-            Path.GetPathRoot(Path.GetFullPath(left)),
-            Path.GetPathRoot(Path.GetFullPath(right)),
-            StringComparison.OrdinalIgnoreCase);
 
     private static void AssertImmutable(string source, string destination)
     {

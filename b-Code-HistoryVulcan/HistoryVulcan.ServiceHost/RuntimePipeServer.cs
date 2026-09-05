@@ -10,9 +10,6 @@ internal sealed class RuntimePipeServer : IDisposable
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly HashSet<string> Allowed = new(StringComparer.OrdinalIgnoreCase)
     {
-        "portunus.mcp.status",
-        "portunus.mcp.start",
-        "portunus.mcp.stop",
         "vulcan.module.list",
         // 只读的就绪查询，与 module.list 同一档。5.1.3 加了这条命令时两份名单都没改，
         // 5.2 先补了 CliExposurePolicy（--cli）才发现 --runtime 另有这一份——
@@ -21,6 +18,8 @@ internal sealed class RuntimePipeServer : IDisposable
         "vulcan.module.reload",
         "vulcan.module.install",
     };
+
+    internal static IReadOnlyCollection<string> AllowedCommands => Allowed;
 
     private readonly ServiceComposition _composition;
     private readonly string _pipeName;
@@ -141,9 +140,7 @@ internal sealed class RuntimePipeServer : IDisposable
             return;
         }
 
-        var action = name.Equals("portunus.mcp.start", StringComparison.OrdinalIgnoreCase)
-            || name.Equals("portunus.mcp.stop", StringComparison.OrdinalIgnoreCase)
-            || name.Equals("vulcan.module.reload", StringComparison.OrdinalIgnoreCase)
+        var action = name.Equals("vulcan.module.reload", StringComparison.OrdinalIgnoreCase)
             || name.Equals("vulcan.module.install", StringComparison.OrdinalIgnoreCase);
         if (action && !request.Approve)
         {

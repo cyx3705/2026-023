@@ -1,21 +1,12 @@
-﻿
-using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
-using System.Net.WebSockets;
 using System.Reflection;
-using System.Text;
-using System.Text.Json;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Core.Storage;
-using HistoryVulcan.ServiceHost;
 
 using Xunit;
 
 namespace HistoryVulcan.Tests;
 
-[Collection(TestCollections.Gateway)]
+[Collection(TestCollections.HostProcess)]
 public sealed class FreezeBlockerTests
 {
     [Fact]
@@ -38,7 +29,7 @@ public sealed class FreezeBlockerTests
             Handler = CommandDescriptor.Sync(context => CommandResult.Ok(
                 $"{context.RequireString("key")} = {context.RequireString("value")}")),
         });
-        registry.Register(SecretDescriptor("vulcan.web.token", "value", position: 0));
+        registry.Register(SecretDescriptor("secure.token", "value", position: 0));
         var log = new MemoryLog();
         var bus = new CommandBus(registry, log);
 
@@ -47,14 +38,14 @@ public sealed class FreezeBlockerTests
         var connection = await bus.ExecuteAsync(
             "secure.connect connectionString=connection-string-secret", "Test");
         var genericPositional = await bus.ExecuteAsync("secure.position positional-secret", "Test");
-        var setting = await bus.ExecuteAsync("vulcan.app.set key=mcp.token value=bravo-secret", "Test");
-        var positional = await bus.ExecuteAsync("vulcan.web.token charlie-secret", "Test");
+        var setting = await bus.ExecuteAsync("vulcan.app.set key=app.token value=bravo-secret", "Test");
+        var positional = await bus.ExecuteAsync("secure.token charlie-secret", "Test");
         var malformed = await bus.ExecuteAsync("secure.set token=\"fallback-secret", "Test");
         var malformedPositional = await bus.ExecuteAsync(
             "secure.position \"positional-fallback-secret", "Test");
-        var malformedToken = await bus.ExecuteAsync("vulcan.web.token \"token-fallback-secret", "Test");
+        var malformedToken = await bus.ExecuteAsync("secure.token \"token-fallback-secret", "Test");
         var malformedSetting = await bus.ExecuteAsync(
-            "vulcan.app.set mcp.token \"setting-fallback-secret", "Test");
+            "vulcan.app.set app.token \"setting-fallback-secret", "Test");
 
         var written = string.Join('\n', log.Snapshot().Select(entry => entry.Message));
         Assert.DoesNotContain("alpha-secret", named.Message, StringComparison.Ordinal);
@@ -84,7 +75,6 @@ public sealed class FreezeBlockerTests
         Assert.DoesNotContain("setting-fallback-secret", written, StringComparison.Ordinal);
         Assert.True(log.Snapshot().Count(entry => entry.Message.Contains("[REDACTED]", StringComparison.Ordinal)) >= 9);
     }
-
 
     [Fact]
     public async Task CommandExceptionsDoNotExposeSensitiveValues()
@@ -117,16 +107,6 @@ public sealed class FreezeBlockerTests
         Assert.Contains(log.Snapshot(), entry => entry.Category == "cmd:internal");
     }
 
-    // 4.3.0：Web 网关的三条边界用例（回环 Shell 鉴权、凭据每次监听换发、请求体 1 MiB 上限）
-    // 随网关迁往 HistoryPortunus/b-Code-Verify/Contracts。同批删除
-    // SessionSourceRoundTripsArbitraryIdsAndNames——它测的解码半边 SessionIdFromSource
-    // 已无生产调用方，只剩这条测试在维持它活着。
-    //
-    // 3.13.0 退役 AuthenticationAttemptsAreRateLimitedByRemoteAddressBeforeSessionHeaders：
-    // 它守的是"轮换 X-Session-Id 不能绕过失败鉴权的按源限流"。令牌鉴权与限流都随局域网面
-    // 一起删除后，未授权请求只会稳定拿到 401。代价是失败鉴权不再有节流——在只监听
-    // 127.0.0.1 的前提下可以接受：能对回环发请求的人已经以当前用户身份在执行代码。
-    // 一旦将来重新对外监听，这条限流必须与监听能力同时回来。
     // 跨进程全局 mutex：本机若有 HistoryVulcan 实例在跑就会一直等不到，
     // 超时必须是一条具名失败，而不是整轮静默挂死（DEC-023）。
     [Fact(Timeout = 30_000)]
@@ -153,9 +133,6 @@ public sealed class FreezeBlockerTests
         Assert.True(await waiter);
     }
 
-
-
-
     private static CommandDescriptor SecretDescriptor(string name, string parameter, int? position)
         => new()
         {
@@ -177,17 +154,6 @@ public sealed class FreezeBlockerTests
                 return CommandResult.Ok($"set {value}", new { value });
             }),
         };
-
-    private sealed class MemorySettings : ISettingsService
-    {
-        private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
-
-        public string? Get(string key) => _values.GetValueOrDefault(key);
-        public int GetInt(string key, int fallback) => int.TryParse(Get(key), out var value) ? value : fallback;
-        public void Set(string key, string value) => _values[key] = value;
-        public IReadOnlyList<KeyValuePair<string, string>> All() => _values.ToList();
-    }
-
 
     private sealed class MemoryLog : IShellLog
     {

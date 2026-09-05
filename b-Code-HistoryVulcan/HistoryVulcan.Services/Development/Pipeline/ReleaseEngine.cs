@@ -65,7 +65,7 @@ internal static class ReleaseEngine
                     projectRoot, target, version, staging, request.HostSnapshotRoot, log);
                 ModuleSnapshotBuilder.RunValidation(target, projectRoot, staging, log);
                 candidate = PublishLayout.PromoteVersioned(
-                    staging, publishRoot, target, version, replaceCurrent: !request.PromoteOfficial);
+                    staging, publishRoot, target, version, replaceCurrent: !request.PromoteOfficial, log: log);
                 ModuleSnapshotBuilder.AssertSnapshot(candidate, target, version);
             }
 

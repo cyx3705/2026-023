@@ -212,7 +212,8 @@ public sealed partial class ModuleHost
             AttachModuleContexts(snap, module.Types, module.Owner);
             MarshalToUi(() =>
             {
-                RegisterModuleCommands(snap, module.Owner);
+                if (!snap.AttachFailures.ContainsKey(module.Owner))
+                    RegisterModuleCommands(snap, module.Owner);
                 snap.ReplaceModuleMeta(module.Owner);
             });
 

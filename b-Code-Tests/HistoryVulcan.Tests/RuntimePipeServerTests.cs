@@ -88,6 +88,88 @@ public sealed class RuntimePipeServerTests
         server.Dispose();
     }
 
+    [Theory]
+    [InlineData("portunus.mcp.status")]
+    [InlineData("portunus.mcp.start")]
+    [InlineData("portunus.mcp.stop")]
+    public async Task ModuleSpecificCommandsAreRejectedEvenWhenRegisteredAndApproved(string command)
+    {
+        var registry = new CommandRegistry();
+        var log = new TestLog();
+        var executed = false;
+        registry.Register(new CommandDescriptor
+        {
+            Name = command,
+            Summary = "test",
+            Handler = CommandDescriptor.Sync(_ => { executed = true; return CommandResult.Ok("unexpected"); }),
+        });
+        var composition = new ServiceComposition
+        {
+            ServiceName = "RuntimePipeTests",
+            Registry = registry,
+            Bus = new CommandBus(registry, log),
+            Settings = new TestSettings(),
+            Log = log,
+        };
+        Assert.Equal(
+            new[] { "vulcan.module.install", "vulcan.module.list", "vulcan.module.ready", "vulcan.module.reload" },
+            RuntimePipeServer.AllowedCommands.OrderBy(value => value, StringComparer.Ordinal));
+        var identity = "RuntimePipeTests-" + Guid.NewGuid().ToString("N");
+        using var server = RuntimePipeServer.Start(composition, identity, "test");
+        using var client = await ConnectAsync(identity);
+        var hello = client.Hello;
+        var request = new RuntimeRequest(
+            RuntimePipeProtocol.RequestType, hello.Challenge, Guid.NewGuid().ToString("N"),
+            command, true, hello.ProcessId, hello.StartedUtc, hello.InstanceId, hello.ModuleInstanceIds);
+        await client.Writer.WriteLineAsync(JsonSerializer.Serialize(request, JsonOptions));
+        var response = await ReadAsync<RuntimeResponse>(client.Reader);
+        Assert.NotNull(response);
+        Assert.False(response.Success);
+        Assert.False(executed);
+    }
+
+    [Theory]
+    [InlineData("vulcan.module.reload", false, true, false)]
+    [InlineData("vulcan.module.install", false, true, false)]
+    [InlineData("vulcan.module.reload", true, false, false)]
+    [InlineData("vulcan.module.install", true, false, false)]
+    [InlineData("vulcan.module.reload", true, true, true)]
+    [InlineData("vulcan.module.install", true, true, true)]
+    public async Task RuntimeActionsRequireBothApprovalAndCurrentHandshake(
+        string command, bool approve, bool validHandshake, bool expected)
+    {
+        var registry = new CommandRegistry();
+        var log = new TestLog();
+        var executed = false;
+        registry.Register(new CommandDescriptor
+        {
+            Name = command,
+            Summary = "test",
+            Handler = CommandDescriptor.Sync(_ => { executed = true; return CommandResult.Ok("accepted"); }),
+        });
+        var composition = new ServiceComposition
+        {
+            ServiceName = "RuntimePipeTests",
+            Registry = registry,
+            Bus = new CommandBus(registry, log),
+            Settings = new TestSettings(),
+            Log = log,
+        };
+        var identity = "RuntimePipeTests-" + Guid.NewGuid().ToString("N");
+        using var server = RuntimePipeServer.Start(composition, identity, "test");
+        using var client = await ConnectAsync(identity);
+        var hello = client.Hello;
+        var request = new RuntimeRequest(
+            RuntimePipeProtocol.RequestType, validHandshake ? hello.Challenge : "stale",
+            Guid.NewGuid().ToString("N"), command, approve, hello.ProcessId,
+            hello.StartedUtc, hello.InstanceId, hello.ModuleInstanceIds);
+        await client.Writer.WriteLineAsync(JsonSerializer.Serialize(request, JsonOptions));
+        var response = await ReadAsync<RuntimeResponse>(client.Reader);
+        Assert.NotNull(response);
+        Assert.Equal(expected, response.Success);
+        Assert.Equal(expected, executed);
+    }
+
     private static async Task<PipeConnection> ConnectAsync(string identityName)
     {
         var client = new NamedPipeClientStream(

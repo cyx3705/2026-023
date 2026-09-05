@@ -1,13 +1,12 @@
 # HistoryVulcan 模块 API
 
-适用宿主版本：**5.1.2（冻结基线 `v5.1.2`）**。
+适用宿主版本：**5.3.0（冻结基线仍为 `v5.1.2`）**。
 
 本文件是模块作者唯一需要的宿主合同。HistoryVulcan 只提供模块注册器、命令总线和模块开发管线；
 界面与传输能力由认领模块维护，不属于宿主模块 SDK。
 
-5.1.2 起本合同是冻结的模块接入面。宿主可以重构内部实现，但不会在 5.x 内删除或改签下列
-公开类型；新增通用能力必须先推进宿主版本并通过公开 API 门禁。模块不得据此依赖未列入本文的
-Services 实现类型或宿主内部命令。
+5.1.2 起模块接入面冻结。5.2 与本轮 5.3.0 经明确批准删除过期公开面，兼容变化见下文；
+不能据冻结标签推断所有历史接口仍存在。三份 Shipped 不改写，现行 API 结合 Unshipped 增删和本版批准基线判断。
 
 ## 1. 引用宿主快照
 
@@ -87,10 +86,41 @@ HistoryVulcan 源码工程；需要联调时显式提供项目自己的开关，
 命令行面新增 `vulcan.module.ready`：5.1.3 加了这条就绪查询却漏进白名单，
 现已补上，`HistoryVulcan.Cli.exe --runtime vulcan.module.ready` 可用。
 
+## 2.3 5.3.0 消费变更摘要
+
+本轮按用户指定的 5.3.0 执行公开面删除与行为收紧，保留 v5.1.2 标签。常规删除走主版本规则不变；
+这是一项有范围的例外，不保证未知第三方二进制兼容。完整符号以 5.3.0 Unshipped 和批准基线为准。
+
+| 删除 | 当前入口或归属 |
+| --- | --- |
+| ZModuleDiscoverySource 类型、构造、扫描与路径迁移方法及常量 | RuntimeModuleDiscoverySource；只认固定运行区完整包 |
+| ModuleHost(string modulesDir, log) | ModuleHost(IModuleDiscoverySource, log) |
+| ModuleHost.ChangeDirectory / ChangeDiscoveryRoots / ReloadConfirmedSources | 运行根固定，无切换或确认源入口 |
+| ModuleHost.RequireConfirmedSources / EnableCommands | 无；所有有效接入模块统一登记命令 |
+| ModuleDiscoveryEntry.McpExposure 及含该参数的构造函数 | 新构造函数只含 Name/Version/PackagePath/ManifestPath/ArtifactPath/Ui/DocsPath/DependencyPaths |
+| ServiceComposer.MigrateLegacyMcpSettings / RegisterServiceMcpSettingCommands | 配置由宿主内部统一注册，不再提供 MCP 专用 API |
+| ShellRelayConfirmation 类型和远程确认方法 | 默认拒绝为内部实现，界面安装 Bus.Confirmation |
+
+旧 manifest 额外 MCP 字段直接忽略。宿主不自动删除旧配置文件或键，不从其他设置文件迁移值。
+vulcan.app.get/set 保持 key/value 参数及原 service 配置存储位置，允许通用键；
+读取、列举、写入回执遮蔽敏感值，取消 mcp.* 白名单。敏感数据消费方按自身合同直接使用现用设置接口，不依赖显示回执取明文。
+
+runtime 仅保留 vulcan.module.list/ready/reload/install；portunus.mcp.status/start/stop 即便在模块中注册也不能经 runtime 管道执行。
+Portunus 的管理入口按其已发布合同使用；不得假定宿主另有模块扩展协议。当前用户管道、握手与动作批准保持。
+
+保留 FrontendExecutor、RemoteExecutor、ShouldUseRemoteCommand、现用模块管理、目录 DTO、设置和路径接口：
+已部署 Aurora/Janus/Mercury 元数据及消费合同存在引用。它们是通用集成面，不是宿主网关实现。
+
+Attach 失败不发布该模块任何命令，冷启动保留失败诊断并继续其他模块；热安装失败回滚。
+相同包只有 Attached=true 才视为健康幂等成功；失败或未装载实例可以重装修复。
+进度日志按本次命名/位置敏感值过滤；InvokeAsync 仍返回内部原始 Data，不回显、不入历史，其进度也须脱敏。
+
 ## 3. 命令契约
 
-模块命令恒为三段式小写名称：`<模块域>.<类>.<方法>`。模块域去掉 `History` 前缀，例如
+模块业务命令采用三段式小写名称：`<模块域>.<类>.<方法>`。模块域去掉 `History` 前缀，例如
 `HistoryPortunus` 使用 `portunus.*`，`HistoryJanus` 使用 `janus.*`。
+
+两段名称作为域内无类直接方法仍受支持；显式 CommandClass 优先。
 
 每条命令至少声明 `Name`、`CommandClass`、`Summary` 和 `Handler`；有输入时声明 `Parameters` 与 `Example`。
 `Readonly` 表达是否写入，`Level` 表达是否需要交互确认，`HiddenReason` 表达不应出现在通用命令目录的原因。
@@ -102,7 +132,9 @@ HistoryVulcan 源码工程；需要联调时显式提供项目自己的开关，
 ## 4. 模块运行包
 
 运行包只安装到 `%AppData%\HistoryVulcan\Modules\<模块名>`。安装会先校验 manifest 和完整 SHA256 清单，
-在运行区外暂存，卸载同名模块，原子替换，再只把这一包装回当前快照；失败时恢复原包。
+在运行区外同卷暂存，卸载同名模块，备份后替换，再只把这一包装回当前快照。
+新包加载前从备份复制 data；提交前旧包和原始数据保留。接入失败恢复原包与原始数据；
+回滚失败保留备份并返回恢复路径。提交后才清理旧包，清理失败只报告残留路径，不回滚已提交安装。
 清单覆盖模块包的不可变载荷；`history/` 是归档目录，`data/` 是模块运行态目录，两者不计入 SHA256SUMS。
 manifest 的可选字段 `dependsOn`（字符串数组，模块名）声明接入次序，见 2.1。
 模块的 `artifact`、`docs` 和 `deps` 不得放在 `data/` 下，升级时宿主保留已有 `data/` 内容。

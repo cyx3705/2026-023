@@ -233,11 +233,16 @@ public sealed class CommandBus
             return CommandResult.Fail($"{bindError}\n{FormatUsage(descriptor)}");
 
         var taxonomy = Taxonomy(request);
+        var progressSecrets = SensitiveValues(request.Parsed!)
+            .Where(value => !string.IsNullOrEmpty(value))
+            .Distinct(StringComparer.Ordinal)
+            .OrderByDescending(value => value.Length)
+            .ToArray();
         var progress = new Progress<string>(line =>
             _log.Log(
                 ShellLogLevel.Info,
                 $"{ProgressCategory}:{taxonomy.Domain}:{taxonomy.CommandClass}",
-                line));
+                Mask(line, progressSecrets)));
         var context = new CommandContext(descriptor, values, source, progress, cancellation);
 
         // 拦截:二次确认(§5.2;T-08/R-06 需要询问的操作在「手输指令路径」的统一闸口)

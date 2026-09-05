@@ -1,13 +1,10 @@
-﻿using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text.Json;
 using System.Threading;
-using System.Xml.Linq;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Core.Modules;
 using HistoryVulcan.Core.Storage;
 
 namespace HistoryVulcan.Services.Modules;
@@ -19,10 +16,10 @@ public sealed record ModuleMeta(
 {
     /// <summary>当前加载快照中的唯一模块实例标识；重载后变化。</summary>
     public string InstanceId { get; init; } = "";
-    /// <summary>Absolute Z package path when the module came from manifest discovery.</summary>
+    /// <summary>Absolute runtime package path.</summary>
     public string? SourcePath { get; init; }
 
-    /// <summary>Absolute manifest path when the module came from manifest discovery.</summary>
+    /// <summary>Absolute runtime manifest path.</summary>
     public string? ManifestPath { get; init; }
 
     /// <summary>
@@ -43,24 +40,15 @@ public sealed record ModuleMeta(
     public bool Attached => AttachFailures.Count == 0;
 }
 
-/// <summary>
-/// 模块宿主(MD-01~07):进程内移植自 b-Code-MyAPI-Lite 的 ModuleHost/Invoker 机制(D3)。
-/// 监听 Modules 目录,把含 BaseVariable.ModuleInfoBase 子类(鸭子类型,MD-02)的 DLL
-/// 的业务方法注册为总线指令「模块名.方法名」;XML 注释成为帮助文本(MD-03)。
-/// DLL 从内存流加载不锁文件,覆盖/新增/删除触发整体热重载(800ms 防抖,MD-01);
-/// 与内置指令重名的方法拒绝注册并告警(MD-07);模块异常由总线兜底(MD-06)。
-/// 与 Lite 的差异:端点表 → CommandRegistry 注册/注销;Console → IShellLog;
-/// 注册表变更经 WPF Dispatcher 序列化到 UI 线程。
-/// </summary>
+/// <summary>Loads validated runtime packages and owns module commands, instances and reloads.</summary>
 public sealed partial class ModuleHost : IDisposable
 {
     private readonly IShellLog _log;
     private readonly object _reloadLock = new();
     private bool _disposed;
-    private string _dir;
-    private IModuleDiscoverySource? _discoverySource;
+    private readonly string _dir;
+    private readonly IModuleDiscoverySource _discoverySource;
     private IReadOnlyList<ModuleDiscoveryDiagnostic> _discoveryDiagnostics = [];
-    private IReadOnlyList<ModuleDiscoveryEntry>? _confirmedSources;
     private CommandRegistry? _registry;
     private CommandBus? _bus;
     private Snapshot _current = Snapshot.Empty;
@@ -69,16 +57,7 @@ public sealed partial class ModuleHost : IDisposable
     private bool _xamlResolverInstalled;
     private readonly ModuleDirectoryWatcher _watcher;
 
-    /// <summary>按模块目录与日志建立宿主；装载与命令注册由 Attach/Start 触发。</summary>
-    public ModuleHost(string modulesDir, IShellLog log)
-    {
-        _dir = modulesDir;
-        _log = log;
-        _watcher = new ModuleDirectoryWatcher(log, Reload);
-        EnsureXamlResolver();
-    }
-
-    /// <summary>Creates a module host backed by explicit Z-level manifest discovery.</summary>
+    /// <summary>Creates a module host backed by explicit runtime package discovery.</summary>
     public ModuleHost(IModuleDiscoverySource discoverySource, IShellLog log)
     {
         ArgumentNullException.ThrowIfNull(discoverySource);
@@ -89,17 +68,8 @@ public sealed partial class ModuleHost : IDisposable
         EnsureXamlResolver();
     }
 
-    /// <summary>
-    /// UI 线程编组通道(0.4.4)。注册表是 UI 线程消费的普通字典,热重载换血必须编组过去。
-    /// 原实现直接取 <c>System.Windows.Application.Current.Dispatcher</c>,使本类带上 WPF 依赖、
-    /// 无法留在 net8.0 的 Services 层(违反 §14.2「只有 Shell 认识 WPF」)。
-    /// 现与 <c>CommandBus.UiContext</c> 同一惯例,由装配点在 UI 线程赋值;
-    /// 为 null 视为应用退出中,与原来 Dispatcher 为 null 的处置一致。
-    /// </summary>
+    /// <summary>Marshals registry mutations to the consumer thread; null executes inline.</summary>
     public SynchronizationContext? UiContext { get; set; }
-
-    /// <summary>是否把模块方法注册到本进程指令表。无窗前端可关闭。</summary>
-    public bool EnableCommands { get; set; } = true;
 
     /// <summary>Whether modules marked as UI modules may be initialized.</summary>
     public bool EnableUiModules { get; set; } = true;
@@ -107,16 +77,11 @@ public sealed partial class ModuleHost : IDisposable
     /// <summary>Whether this host owns filesystem change detection for the module directory.</summary>
     public bool EnableFileWatching { get; set; } = true;
 
-    /// <summary>
-    /// When true, discovery-backed hosts remain empty until a backend-confirmed manifest set is supplied.
-    /// </summary>
-    public bool RequireConfirmedSources { get; set; }
-
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public string ModulesDirectory => _dir;
 
-    /// <summary>Configured Z-level discovery roots; empty for the legacy directory host.</summary>
-    public IReadOnlyList<string> DiscoveryRoots => _discoverySource?.Roots ?? [];
+    /// <summary>Configured runtime package roots.</summary>
+    public IReadOnlyList<string> DiscoveryRoots => _discoverySource.Roots;
 
     /// <summary>Diagnostics from the most recent discovery scan.</summary>
     public IReadOnlyList<ModuleDiscoveryDiagnostic> DiscoveryDiagnostics => _discoveryDiagnostics;
@@ -130,7 +95,7 @@ public sealed partial class ModuleHost : IDisposable
     /// <summary>每次整体重载完成后触发(在重载线程上);MD-08 面板同步等旁路逻辑挂此处。</summary>
     public event Action? ReloadCompleted;
 
-    /// <summary>接入指令注册表(ShellWindow 创建后调用,再 Start)。</summary>
+    /// <summary>接入指令注册表，再调用 Start；仅此重载不注入模块上下文。</summary>
     public void Attach(CommandRegistry registry)
     {
         _registry = registry;
@@ -154,78 +119,11 @@ public sealed partial class ModuleHost : IDisposable
         _registry = registry;
         _bus = bus;
 
-        // settings 与 dataDirectory 不再落到字段上。
-        //
-        // 5.0 把 Settings / DataDirectory 移出 IModuleContext 之后，这两样在 ModuleHost
-        // 内部就没有任何消费方了；此前它们仍被存进字段，再用 `_ = _settings;` 两条丢弃
-        // 语句压住「已赋值从未使用」的警告。那不是预留，是把死状态伪装成活的——
-        // 冻结会把这个空位永久固化，而下一个读者无从判断它是待接线还是已废弃。
-        //
-        // 形参保留是刻意的：装配点的调用形状不因宿主内部瘦身而变动，
-        // 而参数名本身说明了宿主曾经、也可能再次需要它们。
+        // Preserve the existing composition signature; module contexts expose only the bus and registration.
     }
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public void Start()
-    {
-        if (_discoverySource == null)
-            Directory.CreateDirectory(_dir);
-        Reload();
-    }
-
-    /// <summary>module.dir path=:切换模块目录并整体重载。</summary>
-    public void ChangeDirectory(string newDir)
-    {
-        _watcher.Stop();
-        _dir = newDir;
-        Directory.CreateDirectory(_dir);
-        Reload();
-        _log.Info("module", $"模块目录已切换: {_dir}");
-    }
-
-    /// <summary>Replaces the configured Z discovery roots and immediately reloads modules.</summary>
-    public void ChangeDiscoveryRoots(IEnumerable<string> roots)
-    {
-        _watcher.Stop();
-        _confirmedSources = null;
-        _discoverySource = new ZModuleDiscoverySource(roots);
-        Reload();
-        _log.Info("module", $"模块发现根已切换: {string.Join(";", _discoverySource.Roots)}");
-    }
-
-    /// <summary>
-    /// Reloads UI modules from a backend-confirmed manifest set without performing an independent scan.
-    /// </summary>
-    public void ReloadConfirmedSources(IEnumerable<string> manifestPaths)
-    {
-        ArgumentNullException.ThrowIfNull(manifestPaths);
-        var manifests = manifestPaths
-            .Where(path => !string.IsNullOrWhiteSpace(path))
-            .Select(Path.GetFullPath)
-            .ToList();
-        if (manifests.Count == 0)
-        {
-            _confirmedSources = [];
-            _discoveryDiagnostics = [];
-            Reload();
-            return;
-        }
-        var entries = new List<ModuleDiscoveryEntry>();
-        var diagnostics = new List<ModuleDiscoveryDiagnostic>();
-        foreach (var manifest in manifests)
-        {
-            var package = Path.GetDirectoryName(manifest)!;
-            if (RuntimeModuleDiscoverySource.TryReadPackage(
-                    package, out var entry, out var code, out var error)
-                && entry.ManifestPath.Equals(manifest, StringComparison.OrdinalIgnoreCase))
-                entries.Add(entry);
-            else
-                diagnostics.Add(new ModuleDiscoveryDiagnostic(manifest, code, error));
-        }
-        _confirmedSources = entries;
-        _discoveryDiagnostics = diagnostics;
-        Reload();
-    }
+    public void Start() => Reload();
 
     /// <summary>
     /// 从当前快照卸下一个已装载模块（命令、界面、可卸载程序集），不扫描磁盘、不触发整体重载。
@@ -331,49 +229,7 @@ public sealed partial class ModuleHost : IDisposable
     }
 
     private List<string> ListFileWatchTargets()
-    {
-        if (_discoverySource == null)
-            return string.IsNullOrWhiteSpace(_dir) ? [] : [_dir];
-
-        if (_discoverySource is RuntimeModuleDiscoverySource)
-            return _discoverySource.Roots.Where(Directory.Exists).ToList();
-
-        var targets = new List<string>();
-        foreach (var root in _discoverySource.Roots)
-        {
-            if (!Directory.Exists(root))
-                continue;
-
-            string[] projects;
-            try
-            {
-                projects = Directory.GetDirectories(root, ZModuleDiscoverySource.ProjectDirectoryPattern);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                _log.Warn("module", $"模块发现根不可读,跳过监听: {root}: {ex.Message}");
-                continue;
-            }
-
-            foreach (var project in projects)
-            {
-                try
-                {
-                    foreach (var package in Directory.GetDirectories(project, "z-*"))
-                    {
-                        if (File.Exists(Path.Combine(package, ZModuleDiscoverySource.ManifestFileName)))
-                            targets.Add(package);
-                    }
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    _log.Warn("module", $"项目目录不可读,跳过监听: {project}: {ex.Message}");
-                }
-            }
-        }
-
-        return targets;
-    }
+        => _discoverySource.Roots.Where(Directory.Exists).ToList();
 
     /// <summary>
     /// 拆掉旧快照的登记，给新快照让位。
@@ -405,31 +261,13 @@ public sealed partial class ModuleHost : IDisposable
 
         var registered = snap.RegisteredNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        // UI-only 前端(EnableCommands=false)不装反射业务指令，但仍须把
-        // RegisterCommands 暂存的 RequiresUiThread 页面状态命令写入本机总线；
-        // 否则 HistoryMinerva.convert 一类点击会被 RemoteExecutor 转到服务侧静默失败。
         var pending = snap.PendingCommands
             .Where(item =>
                 item.ModuleName.Equals(owner, StringComparison.OrdinalIgnoreCase)
-                && !registered.Contains(item.Descriptor.Name)
-                && (EnableCommands || item.Descriptor.RequiresUiThread))
+                && !registered.Contains(item.Descriptor.Name))
             .ToList();
         if (pending.Count == 0)
             return;
-
-        // ShellServiceClient 会把前端模块命令投影成 frontend:* 代理。代理不是宿主保留命令，
-        // 重载时必须让新模块实现接管同名命令，否则 vulcan.module.list 与 vulcan.command.list 会数量不一致。
-        var pendingNames = pending
-            .Select(item => item.Descriptor.Name)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (var command in _registry.All()
-                     .Where(command =>
-                         _registry.GetSource(command.Name)
-                             .StartsWith("frontend:", StringComparison.OrdinalIgnoreCase)
-                         && pendingNames.Contains(command.Name)))
-        {
-            _registry.Unregister(command.Name);
-        }
 
         foreach (var (descriptor, moduleName) in pending)
         {
@@ -455,16 +293,6 @@ public sealed partial class ModuleHost : IDisposable
         }
     }
 
-
-
-
-
-    // 5.2 删掉了 FindModuleDomainConflicts。它自 3.2.1 起就写着「装载路径不再调用本方法」，
-    // 之后四年没有任何调用方——宿主、测试、七个已部署模块都没有——而它是
-    // CommandRegistry.DomainsOf 的唯一消费方，两者一并退役。
-    // 模块的实际域由 module owner 决定（见 CommandRegistry.ResolveDomain），
-    // 按命令名前缀猜域这件事本身已经不成立了。
-
     // ---------------------------------------------------------------- 快照构建
 
     private Snapshot Build()
@@ -474,44 +302,12 @@ public sealed partial class ModuleHost : IDisposable
         try
         {
             PublishXamlContexts();
-            if (_discoverySource != null)
-            {
-                if (RequireConfirmedSources && _confirmedSources == null)
-                    return snap;
-                var discovery = _confirmedSources == null
-                    ? _discoverySource.Discover()
-                    : new ModuleDiscoverySnapshot(
-                        _discoverySource.Roots,
-                        _confirmedSources,
-                        _discoveryDiagnostics);
-                _discoveryDiagnostics = discovery.Diagnostics;
-                foreach (var diagnostic in discovery.Diagnostics)
-                    _log.Warn("module.discovery", $"[{diagnostic.Code}] {diagnostic.Path}: {diagnostic.Message}");
-                foreach (var module in OrderForStartup(discovery.Modules))
-                    LoadDiscoveredModule(snap, module);
-                return snap;
-            }
-
-            if (!Directory.Exists(_dir))
-                return snap;
-
-            // 根目录平铺 DLL(V2-M3 既有行为):共享一个 ALC
-            LoadGroup(snap, _dir, slot: "", ReadUiFlag(_dir));
-
-            // 模块槽(V2.2 MH-01):每个一级子目录一个独立可回收 ALC,
-            // 槽内依赖只在槽内解析(MH-02),槽间同名依赖不同版互不冲突
-            foreach (var slotDir in Directory.GetDirectories(_dir))
-            {
-                var slot = Path.GetFileName(slotDir);
-                if (IsModuleArtifactDirectory(slot))
-                {
-                    _log.Log(ShellLogLevel.Debug, "module", $"忽略模块目录产物: {slot}");
-                    continue;
-                }
-
-                LoadGroup(snap, slotDir, slot, ReadUiFlag(slotDir));
-            }
-
+            var discovery = _discoverySource.Discover();
+            _discoveryDiagnostics = discovery.Diagnostics;
+            foreach (var diagnostic in discovery.Diagnostics)
+                _log.Warn("module.discovery", $"[{diagnostic.Code}] {diagnostic.Path}: {diagnostic.Message}");
+            foreach (var module in OrderForStartup(discovery.Modules))
+                LoadDiscoveredModule(snap, module);
             return snap;
         }
         catch (Exception ex)
@@ -594,50 +390,13 @@ public sealed partial class ModuleHost : IDisposable
         }
     }
 
-    /// <summary>
-    /// 模块目录同时承载热重载和发布工具的暂存内容。回滚/备份目录仍然包含
-    /// DLL 和 manifest，但不是活动模块，不能被扫描成第二个同名模块。
-    /// </summary>
-    private static bool IsModuleArtifactDirectory(string name)
-        => RuntimeModuleDiscoverySource.IsTransientPackageDirectory(name);
-
-    private void LoadGroup(Snapshot snap, string dir, string slot, bool uiEnabled)
-    {
-        if (uiEnabled && !EnableUiModules)
-        {
-            _log.Info("module.discovery", $"离线组合跳过 UI 模块目录: {dir}");
-            return;
-        }
-
-        var dlls = Directory.GetFiles(dir, "*.dll");
-        if (dlls.Length == 0)
-            return;
-
-        var alc = new ModuleLoadContext(dir);
-        TrackContext(snap, alc);
-
-        foreach (var dll in dlls)
-        {
-            try
-            {
-                var asm = LoadAssembly(alc, dll);
-                ScanAssembly(snap, asm, dll, slot, uiEnabled, null, alc);
-            }
-            catch (Exception ex)
-            {
-                // MD-06:坏 DLL 只自身下线并告警,不影响宿主与其他模块
-                _log.Warn("module", $"跳过 {(slot.Length > 0 ? slot + "/" : "")}{Path.GetFileName(dll)}: {ex.Message}");
-            }
-        }
-    }
-
     private void ScanAssembly(
         Snapshot snap,
         Assembly asm,
         string dllPath,
         string slot,
         bool uiEnabled,
-        ModuleDiscoveryEntry? discovered,
+        ModuleDiscoveryEntry discovered,
         AssemblyLoadContext alc)
     {
         var fileName = Path.GetFileName(dllPath);
@@ -648,41 +407,36 @@ public sealed partial class ModuleHost : IDisposable
         if (infoTypes.Count == 0)
             return;
 
-        if (discovered != null)
+        var identityMatches = infoTypes.Any(infoType =>
         {
-            var identityMatches = infoTypes.Any(infoType =>
+            try
             {
-                try
-                {
-                    var info = Activator.CreateInstance(infoType)!;
-                    return string.Equals(
-                               GetProp(info, "ModuleName") as string,
-                               discovered.Name,
-                               StringComparison.OrdinalIgnoreCase)
-                           && string.Equals(
-                               GetProp(info, "Version") as string,
-                               discovered.Version,
-                               StringComparison.OrdinalIgnoreCase);
-                }
-                catch
-                {
-                    return false;
-                }
-            });
-            if (!identityMatches)
-            {
-                var message = $"manifest 身份 {discovered.Name} {discovered.Version} 与程序集声明不一致。";
-                _discoveryDiagnostics =
-                [
-                    .. _discoveryDiagnostics,
-                    new ModuleDiscoveryDiagnostic(discovered.ManifestPath, "identity-mismatch", message),
-                ];
-                _log.Warn("module.discovery", message);
-                return;
+                var info = Activator.CreateInstance(infoType)!;
+                return string.Equals(
+                           GetProp(info, "ModuleName") as string,
+                           discovered.Name,
+                           StringComparison.OrdinalIgnoreCase)
+                       && string.Equals(
+                           GetProp(info, "Version") as string,
+                           discovered.Version,
+                           StringComparison.OrdinalIgnoreCase);
             }
+            catch
+            {
+                return false;
+            }
+        });
+        if (!identityMatches)
+        {
+            var message = $"manifest 身份 {discovered.Name} {discovered.Version} 与程序集声明不一致。";
+            _discoveryDiagnostics =
+            [
+                .. _discoveryDiagnostics,
+                new ModuleDiscoveryDiagnostic(discovered.ManifestPath, "identity-mismatch", message),
+            ];
+            _log.Warn("module.discovery", message);
+            return;
         }
-
-        var discoveredOwner = discovered?.Name;
 
         var docs = XmlDocs.TryLoad(dllPath, _log);
         var contextAttached = false;
@@ -706,31 +460,26 @@ public sealed partial class ModuleHost : IDisposable
             var open = GetProp(info, "Open") is true;
             var declaredName = GetProp(info, "ModuleName") as string ?? asm.GetName().Name ?? fileName;
             var declaredVersion = GetProp(info, "Version") as string ?? "";
-            if (discovered != null
-                && (!declaredName.Equals(discovered.Name, StringComparison.OrdinalIgnoreCase)
-                    || !declaredVersion.Equals(discovered.Version, StringComparison.OrdinalIgnoreCase)))
+            if (!declaredName.Equals(discovered.Name, StringComparison.OrdinalIgnoreCase)
+                    || !declaredVersion.Equals(discovered.Version, StringComparison.OrdinalIgnoreCase))
             {
                 _log.Warn("module",
                     $"跳过 {fileName}：程序集声明 {declaredName} {declaredVersion}，"
                     + $"与 manifest {discovered.Name} {discovered.Version} 不一致");
                 continue;
             }
-            var moduleName = discovered?.Name ?? declaredName;
+            var moduleName = discovered.Name;
             var commandPrefix = GetProp(info, "CommandPrefix") as string ?? moduleName;
 
             snap.Metas.Add((moduleName,
                 GetProp(info, "Description") as string ?? "",
                 GetProp(info, "Author") as string ?? "",
-                discovered?.Version ?? declaredVersion,
+                discovered.Version,
                 open, fileName, slot, uiEnabled,
-                discovered?.PackagePath, discovered?.ManifestPath));
+                discovered.PackagePath, discovered.ManifestPath));
             snap.ContextsByOwner[moduleName] = alc;
 
-            if (!EnableCommands)
-            {
-                // UI-only 前端仍保留模块元信息，但不重复注册服务端业务指令。
-            }
-            else if (open)
+            if (open)
             {
                 foreach (var t in types.Where(t =>
                              t.IsClass && t.IsPublic && !t.IsAbstract
@@ -764,7 +513,7 @@ public sealed partial class ModuleHost : IDisposable
     /// 读 manifest 的 <c>pinned</c> 标志：声明本模块**不可热重载**。
     ///
     /// 不走 <see cref="ModuleDiscoveryEntry"/>：那是已冻结的公开记录，为一个标志改它的
-    /// 构造函数是破坏性变更。与 <see cref="ReadUiFlag"/> 同一模式——宿主自己读文件。
+    /// 构造函数是破坏性变更；宿主直接读取包声明。
     /// </summary>
     private static bool ReadPinnedFlag(string manifestPath)
     {
@@ -782,19 +531,4 @@ public sealed partial class ModuleHost : IDisposable
         }
     }
 
-    private static bool ReadUiFlag(string directory)
-    {
-        var path = Path.Combine(directory, "module.manifest.json");
-        if (!File.Exists(path))
-            return false;
-        try
-        {
-            using var doc = JsonDocument.Parse(File.ReadAllText(path));
-            return doc.RootElement.TryGetProperty("ui", out var value) && value.ValueKind == JsonValueKind.True;
-        }
-        catch (Exception)
-        {
-            return false;
-        }
-    }
 }

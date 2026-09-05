@@ -68,44 +68,32 @@ public static class OfflineModuleInstall
             return new Result(0, $"{package.Name} {package.Version} 已安装，内容一致，无需替换。");
         }
 
-        var transactionRoot = RuntimeModulePackageStore.CreateTransactionRoot(runtimeRoot);
-        var staging = Path.Combine(transactionRoot, "staging");
-        var backup = Path.Combine(transactionRoot, "backup");
+        var transaction = new ModulePackageTransaction(runtimeRoot, target);
         try
         {
             // 先在事务目录里拼出完整新包并复核，再动运行区：
             // 拷到一半失败也不会让运行区停在半个包上。
-            RuntimeModulePackageStore.CopyPackagePayload(source, staging);
+            RuntimeModulePackageStore.CopyPackagePayload(source, transaction.Staging);
             if (!RuntimeModuleDiscoverySource.TryReadPackage(
-                    staging, out var staged, out _, out validationError))
+                    transaction.Staging, out var staged, out _, out validationError))
             {
-                return new Result(2, $"暂存包复核失败: {validationError}");
+                return new Result(2, $"暂存包复核失败: {validationError}{transaction.Rollback().Message}");
             }
 
             if (!staged.Name.Equals(package.Name, StringComparison.OrdinalIgnoreCase)
                 || !staged.Version.Equals(package.Version, StringComparison.OrdinalIgnoreCase))
             {
-                return new Result(2, "暂存包身份在复制过程中发生变化。");
+                return new Result(2, "暂存包身份在复制过程中发生变化。" + transaction.Rollback().Message);
             }
 
-            if (Directory.Exists(target))
-                Directory.Move(target, backup);
-            Directory.Move(staging, target);
-            RuntimeModulePackageStore.PreserveMutableData(backup, target);
-
-            if (Directory.Exists(backup))
-                Directory.Delete(backup, recursive: true);
-            return new Result(0, $"已安装 {package.Name} {package.Version}: {target}");
+            transaction.BackupTarget();
+            transaction.InstallStaged();
+            return new Result(0, $"已安装 {package.Name} {package.Version}: {target}{transaction.Commit()}");
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // 目标目录被占用是这条路径上最常见的失败：宿主正在运行并且已经装载了这个模块。
-            var rollback = RuntimeModulePackageStore.RestorePackage(target, backup);
-            return new Result(1, $"安装失败: {ex.Message}{rollback}");
-        }
-        finally
-        {
-            RuntimeModulePackageStore.DeleteTransactionRoot(transactionRoot);
+            return new Result(1, $"安装失败: {ex.Message}{transaction.Rollback().Message}");
         }
     }
 }

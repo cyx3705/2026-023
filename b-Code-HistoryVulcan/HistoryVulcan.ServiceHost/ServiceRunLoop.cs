@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 namespace HistoryVulcan.ServiceHost;
 
 /// <summary>
-/// 服务进程的单线程消息循环（4.0.0，REQ-A4）。
+/// 服务进程的单线程消息循环。
 ///
 /// 取代此前的 WPF <c>Application</c> + <c>Dispatcher</c>。服务进程从来没有窗口，
 /// 用 WPF 只是为了拿一个"把活儿排到主线程"的队列——代价是整个工程被迫 <c>UseWPF</c>，

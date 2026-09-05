@@ -37,6 +37,7 @@ internal static class ProjectContract
         CheckPaths(projectRoot, manifest, errors);
         CheckDocuments(projectRoot, manifest, errors);
         CheckMarkdownLinks(projectRoot, manifest, contract, errors);
+        CheckRequirements(projectRoot, manifest, contract, errors);
         CheckInstantiation(projectRoot, manifest, instantiation, errors);
         if (kind.Equals("host", StringComparison.OrdinalIgnoreCase))
             CheckHost(projectRoot, manifest, registryPath, errors);
@@ -228,6 +229,53 @@ internal static class ProjectContract
                     errors.Add($"失效的 Markdown 链接：{Relative(root, file)} -> {target}");
             }
         }
+    }
+
+    internal static void CheckRequirements(string root, JsonElement manifest, JsonElement contract, List<string> errors)
+    {
+        var testRoot = ReadString(contract, "requirementTestRoot");
+        if (string.IsNullOrWhiteSpace(testRoot))
+            return;
+        var tests = ResolveInside(root, testRoot, "contract.requirementTestRoot", errors);
+        if (tests == null || !manifest.TryGetProperty("documents", out var documents))
+            return;
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        var heading = new Regex(@"(?m)^#{2,6}\s+(?<id>REQ-[A-Z0-9-]+)\b[^\r\n]*");
+        var acceptance = new Regex(@"验收：\s*`(?<type>[A-Za-z0-9_]+)\.(?<method>[A-Za-z0-9_]+)`");
+        foreach (var document in documents.EnumerateObject())
+        {
+            var relative = document.Value.GetString() ?? "";
+            if (!relative.Replace('\\', '/').StartsWith("b-Office/current/", StringComparison.Ordinal))
+                continue;
+            var path = ResolveInside(root, relative, "现行需求文档", errors);
+            if (path == null || !File.Exists(path))
+                continue;
+            var content = File.ReadAllText(path);
+            var headings = heading.Matches(content);
+            for (var i = 0; i < headings.Count; i++)
+            {
+                var item = headings[i];
+                var id = item.Groups["id"].Value;
+                if (!ids.Add(id))
+                    errors.Add($"重复需求编号：{id} ({relative})");
+                var end = i + 1 < headings.Count ? headings[i + 1].Index : content.Length;
+                var references = acceptance.Matches(content[item.Index..end]);
+                if (references.Count == 0)
+                    errors.Add($"需求缺少本仓验收测试：{id}");
+                foreach (Match reference in references)
+                {
+                    var type = reference.Groups["type"].Value;
+                    var method = reference.Groups["method"].Value;
+                    var source = Path.Combine(tests, type + ".cs");
+                    var signature = @"\[(?:Fact|Theory)(?:\([^\]]*\))?\][\s\S]*?public\s+(?:async\s+)?(?:void|Task)\s+"
+                        + Regex.Escape(method) + @"\s*\(";
+                    if (!File.Exists(source) || !Regex.IsMatch(File.ReadAllText(source), signature))
+                        errors.Add($"验收测试不存在：{id} -> {type}.{method}");
+                }
+            }
+        }
+        if (ids.Count == 0)
+            errors.Add("未找到现行需求编号。");
     }
 
     private static void CheckInstantiation(string root, JsonElement manifest, bool instantiation, List<string> errors)

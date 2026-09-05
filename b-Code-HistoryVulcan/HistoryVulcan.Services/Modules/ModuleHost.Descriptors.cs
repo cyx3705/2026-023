@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -456,14 +456,7 @@ public sealed partial class ModuleHost
         private readonly string _dir;
 
         public ModuleLoadContext(string dir)
-            : this(dir, collectible: true)
-        {
-        }
-
-        public ModuleLoadContext(string dir, bool collectible)
-            : base(
-                (collectible ? "Modules-" : "ModulesPinned-") + DateTime.Now.ToString("HHmmssfff"),
-                isCollectible: collectible)
+            : base("Modules-" + DateTime.Now.ToString("HHmmssfff"), isCollectible: true)
             => _dir = dir;
 
         protected override Assembly? Load(AssemblyName name)

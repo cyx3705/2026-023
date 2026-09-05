@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Text.Json;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
@@ -266,9 +266,13 @@ public sealed class RuntimeModulePackageTests
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
             Assert.True(host.InstallPackage(good).Success);
 
+            var data = Path.Combine(runtime, "contextfixture", "data", "state.txt");
+            Directory.CreateDirectory(Path.GetDirectoryName(data)!);
+            File.WriteAllText(data, "keep original state");
             var failed = host.InstallPackage(broken);
             Assert.False(failed.Success);
             Assert.Contains("旧包已恢复", failed.Message, StringComparison.Ordinal);
+            Assert.Equal("keep original state", File.ReadAllText(data));
             Assert.Equal("v1.0.0", Assert.Single(host.Modules).Version);
             Assert.Equal(1, host.CurrentContextCount);
             Assert.True(registry.TryGet("contextfixture.Probe", out _));
@@ -306,6 +310,8 @@ public sealed class RuntimeModulePackageTests
             var result = host.InstallPackage(second);
             Assert.False(result.Success);
             Assert.True(File.Exists(manifest));
+            Assert.True(RuntimeModuleDiscoverySource.TryReadPackage(
+                Path.GetDirectoryName(manifest)!, out _, out _, out var error), error);
         }
         finally
         {
@@ -477,6 +483,79 @@ public sealed class RuntimeModulePackageTests
         finally
         {
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, previous);
+        }
+    }
+
+    [Theory]
+    [InlineData("before")]
+    [InlineData("after")]
+    public void FailedStartupPublishesNoCommandsAndIdenticalInstallCanRetry(string failure)
+    {
+        using var temp = new TemporaryDirectory();
+        var runtime = Path.Combine(temp.Path, "Modules");
+        var package = CreatePackage(runtime, "contextfixture", "contextfixture", "v1.0.0");
+        var registry = new CommandRegistry();
+        var log = new TestLog();
+        using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log) { EnableFileWatching = false };
+        var previous = Environment.GetEnvironmentVariable(ContextAwareFixture.FailureVariable);
+        try
+        {
+            Environment.SetEnvironmentVariable(ContextAwareFixture.FailureVariable, failure);
+            host.Attach(registry, new CommandBus(registry, log), new MemorySettings(), temp.Path);
+            host.Start();
+            Assert.False(Assert.Single(host.Modules).Attached);
+            Assert.Empty(registry.All());
+            Environment.SetEnvironmentVariable(ContextAwareFixture.FailureVariable, null);
+            var retry = host.InstallPackage(package);
+            Assert.True(retry.Success, retry.Message);
+            Assert.True(Assert.Single(host.Modules).Attached);
+            Assert.Equal(2, registry.All().Count);
+        }
+        finally { Environment.SetEnvironmentVariable(ContextAwareFixture.FailureVariable, previous); }
+    }
+
+    [Fact]
+    public void FailedHotAttachRollsBackWithoutPublishingPartialCommands()
+    {
+        using var temp = new TemporaryDirectory();
+        var runtime = Path.Combine(temp.Path, "Modules");
+        var first = CreatePackage(temp.Path, "first", "contextfixture", "v1.0.0");
+        var second = CreatePackage(temp.Path, "second", "contextfixture", "v1.0.0");
+        File.WriteAllText(Path.Combine(second, "docs", "README.md"), "changed package");
+        WriteChecksums(second);
+        var registry = new CommandRegistry();
+        var log = new TestLog();
+        using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log) { EnableFileWatching = false };
+        var previous = Environment.GetEnvironmentVariable(ContextAwareFixture.FailureVariable);
+        var previousData = Environment.GetEnvironmentVariable(ContextAwareFixture.DataVariable);
+        var data = Path.Combine(runtime, "contextfixture", "data");
+        try
+        {
+            Environment.SetEnvironmentVariable(ContextAwareFixture.DataVariable, data);
+            host.Attach(registry, new CommandBus(registry, log), new MemorySettings(), temp.Path);
+            host.Start();
+            Assert.True(host.InstallPackage(first).Success);
+            Directory.CreateDirectory(data);
+            File.WriteAllText(Path.Combine(data, "state.txt"), "original data");
+            Environment.SetEnvironmentVariable(ContextAwareFixture.FailureVariable, "after-once");
+            var failed = host.InstallPackage(second);
+            Assert.False(failed.Success);
+            Assert.Contains("接入失败", failed.Message, StringComparison.Ordinal);
+            Assert.Equal("original data", File.ReadAllText(Path.Combine(data, "state.txt")));
+            Assert.True(RuntimeModuleDiscoverySource.TryReadPackage(
+                Path.Combine(runtime, "contextfixture"), out _, out _, out var validationError), validationError);
+            Assert.True(RuntimeModulePackageStore.ChecksumsEqual(first, Path.Combine(runtime, "contextfixture")));
+            Assert.Contains("旧包已恢复", failed.Message, StringComparison.Ordinal);
+            var module = Assert.Single(host.Modules);
+            Assert.Equal("v1.0.0", module.Version);
+            Assert.True(module.Attached);
+            Assert.Equal(2, registry.All().Count);
+        }
+        finally
+        {
+            host.Dispose();
+            Environment.SetEnvironmentVariable(ContextAwareFixture.FailureVariable, previous);
+            Environment.SetEnvironmentVariable(ContextAwareFixture.DataVariable, previousData);
         }
     }
 

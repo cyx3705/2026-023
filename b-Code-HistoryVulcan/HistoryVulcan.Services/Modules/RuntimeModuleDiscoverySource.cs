@@ -51,17 +51,13 @@ public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
 
         foreach (var package in packages)
         {
-            // 发布工具会把旧包留在运行区里叫 HistoryAurora-rollback-时间戳。
-            // 那些目录仍有一份合法 manifest，不跳过的话会与活动包撞名，
-            // 而撞名策略是「同名候选全部跳过」——界面模块会从此装不上，
-            // vulcan.app.show 只回「界面未装载」。ModuleHost 装载槽位早就
-            // 认这些目录，扫描漏了同一条规则。
+            // Recovery residues must not compete with the active package's identity.
             if (IsTransientPackageDirectory(Path.GetFileName(package)))
                 continue;
 
             if (TryReadPackage(package, out var entry, out var code, out var error))
                 candidates.Add(entry);
-            else if (File.Exists(Path.Combine(package, ZModuleDiscoverySource.ManifestFileName)))
+            else if (File.Exists(Path.Combine(package, ModuleManifestReader.ManifestFileName)))
                 diagnostics.Add(new ModuleDiscoveryDiagnostic(package, code, error));
         }
 
@@ -109,7 +105,7 @@ public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
         out string code,
         out string error)
     {
-        if (!ZModuleDiscoverySource.TryReadPackage(package, out entry, out error))
+        if (!ModuleManifestReader.TryReadPackage(package, out entry, out error))
         {
             code = "invalid-manifest";
             return false;

@@ -1,4 +1,4 @@
-﻿using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Modules;
 using HistoryVulcan.Core.Storage;
@@ -22,7 +22,7 @@ namespace HistoryVulcan.Tests
             var registry = new CommandRegistry();
             var log = new TestLog();
             var bus = new CommandBus(registry, log);
-            using var host = new ModuleHost(modulesDirectory, log)
+            using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
@@ -57,14 +57,13 @@ namespace HistoryVulcan.Tests
             Directory.CreateDirectory(slotDirectory);
             Directory.CreateDirectory(dataDirectory);
 
-            var modulePath = Path.Combine(slotDirectory, "ContextFixture.dll");
-            File.Copy(typeof(ContextFixtureModuleInfo).Assembly.Location, modulePath);
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var registry = new CommandRegistry();
             var log = new TestLog();
             var settings = new MemorySettings();
             var bus = new CommandBus(registry, log);
-            var host = new ModuleHost(modulesDirectory, log)
+            var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
@@ -110,7 +109,7 @@ namespace HistoryVulcan.Tests
             var registry = new CommandRegistry();
             var log = new TestLog();
             var bus = new CommandBus(registry, log);
-            using var host = new ModuleHost(modulesDirectory, log)
+            using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
@@ -161,14 +160,12 @@ namespace HistoryVulcan.Tests
             var dataDirectory = Path.Combine(root, "data");
             Directory.CreateDirectory(slotDirectory);
             Directory.CreateDirectory(dataDirectory);
-            File.Copy(
-                typeof(ContextFixtureModuleInfo).Assembly.Location,
-                Path.Combine(slotDirectory, "ContextFixture.dll"));
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var marker = Path.Combine(Path.GetFullPath(dataDirectory), ContextAwareFixture.DisposeMarker);
             var registry = new CommandRegistry();
             var log = new TestLog();
-            var host = new ModuleHost(modulesDirectory, log)
+            var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
@@ -211,9 +208,7 @@ namespace HistoryVulcan.Tests
             var modulesDirectory = Path.Combine(root, "modules");
             var slotDirectory = Path.Combine(modulesDirectory, "context-fixture");
             Directory.CreateDirectory(slotDirectory);
-            File.Copy(
-                typeof(ContextFixtureModuleInfo).Assembly.Location,
-                Path.Combine(slotDirectory, "ContextFixture.dll"));
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.EnabledVariable);
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.EnabledVariable, "0");
@@ -221,7 +216,7 @@ namespace HistoryVulcan.Tests
             var log = new TestLog();
             var settings = new MemorySettings();
             var bus = new CommandBus(registry, log);
-            using var host = new ModuleHost(modulesDirectory, log)
+            using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
@@ -250,16 +245,12 @@ namespace HistoryVulcan.Tests
             var modulesDirectory = Path.Combine(root, "modules");
             var activeDirectory = Path.Combine(modulesDirectory, "context-fixture");
             var rollbackDirectory = Path.Combine(modulesDirectory, "context-fixture-rollback-20260808-000000");
-            Directory.CreateDirectory(activeDirectory);
-            Directory.CreateDirectory(rollbackDirectory);
-            File.Copy(typeof(ContextFixtureModuleInfo).Assembly.Location,
-                Path.Combine(activeDirectory, "ContextFixture.dll"));
-            File.Copy(typeof(ContextFixtureModuleInfo).Assembly.Location,
-                Path.Combine(rollbackDirectory, "ContextFixture.dll"));
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, Path.GetFileName(activeDirectory), "contextfixture", "v1.0.0");
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, Path.GetFileName(rollbackDirectory), "contextfixture", "v1.0.0");
 
             var registry = new CommandRegistry();
             var log = new TestLog();
-            using var host = new ModuleHost(modulesDirectory, log)
+            using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
@@ -287,15 +278,13 @@ namespace HistoryVulcan.Tests
             var modulesDirectory = Path.Combine(root, "modules");
             var slotDirectory = Path.Combine(modulesDirectory, "context-fixture");
             Directory.CreateDirectory(slotDirectory);
-            File.Copy(
-                typeof(ContextFixtureModuleInfo).Assembly.Location,
-                Path.Combine(slotDirectory, "ContextFixture.dll"));
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var registry = new CommandRegistry();
             var log = new TestLog();
             var settings = new MemorySettings();
             var bus = new CommandBus(registry, log);
-            using var host = new ModuleHost(modulesDirectory, log)
+            using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
@@ -335,15 +324,13 @@ namespace HistoryVulcan.Tests
             var modulesDirectory = Path.Combine(root, "modules");
             var slotDirectory = Path.Combine(modulesDirectory, "context-fixture");
             Directory.CreateDirectory(slotDirectory);
-            File.Copy(
-                typeof(ContextFixtureModuleInfo).Assembly.Location,
-                Path.Combine(slotDirectory, "ContextFixture.dll"));
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var registry = new CommandRegistry();
             var log = new TestLog();
             var settings = new MemorySettings();
             var bus = new CommandBus(registry, log);
-            var host = new ModuleHost(modulesDirectory, log)
+            var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
@@ -442,21 +429,35 @@ namespace HistoryVulcan.Tests
         public const string DisposeMarker = "fixture-disposed.marker";
 
         public const string DataVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_DATA";
+        public const string FailureVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_FAILURE";
 
         private string? _dataDirectory;
 
         public void Attach(IModuleContext context)
         {
             _dataDirectory = Environment.GetEnvironmentVariable(DataVariable);
+            var failure = Environment.GetEnvironmentVariable(FailureVariable);
+            if (failure == "before")
+                throw new InvalidOperationException("fixture attach failed before registration");
             context.RegisterCommands(registry => registry.Register(new CommandDescriptor
             {
-                Name = "contextfixture.context-probe",
+                Name = (Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.NameVariable) ?? "contextfixture") + ".context-probe",
                 Domain = "spoofed-domain",
                 CommandClass = "context",
                 Summary = "Proves RegisterCommands staged a command owned by this module.",
                 Readonly = true,
                 Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("registered")),
             }));
+            if (failure is "after" or "after-once")
+            {
+                if (failure == "after-once")
+                {
+                    Environment.SetEnvironmentVariable(FailureVariable, null);
+                    if (_dataDirectory != null)
+                        File.WriteAllText(Path.Combine(_dataDirectory, "state.txt"), "new instance changed data");
+                }
+                throw new InvalidOperationException("fixture attach failed after registration");
+            }
         }
 
         [ModuleCommand(CommandClass = "probe")]
