@@ -8,17 +8,42 @@ internal static class PublishLayout
         string stagingRoot,
         string publishRoot,
         ReleaseTarget target,
-        string version)
+        string version,
+        bool replaceCurrent = false,
+        TextWriter? log = null)
     {
-        var packageName = $"{target.Name}-v{version}";
         var historyRoot = Path.Combine(publishRoot, "history");
         Directory.CreateDirectory(historyRoot);
         var incoming = Path.Combine(publishRoot, ".incoming-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            return PromoteVersionedCore(
+                stagingRoot, publishRoot, target, version, incoming, historyRoot, replaceCurrent, log);
+        }
+        finally
+        {
+            // 同 HostSnapshotBuilder：中转目录建在发布根里，抛异常时留下的就是一份完整
+            // 副本，而发布根是纳入 git 的 z 快照。此前只有成功路径删得掉它。
+            PublishTransaction.Cleanup(incoming, log);
+        }
+    }
+
+    private static string PromoteVersionedCore(
+        string stagingRoot,
+        string publishRoot,
+        ReleaseTarget target,
+        string version,
+        string incoming,
+        string historyRoot,
+        bool replaceCurrent,
+        TextWriter? log)
+    {
         SnapshotHashes.CopyDirectory(stagingRoot, incoming);
         ModuleSnapshotBuilder.AssertSnapshot(incoming, target, version);
 
-        var destination = Path.Combine(publishRoot, packageName);
-        AssertImmutable(stagingRoot, destination);
+        var destination = Path.Combine(publishRoot, $"{target.Name}-v{version}");
+        if (!replaceCurrent)
+            AssertImmutable(stagingRoot, destination);
 
         foreach (var current in Directory.GetDirectories(publishRoot, "History*-v*"))
             Archive(current, historyRoot);
@@ -49,33 +74,18 @@ internal static class PublishLayout
             Directory.Delete(legacy, recursive: true);
         }
 
-        foreach (var current in Directory.GetDirectories(publishRoot, "History*-v*"))
-            Directory.Delete(current, recursive: true);
-        foreach (var item in Directory.GetFileSystemEntries(publishRoot))
-        {
-            var name = Path.GetFileName(item);
-            if (name.Equals("history", StringComparison.OrdinalIgnoreCase)
-                || name.Equals(Path.GetFileName(incoming), StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
+        var existing = Directory.GetFileSystemEntries(publishRoot)
+            .Where(path => !Path.GetFileName(path).Equals("history", StringComparison.OrdinalIgnoreCase)
+                && !path.Equals(incoming, StringComparison.OrdinalIgnoreCase)).ToList();
+        PublishTransaction.Run(publishRoot, existing, [(incoming, destination)], log);
 
-            if (Directory.Exists(item))
-                Directory.Delete(item, recursive: true);
-            else
-                File.Delete(item);
-        }
-
-        Relocate(incoming, destination);
         return destination;
     }
 
-    public static string PromoteFlatHost(string stagingRoot, string publishRoot, string version)
+    public static string PromoteFlatHost(string stagingRoot, string publishRoot, string version, TextWriter? log = null)
     {
         var historyRoot = Path.Combine(publishRoot, "history");
         Directory.CreateDirectory(historyRoot);
-        var backup = Path.Combine(Path.GetTempPath(), "host-previous-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(backup);
 
         var currentManifest = Path.Combine(publishRoot, "manifest.json");
         var currentSums = Path.Combine(publishRoot, SnapshotHashes.FileName);
@@ -111,103 +121,29 @@ internal static class PublishLayout
             Archive(legacy, historyRoot);
         }
 
-        var movedExisting = new List<string>();
-        var movedIncoming = new List<string>();
-        try
-        {
-            Directory.CreateDirectory(publishRoot);
-            foreach (var item in Directory.GetFileSystemEntries(publishRoot))
-            {
-                var name = Path.GetFileName(item);
-                if (name.Equals("history", StringComparison.OrdinalIgnoreCase)
-                    || name.StartsWith(".incoming-", StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                var dest = Path.Combine(backup, name);
-                Relocate(item, dest);
-                movedExisting.Add(name);
-            }
-
-            foreach (var item in Directory.GetFileSystemEntries(stagingRoot))
-            {
-                var name = Path.GetFileName(item);
-                var dest = Path.Combine(publishRoot, name);
-                Relocate(item, dest);
-                movedIncoming.Add(name);
-            }
-        }
-        catch
-        {
-            foreach (var name in movedIncoming)
-            {
-                var path = Path.Combine(publishRoot, name);
-                if (Directory.Exists(path))
-                    Directory.Delete(path, recursive: true);
-                else if (File.Exists(path))
-                    File.Delete(path);
-            }
-
-            foreach (var name in movedExisting)
-            {
-                var path = Path.Combine(backup, name);
-                var dest = Path.Combine(publishRoot, name);
-                Relocate(path, dest);
-            }
-
-            throw;
-        }
-        finally
-        {
-            if (Directory.Exists(backup))
-                Directory.Delete(backup, recursive: true);
-        }
+        var existing = Directory.GetFileSystemEntries(publishRoot)
+            .Where(path => !Path.GetFileName(path).Equals("history", StringComparison.OrdinalIgnoreCase)
+                && !Path.GetFileName(path).StartsWith(".incoming-", StringComparison.OrdinalIgnoreCase)).ToList();
+        var incoming = Directory.GetFileSystemEntries(stagingRoot)
+            .Select(path => (path, Path.Combine(publishRoot, Path.GetFileName(path)))).ToList();
+        PublishTransaction.Run(publishRoot, existing, incoming, log);
 
         return Path.GetFullPath(publishRoot);
     }
-
-    private static void Relocate(string source, string destination)
-    {
-        if (Directory.Exists(source))
-        {
-            if (Directory.Exists(destination))
-                Directory.Delete(destination, recursive: true);
-            if (SameVolume(source, destination))
-                Directory.Move(source, destination);
-            else
-            {
-                SnapshotHashes.CopyDirectory(source, destination);
-                Directory.Delete(source, recursive: true);
-            }
-
-            return;
-        }
-
-        var parent = Path.GetDirectoryName(destination);
-        if (!string.IsNullOrEmpty(parent))
-            Directory.CreateDirectory(parent);
-        if (SameVolume(source, destination))
-            File.Move(source, destination, overwrite: true);
-        else
-        {
-            File.Copy(source, destination, overwrite: true);
-            File.Delete(source);
-        }
-    }
-
-    private static bool SameVolume(string left, string right)
-        => string.Equals(
-            Path.GetPathRoot(Path.GetFullPath(left)),
-            Path.GetPathRoot(Path.GetFullPath(right)),
-            StringComparison.OrdinalIgnoreCase);
 
     private static void AssertImmutable(string source, string destination)
     {
         if (!Directory.Exists(destination))
             return;
-        var sourceSums = File.ReadAllText(Path.Combine(source, SnapshotHashes.FileName)).Replace("\r\n", "\n");
-        var destinationSums = File.ReadAllText(Path.Combine(destination, SnapshotHashes.FileName)).Replace("\r\n", "\n");
+
+        // 缺 SHA256SUMS 的目标目录是上一轮中断留下的残包。直接 ReadAllText 会抛
+        // FileNotFoundException，把使用者引向一个与真实处境无关的栈。
+        if (!TryReadSums(source, out var sourceSums) || !TryReadSums(destination, out var destinationSums))
+        {
+            throw new InvalidOperationException(
+                $"历史包残缺（缺少 {SnapshotHashes.FileName}），无法判定是否可覆盖：{destination}");
+        }
+
         if (!sourceSums.Equals(destinationSums, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
@@ -221,14 +157,38 @@ internal static class PublishLayout
         var archive = Path.Combine(historyRoot, $"{identity.Name}-v{identity.Version}");
         if (Directory.Exists(archive))
         {
-            var sourceSums = File.ReadAllText(Path.Combine(package, SnapshotHashes.FileName)).Replace("\r\n", "\n");
-            var destinationSums = File.ReadAllText(Path.Combine(archive, SnapshotHashes.FileName)).Replace("\r\n", "\n");
-            if (sourceSums.Equals(destinationSums, StringComparison.OrdinalIgnoreCase))
+            if (TryReadSums(package, out var sourceSums)
+                && TryReadSums(archive, out var destinationSums)
+                && sourceSums.Equals(destinationSums, StringComparison.OrdinalIgnoreCase))
+            {
                 return;
-            archive = Path.Combine(historyRoot, $"{identity.Name}-v{identity.Version}-{DateTime.Now:yyyyMMdd-HHmmss}");
+            }
+
+            // 秒级时间戳不足以保证唯一：PromoteVersioned 会在同一轮里连续归档多个包，
+            // 同一秒内的两次归档算出同一个避让目录名，CopyDirectory 以 overwrite:true
+            // 把两份不同内容的历史混在一起，而且没有任何人会察觉。
+            var stamp = DateTime.Now.ToString(
+                "yyyyMMdd-HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+            var baseName = $"{identity.Name}-v{identity.Version}-{stamp}";
+            archive = Path.Combine(historyRoot, baseName);
+            for (var ordinal = 2; Directory.Exists(archive); ordinal++)
+                archive = Path.Combine(historyRoot, $"{baseName}-{ordinal}");
         }
 
         SnapshotHashes.CopyDirectory(package, archive);
+    }
+
+    private static bool TryReadSums(string root, out string sums)
+    {
+        var path = Path.Combine(root, SnapshotHashes.FileName);
+        if (!File.Exists(path))
+        {
+            sums = "";
+            return false;
+        }
+
+        sums = File.ReadAllText(path).Replace("\r\n", "\n");
+        return true;
     }
 
     private static (string Name, string Version) ReadIdentity(string root)
@@ -241,7 +201,11 @@ internal static class PublishLayout
             using var document = JsonDocument.Parse(File.ReadAllText(path));
             var name = document.RootElement.GetProperty(pair.Item2).GetString() ?? "";
             var version = document.RootElement.GetProperty("version").GetString() ?? "";
-            if (name.Length > 0 && System.Text.RegularExpressions.Regex.IsMatch(version, @"^\d+\.\d+\.\d+$"))
+            // 预发布后缀必须放行：宿主自己的构建脚本一直接受 5.1.0-rc1 这种形状，
+            // 而这里拒了它之后抛的却是「包身份清单缺失或无效」——清单明明是好的，
+            // 使用者会照提示去找一个不存在的清单问题。
+            if (name.Length > 0 && System.Text.RegularExpressions.Regex.IsMatch(
+                    version, @"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$"))
                 return (name, version);
         }
 
