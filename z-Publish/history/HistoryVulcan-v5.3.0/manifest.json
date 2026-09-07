@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "product": "HistoryVulcan",
+  "version": "5.3.0",
+  "channel": "current-host",
+  "runtime": "win-x64-framework-dependent",
+  "executable": "host/HistoryVulcan.exe",
+  "selfContained": false,
+  "sourceCommit": "c7d327fe5f027969dea481ec5300ed4288dca385",
+  "sourceDirty": true,
+  "documents": [
+    "HistoryVulcan_\u6A21\u5757API.md",
+    "\u6A21\u5757\u5F00\u53D1\u624B\u518C.md"
+  ],
+  "files": [
+    {
+      "file": "docs/HistoryVulcan_\u6A21\u5757API.md",
+      "bytes": 11779,
+      "sha256": "F0A840CC6C88E6B27F203D90C0A1C57BE7DD600C4D9A32C7E2FB0A1ECCF6B048"
+    },
+    {
+      "file": "docs/\u6A21\u5757\u5F00\u53D1\u624B\u518C.md",
+      "bytes": 43706,
+      "sha256": "257A1BAC882BD7AA8C1ED09ABBD03BA0E1AC57CAA7FEEB98FCC9EE5A9F2FB93E"
+    },
+    {
+      "file": "host/HistoryVulcan.Cli.deps.json",
+      "bytes": 3112,
+      "sha256": "29F15B7F310A5EBCD38AE737673F5D08D8B6433E672FEBBEE2863BB2AB3221F9"
+    },
+    {
+      "file": "host/HistoryVulcan.Cli.dll",
+      "bytes": 4608,
+      "sha256": "000F99F98FE158AC8228739A4027E19F96A362F2F325DD45EBEC37BE185F3677"
+    },
+    {
+      "file": "host/HistoryVulcan.Cli.exe",
+      "bytes": 151552,
+      "sha256": "A9B66DE8F539123C85F6B47C989D70A4607DD6AE79AD7B9279C9B972631DAD28"
+    },
+    {
+      "file": "host/HistoryVulcan.Cli.pdb",
+      "bytes": 11884,
+      "sha256": "9E548B10697CE088F96F0B7968FE70FA725910AA9A0B29CA0A3A7F6AAF64A8E6"
+    },
+    {
+      "file": "host/HistoryVulcan.Cli.runtimeconfig.json",
+      "bytes": 397,
+      "sha256": "CA1A6B5B185174698E0F5F9AE732AD3D2D3ED5B122ED666F35CC214283E83B7F"
+    },
+    {
+      "file": "host/HistoryVulcan.Core.dll",
+      "bytes": 70656,
+      "sha256": "06F193137057CC34D94FC6B876293360B9BCF6D96D01E983DC11822809971548"
+    },
+    {
+      "file": "host/HistoryVulcan.Core.pdb",
+      "bytes": 29352,
+      "sha256": "6AD1ED8A020203E5D5E3F365FF6A0E59BD371538EF91461C90832C7DC6655B4F"
+    },
+    {
+      "file": "host/HistoryVulcan.Core.xml",
+      "bytes": 68546,
+      "sha256": "9686747DAD5EF69F631BB1F54030E1773BF4090B791B8B1CCDF421985B9B105E"
+    },
+    {
+      "file": "host/HistoryVulcan.deps.json",
+      "bytes": 3210,
+      "sha256": "8DCE5CBD1328EDB54EEA7208D029443C5D577286120EC45CD1C424A7DCC55F09"
+    },
+    {
+      "file": "host/HistoryVulcan.dll",
+      "bytes": 128000,
+      "sha256": "C80DC5123E314FB0412B2ED006542B877BB9C46122A6D43E128705E55ED1F925"
+    },
+    {
+      "file": "host/HistoryVulcan.exe",
+      "bytes": 274944,
+      "sha256": "EA95D2E41AA31257BDA0BD32CF4E90D9395EB308990E8E585963DF4E6377A8FE"
+    },
+    {
+      "file": "host/HistoryVulcan.pdb",
+      "bytes": 13884,
+      "sha256": "A40F43D9950FB32BE65D7657D6E30AB2FE3A73F5BF81D5E052BF01904BBBAFEF"
+    },
+    {
+      "file": "host/HistoryVulcan.runtimeconfig.json",
+      "bytes": 516,
+      "sha256": "148AB2F20AE7A930A6B31BC8CFE8D8EA944087B6CBDE17F969103F0A942106A6"
+    },
+    {
+      "file": "host/HistoryVulcan.ServiceHost.dll",
+      "bytes": 97280,
+      "sha256": "E2E75F5BE725F6A4CB742C16BFF408AEA1EE3180C8F6BF3F2340D70E727964DB"
+    },
+    {
+      "file": "host/HistoryVulcan.ServiceHost.pdb",
+      "bytes": 28024,
+      "sha256": "DC4FD98DBCCEE67B640187D0709120F779AAAFBB4AA0830CF07FB78720908D81"
+    },
+    {
+      "file": "host/HistoryVulcan.Services.dll",
+      "bytes": 266752,
+      "sha256": "70BF5DD7548B382DD41F302BEEC8EB8CC692DF41ABF8E9D7408BB1308B8C7604"
+    },
+    {
+      "file": "host/HistoryVulcan.Services.pdb",
+      "bytes": 69124,
+      "sha256": "E4F579D28190054EED7CC05F484E3A42AF4521A574B26058627CD0DB6311250C"
+    },
+    {
+      "file": "host/HistoryVulcan.Services.xml",
+      "bytes": 77908,
+      "sha256": "2C62EAB5610C61721D921DDBE1F8BE8AFFC500FC10540D6FB2F4D462D5A0734D"
+    }
+  ]
+}

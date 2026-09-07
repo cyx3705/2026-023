@@ -170,3 +170,9 @@ HistoryVulcan.Cli.exe --cli vulcan.dev.finish name=<模块> msg=<说明> worktre
 
 `--runtime` 只用于查询已运行宿主的受限状态，或执行批准过的 `reload` / `install`；
 模块开发的装包由 `submit`/`finish` 内部走同一条 `install`，不要单独调。
+
+## 6. 起步示例
+
+`b-Code-Samples/DemoModule` 是对齐本版宿主的最小模块：引用 Core、`ModuleInfoBase` 只申报身份、`IModuleContextAware.Attach` 里 `RegisterCommands` 登记三段命令，并带完整 `module.manifest.json`。不要再抄旧的反射全暴露、本地 `ModuleInfoBase` 副本或 `.panel.json`。
+
+本仓示例用同仓 `ProjectReference` 锁住与现行 Core 一致。复制到编号模块仓库后，改为 HintPath 引用已发布的 `z-Publish/host/HistoryVulcan.Core.dll`，`<Private>false</Private>`。流程见[模块开发手册](模块开发手册.md)。

@@ -1,0 +1,1105 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>HistoryVulcan.Services</name>
+    </assembly>
+    <members>
+        <member name="T:HistoryVulcan.Services.AppPaths">
+            <summary>
+            应用数据目录约定(F-02,Q9 已定):%AppData%/&lt;应用名&gt;/,
+            布局 / 设置 / 历史 / data / modules / panels / logs 均置于其下。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.AppPaths.#ctor(System.String,System.Boolean)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.AppPaths.#ctor(System.String,System.String,System.Boolean)">
+            <summary>Creates an isolated runtime root for a cooperating host process.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.AppPaths.Root">
+            <summary>%AppData%/&lt;应用名&gt;/</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.AppPaths.LayoutDir">
+            <summary>布局文件目录(W-07 / W-08)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.AppPaths.DataDir">
+            <summary>应用自有业务数据目录。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.AppPaths.LogsDir">
+            <summary>滚动日志目录(L-02,M2 正式接管)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.AppPaths.ModulesDir">
+            <summary>模块 DLL 与模块槽目录。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.AppPaths.PanelsDir">
+            <summary>JSON 控制面板目录。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.AppPaths.GetDataDir(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.AppPaths.GetModulesDir(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.AppPaths.GetPanelsDir(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Commands.CommandCatalogRow">
+            <summary>目录中的一行：一条指令的注册事实与总线安全标志。</summary>
+            <param name="CommandName">完整指令名。</param>
+            <param name="Domain">所属指令域。</param>
+            <param name="Summary">一句话说明。</param>
+            <param name="Example">示例调用；无示例为 null。</param>
+            <param name="ParameterCount">参数个数。</param>
+            <param name="Source">注册方，如 framework:service 或 frontend:*。</param>
+            <param name="SourceDetail">注册方补充信息；无则为 null。</param>
+            <param name="Dangerous">级别是否为「询问」（执行前必须问过人）。</param>
+            <param name="RequiresUiThread">是否必须在 UI 线程执行。</param>
+            <param name="Readonly">是否声明为只读。</param>
+            <param name="HiddenReason">远端隐藏原因；未隐藏为 null。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandCatalogRow.#ctor(System.String,System.String,System.String,System.String,System.Int32,System.String,System.String,System.Boolean,System.Boolean,System.Boolean,System.String)">
+            <summary>目录中的一行：一条指令的注册事实与总线安全标志。</summary>
+            <param name="CommandName">完整指令名。</param>
+            <param name="Domain">所属指令域。</param>
+            <param name="Summary">一句话说明。</param>
+            <param name="Example">示例调用；无示例为 null。</param>
+            <param name="ParameterCount">参数个数。</param>
+            <param name="Source">注册方，如 framework:service 或 frontend:*。</param>
+            <param name="SourceDetail">注册方补充信息；无则为 null。</param>
+            <param name="Dangerous">级别是否为「询问」（执行前必须问过人）。</param>
+            <param name="RequiresUiThread">是否必须在 UI 线程执行。</param>
+            <param name="Readonly">是否声明为只读。</param>
+            <param name="HiddenReason">远端隐藏原因；未隐藏为 null。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.CommandName">
+            <summary>完整指令名。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Domain">
+            <summary>所属指令域。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Summary">
+            <summary>一句话说明。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Example">
+            <summary>示例调用；无示例为 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.ParameterCount">
+            <summary>参数个数。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Source">
+            <summary>注册方，如 framework:service 或 frontend:*。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.SourceDetail">
+            <summary>注册方补充信息；无则为 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Dangerous">
+            <summary>级别是否为「询问」（执行前必须问过人）。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.RequiresUiThread">
+            <summary>是否必须在 UI 线程执行。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Readonly">
+            <summary>是否声明为只读。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.HiddenReason">
+            <summary>远端隐藏原因；未隐藏为 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.CommandClass">
+            <summary>指令在所属域内的功能类；附加属性保持旧位置构造函数兼容。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Method">
+            <summary>三段式命令名的末段方法名。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Commands.CommandParameterInfo">
+            <summary>一条指令的单个参数说明。</summary>
+            <param name="Name">参数名。</param>
+            <param name="Type">参数类型。</param>
+            <param name="Required">是否必填。</param>
+            <param name="Default">默认值；无默认为 null。</param>
+            <param name="Position">位置参数序号；仅具名时为 null。</param>
+            <param name="AllowedValues">允许值枚举；不限时为空。</param>
+            <param name="Description">参数说明。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandParameterInfo.#ctor(System.String,System.String,System.Boolean,System.String,System.Nullable{System.Int32},System.Collections.Generic.IReadOnlyList{System.String},System.String)">
+            <summary>一条指令的单个参数说明。</summary>
+            <param name="Name">参数名。</param>
+            <param name="Type">参数类型。</param>
+            <param name="Required">是否必填。</param>
+            <param name="Default">默认值；无默认为 null。</param>
+            <param name="Position">位置参数序号；仅具名时为 null。</param>
+            <param name="AllowedValues">允许值枚举；不限时为空。</param>
+            <param name="Description">参数说明。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.Name">
+            <summary>参数名。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.Type">
+            <summary>参数类型。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.Required">
+            <summary>是否必填。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.Default">
+            <summary>默认值；无默认为 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.Position">
+            <summary>位置参数序号；仅具名时为 null。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.AllowedValues">
+            <summary>允许值枚举；不限时为空。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandParameterInfo.Description">
+            <summary>参数说明。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Commands.CommandCatalogDetail">
+            <summary>单条指令的完整详情：目录行与参数表。</summary>
+            <param name="Command">该指令的目录行。</param>
+            <param name="Parameters">参数表。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandCatalogDetail.#ctor(HistoryVulcan.Services.Commands.CommandCatalogRow,System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Commands.CommandParameterInfo})">
+            <summary>单条指令的完整详情：目录行与参数表。</summary>
+            <param name="Command">该指令的目录行。</param>
+            <param name="Parameters">参数表。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogDetail.Command">
+            <summary>该指令的目录行。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogDetail.Parameters">
+            <summary>参数表。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogDetail.Annotations">
+            <summary>命令注册方提供、由具体消费方解释的目录注解。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Commands.CommandDomainInfo">
+            <summary>一个指令域及其注册数量。</summary>
+            <param name="Domain">域名。</param>
+            <param name="Count">该域下的指令数。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandDomainInfo.#ctor(System.String,System.Int32)">
+            <summary>一个指令域及其注册数量。</summary>
+            <param name="Domain">域名。</param>
+            <param name="Count">该域下的指令数。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandDomainInfo.Domain">
+            <summary>域名。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandDomainInfo.Count">
+            <summary>该域下的指令数。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Commands.CommandCatalogCommands">
+            <summary>V2.1.3 全指令结构化目录，注册表是唯一上游。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandCatalogCommands.RegisterCore(HistoryVulcan.Core.Commands.CommandRegistry,System.String)">
+            <summary>
+            注册核心目录指令。4.0.0 从 internal 提为 public：调用方在独立程序集，
+            InternalsVisibleTo 对外部消费方不成立。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandCatalogCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry,System.String)">
+            <summary>把目录查询指令注册进指定注册表。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandCatalogCommands.Snapshot(HistoryVulcan.Core.Commands.CommandRegistry)">
+            <summary>按当前注册表生成目录快照。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandCatalogCommands.RenderManual(HistoryVulcan.Core.Commands.CommandRegistry)">
+            <summary>从运行时注册表生成 Markdown 命令手册。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Commands.CommandCatalogCommands.Sha256(System.String)">
+            <summary>手册正文的 SHA-256 十六进制摘要。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.DevelopmentCommands">
+             <summary>
+             模块开发路线的指令面：从主分支拉出工作区，到改完合并回去、发布、装机。
+             </summary>
+             <remarks>
+             **为什么这条路线住在宿主里。**
+            
+             它此前住在 HistoryDiana。那样的话，每一轮模块开发都依赖 Diana 装载成功——
+             而 Diana 自己也是模块，也要走这条路线来改。一旦 Diana 坏了，修复就退化成
+             直接改主分支救急，整条路线跟着塌掉。
+            
+             放在宿主则相反：宿主坏了，所有模块本来就跑不起来，开发本来就该谨慎且少量；
+             而只要宿主活着，**任何一个模块坏掉都能用这条路线单独修好**，
+             包括承载对外传输的 HistoryPortunus 和承载界面的 HistoryAurora。
+            
+             这也是整条路线都在命令行面上的原因（见 <c>CliExposurePolicy.ExposedCommands</c>）：
+             走 MCP 要 agent 会话活着，走 Web 要 Portunus 装载成功，而需要修模块的时刻
+             恰恰是这些前提不成立的时刻。<c>--cli</c> 在本进程内执行，一样都不需要。
+            
+             模块公开面是三条：<c>vulcan.dev.start</c> / <c>submit</c> / <c>finish</c>，
+             <strong>不配 MCP</strong>，只走同目录 Console <c>HistoryVulcan.Cli.exe --cli</c>；GUI EXE 入口仅作兼容。
+             工作区（<see cref="T:HistoryVulcan.Services.Development.WorktreeCommands"/>）与发布（<see cref="T:HistoryVulcan.Services.Development.ReleaseCommands"/>）仍注册，但对 MCP 隐藏；
+             宿主打包走 <c>--cli vulcan.release.cycle</c>。
+             </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.DevelopmentCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Core.Storage.ISettingsService,System.String)">
+            <summary>把开发路线的全部指令注册进宿主注册表。</summary>
+            <param name="registry">宿主注册表。</param>
+            <param name="bus">权威指令总线；装包经它走，与模块管理页的热重载按钮同一条路径。</param>
+            <param name="settings">宿主设置；项目库根与工作区根可配。</param>
+            <param name="dataDirectory">应用数据根；发布日志以它为基准。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Development.DevelopmentCommands.LastRegistered">
+            <summary>最近一次 <see cref="M:HistoryVulcan.Services.Development.DevelopmentCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Core.Storage.ISettingsService,System.String)"/> 写下的上下文；离线 CLI 用来接活宿主装包。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.DevelopmentContext">
+             <summary>
+             开发路线指令所需的宿主服务。
+             </summary>
+             <remarks>
+             这条路线迁入宿主前住在 HistoryDiana 里，参数类型是 <c>IModuleContext</c>——
+             那是**宿主提供给模块**的契约。留着它，等于让宿主自己去实现一份「模块视角」
+             才能调用自己的代码，方向是反的。
+            
+             所以换成这个只含实际用到的三样的类型：指令总线（装包要经它走）、
+             设置（项目库根与工作区根可配）、数据根（发布日志落盘）。
+             少一样都跑不了，多一样就是给这条路线开了它不需要的口子。
+             </remarks>
+             <param name="Bus">权威指令总线。</param>
+             <param name="Settings">宿主设置存储。</param>
+             <param name="DataDirectory">应用数据根，发布日志以它为基准。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.DevelopmentContext.#ctor(HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Core.Storage.ISettingsService,System.String)">
+             <summary>
+             开发路线指令所需的宿主服务。
+             </summary>
+             <remarks>
+             这条路线迁入宿主前住在 HistoryDiana 里，参数类型是 <c>IModuleContext</c>——
+             那是**宿主提供给模块**的契约。留着它，等于让宿主自己去实现一份「模块视角」
+             才能调用自己的代码，方向是反的。
+            
+             所以换成这个只含实际用到的三样的类型：指令总线（装包要经它走）、
+             设置（项目库根与工作区根可配）、数据根（发布日志落盘）。
+             少一样都跑不了，多一样就是给这条路线开了它不需要的口子。
+             </remarks>
+             <param name="Bus">权威指令总线。</param>
+             <param name="Settings">宿主设置存储。</param>
+             <param name="DataDirectory">应用数据根，发布日志以它为基准。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Development.DevelopmentContext.Bus">
+            <summary>权威指令总线。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Development.DevelopmentContext.Settings">
+            <summary>宿主设置存储。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Development.DevelopmentContext.DataDirectory">
+            <summary>应用数据根，发布日志以它为基准。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Development.DevelopmentContext.LiveHost">
+            <summary>
+            离线 CLI 用来把装包打到<strong>正在跑的</strong>宿主。空表示本进程就是活宿主，走 <see cref="P:HistoryVulcan.Services.Development.DevelopmentContext.Bus"/>。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.LiveHostExecutor">
+            <summary>把一条指令交给当前用户的活宿主执行。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.DevPipelineCommands">
+            <summary>
+            模块开发管线的公开三步：开工作区、送审、通过后并回。
+            </summary>
+            <remarks>
+            图面只留三条，且<strong>不配 MCP</strong>：只走同目录 Console <c>HistoryVulcan.Cli.exe --cli</c>。
+            内部仍调用 <see cref="T:HistoryVulcan.Services.Development.WorktreeCommands"/> 与 <see cref="T:HistoryVulcan.Services.Development.ReleaseCommands"/>。
+            HistoryVulcan 自身不走这三条，宿主打包用 <c>--cli vulcan.release.cycle</c>。
+            </remarks>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.ModulePackageHotReload">
+            <summary>
+            Module test and deploy both call Vulcan's package hot-reload:
+            <c>vulcan.module.install</c>. That is the same path as the Modules page 热重载 button.
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.Pipeline.MsBuildOutputResolver">
+            <summary>发布前从 MSBuild 查询模块的真实目标框架和输出目录。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.Pipeline.PublishTransaction">
+            <summary>Shares commit and recovery rules for module and flat host promotion.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.Pipeline.QualityGates.HotspotLimit">
+            <summary>单个生产文件的行数上限。超限即发布失败，不是警告。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.Pipeline.QualityGates.OrphanRemovals(System.String,System.Collections.Generic.IReadOnlyList{System.String})">
+             <summary>
+             找出 Unshipped 里对不上任何已定版条目的 *REMOVED*。
+            
+             这类条目移除的是从未定版过的东西——某一轮加进 Unshipped、下一轮又删掉，
+             于是留下一条指向空处的移除记录。分析器不诊断它们，两个方向都编译得过，
+             账就这样一轮轮加下去：5.1.0 审查时 Core 有 146 条、Services 有 137 条，
+             占 Unshipped 的一半以上，把真正的净增埋在噪声里。
+             冻结是把 Unshipped 并进 Shipped，带着这些条目冻结等于封存一本乱账。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.Pipeline.ReleaseCatalog.RequireHost(System.String,System.String)">
+             <summary>
+             Resolves the host entry without parsing module entries.
+            
+             The module list is intentionally extensible data for the development and module
+             release pipeline. A malformed or newly added module entry must not prevent a host
+             candidate from being built or its freeze tag from being checked.
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.Pipeline.ReleaseEngine.AssertNotSelfReplacing(System.String,System.String)">
+             <summary>
+             拒绝替换当前进程正在运行的那份包。
+            
+             宿主自替换按 DEC-053 走**手动操作**：不做影子目录，也不做独立重启器——
+             宿主往后极少更新，为一年一次的动作在发布路径里长出一套切换机制不划算。
+            
+             但「不自动」不等于「撞上去再说」。此前没有任何前置检查：从
+             z-Publish\host\HistoryVulcan.exe 起的宿主执行 vulcan.release.cycle
+             name=HistoryVulcan，会先跑完还原、单元测试、质量门禁、公开 API 门禁和一次完整
+             publish（几分钟），最后在 PromoteFlatHost 里撞上自己 exe 的文件锁而失败回滚。
+             结论正确，代价是几分钟白跑，而抛出的 IOException 说的是「文件被占用」，
+             没有一个字提到「你正在替换你自己」。
+            
+             现在在第一步就说破，并给出唯一可行的做法。
+             </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.Pipeline.ToolProcess">
+            <summary>
+            管线只拉起 git 与 dotnet。PowerShell 不再是发布引擎。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.Pipeline.ToolProcess.Execute(System.String,System.Collections.Generic.IReadOnlyList{System.String},System.String,System.IO.TextWriter,System.String,System.String@,System.String@)">
+             <summary>
+             拉起一个工具进程，读干两条输出流，等它退出。
+             </summary>
+             <remarks>
+             **两条流必须并发读，不能一条读完再读另一条。** 顺序读是这里此前的写法，也是
+             .NET 上的经典死锁：子进程往 stderr 写满管道缓冲区（约 4KB）就阻塞，
+             而父进程还卡在 <c>StandardOutput.ReadToEnd()</c> 上等 stdout 收尾，两边永久互等。
+             <c>dotnet build</c> 稍微多几条警告就能触发，而 PowerShell 管线退役之后，
+             这条路径是宿主唯一的发布通道——挂住就是整个发布挂住。
+            
+             用 <c>OutputDataReceived</c>/<c>ErrorDataReceived</c> 异步读：两条流各有自己的
+             泵，谁先满谁先被抽干。<c>WaitForExit()</c> 的无参重载在异步读之后还会等两个
+             流到达 EOF，因此不需要额外同步。
+            
+             超时是兜底而不是主要手段：正常的 <c>dotnet test</c> 可能跑几分钟，所以给得足够宽，
+             但绝不留「永远等下去」这个选项——发布卡死时使用者看到的只是一条没有回声的命令。
+             </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.Pipeline.ToolProcess.Timeout">
+            <summary>单个工具进程的上限。宽到不会误杀正常的 dotnet test，窄到不会无声挂死。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.ProjectLibraryRoot">
+            <summary>
+            项目库根：一项目一仓的 HistoryClio。旧 Vesta 配置改写到 Clio。
+            </summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.Default">
+            <summary>项目库的缺省根：一项目一仓的 HistoryClio。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.LegacyVesta">
+            <summary>旧库根 HistoryVesta；读到它时改写到 HistoryClio。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.KeyLibraryRoot">
+            <summary>项目库根的设置键。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.KeyWorktreeRoot">
+            <summary>旧的工作区根设置键，仅作兼容读取。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.Resolve(HistoryVulcan.Core.Storage.ISettingsService)">
+            <summary>按设置解析项目库根；未配置时取缺省值。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.Coerce(System.String)">
+            <summary>把旧库根改写到现行库根，其余原样返回。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.IsGitProject(System.String)">
+            <summary>判断给定目录是否是一个 git 项目。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.PublishPackages">
+            <summary>
+            发布包的定位约定：候选包在哪、历史归档在哪、目录怎么命名。
+            </summary>
+            <remarks>
+            随开发路线迁入宿主（4.6.0）并提为公开面：这是**体系共用的约定**而非管线私有实现，
+            HistoryDiana 的 z 文档通道也按它枚举当前包。两边各写一份，
+            迟早在「z-Publish 还是别的名字」这种问题上分叉。
+            </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.PublishPackages.PublishDirectoryName">
+            <summary>发布目录名。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.PublishPackages.HistoryDirectoryName">
+            <summary>历史发布归档的子目录名。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.PackageDirectoryName(System.String,System.String)">
+            <summary>按模块名与版本拼出候选包目录名。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.ResolveCurrent(System.String,System.String)">
+            <summary>解析项目当前的候选包目录；找不到或有歧义时抛出。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.ResolveHostSnapshot(System.String)">
+            <summary>解析宿主快照目录。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.EnumerateCurrent(System.String)">
+            <summary>枚举发布根下的全部当前包。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.TryRead(System.String,HistoryVulcan.Services.Development.PublishPackages.PublishedPackage@)">
+            <summary>读取一个发布包目录的身份；不是有效包时返回 false。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.PublishPackages.PublishedPackage">
+            <summary>一个已发布包的身份与位置。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.PublishedPackage.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>一个已发布包的身份与位置。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.ReleaseCommands">
+             <summary>
+             发布管线的命令面：在宿主进程内跑构建、合同、门禁并写入候选。
+             </summary>
+             <remarks>
+             关键约束：运行状态只落在日志文件里，不放在本模块的内存里。
+             门禁提交后对模块调用 <c>vulcan.module.install</c> 热重载（与测试、模块页按钮同一接口）。
+             热重载会替换目标模块，不替换宿主。运行状态只落日志：start 立即返回 run 标识，
+             status/log 一律现场读日志目录，目标模块被换掉也不影响追踪。
+            
+             管线在宿主进程内执行；日志与纯 ASCII 的 <c>.exit</c> 文件仍落在数据目录，
+             便于 status 判断「仍在跑 / 成功 / 失败」，不依赖进程句柄。
+             </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ReleaseCommands.PipelineProjectName">
+            <summary>
+            发布引擎所在的项目。随开发路线一同迁入宿主（4.6.0），此前是 2026-019-HistoryDiana。
+            </summary>
+            <remarks>
+            登记表必须与指令面同仓：指令面在宿主而登记留在模块，等于「宿主活着但发布跑不了」。
+            指令面在宿主而引擎留在模块，等于「宿主活着但发布跑不了」——
+            而这条路线搬进宿主的全部理由就是它不该依赖任何模块。
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.ReadTail(System.String,System.Int32,System.Int32@,System.Boolean@)">
+            <summary>读日志末尾；允许被子进程同时写入，因此以共享模式打开。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ReleaseCommands.PipelineDirectory">
+            <summary>发布登记表在项目里的位置。管线实现已迁入宿主源码，不再调用 PowerShell 引擎脚本。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.VerifySubmittedCandidate(HistoryVulcan.Services.Development.DevelopmentContext,System.String,System.String)">
+            <summary>
+            复核 submit 已经写入工作区的不可变模块候选，供 finish 在合并前使用。
+            finish 不能再次构建同一版本：submit 在构建后提交源码，第二次构建可能因源修订元数据改变程序集，
+            而不可变快照必须拒绝覆盖。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.WorktreeCommands">
+             <summary>
+             AI 工作区的命令面：开分支工作树、列出、回收。
+             </summary>
+             <remarks>
+             位置不硬编码。优先级是 <c>root=</c> 参数 &gt; 设置项 <c>ai.worktreeroot</c> &gt; 默认
+             <see cref="F:HistoryVulcan.Services.Development.WorktreeCommands.DefaultRoot"/>，因此默认能用、想改随时改、单次想换也不用改设置。
+            
+             分支名与目录名同形：<c>ai/&lt;项目&gt;/&lt;短SHA&gt;-&lt;序号&gt;-&lt;标识&gt;</c>。
+             带短 SHA 是为了让工作区一眼看出基于哪个提交；带序号是因为同一提交上常并行开多个尝试，
+             上一轮 Janus 的性能修复和工作区特性就是同一 SHA 的 -1 与 -2。
+             </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.WriteBuildOverride(System.String,HistoryVulcan.Core.Storage.ISettingsService)">
+            <summary>
+            在新工作树里写下本机覆盖点，让它一诞生就能构建。
+            </summary>
+            <remarks>
+            各工程按相对路径引用宿主 z 快照，假定本仓与 2026-023-HistoryVulcan 在同一库根下；
+            而 AI 工作树落在库根之外，那条相对路径必然指空，表现为上百个"找不到类型"。
+            这里把 HistoryVulcanPackageRoot 指回来源库根的绝对路径。文件不入库（各项目 .gitignore 已登记），
+            因此工作树从诞生起就是干净的；项目侧没有 Directory.Build.props 时不写，避免留下无人 Import 的孤儿文件。
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.TryAllocateName(System.String,System.String,System.String,System.String,System.String,System.String,System.String@,System.String@,System.String@,System.String@)">
+            <summary>
+            分配未被目录占用、也未被残留分支占用的工作区名。finish 后分支保留、目录删除，
+            只数目录会反复撞上 <c>-1-</c> 的旧分支。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.FindIdleWorktree(System.String,System.String)">
+            <summary>找出"开了但没干活"的工作区：既无未提交改动，其分支也没有领先主干的提交。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.ResolveRootPublic(HistoryVulcan.Core.Storage.ISettingsService)">
+            <summary>供同模块的其他命令解析工作区根，避免第二处默认值。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleDirectoryWatcher">
+             <summary>
+             模块目录的变更侦测与重载防抖(MD-01)。
+            
+             从 <c>ModuleHost</c> 抽出:它与模块装载没有共享状态,只需要「监听哪个目录」
+             和「该重载时叫谁」。留在宿主里时,这段逻辑和快照构建、注册表换血、UI 生命周期挤在
+             同一个类型内,读代码的人无法一眼分清哪些字段属于哪件事。
+            
+             防抖是必须的:拷贝一个大 DLL 会触发多次 Changed 事件,不防抖会把一次部署放大成
+             若干次整体热重载。Z 发现模式下每个含 <c>module.manifest.json</c> 的 <c>z-*</c>
+             目录各挂一个监听;路径集合未变时不得拆掉监听,否则热重载回调会把自己的 Timer 释放掉。
+             </summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Modules.ModuleDirectoryWatcher.DebounceMilliseconds">
+            <summary>静默期:最后一次文件事件之后再等这么久才真正重载。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleDirectoryWatcher.Watch(System.String)">
+            <summary>开始监听一个目录;重复调用会在路径变化时替换监听集合。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleDirectoryWatcher.Watch(System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>开始监听一组目录;路径集合未变则保持现有监听,避免热重载把自己拆掉。</summary>
+            <returns>监听集合是否发生了替换。</returns>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleDirectoryWatcher.Stop">
+            <summary>停止监听;已排期的重载不再触发。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleDirectoryWatcher.IsRelevant(System.String)">
+            <summary>是否值得为这个文件触发重载(模块本体、XML 注释、清单与模块旁面板)。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry">
+            <summary>A validated module artifact discovered from a validated runtime manifest.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.#ctor(System.String,System.String,System.String,System.String,System.String,System.Boolean,System.String,System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>A validated module artifact discovered from a validated runtime manifest.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic">
+            <summary>A non-fatal diagnostic produced while discovering runtime module manifests.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic.#ctor(System.String,System.String,System.String)">
+            <summary>A non-fatal diagnostic produced while discovering runtime module manifests.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot">
+            <summary>The immutable result of one module discovery scan.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot.#ctor(System.Collections.Generic.IReadOnlyList{System.String},System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Modules.ModuleDiscoveryEntry},System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic})">
+            <summary>The immutable result of one module discovery scan.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.IModuleDiscoverySource">
+            <summary>Discovers module artifacts without loading their assemblies.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.IModuleDiscoverySource.Roots">
+            <summary>Configured absolute discovery roots.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.IModuleDiscoverySource.Discover">
+            <summary>Scans the configured roots and validates explicit module manifests.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleMeta">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleMeta.#ctor(System.String,System.String,System.String,System.String,System.Boolean,System.String,System.Int32,System.String,System.Boolean)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.InstanceId">
+            <summary>当前加载快照中的唯一模块实例标识；重载后变化。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.SourcePath">
+            <summary>Absolute runtime package path.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.ManifestPath">
+            <summary>Absolute runtime manifest path.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.AttachFailures">
+             <summary>
+             上下文注入失败的原因；非空表示本模块**没有接上宿主**，它的指令一条都不会到位。
+             </summary>
+             <remarks>
+             5.0 收窄 <c>IModuleContext</c> 之后，按旧契约编译的模块会在 <c>Attach</c> 里抛
+             <c>MissingMethodException</c>。宿主此前把它记成一条 Warn 就继续，紧接着还打一个
+             ✓ 说装载成功——于是 <c>vulcan.module.list</c> 显示模块在位、版本正确、0 条指令，
+             而「为什么 0 条」只存在于日志里。
+            
+             宿主不为模块补契约：模块自己去适配。但宿主必须**说实话**——
+             接不上就是没装上，这一列就是那句实话，列在目录里而不是埋在日志里。
+             </remarks>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.Attached">
+            <summary>本模块是否真正接上了宿主。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleHost">
+            <summary>Loads validated runtime packages and owns module commands, instances and reloads.</summary>
+             <summary>
+             装载次序与就绪屏障（5.1.3）。
+            
+             5.1.2 之前，一轮装载是「扫描时逐个 <c>Attach</c>，最后一次性把全部指令换进活登记表」。
+             两件事之间隔着整整一轮装载：先接上的模块已经在跑，而它要调用的其它模块的指令
+             一条都还没登记。模块自己开线程（界面模块必然如此）时，这段窗口的长短取决于
+             剩余模块的装载耗时，于是同一台机器上「有时全都在、有时少几个」——
+             日志里留下的是成片的 <c>未知指令: aurora.ui.actions</c> 和只建了一半的页面。
+            
+             5.1.3 把这条时间线改成两段，并给出一个可被询问、可被通知的完成点：
+             <list type="number">
+             <item>装载阶段只读程序集、收指令，不接入任何模块；</item>
+             <item>接入阶段按**声明的依赖序**逐个 <c>Attach</c>，每接上一个就立刻把它的指令
+             登记进活登记表——于是任何模块 <c>Attach</c> 时，排在它前面的模块指令都已可调用；</item>
+             <item>全部接上后置 <see cref="P:HistoryVulcan.Services.Modules.ModuleHost.IsReady"/>，并按命令名通知声明了就绪钩子的模块。</item>
+             </list>
+            
+             依赖写在模块自己的 <c>module.manifest.json</c> 里（<c>dependsOn</c>），与
+             <c>ui</c> / <c>pinned</c> 同一模式由宿主直读：<see cref="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry"/>
+             是已定版记录，为一个可选字段改它的构造函数是破坏性变更。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.#ctor(HistoryVulcan.Services.Modules.IModuleDiscoverySource,HistoryVulcan.Core.Logging.IShellLog)">
+            <summary>Creates a module host backed by explicit runtime package discovery.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.UiContext">
+            <summary>Marshals registry mutations to the consumer thread; null executes inline.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.EnableUiModules">
+            <summary>Whether modules marked as UI modules may be initialized.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.EnableFileWatching">
+            <summary>Whether this host owns filesystem change detection for the module directory.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.ModulesDirectory">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.DiscoveryRoots">
+            <summary>Configured runtime package roots.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.DiscoveryDiagnostics">
+            <summary>Diagnostics from the most recent discovery scan.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Modules">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.CurrentContextCount">
+            <summary>当前快照持有的加载上下文数量，供服务内回滚诊断使用。</summary>
+        </member>
+        <member name="E:HistoryVulcan.Services.Modules.ModuleHost.ReloadCompleted">
+            <summary>每次整体重载完成后触发(在重载线程上);MD-08 面板同步等旁路逻辑挂此处。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.CommandRegistry)">
+            <summary>接入指令注册表，再调用 Start；仅此重载不注入模块上下文。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Core.Storage.ISettingsService,System.String)">
+            <summary>接入模块业务运行所需的完整宿主上下文。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Start">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Unload(System.String)">
+            <summary>
+            从当前快照卸下一个已装载模块（命令、界面、可卸载程序集），不扫描磁盘、不触发整体重载。
+            下次 <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.Reload"/> 或文件变化会按运行区当前包再装回来。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ClearOldRegistrations(HistoryVulcan.Services.Modules.ModuleHost.Snapshot)">
+             <summary>
+             拆掉旧快照的登记，给新快照让位。
+            
+             5.1.3 之前这里同时做「拆旧」和「装新」，而装新是一次性的：全部模块接完之后
+             才有第一条模块指令进活登记表。现在装新按模块拆开，交给
+             <c>AttachPhase</c> → <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.RegisterModuleCommands(HistoryVulcan.Services.Modules.ModuleHost.Snapshot,System.String)"/> 逐个进行；
+             拆旧仍必须整体先做——同名指令不能新旧并存。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.RegisterModuleCommands(HistoryVulcan.Services.Modules.ModuleHost.Snapshot,System.String)">
+             <summary>
+             把一个刚接入的模块暂存的指令登记进活登记表。
+            
+             取的是快照里属于该 owner、且尚未登记的全部条目：装载阶段收集的反射指令，
+             与该模块 <c>Attach</c> 时经 <c>RegisterCommands</c> 暂存的指令，都在其中。
+             </summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Modules.ModuleHost._pinnedPackages">
+             <summary>
+             钉住模块的包目录。
+            
+             <c>pinned: true</c> 仍装进 <see cref="P:System.Runtime.Loader.AssemblyLoadContext.Default"/>，不可卸载。
+             可热重载的 WPF 模块走另一条路：装进可回收 ALC，默认上下文的 Resolving 只
+             返回该 ALC 里已经装好的程序集，绝不 <c>LoadFromAssemblyPath</c> 进 Default。
+             后一条才能让 XAML 的 <c>assembly=AvalonDock.Themes.VS2013</c> 解析成功，同时允许 Unload。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ReadPinnedFlag(System.String)">
+             <summary>
+             读 manifest 的 <c>pinned</c> 标志：声明本模块**不可热重载**。
+            
+             不走 <see cref="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry"/>：那是已冻结的公开记录，为一个标志改它的
+             构造函数是破坏性变更；宿主直接读取包声明。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.IsModuleInfo(System.Type)">
+            <summary>按基类全名判断,模块编译时引用哪个版本的 BaseVariable.dll 都能识别。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ReadFileWithRetry(System.String)">
+            <summary>文件可能正在拷贝中,重试读取。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Dispose">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleHost.Snapshot">
+            <summary>一次加载的不可变快照:可卸载 ALC 组(根 + 每槽一个) + 指令表 + 单例缓存。热重载整体替换。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Contexts">
+            <summary>本快照持有的全部加载上下文(MH-01:根平铺一个 + 每模块槽一个)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.ContextsByOwner">
+            <summary>模块 owner → 装载它的 ALC；槽内多模块可共享同一上下文。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.PendingCommands">
+            <summary>扫描出的待注册指令(注册在 UI 线程完成,冲突者被剔除)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.RegisteredNames">
+            <summary>实际注册成功的指令名(热重载时按此注销)。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.AttachFailures">
+            <summary>模块 owner → 上下文注入失败原因；非空即表示该模块没有真正接上宿主。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.PendingAttach">
+             <summary>
+             待接入模块，按本轮装载次序排列（5.1.3）。
+            
+             装载阶段只把程序集读进来并收集反射指令；接入与指令登记留到
+             <c>AttachPhase</c> 逐个进行，次序由 manifest 的 <c>dependsOn</c> 决定。
+             </summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Metas">
+            <summary>模块元信息(vulcan.module.list);CommandCount 在注册完成后定稿。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Instances">
+             <summary>
+             本快照构造出的全部模块实例，供拆除阶段回收持有的进程级资源。
+            
+             卸载 ALC 只回收托管内存，不会关闭实例持有的操作系统句柄：端口、文件锁、
+             命名管道、计时器都不在垃圾回收的管辖范围内。非界面模块此前没有任何拆除回调，
+             于是这类资源在每轮热重载后被静默遗弃——旧监听器仍占着端口、仍持有活的
+             指令总线引用，而新实例只能退到下一个端口。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.InstancesFrom(System.Runtime.Loader.AssemblyLoadContext)">
+            <summary>取出由指定加载上下文装载的全部实例，供按模块卸载时回收资源。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.ForgetModule(System.String)">
+             <summary>
+             抹掉一个模块在本快照里的按模块登记，并交出装载它的上下文（没有则为 null）。
+             </summary>
+             <remarks>
+             「一个模块在快照里留下哪些痕迹」只在这里写一遍。此前按模块卸载
+             （<c>UnloadFromSnapshot</c>）与单包装载回滚（<c>TeardownAddedModule</c>）
+             各自列了一份清单，两份逐渐不一致：卸载那份漏掉了 <see cref="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.PendingAttach"/>
+             与 <see cref="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.AttachFailures"/>。漏掉的代价不出现在卸载那一刻——
+             装同名新包时旧的待接入条目还在，<c>AttachPhase</c> 于是把同一个模块接两遍：
+             第一遍用已卸载 ALC 的旧类型把**旧**指令面注册回去，第二遍撞在
+             <c>ModuleContext.RegisterCommands</c> 的重名检查上抛异常，
+             模块最终 attached=false、指令数停在旧值，而重装同一个包也不能自愈。
+            
+             指令表（<see cref="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.PendingCommands"/> / <see cref="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.RegisteredNames"/>）
+             与 <see cref="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Modules"/> 不在这里：前者两个调用方各有取舍（一个按活登记表
+             注销、一个按本次装载的区间回滚），后者由注册表消费线程改写，
+             不能在未编组的回滚路径上顺手动。
+             </remarks>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleHost.PendingModule">
+             <summary>
+             一个已装载、尚未接入宿主的模块。
+            
+             <c>Types</c> 是该程序集的类型表，接入阶段据此找 <c>IModuleContextAware</c> 实现；
+             其余字段只为接入完成后那一行 ✓ / ✗ 日志——它必须在接入之后打印，
+             因为「装上了没有」这句话在接上之前还不成立。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.PendingModule.#ctor(System.String,System.String,System.Collections.Generic.IReadOnlyList{System.Type},System.String,System.String,System.String)">
+             <summary>
+             一个已装载、尚未接入宿主的模块。
+            
+             <c>Types</c> 是该程序集的类型表，接入阶段据此找 <c>IModuleContextAware</c> 实现；
+             其余字段只为接入完成后那一行 ✓ / ✗ 日志——它必须在接入之后打印，
+             因为「装上了没有」这句话在接上之前还不成立。
+             </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleHost.ModuleLoadContext">
+            <summary>可回收的加载上下文:模块及其依赖全部从内存流加载,不锁磁盘文件。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ModuleLoadContext.TryLoadFromPackage(System.Reflection.AssemblyName,System.Reflection.Assembly@)">
+            <summary>
+            只从本包目录装载。找不到就返回 false，绝不回落到 Default。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.InstallPackage(System.String)">
+            <summary>
+            Validates and atomically installs a manifest package into the fixed runtime module directory.
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.RemovePackage(System.String)">
+            <summary>Atomically removes a named manifest package from the runtime module directory.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Uninstall(System.String)">
+            <summary>
+            Uninstalls a module package from the fixed AppData runtime directory.
+            This is the persistent counterpart to <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.Unload(System.String)"/>.
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Reload">
+            <summary>
+            整体重载：先拆旧界面并卸载可回收 ALC，再装新包。
+            WPF 模块（例如 HistoryAurora）若先 Build 再卸旧包，进程里会同时存在两份同名
+            程序集；默认上下文的 Resolving 钩子会命中旧的那份，新窗口的 XAML 随即解析失败。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.LoadOne(System.String)">
+            <summary>
+            只把刚换上的那一个包装进当前快照。不要走 <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.Reload"/>：
+            整仓拆除会拆掉 Aurora 等其它模块的界面与指令。
+            调用方必须已持有 <c>_reloadLock</c>。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.DisposeInstances(System.Collections.Generic.IReadOnlyList{System.Object})">
+             <summary>
+             回收模块实例持有的进程级资源。
+            
+             必须在 <c>alc.Unload()</c> 之前：卸载后再碰实例就是在动一个已经开始拆的上下文。
+             5.0 起宿主不再编排模块界面生命周期；模块自己的窗口由它在总线上登记的命令启动。
+            
+             任何一个实例抛出都只记警告：一个模块拆不干净，不能连累整轮重载——
+             那会让宿主停在一个既没有旧快照也没有新快照的状态上。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.CommitSnapshot(HistoryVulcan.Services.Modules.ModuleHost.Snapshot,HistoryVulcan.Services.Modules.ModuleHost.Snapshot)">
+             <summary>
+             换上新快照，然后按依赖序逐个接入模块。
+            
+             拆旧登记、切换 <c>_current</c>、发布 XAML 上下文三件事必须先整体做完：
+             模块 <c>Attach</c> 里开窗、解析 XAML、调用别的模块都是正常写法，
+             那时它必须看到的是**新**快照。接入本身留在重载线程上跑，只把登记表写入
+             编组过去——5.1.2 的线程边界不因这次改动而移动。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ResolveFromModuleContexts(System.Runtime.Loader.AssemblyLoadContext,System.Reflection.AssemblyName)">
+            <summary>
+            XAML 按程序集简单名走默认上下文。把可回收 ALC 里已装载的同名程序集交回去；
+            尚未装载的，只从该 ALC 的模块包目录装进<strong>那个</strong>可回收上下文。
+            不要装进 Default——装进去就卸不掉，也锁住磁盘上的 DLL。
+            本方法不得取 <c>_reloadLock</c>：Attach / InitializeComponent 就在那把锁里。
+            也不得对可回收 ALC 调用 <c>LoadFromAssemblyName</c>：包里没有的程序集会回落到
+            Default，再进本钩子，无限递归。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ResolvePinnedDependency(System.Runtime.Loader.AssemblyLoadContext,System.Reflection.AssemblyName)">
+             <summary>
+             把钉住模块的依赖解析到它自己的包目录。
+            
+             默认上下文只探测宿主目录，不认识模块包；没有这个钩子，模块主程序集能装上，
+             它引用的 AvalonDock 却找不到。只用于 <c>pinned: true</c>。
+             </summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Modules.ModuleHost.ReadyHookSuffix">
+            <summary>模块可选声明的就绪钩子后缀：<c>&lt;域&gt;.host.ready</c>。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Modules.ModuleHost.ReadySource">
+            <summary>就绪通知的来源标签；走安静通道，不进指令历史。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Modules.ModuleHost.DependsOnField">
+            <summary>manifest 里声明模块级前置依赖的字段名。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.IsReady">
+             <summary>
+             当前快照是否已完成「全部模块接上宿主、指令登记完毕」。
+            
+             装载中为 false。这是 <c>vulcan.module.ready</c> 的唯一真值：模块与远端据此
+             判断现在看到的指令面是不是完整的，而不必靠「等一会儿再试」猜。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ReadDependsOn(System.String)">
+             <summary>
+             读 manifest 的 <c>dependsOn</c>：本模块要求先接上的其它模块名。
+            
+             只影响**接入次序**，不构成硬前置：依赖缺失时本模块照样装载，只是记一条发现诊断。
+             宿主不替模块决定「少了谁就不能跑」——那是模块自己的判断，而把它做成硬失败会让
+             一个模块的缺席连累整棵依赖树。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.OrderByDependencies``1(System.Collections.Generic.IReadOnlyList{``0},System.Func{``0,System.String},System.Func{``0,System.Collections.Generic.IReadOnlyList{System.String}},System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Modules.ModuleOrderProblem}@)">
+             <summary>
+             按声明的依赖关系排出接入次序：依赖在前，其余保持名称序。
+            
+             名称序是**基准序**而不是兜底：没有任何声明时结果与 5.1.2 完全一致，
+             升级不会凭空改变既有次序；有声明时只把必要的模块前移，其余仍然稳定。
+             未知依赖与依赖环都不失败——它们各记一条诊断，剩余模块按基准序补齐，
+             因为「排不出次序」不该等于「谁都不装」。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.OrderForStartup(System.Collections.Generic.IReadOnlyList{HistoryVulcan.Services.Modules.ModuleDiscoveryEntry})">
+            <summary>按 manifest 的 dependsOn 排出本轮装载次序，并把排序问题记进发现诊断。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.AttachPhase(HistoryVulcan.Services.Modules.ModuleHost.Snapshot,System.String)">
+             <summary>
+             接入阶段：按装载次序逐个接上宿主，每接上一个立刻登记它的指令。
+            
+             逐个登记是这次修复的关键。一次性登记意味着「全部接完之前，谁的指令都不在」，
+             而模块的 <c>Attach</c> 恰恰是它开始干活的地方；逐个登记则把这段窗口收敛成
+             「只看不见排在我后面的模块」，而那正是 <c>dependsOn</c> 能表达的事。
+             </summary>
+             <param name="snap">当前已提交的快照。</param>
+             <param name="onlyOwner">只接入这一个模块（单包热装路径）；null 表示整轮。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.AnnounceReady">
+             <summary>
+             通知声明了就绪钩子的模块：本轮装载已经完整。
+            
+             界面模块在 <c>Attach</c> 里就开了自己的线程，它拉目录的时刻不由宿主决定，
+             因此仅靠次序修不好——必须有一个「现在可以了」的信号。钩子是可选的：
+             没声明就跳过，宿主不因为模块没实现它而改变任何行为。
+            
+             走安静通道并且离开 <c>_reloadLock</c> 之后再发：钩子里回调宿主（重载、
+             装包、编组到 UI 线程）是完全正常的写法，在锁内同步发就会把它变成死锁。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.MarshalToUi(System.Action)">
+            <summary>把回调编组到注册表消费线程；未装配 UI 上下文时就地执行。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.LoadTypes(System.Reflection.Assembly)">
+            <summary>取程序集的类型表;缺失依赖只丢掉受影响的类型,不让整个模块下线(MD-06)。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.CollectType(HistoryVulcan.Services.Modules.ModuleHost.Snapshot,System.String,System.String,System.Type,HistoryVulcan.Services.Modules.XmlDocs)">
+            <summary>把一个业务类的公共方法收集为待注册指令(MD-03/04)。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleOrderProblem">
+            <summary>装载次序无法按声明排定时留下的说明；不构成失败。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleOrderProblem.#ctor(System.String,System.String,System.String)">
+            <summary>装载次序无法按声明排定时留下的说明；不构成失败。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.XmlDocs">
+            <summary>
+            读取编译器生成的 XML 文档文件(模块 DLL 同目录同名 .xml),
+            把方法的 &lt;summary&gt; / &lt;param&gt; 注释变成指令帮助文本(MD-03)。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleManifestReader">
+            <summary>Reads package identity and contained paths independently of directory discovery.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModulePackageTransaction">
+            <summary>Tracks completed filesystem moves so recovery never deletes an untouched package.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.OfflineModuleInstall">
+             <summary>
+             不依赖运行中宿主的模块包安装。
+             </summary>
+             <remarks>
+             **这是恢复矩阵里最后一格。**
+            
+             平时换模块靠两条路：经指令总线调 <c>vulcan.module.install</c>，或者直接把包拷进模块槽
+             让文件监视自己重载。两条都要求宿主**已经起来了**。宿主起不来时——比如某个模块在装载
+             阶段就抛，或者宿主自己的快照坏了——那两条路一条都不通，而恰恰此刻最需要换包。
+            
+             因此本类刻意**不构建组合根、不装载任何模块、不碰指令总线**：它只做校验和文件事务。
+             装载路径整个坏掉时它依然成立，这是它存在的全部理由。凡是让它依赖宿主运行时的改动，
+             都是在拆掉这一格。
+            
+             校验、拷贝与回滚复用 <see cref="T:HistoryVulcan.Services.Modules.RuntimeModulePackageStore"/>，与活宿主的那条编排同源：
+             「离线装的包和在线装的包不一样」会是一类极难排查的故障。
+             </remarks>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.OfflineModuleInstall.Result">
+            <summary>安装结果：退出码与一行人读消息。</summary>
+            <param name="ExitCode">0 成功；2 参数或校验失败；1 文件操作失败。</param>
+            <param name="Message">人读结果，供 CLI 直接打印。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.#ctor(System.Int32,System.String)">
+            <summary>安装结果：退出码与一行人读消息。</summary>
+            <param name="ExitCode">0 成功；2 参数或校验失败；1 文件操作失败。</param>
+            <param name="Message">人读结果，供 CLI 直接打印。</param>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.ExitCode">
+            <summary>0 成功；2 参数或校验失败；1 文件操作失败。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.OfflineModuleInstall.Result.Message">
+            <summary>人读结果，供 CLI 直接打印。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.OfflineModuleInstall.Install(System.String,System.String)">
+            <summary>
+            把 <paramref name="sourcePath"/> 处的模块包安装进 <paramref name="runtimeRoot"/>。
+            </summary>
+            <remarks>
+            与在线安装的差别只有一处：不卸载、不重载、不核对快照。若此刻恰好有宿主在运行，
+            它的文件监视会看到目录变化并自行重载——**但不要依赖这一点**：
+            正在被装载的程序集处于文件锁定状态，替换会失败并回滚。
+            换活着的宿主里的模块，请走 <c>vulcan.module.install</c>。
+            </remarks>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource">
+            <summary>
+            Discovers manifest packages from the direct children of a fixed runtime module directory.
+            </summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.ChecksumFileName">
+            <summary>The integrity manifest required at the root of every module package.</summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.MutableDataDirectoryName">
+            <summary>Runtime-owned state is kept beside the immutable package payload.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.#ctor(System.String)">
+            <summary>Creates a scanner for one absolute runtime module directory.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.Roots">
+            <inheritdoc />
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.Discover">
+            <inheritdoc />
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.IsTransientPackageDirectory(System.String)">
+            <summary>
+            运行区里由发布/回滚工具留下的暂存目录。它们不是活动模块，
+            不能被扫描成第二个同名包。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.RuntimeModulePackageStore">
+             <summary>
+             运行区模块包的校验与文件事务原语。
+             </summary>
+             <remarks>
+             这些方法原先是 <see cref="T:HistoryVulcan.Services.Modules.ModuleHost"/> 的私有静态成员。抽出来是因为**装包有两条编排**：
+            
+             - <c>ModuleHost.InstallPackage</c>：在活着的宿主里换包，要先卸载旧模块释放文件锁，
+               换完还要重载并核对新快照；
+             - <c>OfflineModuleInstall</c>：宿主没起来（或起不来）时按文件系统换包，
+               没有快照可卸、也没有快照可核。
+            
+             两条编排不同，但**校验、拷贝与回滚必须是同一份**——这几步一旦分叉，
+             代价是用户的模块目录。编排各自保留，原语共用。
+             </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.RuntimeModulePackageStore.PreserveMutableData(System.String,System.String)">
+            <summary>Copies runtime state while keeping the original available for rollback.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.SettingsService">
+            <summary>
+            应用设置(F-01/F-03):%AppData%/&lt;应用名&gt;/settings.json,扁平键值对。
+            vulcan.app.set / vulcan.app.get 指令与派生应用共用;写入即落盘。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.SettingsService.#ctor(HistoryVulcan.Services.AppPaths)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.SettingsService.Get(System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.SettingsService.GetInt(System.String,System.Int32)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.SettingsService.Set(System.String,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.SettingsService.All">
+            <summary>全部键(vulcan.app.get 不带参数时列出)。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.ShellLog">
+            <summary>
+            正式日志服务(§6.2,M2):
+            - L-01 多输出端:内存缓冲(控制台窗口补读)/ 滚动文件 / IDE 调试输出
+            - L-02 滚动:按天切分 + 单文件超 10MB 续号切分;保留天数可配(默认 30 天)
+            - L-03 指令回显与普通日志共用本管道、以类别区分(cmd:* 前缀)
+            - N-03 承压:文件写入走后台单线程 + 常开流,1000 条/秒不阻塞调用方
+            文件始终全量落盘;控制台显示级别过滤在窗口侧完成(L-04)。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.ShellLog.#ctor(HistoryVulcan.Services.AppPaths,System.Int32)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="E:HistoryVulcan.Services.ShellLog.EntryAdded">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.ShellLog.Log(HistoryVulcan.Core.Logging.ShellLogLevel,System.String,System.String)">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.ShellLog.Snapshot">
+            <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.ShellLog.Dispose">
+            <summary>退出前冲刷文件队列(App 关闭时调用)。</summary>
+        </member>
+    </members>
+</doc>
