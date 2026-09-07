@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "type": "HistoryVulcan.Module",
+  "name": "DemoModule",
+  "version": "1.0.0",
+  "artifact": "DemoModule.dll",
+  "ui": false,
+  "docs": "docs/README.md"
+}

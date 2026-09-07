@@ -6,7 +6,7 @@
 
 - `HistoryVulcan.Tests/`：引用源码工程的 Debug/Release 合同与回归测试，已加入根解决方案。
 
-停靠/顶栏、局域网 Web 网关和四包 NuGet 消费烟测已随宿主轻量化迁出或退役：前端回归在 HistoryAurora，Web 边界在 HistoryPortunus，宿主不再 `dotnet pack`，因此本目录不再保留 `PackageSmoke/`。测试迁移、拆分或新增时，必须同步更新根解决方案和 `b-Office/current/验证合同.md`，禁止在 `b-Code-HistoryVulcan/tests`、`src` 或示例目录新增测试项目。
+停靠/顶栏、局域网 Web 网关和四包 NuGet 消费烟测已随宿主轻量化迁出或退役：前端回归在 HistoryAurora，Web 边界在 HistoryPortunus，宿主不再 `dotnet pack`，因此本目录不再保留 `PackageSmoke/`。测试迁移、拆分或新增时，必须同步更新根解决方案和 `b-Office/current/验证合同.md`，禁止在 `b-Code-HistoryVulcan/tests`、`src` 或示例目录新增测试项目。起步示例 `b-Code-Samples/DemoModule` 由本测试项目装载为完整运行包，不在示例目录里写测试。
 
 源码质量门禁由宿主进程内 `QualityGates` 执行（`ReleasePipelineTests.QualityGatesPassOnThisRepository`）：活动源码不得包含警告抑制标记，生产 `.cs`/`.xaml` 文件不得超过 1000 行。
 

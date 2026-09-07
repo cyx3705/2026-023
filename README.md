@@ -25,6 +25,7 @@ HistoryVulcan 是 OneHistory 的模块宿主，负责模块注册与生命周期
 | [有效决策](b-Office/current/有效决策.md) | 有效约束与 DEC-060 |
 | [文档中心](b-Office/文档中心.md) | 编辑源、历史和发布资产 |
 | [模块开发手册](b-Office/package/模块开发手册.md) | 仅模块使用的开发管线 |
+| [起步示例](b-Code-Samples/README.md) | 对齐现行宿主的最小模块 `DemoModule` |
 
 ## 构建与验证
 

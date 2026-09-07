@@ -11,9 +11,9 @@ namespace BaseVariable;
 /// 命名空间保持 BaseVariable 而非 HistoryVulcan.Core.Modules:宿主的识别逻辑
 /// (<c>ModuleHost.IsModuleInfo</c>)按全名比对基类链,改名会使既有已编译模块无法装载。
 ///
-/// 装载不要求模块引用本程序集:识别只看基类全名,因此把契约类直接编译进模块自身
-/// (见 b-Code-Samples/ModuleInfoBase.cs 的零依赖示范)同样有效。引用 Core 的模块
-/// 必须直接使用本类型:同时保留自带副本会造成 CS0433 类型二义性。
+/// 装载不要求模块引用本程序集:识别只看基类全名。现行起步示例
+/// <c>b-Code-Samples/DemoModule</c> 直接引用本类型并经 <c>IModuleContextAware</c>
+/// 登记命令；不要再复制本文件。引用 Core 的模块必须使用本类型，同时保留自带副本会造成 CS0433。
 /// </summary>
 public abstract class ModuleInfoBase
 {

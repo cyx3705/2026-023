@@ -22,13 +22,15 @@
   "paths": {
     "activeRoots": [
       "b-Code-HistoryVulcan",
+      "b-Code-Samples",
       "b-Code-Tests",
       "b-Code-Eng",
       "b-Office/current",
       "b-Office/package"
     ],
     "sourceRoots": [
-      "b-Code-HistoryVulcan"
+      "b-Code-HistoryVulcan",
+      "b-Code-Samples"
     ],
     "generatedRoots": [
       "z-Publish/host",
@@ -64,6 +66,7 @@
     "historyBoundary": "b-Office/history/历史资料说明.md",
     "servicePlan32": "b-Office/history/V3.2后台服务化方案.md",
     "moduleApi": "b-Office/package/HistoryVulcan_模块API.md",
+    "sample": "b-Code-Samples/README.md",
     "upgradeGuideIndex": "b-Office/history/升级指南-总纲.md",
     "upgradeGuideDiana": "b-Office/history/升级指南-HistoryDiana.md",
     "upgradeGuideJanus": "b-Office/history/升级指南-HistoryJanus.md",

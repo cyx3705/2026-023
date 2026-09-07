@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>DemoModule</AssemblyName>
+    <RootNamespace>DemoModule</RootNamespace>
+    <Version>1.0.0</Version>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Description>HistoryVulcan 起步示例：显式登记命令的最小完整包。</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\b-Code-HistoryVulcan\HistoryVulcan.Core\HistoryVulcan.Core.csproj">
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="module.manifest.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="docs\README.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
