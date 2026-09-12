@@ -5,8 +5,10 @@
 本文件是模块作者唯一需要的宿主合同。HistoryVulcan 只提供模块注册器、命令总线和模块开发管线；
 界面与传输能力由认领模块维护，不属于宿主模块 SDK。
 
-5.1.2 起模块接入面冻结。5.2 与本轮 5.3.0 经明确批准删除过期公开面，兼容变化见下文；
-不能据冻结标签推断所有历史接口仍存在。三份 Shipped 不改写，现行 API 结合 Unshipped 增删和本版批准基线判断。
+5.1.2 起模块接入面冻结，但**冻结标签不等于「所有历史接口仍在」**：5.2 与 5.3.0 都经明确批准删除过
+过期公开面。现行 API 以本版批准基线与 Unshipped 增删为准；编译不过时先查这一篇，再查
+`b-Office/history/` 下对应版本的归档（5.2 移除清单在 `5.2.1-现行合同归档.md`，
+5.3.0 的在 `5.3.0-修复与清理证据.md`）。删公开面走主版本规则。
 
 ## 1. 引用宿主快照
 
@@ -63,58 +65,6 @@ HistoryVulcan 源码工程；需要联调时显式提供项目自己的开关，
 界面模块尤其要注意：`Attach` 里开的线程会立刻去拉命令目录和各模块页面描述。
 那个时刻目录必然是不完整的——把这类工作挪进 `host.ready`。
 
-## 2.2 5.2 消费变更摘要（公开面移除）
-
-5.2 移除以下成员。**这十条在宿主源码、测试与七个已部署模块的二进制里都是零引用**，
-因此对现有模块没有迁移动作；列出来是为了让将来编译不过的人知道去处。
-
-| 移除 | 替代 |
-| --- | --- |
-| `CommandBus.ShouldUseRemote` | `CommandBus.ShouldUseRemoteCommand`（多一个命令文本参数） |
-| `CommandDescriptor.HasAnnotation(key)` | `bool.TryParse(descriptor.Annotation(key), out var v) && v`；注解语义本就由消费方定义 |
-| `CommandRegistry.DomainsOf(names)` | 无。域由 `CommandRegistry.GetDomain` / `Domains()` 给出，不再按命令名前缀猜 |
-| `CommandRegistry.LegacyDomain(name)` | `registry.GetDomain(name)` |
-| `CommandRegistry.LegacyClass(name)` | `registry.GetCommandClass(name)`（未注册名走的正是同一条推导） |
-| `CommandRegistry.LegacyMethod(name)` | `CommandRegistry.GetMethod(name)`（两者原本逐字相同） |
-| `CommandClassLabels.IsNone(value)` | `string.IsNullOrWhiteSpace(value)` |
-| `DomainFocus.WouldPrefix(...)` | `DomainFocus.Resolve(...)` 的返回值与输入不等，即表示拼了前缀 |
-| `ModuleHost.FindModuleDomainConflicts(...)` | 无。模块域由 module owner 决定，见 `CommandRegistry.ResolveDomain` |
-
-同批还有一项**不改签名的行为收紧**：指令文本解析失败时，回显会遮掉命令名之后的整段
-（此前按正则逐个遮）。那种输入执行不了，遮全是唯一不需要判断的安全答案。
-
-命令行面新增 `vulcan.module.ready`：5.1.3 加了这条就绪查询却漏进白名单，
-现已补上，`HistoryVulcan.Cli.exe --runtime vulcan.module.ready` 可用。
-
-## 2.3 5.3.0 消费变更摘要
-
-本轮按用户指定的 5.3.0 执行公开面删除与行为收紧，保留 v5.1.2 标签。常规删除走主版本规则不变；
-这是一项有范围的例外，不保证未知第三方二进制兼容。完整符号以 5.3.0 Unshipped 和批准基线为准。
-
-| 删除 | 当前入口或归属 |
-| --- | --- |
-| ZModuleDiscoverySource 类型、构造、扫描与路径迁移方法及常量 | RuntimeModuleDiscoverySource；只认固定运行区完整包 |
-| ModuleHost(string modulesDir, log) | ModuleHost(IModuleDiscoverySource, log) |
-| ModuleHost.ChangeDirectory / ChangeDiscoveryRoots / ReloadConfirmedSources | 运行根固定，无切换或确认源入口 |
-| ModuleHost.RequireConfirmedSources / EnableCommands | 无；所有有效接入模块统一登记命令 |
-| ModuleDiscoveryEntry.McpExposure 及含该参数的构造函数 | 新构造函数只含 Name/Version/PackagePath/ManifestPath/ArtifactPath/Ui/DocsPath/DependencyPaths |
-| ServiceComposer.MigrateLegacyMcpSettings / RegisterServiceMcpSettingCommands | 配置由宿主内部统一注册，不再提供 MCP 专用 API |
-| ShellRelayConfirmation 类型和远程确认方法 | 默认拒绝为内部实现，界面安装 Bus.Confirmation |
-
-旧 manifest 额外 MCP 字段直接忽略。宿主不自动删除旧配置文件或键，不从其他设置文件迁移值。
-vulcan.app.get/set 保持 key/value 参数及原 service 配置存储位置，允许通用键；
-读取、列举、写入回执遮蔽敏感值，取消 mcp.* 白名单。敏感数据消费方按自身合同直接使用现用设置接口，不依赖显示回执取明文。
-
-runtime 仅保留 vulcan.module.list/ready/reload/install；portunus.mcp.status/start/stop 即便在模块中注册也不能经 runtime 管道执行。
-Portunus 的管理入口按其已发布合同使用；不得假定宿主另有模块扩展协议。当前用户管道、握手与动作批准保持。
-
-保留 FrontendExecutor、RemoteExecutor、ShouldUseRemoteCommand、现用模块管理、目录 DTO、设置和路径接口：
-已部署 Aurora/Janus/Mercury 元数据及消费合同存在引用。它们是通用集成面，不是宿主网关实现。
-
-Attach 失败不发布该模块任何命令，冷启动保留失败诊断并继续其他模块；热安装失败回滚。
-相同包只有 Attached=true 才视为健康幂等成功；失败或未装载实例可以重装修复。
-进度日志按本次命名/位置敏感值过滤；InvokeAsync 仍返回内部原始 Data，不回显、不入历史，其进度也须脱敏。
-
 ## 3. 命令契约
 
 模块业务命令采用三段式小写名称：`<模块域>.<类>.<方法>`。模块域去掉 `History` 前缀，例如
@@ -129,6 +79,10 @@ Attach 失败不发布该模块任何命令，冷启动保留失败诊断并继�
 模块可用 `CommandDescriptor.Annotations` 表达模块自有元数据；宿主不解释该数据。需要活对象时放在
 `CommandResult.Data`，调用方负责理解其类型与生命周期。
 
+敏感值由总线按参数名判定并在回显、命令历史与结果里遮蔽，进度日志按本次命名/位置的敏感值一并过滤。
+`InvokeAsync` 仍返回内部原始 `Data`，它不回显、不入历史——**要明文的消费方读 `Data` 或直接用设置接口，
+不要去解析回执文本**。`vulcan.app.get` / `set` 是通用 key/value 设置入口，没有前缀白名单。
+
 ## 4. 模块运行包
 
 运行包只安装到 `%AppData%\HistoryVulcan\Modules\<模块名>`。安装会先校验 manifest 和完整 SHA256 清单，
@@ -138,6 +92,10 @@ Attach 失败不发布该模块任何命令，冷启动保留失败诊断并继�
 清单覆盖模块包的不可变载荷；`history/` 是归档目录，`data/` 是模块运行态目录，两者不计入 SHA256SUMS。
 manifest 的可选字段 `dependsOn`（字符串数组，模块名）声明接入次序，见 2.1。
 模块的 `artifact`、`docs` 和 `deps` 不得放在 `data/` 下，升级时宿主保留已有 `data/` 内容。
+manifest 里宿主不认识的字段（例如旧版的 MCP 字段）被直接忽略；宿主不迁移、也不删除旧配置文件或键。
+
+`Attach` 失败的模块**一条命令都不发布**：冷启动保留失败诊断并继续装其余模块，热安装失败回滚。
+同一个包只有 `Attached=true` 才算健康的幂等成功——失败或未装载的实例可以直接重装修复。
 不要整仓 `vulcan.module.reload`：那会拆除全部模块，界面模块可能变成 0 条指令。
 
 模块作者不手工拷贝 AppData，也不改变发现根。模块管理页的“卸载模块”按钮调用
@@ -168,8 +126,10 @@ HistoryVulcan.Cli.exe --cli vulcan.dev.finish name=<模块> msg=<说明> worktre
 `executionTarget`、`candidatePath`、`installedPath`、`runtimeAck`、`logPath`、`diagnostics`、`data`。
 `vulcan.module.list` 的模块名、版本、`instanceId`、`commandCount` 在 `data`。
 
-`--runtime` 只用于查询已运行宿主的受限状态，或执行批准过的 `reload` / `install`；
-模块开发的装包由 `submit`/`finish` 内部走同一条 `install`，不要单独调。
+`--runtime` 只用于查询已运行宿主的受限状态，或执行批准过的 `reload` / `install`：
+管道只放行 `vulcan.module.list` / `ready` / `reload` / `install` 四条，**别的指令即便在模块里注册过
+也不能经 runtime 执行**（例如 `portunus.mcp.*`，请按 Portunus 自己的已发布合同走它的管理入口；
+不要假定宿主另有模块扩展协议）。模块开发的装包由 `submit`/`finish` 内部走同一条 `install`，不要单独调。
 
 ## 6. 起步示例
 

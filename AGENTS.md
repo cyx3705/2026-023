@@ -37,7 +37,7 @@
 1. 读取根目录 `project.manifest.json`，确认项目身份、冻结状态、活动目录和可用命令。
 2. 读取根目录 `README.md` 与 `b-Office/current/项目概览.md`。
 3. 根据任务读取 `技术合同.md`、`有效决策.md` 或 `验证合同.md`；涉及目录治理时读取
-   `b-Office/文档中心.md`，涉及消费或跨项目复用时读取 `b-Office/package/HistoryVulcan_模块API.md`。
+   `b-Office/文档中心.md`，涉及消费或跨项目复用时读取 `b-Office/package/模块API.md`。
 4. 只进入 manifest 声明的活动目录。`z-Publish/`、`bin/`、`obj/`
    和 `artifacts/` 默认不进入源码维护上下文。
 5. 跨项目说明书：先执行 `diana.docs.catalog`，把完整输出留在本对话中，再调用其中一条

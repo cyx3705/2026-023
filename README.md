@@ -11,7 +11,7 @@ HistoryVulcan 是 OneHistory 的模块宿主，负责模块注册与生命周期
 - `Attach` 失败的模块不发布命令，冷启动保留诊断并继续其他模块；热安装返回失败。内容相同且实例健康才视为幂等成功。
 - `vulcan.app.get/set` 接受通用配置键，存储位置不变；读取、列举和写入回执遮蔽敏感值，已有配置不自动迁移或删除。
 - `--runtime` 仅接受 `vulcan.module.list/ready/reload/install`，保留当前用户管道、握手与动作批准。
-- 本版删除的公开成员登记在三份 Unshipped 与 5.3.0 批准基线中；Shipped 历史不改写。兼容变化见[模块 API](b-Office/package/HistoryVulcan_模块API.md)。
+- 本版删除的公开成员登记在三份 Unshipped 与 5.3.0 批准基线中；Shipped 历史不改写。兼容变化见[模块 API](b-Office/package/模块API.md)。
 
 ## 维护入口
 

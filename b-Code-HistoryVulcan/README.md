@@ -11,4 +11,4 @@
 运行区仅固定 Modules 直属完整包；不扫描项目库或裸 DLL。
 公开 API 由 Shipped 加 Unshipped 增删定义，5.3.0 批准基线在 b-Code-Eng；历史 Shipped 不修改。
 
-构建与验收见[根 README](../README.md)，消费合同见[模块 API](../b-Office/package/HistoryVulcan_模块API.md)。
+构建与验收见[根 README](../README.md)，消费合同见[模块 API](../b-Office/package/模块API.md)。

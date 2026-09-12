@@ -8,4 +8,4 @@
 2. 在宿主仓 `b-Code-Eng/pipeline/module-publish.manifest.json` 登记 `kind=module`。
 3. 走 `vulcan.dev.start` / `submit` / `finish`，不要手工拷 AppData，也不要把本示例装进正式运行区。
 
-流程见[模块开发手册](../b-Office/package/模块开发手册.md)，接口见[模块 API](../b-Office/package/HistoryVulcan_模块API.md)。
+流程见[模块开发手册](../b-Office/package/模块开发手册.md)，接口见[模块 API](../b-Office/package/模块API.md)。

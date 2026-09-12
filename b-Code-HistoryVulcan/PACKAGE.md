@@ -8,4 +8,4 @@ Aurora owns the desktop UI; Portunus owns Web/MCP gateways. Existing generic int
 
 Consumer documentation is edited under b-Office/package and generated into z-Publish/docs by the release pipeline.
 Do not edit generated snapshots. Obtain cross-project contracts through Diana's published catalog and channels.
-See the [module API](../b-Office/package/HistoryVulcan_模块API.md) for migration and package requirements.
+See the [module API](../b-Office/package/模块API.md) for migration and package requirements.
