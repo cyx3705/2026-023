@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.Loader;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
@@ -45,7 +45,7 @@ public sealed partial class ModuleHost
                 throw;
             }
 
-            CommitSnapshot(old, next);
+            CommitSnapshot(next);
             SyncFileWatching();
             _ready = true;
         }
@@ -149,20 +149,50 @@ public sealed partial class ModuleHost
         // 必须在 Build / Attach 之前把旧模块指令从活登记表拿掉。
         // HistoryAurora 的 RegisterCommands 看见 live.TryGet 为真就会跳过；
         // 若拆实例后仍留着旧指令，重载后界面命令数会变成 0，且 attachFailures 为空。
-        UnregisterSnapshotCommands(old);
+        UnregisterCommands(old);
         DisposeInstances(old.Instances);
 
         foreach (var alc in old.Contexts)
             alc.Unload();
     }
 
-    private void UnregisterSnapshotCommands(Snapshot old)
+    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    public void Dispose()
+    {
+        lock (_reloadLock)
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            _ready = false;
+        }
+
+        _watcher.Dispose();
+        TeardownSnapshot(_current);
+        _current = Snapshot.Empty;
+        PublishXamlContexts();
+        if (_xamlResolverInstalled)
+        {
+            AssemblyLoadContext.Default.Resolving -= ResolveFromModuleContexts;
+            _xamlResolverInstalled = false;
+        }
+
+        if (_pinnedResolverInstalled)
+        {
+            AssemblyLoadContext.Default.Resolving -= ResolvePinnedDependency;
+            _pinnedResolverInstalled = false;
+        }
+    }
+
+    private void UnregisterCommands(Snapshot snapshot)
     {
         if (_registry == null)
             return;
 
-        foreach (var name in old.RegisteredNames.ToList())
+        foreach (var name in snapshot.RegisteredNames.ToArray())
             _registry.Unregister(name);
+        snapshot.RegisteredNames.Clear();
     }
 
     /// <summary>
@@ -200,11 +230,10 @@ public sealed partial class ModuleHost
     /// 那时它必须看到的是**新**快照。接入本身留在重载线程上跑，只把登记表写入
     /// 编组过去——5.1.2 的线程边界不因这次改动而移动。
     /// </summary>
-    private void CommitSnapshot(Snapshot old, Snapshot next)
+    private void CommitSnapshot(Snapshot next)
     {
         MarshalToUi(() =>
         {
-            ClearOldRegistrations(old);
             _current = next;
             PublishXamlContexts();
             next.FinalizeMetas();
@@ -226,7 +255,7 @@ public sealed partial class ModuleHost
 
     private void PublishXamlContexts()
     {
-        var building = _building;
+        var building = ReferenceEquals(_building, _current) ? null : _building;
         var count = _current.Contexts.Count + (building?.Contexts.Count ?? 0);
         var list = new AssemblyLoadContext[count];
         var index = 0;

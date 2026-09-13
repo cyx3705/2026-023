@@ -70,6 +70,14 @@ public sealed class CommandRegistry
             return _commands.TryGetValue(name, out descriptor!);
     }
 
+    internal (CommandDescriptor? Descriptor, string Domain, string CommandClass) ResolveRequest(string name)
+    {
+        lock (_gate)
+            return _commands.TryGetValue(name, out var descriptor)
+                ? (descriptor, ResolveDomain(descriptor, _sources[name]), ResolveCommandClass(descriptor))
+                : (null, LegacyDomain(name), "core");
+    }
+
     /// <summary>返回注册来源：framework / app / module:&lt;name&gt;。</summary>
     public string GetSource(string name)
     {

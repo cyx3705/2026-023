@@ -13,6 +13,38 @@ namespace HistoryVulcan.Tests;
 /// </summary>
 public sealed class PipelineHardeningTests
 {
+    [Fact]
+    public async Task ToolTimeoutCoversOutputReadsAndTerminatesTheChild()
+    {
+        var run = Task.Run(() => Assert.Throws<TimeoutException>(() => ToolProcess.Execute(
+            "cmd.exe", ["/c", "ping -n 30 127.0.0.1 >nul"], Path.GetTempPath(), TimeSpan.FromMilliseconds(200))));
+        var error = await run.WaitAsync(TimeSpan.FromSeconds(10));
+        Assert.Contains("已终止", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ToolOutputPreservesBothFinalUnterminatedLinesAndExitCode()
+    {
+        var result = ToolProcess.Execute("cmd.exe",
+            ["/c", "<nul set /p =out-tail&1>&2 <nul set /p =err-tail&exit /b 7"], Path.GetTempPath());
+        Assert.Equal(7, result.ExitCode);
+        Assert.Equal("out-tail", result.Output);
+        Assert.Equal("err-tail", result.Error);
+    }
+
+    [Fact]
+    public void ReleaseLogTailRetainsOnlyRequestedLinesAndReadsCompletion()
+    {
+        using var temp = new TemporaryDirectory();
+        var path = Path.Combine(temp.Path, "run.log");
+        File.WriteAllLines(path, Enumerable.Range(0, 10000).Select(index => "line-" + index));
+        File.WriteAllText(path + ".exit", "7");
+        var tail = ReleaseCommands.ReadTail(path, 2, out var exitCode, out var finished);
+        Assert.Equal(["line-9998", "line-9999"], tail);
+        Assert.True(finished);
+        Assert.Equal(7, exitCode);
+    }
+
     /// <summary>
     /// 两条输出流都灌满时不许死锁。
     /// </summary>
@@ -437,10 +469,4 @@ public sealed class PipelineHardeningTests
         public IReadOnlyList<KeyValuePair<string, string>> All() => [];
     }
 
-    private sealed class NullLog : IShellLog
-    {
-        public void Log(ShellLogLevel level, string category, string message) { }
-        public event EventHandler<ShellLogEntry>? EntryAdded { add { } remove { } }
-        public IReadOnlyList<ShellLogEntry> Snapshot() => [];
-    }
 }

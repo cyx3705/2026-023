@@ -74,10 +74,4 @@ public sealed class CommandBusRemoteValidationTests
 
     private static CommandBus NewBus() => new(new CommandRegistry(), new NullLog());
 
-    private sealed class NullLog : IShellLog
-    {
-        public void Log(ShellLogLevel level, string category, string message) { }
-        public event EventHandler<ShellLogEntry>? EntryAdded { add { } remove { } }
-        public IReadOnlyList<ShellLogEntry> Snapshot() => [];
-    }
 }

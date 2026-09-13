@@ -27,8 +27,6 @@ HistoryVulcan.Core.Commands.CommandBus.InvokeAsync(string! text, string! source,
 HistoryVulcan.Core.Commands.CommandBus.Registry.get -> HistoryVulcan.Core.Commands.CommandRegistry!
 HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor.get -> System.Func<string!, string!, System.Threading.CancellationToken, System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!>?
 HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor.set -> void
-HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemote.get -> System.Func<string!, bool>?
-HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemote.set -> void
 HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemoteCommand.get -> System.Func<string!, string!, bool>?
 HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemoteCommand.set -> void
 HistoryVulcan.Core.Commands.CommandBus.UiContext.get -> System.Threading.SynchronizationContext?
@@ -63,7 +61,6 @@ HistoryVulcan.Core.Commands.CommandDescriptor.Example.get -> string?
 HistoryVulcan.Core.Commands.CommandDescriptor.Example.init -> void
 HistoryVulcan.Core.Commands.CommandDescriptor.Handler.get -> System.Func<HistoryVulcan.Core.Commands.CommandContext!, System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!>!
 HistoryVulcan.Core.Commands.CommandDescriptor.Handler.init -> void
-HistoryVulcan.Core.Commands.CommandDescriptor.HasAnnotation(string! key) -> bool
 HistoryVulcan.Core.Commands.CommandDescriptor.Name.get -> string!
 HistoryVulcan.Core.Commands.CommandDescriptor.Name.init -> void
 HistoryVulcan.Core.Commands.CommandDescriptor.Parameters.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Commands.ParameterSpec!>!
@@ -196,11 +193,7 @@ static HistoryVulcan.Core.Commands.CommandDescriptor.Sync(System.Func<HistoryVul
 static HistoryVulcan.Core.Commands.CommandParser.IsBlankOrComment(string! line) -> bool
 static HistoryVulcan.Core.Commands.CommandParser.Parse(string! line) -> HistoryVulcan.Core.Commands.ParsedCommand!
 static HistoryVulcan.Core.Commands.CommandParser.QuoteArg(string! value) -> string!
-static HistoryVulcan.Core.Commands.CommandRegistry.DomainsOf(System.Collections.Generic.IEnumerable<string!>! commandNames) -> System.Collections.Generic.IReadOnlySet<string!>!
 static HistoryVulcan.Core.Commands.CommandRegistry.GetMethod(string! name) -> string!
-static HistoryVulcan.Core.Commands.CommandRegistry.LegacyClass(string! name) -> string!
-static HistoryVulcan.Core.Commands.CommandRegistry.LegacyDomain(string! name) -> string!
-static HistoryVulcan.Core.Commands.CommandRegistry.LegacyMethod(string! name) -> string!
 static HistoryVulcan.Core.Commands.CommandResult.Fail(string! message) -> HistoryVulcan.Core.Commands.CommandResult!
 static HistoryVulcan.Core.Commands.CommandResult.Ok(string! message = "完成", object? data = null) -> HistoryVulcan.Core.Commands.CommandResult!
 static HistoryVulcan.Core.Commands.ModuleDomainNaming.ToDomain(string! moduleName) -> string!
@@ -231,8 +224,6 @@ static HistoryVulcan.Core.Commands.CliExposurePolicy.IsExposed(string! commandNa
 static HistoryVulcan.Core.Commands.CliExposurePolicy.MissingCommands(HistoryVulcan.Core.Commands.CommandRegistry! registry) -> System.Collections.Generic.IReadOnlyList<string!>!
 static HistoryVulcan.Core.Commands.CliExposurePolicy.RefusalReason(string! commandName) -> string!
 static HistoryVulcan.Core.Commands.CommandClassLabels.Display(string? commandClass) -> string!
-static HistoryVulcan.Core.Commands.CommandClassLabels.IsNone(string? commandClass) -> bool
 static HistoryVulcan.Core.Commands.CommandClassLabels.ToKey(string? label) -> string!
 static HistoryVulcan.Core.Commands.DomainFocus.IsUnfocused(string? domain) -> bool
 static HistoryVulcan.Core.Commands.DomainFocus.Resolve(string? input, string? focusedDomain, System.Func<string!, bool>! isRegisteredDomain) -> string!
-static HistoryVulcan.Core.Commands.DomainFocus.WouldPrefix(string? input, string? focusedDomain, System.Func<string!, bool>! isRegisteredDomain) -> bool

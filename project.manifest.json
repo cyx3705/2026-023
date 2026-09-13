@@ -17,7 +17,7 @@
     "status": "active",
     "version": "5.3.0",
     "branch": "main",
-    "freezeTag": "v5.1.2"
+    "freezeTag": "v5.3.0"
   },
   "paths": {
     "activeRoots": [
@@ -61,6 +61,7 @@
     "verification": "b-Office/current/验证合同.md",
     "freeze": "b-Office/current/冻结合同.md",
     "commandPipelineAudit": "b-Office/current/断头指令审计表.md",
+    "hostRefactoring": "b-Office/current/宿主重构说明.md",
     "uiPlan31": "b-Office/history/V3.1界面现代化方案.md",
     "classRealign332": "b-Office/history/3.3.2-vulcan-class-realign.md",
     "historyBoundary": "b-Office/history/历史资料说明.md",
@@ -93,6 +94,14 @@
       "freezeTag"
     ],
     "linkCheckMode": "declared",
+    "linkCheckAdditionalFiles": [
+      "AGENTS.md",
+      "b-Code-HistoryVulcan/README.md",
+      "b-Code-HistoryVulcan/PACKAGE.md",
+      "b-Code-Tests/README.md",
+      "b-Code-Eng/README.md",
+      "b-Code-Samples/DemoModule/docs/README.md"
+    ],
     "host": {
       "identity": {
         "id": "2026-023",
@@ -107,7 +116,7 @@
     "setup": "dotnet restore .\\HistoryVulcan.sln --locked-mode",
     "build": "dotnet build .\\HistoryVulcan.sln -c Release --no-restore",
     "test": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj -c Release --no-build --no-restore",
-    "verify": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj -c Release --filter FullyQualifiedName~ReleasePipelineTests",
+    "verify": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj -c Release --filter \"FullyQualifiedName~ReleasePipelineTests|FullyQualifiedName~ProjectContractValidationTests\"",
     "run": "dotnet run --project .\\b-Code-HistoryVulcan\\App\\App.csproj",
     "package": "HistoryVulcan.Cli.exe --cli vulcan.release.cycle name=HistoryVulcan msg=package",
     "deploy": "HistoryVulcan.Cli.exe --cli vulcan.release.cycle name=HistoryVulcan msg=deploy",

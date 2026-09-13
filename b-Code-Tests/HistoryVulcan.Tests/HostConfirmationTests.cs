@@ -54,23 +54,5 @@ public sealed class HostConfirmationTests
     }
 
     /// <summary>只记消息文本的日志：断言的是"拒绝时留下了可见痕迹"，与条目结构无关。</summary>
-    private sealed class RecordingLog : IShellLog
-    {
-        private readonly List<string> _messages = [];
 
-        public IReadOnlyList<string> Messages => _messages;
-
-        public void Log(ShellLogLevel level, string category, string message) => _messages.Add(message);
-        public event EventHandler<ShellLogEntry>? EntryAdded { add { } remove { } }
-        public IReadOnlyList<ShellLogEntry> Snapshot() => [];
-    }
-
-    private sealed class MemorySettings : ISettingsService
-    {
-        private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
-        public string? Get(string key) => _values.GetValueOrDefault(key);
-        public int GetInt(string key, int fallback) => int.TryParse(Get(key), out var value) ? value : fallback;
-        public void Set(string key, string value) => _values[key] = value;
-        public IReadOnlyList<KeyValuePair<string, string>> All() => _values.ToList();
-    }
 }

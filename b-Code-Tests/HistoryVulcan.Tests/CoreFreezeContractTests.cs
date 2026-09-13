@@ -1,4 +1,4 @@
-﻿using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Services;
 using System.Collections.Concurrent;
@@ -182,8 +182,6 @@ public sealed class CoreFreezeContractTests
         Assert.Equal(string.Empty, registry.GetCommandClass("fixture.run"));
     }
 
-
-
     private static string TemporaryDirectory()
     {
         var path = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));
@@ -197,24 +195,4 @@ public sealed class CoreFreezeContractTests
         public bool Confirm(string prompt) => Approve;
     }
 
-    private sealed class NullLog : IShellLog
-    {
-        public void Log(ShellLogLevel level, string category, string message) { }
-        public event EventHandler<ShellLogEntry>? EntryAdded { add { } remove { } }
-        public IReadOnlyList<ShellLogEntry> Snapshot() => [];
-    }
-
-    private sealed class RecordingLog : IShellLog
-    {
-        private readonly ConcurrentQueue<ShellLogEntry> _entries = new();
-
-        public IReadOnlyList<ShellLogEntry> Entries => _entries.ToArray();
-
-        public void Log(ShellLogLevel level, string category, string message)
-            => _entries.Enqueue(new ShellLogEntry(DateTime.UtcNow, level, category, message));
-
-        public event EventHandler<ShellLogEntry>? EntryAdded { add { } remove { } }
-
-        public IReadOnlyList<ShellLogEntry> Snapshot() => Entries;
-    }
 }

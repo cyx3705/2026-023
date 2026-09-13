@@ -16,7 +16,7 @@ public sealed class RuntimePipeServerTests
     public async Task MalformedRequestDoesNotStopTheRuntimePipe()
     {
         var registry = new CommandRegistry();
-        var log = new TestLog();
+        var log = new NullLog();
         var bus = new CommandBus(registry, log);
         registry.Register(new CommandDescriptor
         {
@@ -30,7 +30,7 @@ public sealed class RuntimePipeServerTests
             ServiceName = "RuntimePipeTests",
             Registry = registry,
             Bus = bus,
-            Settings = new TestSettings(),
+            Settings = new MemorySettings(),
             Log = log,
         };
         var identityName = "RuntimePipeTests-" + Guid.NewGuid().ToString("N");
@@ -69,14 +69,14 @@ public sealed class RuntimePipeServerTests
     public async Task DisposeCancelsAnIdleRuntimeClient()
     {
         var registry = new CommandRegistry();
-        var log = new TestLog();
+        var log = new NullLog();
         var bus = new CommandBus(registry, log);
         var composition = new ServiceComposition
         {
             ServiceName = "RuntimePipeTests",
             Registry = registry,
             Bus = bus,
-            Settings = new TestSettings(),
+            Settings = new MemorySettings(),
             Log = log,
         };
         var identityName = "RuntimePipeTests-" + Guid.NewGuid().ToString("N");
@@ -95,7 +95,7 @@ public sealed class RuntimePipeServerTests
     public async Task ModuleSpecificCommandsAreRejectedEvenWhenRegisteredAndApproved(string command)
     {
         var registry = new CommandRegistry();
-        var log = new TestLog();
+        var log = new NullLog();
         var executed = false;
         registry.Register(new CommandDescriptor
         {
@@ -108,7 +108,7 @@ public sealed class RuntimePipeServerTests
             ServiceName = "RuntimePipeTests",
             Registry = registry,
             Bus = new CommandBus(registry, log),
-            Settings = new TestSettings(),
+            Settings = new MemorySettings(),
             Log = log,
         };
         Assert.Equal(
@@ -139,7 +139,7 @@ public sealed class RuntimePipeServerTests
         string command, bool approve, bool validHandshake, bool expected)
     {
         var registry = new CommandRegistry();
-        var log = new TestLog();
+        var log = new NullLog();
         var executed = false;
         registry.Register(new CommandDescriptor
         {
@@ -152,7 +152,7 @@ public sealed class RuntimePipeServerTests
             ServiceName = "RuntimePipeTests",
             Registry = registry,
             Bus = new CommandBus(registry, log),
-            Settings = new TestSettings(),
+            Settings = new MemorySettings(),
             Log = log,
         };
         var identity = "RuntimePipeTests-" + Guid.NewGuid().ToString("N");
@@ -209,30 +209,4 @@ public sealed class RuntimePipeServerTests
         }
     }
 
-    private sealed class TestSettings : ISettingsService
-    {
-        private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
-
-        public string? Get(string key) => _values.GetValueOrDefault(key);
-
-        public int GetInt(string key, int fallback)
-            => int.TryParse(Get(key), out var value) ? value : fallback;
-
-        public void Set(string key, string value) => _values[key] = value;
-
-        public IReadOnlyList<KeyValuePair<string, string>> All() => [.. _values];
-    }
-
-    private sealed class TestLog : IShellLog
-    {
-        public void Log(ShellLogLevel level, string category, string message) { }
-
-        public event EventHandler<ShellLogEntry>? EntryAdded
-        {
-            add { }
-            remove { }
-        }
-
-        public IReadOnlyList<ShellLogEntry> Snapshot() => [];
-    }
 }

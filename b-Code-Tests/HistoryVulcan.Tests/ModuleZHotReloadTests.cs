@@ -21,7 +21,7 @@ public sealed class ModuleZHotReloadTests
 
         var dllPath = Path.Combine(package, "ContextFixture.dll");
         var registry = new CommandRegistry();
-        var log = new TestLog();
+        var log = new RecordingLog();
         var settings = new MemorySettings();
         var bus = new CommandBus(registry, log);
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modules), log)
@@ -59,33 +59,4 @@ public sealed class ModuleZHotReloadTests
         }
     }
 
-    private sealed class MemorySettings : ISettingsService
-    {
-        private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
-
-        public string? Get(string key) => _values.GetValueOrDefault(key);
-
-        public int GetInt(string key, int fallback)
-            => int.TryParse(Get(key), out var value) ? value : fallback;
-
-        public void Set(string key, string value) => _values[key] = value;
-
-        public IReadOnlyList<KeyValuePair<string, string>> All() => [.. _values];
-    }
-
-    private sealed class TestLog : IShellLog
-    {
-        public List<ShellLogEntry> Entries { get; } = [];
-
-        public void Log(ShellLogLevel level, string category, string message)
-            => Entries.Add(new ShellLogEntry(DateTime.Now, level, category, message));
-
-        public event EventHandler<ShellLogEntry>? EntryAdded
-        {
-            add { }
-            remove { }
-        }
-
-        public IReadOnlyList<ShellLogEntry> Snapshot() => Entries;
-    }
 }

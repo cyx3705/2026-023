@@ -1,14 +1,13 @@
-# HistoryVulcan 源码
+# HistoryVulcan 源码导航
 
-当前版本由 VulcanVersion.props 定义为 5.3.0；根解决方案是唯一构建入口。
+版本源为 `VulcanVersion.props`，构建入口为根 `HistoryVulcan.sln`。组件职责见[项目概览](../b-Office/current/项目概览.md)。
 
-- HistoryVulcan.Core：模块上下文、命令注册/执行、日志和存储合同。
-- HistoryVulcan.Services：完整包发现、事务、模块生命周期、设置/日志及进程内开发发布引擎。
-- HistoryVulcan.ServiceHost：组合根、宿主循环、默认确认、离线 CLI 与当前用户 runtime 管道。
-- App / Cli：WinExe 和同目录 Console CLI。
+| 职责 | 实现位置 |
+| --- | --- |
+| 命令执行、绑定与审计 | Core/Commands：CommandBus、CommandRequest、CommandArguments、SensitiveName |
+| 模块生命周期 | Services/Modules：ModuleHost 的 Discovery、Startup、Snapshot、Descriptors、LoadContext、Reload、Packages 分部 |
+| 开发与发布 | Services/Development：ReleaseCatalog 解析登记表，ToolProcess 执行工具进程 |
+| 宿主与离线组合 | ServiceHost：ServiceComposition 持有 DevelopmentContext，CommandLineRunner 先校验再装配 |
+| 可执行入口 | App / Cli |
 
-界面由 Aurora、Web/MCP 由 Portunus 维护。保留 WPF 模块所需的解析和卸载，不包含旧前端或网关。
-运行区仅固定 Modules 直属完整包；不扫描项目库或裸 DLL。
-公开 API 由 Shipped 加 Unshipped 增删定义，5.3.0 批准基线在 b-Code-Eng；历史 Shipped 不修改。
-
-构建与验收见[根 README](../README.md)，消费合同见[模块 API](../b-Office/package/模块API.md)。
+源码工程统一 `IsPackable=false`；发行形态见 [PACKAGE](PACKAGE.md)，行为约束见[技术合同](../b-Office/current/技术合同.md)，构建测试命令见[验证合同](../b-Office/current/验证合同.md)。

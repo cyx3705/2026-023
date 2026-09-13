@@ -101,7 +101,7 @@ public sealed partial class ModuleHost
 
         var found = new List<ModuleOrderProblem>();
         problems = found;
-        if (items.Count <= 1)
+        if (items.Count == 0)
             return items;
 
         var baseline = items.OrderBy(nameOf, StringComparer.OrdinalIgnoreCase).ToList();

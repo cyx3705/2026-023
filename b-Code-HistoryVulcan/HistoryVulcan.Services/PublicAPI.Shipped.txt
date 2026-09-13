@@ -28,9 +28,6 @@ HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.DocsPath.get -> string?
 HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.DocsPath.init -> void
 HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.ManifestPath.get -> string!
 HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.ManifestPath.init -> void
-HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.McpExposure.get -> string?
-HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.McpExposure.init -> void
-HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.ModuleDiscoveryEntry(string! Name, string! Version, string! PackagePath, string! ManifestPath, string! ArtifactPath, bool Ui, string? DocsPath, System.Collections.Generic.IReadOnlyList<string!>! DependencyPaths, string? McpExposure) -> void
 HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.Name.get -> string!
 HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.Name.init -> void
 HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.PackagePath.get -> string!
@@ -50,28 +47,20 @@ HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot.Roots.init -> void
 HistoryVulcan.Services.Modules.ModuleHost
 HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.CommandRegistry! registry) -> void
 HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Commands.CommandBus! bus, HistoryVulcan.Core.Storage.ISettingsService! settings, string! dataDirectory) -> void
-HistoryVulcan.Services.Modules.ModuleHost.ChangeDirectory(string! newDir) -> void
-HistoryVulcan.Services.Modules.ModuleHost.ChangeDiscoveryRoots(System.Collections.Generic.IEnumerable<string!>! roots) -> void
 HistoryVulcan.Services.Modules.ModuleHost.DiscoveryDiagnostics.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic!>!
 HistoryVulcan.Services.Modules.ModuleHost.DiscoveryRoots.get -> System.Collections.Generic.IReadOnlyList<string!>!
 HistoryVulcan.Services.Modules.ModuleHost.Dispose() -> void
-HistoryVulcan.Services.Modules.ModuleHost.EnableCommands.get -> bool
-HistoryVulcan.Services.Modules.ModuleHost.EnableCommands.set -> void
 HistoryVulcan.Services.Modules.ModuleHost.EnableFileWatching.get -> bool
 HistoryVulcan.Services.Modules.ModuleHost.EnableFileWatching.set -> void
 HistoryVulcan.Services.Modules.ModuleHost.EnableUiModules.get -> bool
 HistoryVulcan.Services.Modules.ModuleHost.EnableUiModules.set -> void
 HistoryVulcan.Services.Modules.ModuleHost.InstallPackage(string! path) -> HistoryVulcan.Core.Commands.CommandResult!
 HistoryVulcan.Services.Modules.ModuleHost.ModuleHost(HistoryVulcan.Services.Modules.IModuleDiscoverySource! discoverySource, HistoryVulcan.Core.Logging.IShellLog! log) -> void
-HistoryVulcan.Services.Modules.ModuleHost.ModuleHost(string! modulesDir, HistoryVulcan.Core.Logging.IShellLog! log) -> void
 HistoryVulcan.Services.Modules.ModuleHost.Modules.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Services.Modules.ModuleMeta!>!
 HistoryVulcan.Services.Modules.ModuleHost.ModulesDirectory.get -> string!
 HistoryVulcan.Services.Modules.ModuleHost.Reload() -> void
 HistoryVulcan.Services.Modules.ModuleHost.ReloadCompleted -> System.Action?
-HistoryVulcan.Services.Modules.ModuleHost.ReloadConfirmedSources(System.Collections.Generic.IEnumerable<string!>! manifestPaths) -> void
 HistoryVulcan.Services.Modules.ModuleHost.RemovePackage(string! name) -> HistoryVulcan.Core.Commands.CommandResult!
-HistoryVulcan.Services.Modules.ModuleHost.RequireConfirmedSources.get -> bool
-HistoryVulcan.Services.Modules.ModuleHost.RequireConfirmedSources.set -> void
 HistoryVulcan.Services.Modules.ModuleHost.Start() -> void
 HistoryVulcan.Services.Modules.ModuleHost.UiContext.get -> System.Threading.SynchronizationContext?
 HistoryVulcan.Services.Modules.ModuleHost.UiContext.set -> void
@@ -104,10 +93,6 @@ HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource
 HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.Discover() -> HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot!
 HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.Roots.get -> System.Collections.Generic.IReadOnlyList<string!>!
 HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.RuntimeModuleDiscoverySource(string! root) -> void
-HistoryVulcan.Services.Modules.ZModuleDiscoverySource
-HistoryVulcan.Services.Modules.ZModuleDiscoverySource.Discover() -> HistoryVulcan.Services.Modules.ModuleDiscoverySnapshot!
-HistoryVulcan.Services.Modules.ZModuleDiscoverySource.Roots.get -> System.Collections.Generic.IReadOnlyList<string!>!
-HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ZModuleDiscoverySource(System.Collections.Generic.IEnumerable<string!>! roots) -> void
 HistoryVulcan.Services.SettingsService
 HistoryVulcan.Services.SettingsService.All() -> System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string!, string!>>!
 HistoryVulcan.Services.SettingsService.Get(string! key) -> string?
@@ -120,19 +105,9 @@ HistoryVulcan.Services.ShellLog.EntryAdded -> System.EventHandler<HistoryVulcan.
 HistoryVulcan.Services.ShellLog.Log(HistoryVulcan.Core.Logging.ShellLogLevel level, string! category, string! message) -> void
 HistoryVulcan.Services.ShellLog.ShellLog(HistoryVulcan.Services.AppPaths! paths, int retainDays = 30) -> void
 HistoryVulcan.Services.ShellLog.Snapshot() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Logging.ShellLogEntry!>!
-const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.AutomaticRootNotFound = "未能向上找到含多个编号项目目录的项目库根。" -> string!
-const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.DefaultLibraryRoot = "C:\\OneHistory\\HistoryClio" -> string!
-const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.LegacyVestaLibrary = "C:\\OneHistory\\HistoryVesta" -> string!
-const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ManifestFileName = "module.manifest.json" -> string!
-const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ManifestType = "HistoryVulcan.Module" -> string!
-const HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ProjectDirectoryPattern = "*-History*" -> string!
 static HistoryVulcan.Services.AppPaths.GetDataDir(string! root) -> string!
 static HistoryVulcan.Services.AppPaths.GetModulesDir(string! root) -> string!
 static HistoryVulcan.Services.AppPaths.GetPanelsDir(string! root) -> string!
-static HistoryVulcan.Services.Modules.ModuleHost.FindModuleDomainConflicts(System.Collections.Generic.IEnumerable<string!>! reservedCommandNames, System.Collections.Generic.IEnumerable<string!>! moduleCommandNames) -> System.Collections.Generic.IReadOnlySet<string!>!
-static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.CoerceConfiguredRoot(string! path) -> string!
-static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.FindAutomaticRoot(string! startPath) -> string?
-static HistoryVulcan.Services.Modules.ZModuleDiscoverySource.ResolveAutomaticRoot() -> string?
 HistoryVulcan.Services.Modules.ModuleMeta.InstanceId.get -> string!
 HistoryVulcan.Services.Modules.ModuleMeta.InstanceId.init -> void
 HistoryVulcan.Services.Modules.ModuleHost.Uninstall(string! name) -> HistoryVulcan.Core.Commands.CommandResult!
@@ -238,3 +213,4 @@ static HistoryVulcan.Services.Development.PublishPackages.ResolveCurrent(string!
 static HistoryVulcan.Services.Development.PublishPackages.ResolveHostSnapshot(string! vulcanProjectRoot) -> string!
 static HistoryVulcan.Services.Development.PublishPackages.TryRead(string! path, out HistoryVulcan.Services.Development.PublishPackages.PublishedPackage! package) -> bool
 static HistoryVulcan.Services.Modules.OfflineModuleInstall.Install(string! runtimeRoot, string! sourcePath) -> HistoryVulcan.Services.Modules.OfflineModuleInstall.Result
+HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.ModuleDiscoveryEntry(string! Name, string! Version, string! PackagePath, string! ManifestPath, string! ArtifactPath, bool Ui, string? DocsPath, System.Collections.Generic.IReadOnlyList<string!>! DependencyPaths) -> void

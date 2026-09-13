@@ -1,0 +1,123 @@
+#nullable enable
+HistoryVulcan.ServiceHost.IAutostartManager
+HistoryVulcan.ServiceHost.IAutostartManager.IsEnabled(string! name) -> bool
+HistoryVulcan.ServiceHost.IAutostartManager.IsEnabled(string! name, string! executablePath, System.Collections.Generic.IReadOnlyList<string!>! arguments) -> bool
+HistoryVulcan.ServiceHost.IAutostartManager.SetEnabled(string! name, string! executablePath, System.Collections.Generic.IReadOnlyList<string!>! arguments, bool enabled) -> void
+HistoryVulcan.ServiceHost.IAutostartManager.SetEnabled(string! name, string! executablePath, bool enabled) -> void
+HistoryVulcan.ServiceHost.ServiceCommands
+HistoryVulcan.ServiceHost.ServiceComposer
+HistoryVulcan.ServiceHost.ServiceComposition
+HistoryVulcan.ServiceHost.ServiceComposition.Autostart.get -> HistoryVulcan.ServiceHost.IAutostartManager?
+HistoryVulcan.ServiceHost.ServiceComposition.Autostart.init -> void
+HistoryVulcan.ServiceHost.ServiceComposition.Bus.get -> HistoryVulcan.Core.Commands.CommandBus!
+HistoryVulcan.ServiceHost.ServiceComposition.Bus.init -> void
+HistoryVulcan.ServiceHost.ServiceComposition.DataDirectory.get -> string?
+HistoryVulcan.ServiceHost.ServiceComposition.DataDirectory.init -> void
+HistoryVulcan.ServiceHost.ServiceComposition.DeferredWork.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Modules.IDeferredStartupWork!>!
+HistoryVulcan.ServiceHost.ServiceComposition.DeferredWork.init -> void
+HistoryVulcan.ServiceHost.ServiceComposition.Dispose() -> void
+HistoryVulcan.ServiceHost.ServiceComposition.DisposeApplicationServices.get -> System.Action?
+HistoryVulcan.ServiceHost.ServiceComposition.DisposeApplicationServices.init -> void
+HistoryVulcan.ServiceHost.ServiceComposition.Log.get -> HistoryVulcan.Core.Logging.IShellLog!
+HistoryVulcan.ServiceHost.ServiceComposition.Log.init -> void
+HistoryVulcan.ServiceHost.ServiceComposition.Modules.get -> HistoryVulcan.Services.Modules.ModuleHost?
+HistoryVulcan.ServiceHost.ServiceComposition.Modules.init -> void
+HistoryVulcan.ServiceHost.ServiceComposition.RegisterAutostartOnFirstRun.get -> bool
+HistoryVulcan.ServiceHost.ServiceComposition.RegisterAutostartOnFirstRun.init -> void
+HistoryVulcan.ServiceHost.ServiceComposition.Registry.get -> HistoryVulcan.Core.Commands.CommandRegistry!
+HistoryVulcan.ServiceHost.ServiceComposition.Registry.init -> void
+HistoryVulcan.ServiceHost.ServiceComposition.ServiceComposition() -> void
+HistoryVulcan.ServiceHost.ServiceComposition.ServiceName.get -> string!
+HistoryVulcan.ServiceHost.ServiceComposition.ServiceName.init -> void
+HistoryVulcan.ServiceHost.ServiceComposition.Settings.get -> HistoryVulcan.Core.Storage.ISettingsService!
+HistoryVulcan.ServiceHost.ServiceComposition.Settings.init -> void
+HistoryVulcan.ServiceHost.ServiceHost
+HistoryVulcan.ServiceHost.ShellRelayConfirmation
+HistoryVulcan.ServiceHost.ShellRelayConfirmation.Confirm(string! prompt) -> bool
+HistoryVulcan.ServiceHost.ShellRelayConfirmation.ConfirmRemote(string! client, string! prompt, int timeoutSeconds) -> bool?
+HistoryVulcan.ServiceHost.WindowsRunAutostartManager
+HistoryVulcan.ServiceHost.WindowsRunAutostartManager.IsEnabled(string! name) -> bool
+HistoryVulcan.ServiceHost.WindowsRunAutostartManager.IsEnabled(string! name, string! executablePath, System.Collections.Generic.IReadOnlyList<string!>! arguments) -> bool
+HistoryVulcan.ServiceHost.WindowsRunAutostartManager.SetEnabled(string! name, string! executablePath, System.Collections.Generic.IReadOnlyList<string!>! arguments, bool enabled) -> void
+HistoryVulcan.ServiceHost.WindowsRunAutostartManager.SetEnabled(string! name, string! executablePath, bool enabled) -> void
+HistoryVulcan.ServiceHost.WindowsRunAutostartManager.WindowsRunAutostartManager() -> void
+const HistoryVulcan.ServiceHost.ServiceComposer.ServiceAutostartSettingKey = "svc.autostart" -> string!
+static HistoryVulcan.ServiceHost.ServiceCommands.RegisterAll(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.ServiceHost.ServiceComposition! composition, System.Action! requestStop, string! executablePath, string! source = "framework:service", System.Collections.Generic.IReadOnlyList<string!>? serviceArguments = null) -> void
+static HistoryVulcan.ServiceHost.ServiceComposer.Build(string! executablePath, System.Reflection.Assembly! identityAssembly) -> HistoryVulcan.ServiceHost.ServiceComposition!
+static HistoryVulcan.ServiceHost.ServiceComposer.ExportCommandManual(string! outputPath, System.Reflection.Assembly! identityAssembly) -> int
+static HistoryVulcan.ServiceHost.ServiceComposer.MigrateLegacyMcpSettings(HistoryVulcan.Core.Storage.ISettingsService! legacy, HistoryVulcan.Core.Storage.ISettingsService! service, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+static HistoryVulcan.ServiceHost.ServiceComposer.RegisterServiceMcpSettingCommands(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Storage.ISettingsService! settings) -> void
+static HistoryVulcan.ServiceHost.ServiceComposer.RepairAutostart(string! executablePath, System.Reflection.Assembly! identityAssembly) -> int
+static HistoryVulcan.ServiceHost.ServiceHost.Run(HistoryVulcan.ServiceHost.ServiceComposition! composition, string? executablePath = null, System.Collections.Generic.IReadOnlyList<string!>? serviceArguments = null) -> int
+HistoryVulcan.ServiceHost.CommandLineRunner
+HistoryVulcan.ServiceHost.HostAction
+HistoryVulcan.ServiceHost.HostAction.Error = 5 -> HistoryVulcan.ServiceHost.HostAction
+HistoryVulcan.ServiceHost.HostAction.ExportManual = 1 -> HistoryVulcan.ServiceHost.HostAction
+HistoryVulcan.ServiceHost.HostAction.InstallModule = 3 -> HistoryVulcan.ServiceHost.HostAction
+HistoryVulcan.ServiceHost.HostAction.RepairAutostart = 2 -> HistoryVulcan.ServiceHost.HostAction
+HistoryVulcan.ServiceHost.HostAction.RunCommand = 4 -> HistoryVulcan.ServiceHost.HostAction
+HistoryVulcan.ServiceHost.HostAction.RunService = 0 -> HistoryVulcan.ServiceHost.HostAction
+HistoryVulcan.ServiceHost.HostAction.Help = 6 -> HistoryVulcan.ServiceHost.HostAction
+HistoryVulcan.ServiceHost.HostAction.Version = 7 -> HistoryVulcan.ServiceHost.HostAction
+HistoryVulcan.ServiceHost.HostAction.RunRuntime = 8 -> HistoryVulcan.ServiceHost.HostAction
+HistoryVulcan.ServiceHost.HostOutputFormat
+HistoryVulcan.ServiceHost.HostOutputFormat.Human = 0 -> HistoryVulcan.ServiceHost.HostOutputFormat
+HistoryVulcan.ServiceHost.HostOutputFormat.Json = 1 -> HistoryVulcan.ServiceHost.HostOutputFormat
+HistoryVulcan.ServiceHost.HostArgumentParser
+HistoryVulcan.ServiceHost.HostArguments
+HistoryVulcan.ServiceHost.HostArguments.Action.get -> HistoryVulcan.ServiceHost.HostAction
+HistoryVulcan.ServiceHost.HostArguments.Action.init -> void
+HistoryVulcan.ServiceHost.HostArguments.Error.get -> string!
+HistoryVulcan.ServiceHost.HostArguments.Error.init -> void
+HistoryVulcan.ServiceHost.HostArguments.HostArguments() -> void
+HistoryVulcan.ServiceHost.HostArguments.HostArguments(HistoryVulcan.ServiceHost.HostAction Action, string! Value, string! Error) -> void
+HistoryVulcan.ServiceHost.HostArguments.Value.get -> string!
+HistoryVulcan.ServiceHost.HostArguments.Value.init -> void
+HistoryVulcan.ServiceHost.HostArguments.Format.get -> HistoryVulcan.ServiceHost.HostOutputFormat
+HistoryVulcan.ServiceHost.HostArguments.Format.init -> void
+HistoryVulcan.ServiceHost.HostArguments.Approve.get -> bool
+HistoryVulcan.ServiceHost.HostArguments.Approve.init -> void
+HistoryVulcan.ServiceHost.ServiceComposition.RequestStop.get -> System.Action?
+HistoryVulcan.ServiceHost.ServiceComposition.RequestStop.set -> void
+HistoryVulcan.ServiceHost.ShellRelayConfirmation.ShellRelayConfirmation(HistoryVulcan.Core.Logging.IShellLog! log) -> void
+const HistoryVulcan.ServiceHost.HostArgumentParser.CommandLineSwitch = "--cli" -> string!
+const HistoryVulcan.ServiceHost.HostArgumentParser.ExportManualSwitch = "--export-command-manual" -> string!
+const HistoryVulcan.ServiceHost.HostArgumentParser.InstallModuleSwitch = "--install-module" -> string!
+const HistoryVulcan.ServiceHost.HostArgumentParser.LegacyServiceSwitch = "--service" -> string!
+const HistoryVulcan.ServiceHost.HostArgumentParser.RepairAutostartSwitch = "--repair-autostart" -> string!
+const HistoryVulcan.ServiceHost.HostArgumentParser.HelpSwitch = "--help" -> string!
+const HistoryVulcan.ServiceHost.HostArgumentParser.VersionSwitch = "--version" -> string!
+const HistoryVulcan.ServiceHost.HostArgumentParser.RuntimeSwitch = "--runtime" -> string!
+const HistoryVulcan.ServiceHost.HostArgumentParser.FormatSwitch = "--format" -> string!
+const HistoryVulcan.ServiceHost.HostArgumentParser.ApproveSwitch = "--approve" -> string!
+static HistoryVulcan.ServiceHost.CommandLineRunner.Run(string! commandText, System.Reflection.Assembly! identityAssembly) -> int
+static HistoryVulcan.ServiceHost.CommandLineRunner.Run(string! commandText, System.Reflection.Assembly! identityAssembly, HistoryVulcan.ServiceHost.HostOutputFormat format) -> int
+static HistoryVulcan.ServiceHost.HostArgumentParser.Parse(string![]! args) -> HistoryVulcan.ServiceHost.HostArguments
+static HistoryVulcan.ServiceHost.HostArgumentParser.UsageLines.get -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.ServiceHost.CliResultEnvelope
+HistoryVulcan.ServiceHost.CliResultEnvelope.CliResultEnvelope(string! RunId, bool Success, int ExitCode, string! ExecutionTarget, string? CandidatePath, string? InstalledPath, object? RuntimeAck, string? LogPath, System.Collections.Generic.IReadOnlyList<string!>! Diagnostics, object? Data = null) -> void
+HistoryVulcan.ServiceHost.CliResultEnvelope.Data.get -> object?
+HistoryVulcan.ServiceHost.CliResultEnvelope.Data.init -> void
+HistoryVulcan.ServiceHost.CliResultEnvelope.RunId.get -> string!
+HistoryVulcan.ServiceHost.CliResultEnvelope.RunId.init -> void
+HistoryVulcan.ServiceHost.CliResultEnvelope.Success.get -> bool
+HistoryVulcan.ServiceHost.CliResultEnvelope.Success.init -> void
+HistoryVulcan.ServiceHost.CliResultEnvelope.ExitCode.get -> int
+HistoryVulcan.ServiceHost.CliResultEnvelope.ExitCode.init -> void
+HistoryVulcan.ServiceHost.CliResultEnvelope.ExecutionTarget.get -> string!
+HistoryVulcan.ServiceHost.CliResultEnvelope.ExecutionTarget.init -> void
+HistoryVulcan.ServiceHost.CliResultEnvelope.CandidatePath.get -> string?
+HistoryVulcan.ServiceHost.CliResultEnvelope.CandidatePath.init -> void
+HistoryVulcan.ServiceHost.CliResultEnvelope.InstalledPath.get -> string?
+HistoryVulcan.ServiceHost.CliResultEnvelope.InstalledPath.init -> void
+HistoryVulcan.ServiceHost.CliResultEnvelope.RuntimeAck.get -> object?
+HistoryVulcan.ServiceHost.CliResultEnvelope.RuntimeAck.init -> void
+HistoryVulcan.ServiceHost.CliResultEnvelope.LogPath.get -> string?
+HistoryVulcan.ServiceHost.CliResultEnvelope.LogPath.init -> void
+HistoryVulcan.ServiceHost.CliResultEnvelope.Diagnostics.get -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.ServiceHost.CliResultEnvelope.Diagnostics.init -> void
+HistoryVulcan.ServiceHost.HostEntryPoint
+static HistoryVulcan.ServiceHost.HostEntryPoint.Run(string![]! args, System.Reflection.Assembly! identityAssembly) -> int
+HistoryVulcan.ServiceHost.RuntimeCommandClient
+const HistoryVulcan.ServiceHost.RuntimeCommandClient.UnreachableExitCode = 3 -> int
+static HistoryVulcan.ServiceHost.RuntimeCommandClient.Run(string! commandText, System.Reflection.Assembly! identityAssembly, HistoryVulcan.ServiceHost.HostOutputFormat format = HistoryVulcan.ServiceHost.HostOutputFormat.Human, bool approve = false) -> int

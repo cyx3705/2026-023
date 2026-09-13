@@ -3,6 +3,7 @@ using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Modules;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.Services.Modules;
+using HistoryVulcan.Services.Development;
 
 namespace HistoryVulcan.ServiceHost;
 
@@ -21,6 +22,7 @@ public sealed class ServiceComposition : IDisposable
 
     public ModuleHost? Modules { get; init; }
 
+    internal DevelopmentContext? Development { get; init; }
 
     /// <summary>
     /// 应用数据根，脚本等相对路径以它为基准。

@@ -103,7 +103,7 @@ public sealed class RuntimeModulePackageTests
         var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable);
 
         var registry = new CommandRegistry();
-        var log = new TestLog();
+        var log = new RecordingLog();
         var settings = new MemorySettings();
         var bus = new CommandBus(registry, log);
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
@@ -158,7 +158,7 @@ public sealed class RuntimeModulePackageTests
         var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable);
 
         var registry = new CommandRegistry();
-        var log = new TestLog();
+        var log = new RecordingLog();
         var settings = new MemorySettings();
         var bus = new CommandBus(registry, log);
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
@@ -206,7 +206,7 @@ public sealed class RuntimeModulePackageTests
         var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable);
 
         var registry = new CommandRegistry();
-        var log = new TestLog();
+        var log = new RecordingLog();
         var settings = new MemorySettings();
         var bus = new CommandBus(registry, log);
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
@@ -222,7 +222,7 @@ public sealed class RuntimeModulePackageTests
             Assert.True(host.InstallPackage(first).Success);
             var firstId = Assert.Single(host.Modules).InstanceId;
 
-            log.Entries.Clear();
+            log.Clear();
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v2.0.0");
             var upgraded = host.InstallPackage(second);
             Assert.True(upgraded.Success, upgraded.Message);
@@ -251,7 +251,7 @@ public sealed class RuntimeModulePackageTests
         var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable);
 
         var registry = new CommandRegistry();
-        var log = new TestLog();
+        var log = new RecordingLog();
         var settings = new MemorySettings();
         var bus = new CommandBus(registry, log);
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
@@ -292,7 +292,7 @@ public sealed class RuntimeModulePackageTests
         var first = CreatePackage(candidates, "first", "contextfixture", "v1.0.0");
         var second = CreatePackage(candidates, "second", "contextfixture", "v2.0.0");
         var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable);
-        var log = new TestLog();
+        var log = new RecordingLog();
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
         {
             EnableFileWatching = false,
@@ -329,7 +329,7 @@ public sealed class RuntimeModulePackageTests
         var second = CreatePackage(candidates, "second", "contextfixture", "v2.0.0", ui: true);
         var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable);
 
-        using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), new TestLog())
+        using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), new RecordingLog())
         {
             EnableFileWatching = false,
             EnableUiModules = false,
@@ -373,7 +373,7 @@ public sealed class RuntimeModulePackageTests
         var previousName = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.NameVariable);
 
         var registry = new CommandRegistry();
-        var log = new TestLog();
+        var log = new RecordingLog();
         var settings = new MemorySettings();
         var bus = new CommandBus(registry, log);
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
@@ -440,7 +440,7 @@ public sealed class RuntimeModulePackageTests
         var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable);
 
         var registry = new CommandRegistry();
-        var log = new TestLog();
+        var log = new RecordingLog();
         var settings = new MemorySettings();
         var bus = new CommandBus(registry, log);
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log)
@@ -495,7 +495,7 @@ public sealed class RuntimeModulePackageTests
         var runtime = Path.Combine(temp.Path, "Modules");
         var package = CreatePackage(runtime, "contextfixture", "contextfixture", "v1.0.0");
         var registry = new CommandRegistry();
-        var log = new TestLog();
+        var log = new RecordingLog();
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log) { EnableFileWatching = false };
         var previous = Environment.GetEnvironmentVariable(ContextAwareFixture.FailureVariable);
         try
@@ -524,7 +524,7 @@ public sealed class RuntimeModulePackageTests
         File.WriteAllText(Path.Combine(second, "docs", "README.md"), "changed package");
         WriteChecksums(second);
         var registry = new CommandRegistry();
-        var log = new TestLog();
+        var log = new RecordingLog();
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log) { EnableFileWatching = false };
         var previous = Environment.GetEnvironmentVariable(ContextAwareFixture.FailureVariable);
         var previousData = Environment.GetEnvironmentVariable(ContextAwareFixture.DataVariable);
@@ -619,24 +619,6 @@ public sealed class RuntimeModulePackageTests
                 ui,
                 pinned,
             }));
-
-    private sealed class MemorySettings : ISettingsService
-    {
-        private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
-        public string? Get(string key) => _values.GetValueOrDefault(key);
-        public int GetInt(string key, int fallback) => int.TryParse(Get(key), out var value) ? value : fallback;
-        public void Set(string key, string value) => _values[key] = value;
-        public IReadOnlyList<KeyValuePair<string, string>> All() => [.. _values];
-    }
-
-    private sealed class TestLog : IShellLog
-    {
-        public List<ShellLogEntry> Entries { get; } = [];
-        public void Log(ShellLogLevel level, string category, string message)
-            => Entries.Add(new ShellLogEntry(DateTime.Now, level, category, message));
-        public event EventHandler<ShellLogEntry>? EntryAdded { add { } remove { } }
-        public IReadOnlyList<ShellLogEntry> Snapshot() => Entries;
-    }
 
     private sealed class TemporaryDirectory : IDisposable
     {

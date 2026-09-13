@@ -5,7 +5,7 @@
   "hosts": [
     {
       "name": "HistoryVulcan",
-      "freezeTag": "v5.1.2"
+      "freezeTag": "v5.3.0"
     }
   ],
   "modules": [

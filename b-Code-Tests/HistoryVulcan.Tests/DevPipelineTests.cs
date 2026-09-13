@@ -68,27 +68,7 @@ public sealed class DevPipelineTests
     }
 
     private static string Git(string workingDirectory, params string[] arguments)
-    {
-        var start = new ProcessStartInfo("git")
-        {
-            WorkingDirectory = workingDirectory,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            StandardOutputEncoding = new UTF8Encoding(false),
-            StandardErrorEncoding = new UTF8Encoding(false),
-        };
-        foreach (var argument in arguments)
-            start.ArgumentList.Add(argument);
-        using var process = Process.Start(start) ?? throw new InvalidOperationException("无法启动 git");
-        var output = process.StandardOutput.ReadToEnd();
-        var error = process.StandardError.ReadToEnd();
-        process.WaitForExit(30_000);
-        if (process.ExitCode != 0)
-            throw new InvalidOperationException($"git {string.Join(' ', arguments)} 失败: {error}");
-        return output;
-    }
+        => HistoryVulcan.Services.Development.Pipeline.ToolProcess.Capture("git", arguments, workingDirectory);
 
     private static void TryDelete(string path)
     {
@@ -101,12 +81,4 @@ public sealed class DevPipelineTests
         catch (UnauthorizedAccessException) { }
     }
 
-    private sealed class MemorySettings : ISettingsService
-    {
-        private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
-        public string? Get(string key) => _values.GetValueOrDefault(key);
-        public int GetInt(string key, int fallback) => int.TryParse(Get(key), out var value) ? value : fallback;
-        public void Set(string key, string value) => _values[key] = value;
-        public IReadOnlyList<KeyValuePair<string, string>> All() => [.. _values];
-    }
 }

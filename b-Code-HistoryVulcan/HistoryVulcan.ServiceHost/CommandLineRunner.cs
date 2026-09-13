@@ -1,7 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
 using HistoryVulcan.Core.Commands;
-using HistoryVulcan.Services.Development;
 
 namespace HistoryVulcan.ServiceHost;
 
@@ -39,6 +38,11 @@ public static class CommandLineRunner
         string commandText,
         Assembly identityAssembly,
         HostOutputFormat format)
+        => Run(commandText, identityAssembly, format, () => ServiceComposer.Build(
+            Environment.ProcessPath ?? identityAssembly.Location, identityAssembly));
+
+    internal static int Run(
+        string commandText, Assembly identityAssembly, HostOutputFormat format, Func<ServiceComposition> compose)
     {
         if (string.IsNullOrWhiteSpace(commandText))
         {
@@ -49,44 +53,30 @@ public static class CommandLineRunner
         ServiceComposition? composition = null;
         try
         {
-            var executable = Environment.ProcessPath ?? identityAssembly.Location;
-            composition = ServiceComposer.Build(executable, identityAssembly);
+            // 白名单在创建组合和扫描模块前检查，错误输入不触发模块构造、Attach 或文件监听。
+            var parsed = CommandParser.Parse(commandText);
+            if (!CliExposurePolicy.IsExposed(parsed.Name))
+            {
+                WriteError(CliExposurePolicy.RefusalReason(parsed.Name)
+                    + "；需要运行宿主时请改用 HistoryVulcan.Cli.exe --runtime。", format);
+                return 2;
+            }
+
+            composition = compose();
             // 离线 CLI 不具备桌面消息循环；UI 模块即使命令面未使用也可能在 Attach
             // 阶段加载 WindowsDesktop 程序集，因此明确跳过它们。
             if (composition.Modules is not null)
+            {
                 composition.Modules.EnableUiModules = false;
-            if (DevelopmentCommands.LastRegistered is { } pipeline)
+                composition.Modules.EnableFileWatching = false;
+            }
+            if (composition.Development is { } pipeline)
             {
                 pipeline.LiveHost = (command, cancellation) =>
                     RuntimeCommandClient.ExecutePipelineAsync(command, identityAssembly, cancellation);
             }
 
-            // 先解析、先查声明，**再装载模块**：未声明的指令不该换来一次完整装载的副作用。
-            var parsed = CommandParser.Parse(commandText);
-            if (string.IsNullOrWhiteSpace(parsed.Name))
-            {
-                WriteError($"原始命令: {commandText}\n无法从输入中解析出指令名。", format);
-                return 2;
-            }
-
-            // 模块指令也可以声明暴露，因此必须先装载才能查到它们。
-            // 框架指令在 Build 时就已注册，装载失败不影响它们——
-            // 这正是「模块全坏了还能用命令行修」的前提，所以此处只告警不中断。
-            try
-            {
-                composition.Modules?.Start();
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"模块装载失败，仅框架指令可用: {ex.Message}");
-            }
-
-            // 名单与注册表对账。名单按名字写，指令改名时它会**静默失配**——
-            // 而失配的方向最坏：等到某天模块坏掉、需要 --cli 救火时，才发现那条恢复
-            // 指令已经不在面上。本体系因为按名字写的规则栽过四次，这里不再赌第五次。
-            //
-            // 报错而不是跳过：名单缺条目意味着名单本身过期了，此刻执行任何一条都
-            // 建立在一份已知不准的判据上。
+            // 全部 CLI 名称由宿主注册；先对账，再扫描包以提供离线模块与命令目录。
             var missing = CliExposurePolicy.MissingCommands(composition.Registry);
             if (missing.Count > 0)
             {
@@ -102,11 +92,13 @@ public static class CommandLineRunner
                 return 2;
             }
 
-            if (!CliExposurePolicy.IsExposed(parsed.Name))
+            try
             {
-                WriteError($"原始命令: {commandText}\n" + CliExposurePolicy.RefusalReason(parsed.Name)
-                    + "；需要运行宿主时请改用 HistoryVulcan.Cli.exe --runtime。", format);
-                return 2;
+                composition.Modules?.Start();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"模块装载失败，仅框架指令可用: {ex.Message}");
             }
 
             var result = composition.Bus
@@ -118,9 +110,14 @@ public static class CommandLineRunner
             Print(result, format, identityAssembly, exitCode);
             return exitCode;
         }
+        catch (CommandSyntaxException ex)
+        {
+            WriteError($"命令语法错误: {ex.Message}", format);
+            return 2;
+        }
         catch (Exception ex)
         {
-            WriteError($"原始命令: {commandText}\n命令行执行失败: {ex.Message}", format);
+            WriteError($"命令行执行失败: {ex.GetType().Name}", format, exitCode: 1);
             return 1;
         }
         finally
@@ -170,12 +167,12 @@ public static class CommandLineRunner
         Console.WriteLine(JsonSerializer.Serialize(result.Data, JsonOptions));
     }
 
-    private static void WriteError(string message, HostOutputFormat format)
+    private static void WriteError(string message, HostOutputFormat format, int exitCode = 2)
     {
         if (format == HostOutputFormat.Json)
         {
             Console.WriteLine(JsonSerializer.Serialize(new CliResultEnvelope(
-                Guid.NewGuid().ToString("N"), false, 2, "offline-composition",
+                Guid.NewGuid().ToString("N"), false, exitCode, "offline-composition",
                 null, null, null, null, [message]), JsonOptions));
             return;
         }

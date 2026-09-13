@@ -24,7 +24,7 @@ public sealed class PinnedModuleTests
         RuntimeModulePackageTests.CreatePackage(
             modules, "pinnedfixture", "contextfixture", "v1.0.0", pinned: true);
 
-        var log = new TestLog();
+        var log = new RecordingLog();
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modules), log)
         {
             EnableFileWatching = false,
@@ -56,7 +56,7 @@ public sealed class PinnedModuleTests
         var modules = Path.Combine(root, "Modules");
         RuntimeModulePackageTests.CreatePackage(modules, "plainfixture", "contextfixture", "v1.0.0");
 
-        var log = new TestLog();
+        var log = new RecordingLog();
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modules), log)
         {
             EnableFileWatching = false,
@@ -73,11 +73,11 @@ public sealed class PinnedModuleTests
             Assert.DoesNotContain(log.Entries, entry => entry.Message.Contains("钉住模块", StringComparison.Ordinal));
             Assert.Equal("contextfixture", Assert.Single(host.Modules).ModuleName);
 
-            log.Entries.Clear();
+            log.Clear();
             host.Reload();
-            var teardown = log.Entries.FindIndex(entry =>
+            var teardown = log.Entries.ToList().FindIndex(entry =>
                 entry.Message.Contains("先拆除旧界面", StringComparison.Ordinal));
-            var loaded = log.Entries.FindIndex(entry =>
+            var loaded = log.Entries.ToList().FindIndex(entry =>
                 entry.Message.Contains("模块装载完成", StringComparison.Ordinal));
             Assert.True(teardown >= 0, "可回收模块重载必须先拆旧包");
             Assert.True(loaded > teardown, "拆完旧包之后才能装新包");
@@ -89,28 +89,4 @@ public sealed class PinnedModuleTests
         }
     }
 
-    private sealed class MemorySettings : ISettingsService
-    {
-        private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
-
-        public string? Get(string key) => _values.GetValueOrDefault(key);
-
-        public int GetInt(string key, int fallback) => int.TryParse(Get(key), out var value) ? value : fallback;
-
-        public void Set(string key, string value) => _values[key] = value;
-
-        public IReadOnlyList<KeyValuePair<string, string>> All() => [.. _values];
-    }
-
-    private sealed class TestLog : IShellLog
-    {
-        public List<ShellLogEntry> Entries { get; } = [];
-
-        public void Log(ShellLogLevel level, string category, string message)
-            => Entries.Add(new ShellLogEntry(DateTime.Now, level, category, message));
-
-        public event EventHandler<ShellLogEntry>? EntryAdded { add { } remove { } }
-
-        public IReadOnlyList<ShellLogEntry> Snapshot() => Entries;
-    }
 }

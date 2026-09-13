@@ -8,6 +8,38 @@ namespace HistoryVulcan.Tests;
 public sealed class CommandProgressRedactionTests
 {
     [Theory]
+    [InlineData(0)]
+    [InlineData(7)]
+    public async Task HandlerUnregistrationCannotEraseTheRequestSecretSnapshot(int position)
+    {
+        var log = new RecordingLog();
+        var registry = new CommandRegistry();
+        var bus = new CommandBus(registry, log);
+        CommandResult? observed = null;
+        bus.Executed += (_, _, result) => observed = result;
+        registry.Register(new CommandDescriptor
+        {
+            Name = "probe.consume",
+            Summary = "unregister during execution",
+            Parameters = [new ParameterSpec { Name = "password", Description = "secret", Position = position }],
+            Handler = CommandDescriptor.Sync(context =>
+            {
+                var secret = context.RequireString("password");
+                registry.Unregister("probe.consume");
+                return CommandResult.Ok(secret, new { Secret = secret });
+            }),
+        });
+
+        var result = await bus.ExecuteAsync("probe.consume private-value", "test");
+
+        Assert.True(result.Success);
+        Assert.Equal("[REDACTED]", result.Message);
+        Assert.Null(result.Data);
+        Assert.Same(result, observed);
+        Assert.DoesNotContain(log.Entries, entry => entry.Message.Contains("private-value", StringComparison.Ordinal));
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task ConcurrentProgressMasksNamedAndPositionalSecrets(bool quiet)

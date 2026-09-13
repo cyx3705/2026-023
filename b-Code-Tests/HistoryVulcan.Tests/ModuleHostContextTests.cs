@@ -14,13 +14,66 @@ namespace HistoryVulcan.Tests
     public sealed class ModuleHostContextTests
     {
         [Fact]
+        public void UnloadedContextCanBeCollectedWhileTheHostRemainsAlive()
+        {
+            using var temp = new TemporaryDirectory();
+            var (host, unloaded) = UnloadAndObserve(temp.Path);
+            using (host)
+            {
+                for (var attempt = 0; attempt < 10 && unloaded.IsAlive; attempt++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+                Assert.False(unloaded.IsAlive);
+                GC.KeepAlive(host);
+            }
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static (ModuleHost Host, WeakReference Context) UnloadAndObserve(string root)
+        {
+            RuntimeModulePackageTests.CreatePackage(root, "contextfixture", "contextfixture", "v1.0.0");
+            var before = System.Runtime.Loader.AssemblyLoadContext.All.ToHashSet();
+            var host = new ModuleHost(new RuntimeModuleDiscoverySource(root), new NullLog()) { EnableFileWatching = false };
+            host.Attach(new CommandRegistry());
+            host.Start();
+            var loaded = System.Runtime.Loader.AssemblyLoadContext.All.Single(context => context.IsCollectible && !before.Contains(context));
+            var reference = new WeakReference(loaded);
+            Assert.True(host.Unload("contextfixture").Success);
+            return (host, reference);
+        }
+
+        [Fact]
+        public void ModuleMetadataIsConstructedOncePerScan()
+        {
+            using var temp = new TemporaryDirectory();
+            var marker = Path.Combine(temp.Path, "metadata-constructions.txt");
+            var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.ConstructionVariable);
+            try
+            {
+                Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.ConstructionVariable, marker);
+                RuntimeModulePackageTests.CreatePackage(temp.Path, "contextfixture", "contextfixture", "v1.0.0");
+                using var host = new ModuleHost(new RuntimeModuleDiscoverySource(temp.Path), new NullLog())
+                {
+                    EnableFileWatching = false,
+                };
+                host.Attach(new CommandRegistry());
+                host.Start();
+                Assert.Single(host.Modules);
+                Assert.Single(File.ReadAllLines(marker));
+            }
+            finally { Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.ConstructionVariable, previous); }
+        }
+
+        [Fact]
         public void EmptyRuntimeDirectoryStartsWithoutModules()
         {
             var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));
             var modulesDirectory = Path.Combine(root, "modules");
             Directory.CreateDirectory(modulesDirectory);
             var registry = new CommandRegistry();
-            var log = new TestLog();
+            var log = new RecordingLog();
             var bus = new CommandBus(registry, log);
             using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
@@ -60,7 +113,7 @@ namespace HistoryVulcan.Tests
             RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var registry = new CommandRegistry();
-            var log = new TestLog();
+            var log = new RecordingLog();
             var settings = new MemorySettings();
             var bus = new CommandBus(registry, log);
             var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
@@ -107,7 +160,7 @@ namespace HistoryVulcan.Tests
             var modulesDirectory = Path.Combine(root, "modules");
             Directory.CreateDirectory(modulesDirectory);
             var registry = new CommandRegistry();
-            var log = new TestLog();
+            var log = new RecordingLog();
             var bus = new CommandBus(registry, log);
             using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
@@ -164,7 +217,7 @@ namespace HistoryVulcan.Tests
 
             var marker = Path.Combine(Path.GetFullPath(dataDirectory), ContextAwareFixture.DisposeMarker);
             var registry = new CommandRegistry();
-            var log = new TestLog();
+            var log = new RecordingLog();
             var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
@@ -213,7 +266,7 @@ namespace HistoryVulcan.Tests
             var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.EnabledVariable);
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.EnabledVariable, "0");
             var registry = new CommandRegistry();
-            var log = new TestLog();
+            var log = new RecordingLog();
             var settings = new MemorySettings();
             var bus = new CommandBus(registry, log);
             using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
@@ -249,7 +302,7 @@ namespace HistoryVulcan.Tests
             RuntimeModulePackageTests.CreatePackage(modulesDirectory, Path.GetFileName(rollbackDirectory), "contextfixture", "v1.0.0");
 
             var registry = new CommandRegistry();
-            var log = new TestLog();
+            var log = new RecordingLog();
             using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
@@ -281,7 +334,7 @@ namespace HistoryVulcan.Tests
             RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var registry = new CommandRegistry();
-            var log = new TestLog();
+            var log = new RecordingLog();
             var settings = new MemorySettings();
             var bus = new CommandBus(registry, log);
             using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
@@ -327,7 +380,7 @@ namespace HistoryVulcan.Tests
             RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var registry = new CommandRegistry();
-            var log = new TestLog();
+            var log = new RecordingLog();
             var settings = new MemorySettings();
             var bus = new CommandBus(registry, log);
             var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
@@ -355,37 +408,6 @@ namespace HistoryVulcan.Tests
             }
         }
 
-
-        private sealed class MemorySettings : ISettingsService
-        {
-            private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
-
-            public string? Get(string key) => _values.GetValueOrDefault(key);
-
-            public int GetInt(string key, int fallback)
-                => int.TryParse(Get(key), out var value) ? value : fallback;
-
-            public void Set(string key, string value) => _values[key] = value;
-
-            public IReadOnlyList<KeyValuePair<string, string>> All() => [.. _values];
-        }
-
-        private sealed class TestLog : IShellLog
-        {
-            public List<ShellLogEntry> Entries { get; } = [];
-
-            public void Log(ShellLogLevel level, string category, string message)
-                => Entries.Add(new ShellLogEntry(DateTime.Now, level, category, message));
-
-            public event EventHandler<ShellLogEntry>? EntryAdded
-            {
-                add { }
-                remove { }
-            }
-
-            public IReadOnlyList<ShellLogEntry> Snapshot() => Entries;
-        }
-
     }
 
     /// <summary>宿主拆除模块的路径。整快照重载走 Reload，另两条见此。</summary>
@@ -403,6 +425,14 @@ namespace HistoryVulcan.Tests
 
     public sealed class ContextFixtureModuleInfo : BaseVariable.ModuleInfoBase
     {
+        public const string ConstructionVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_CONSTRUCTION";
+
+        public ContextFixtureModuleInfo()
+        {
+            if (Environment.GetEnvironmentVariable(ConstructionVariable) is { Length: > 0 } path)
+                File.AppendAllText(path, "constructed" + Environment.NewLine);
+        }
+
         public const string EnabledVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_ENABLED";
         public const string VersionVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_VERSION";
         public const string NameVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_NAME";

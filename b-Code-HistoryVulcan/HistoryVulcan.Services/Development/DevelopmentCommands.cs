@@ -38,6 +38,10 @@ public static class DevelopmentCommands
         CommandBus bus,
         ISettingsService settings,
         string dataDirectory)
+        => Register(registry, bus, settings, dataDirectory);
+
+    internal static DevelopmentContext Register(
+        CommandRegistry registry, CommandBus bus, ISettingsService settings, string dataDirectory)
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(bus);
@@ -45,12 +49,10 @@ public static class DevelopmentCommands
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
 
         var context = new DevelopmentContext(bus, settings, dataDirectory);
-        LastRegistered = context;
         WorktreeCommands.Register(registry, context);
         ReleaseCommands.Register(registry, context);
         DevPipelineCommands.Register(registry, context);
+        return context;
     }
 
-    /// <summary>最近一次 <see cref="RegisterAll"/> 写下的上下文；离线 CLI 用来接活宿主装包。</summary>
-    internal static DevelopmentContext? LastRegistered { get; private set; }
 }

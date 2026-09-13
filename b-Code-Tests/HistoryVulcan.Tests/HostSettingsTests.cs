@@ -69,10 +69,4 @@ public sealed class HostSettingsTests
         public IReadOnlyList<KeyValuePair<string, string>> All() => _values.ToList();
     }
 
-    private sealed class NullLog : IShellLog
-    {
-        public void Log(ShellLogLevel level, string category, string message) { }
-        public event EventHandler<ShellLogEntry>? EntryAdded { add { } remove { } }
-        public IReadOnlyList<ShellLogEntry> Snapshot() => [];
-    }
 }

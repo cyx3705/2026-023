@@ -87,7 +87,7 @@ public static partial class ServiceComposer
         RegisterSettingCommands(registry, settings);
 
         // 开发恢复入口由宿主提供，不依赖业务模块装载成功。
-        HistoryVulcan.Services.Development.DevelopmentCommands.RegisterAll(
+        var development = HistoryVulcan.Services.Development.DevelopmentCommands.Register(
             registry, bus, settings, paths.Root);
 
         HistoryVulcan.Services.Commands.CommandCatalogCommands.RegisterAll(
@@ -102,6 +102,7 @@ public static partial class ServiceComposer
             Settings = settings,
             Log = log,
             Modules = modules,
+            Development = development,
             // 与前端此前的 DataDirectory 同值：脚本相对路径基准不变。
             DataDirectory = paths.Root,
             RegisterAutostartOnFirstRun = true,
@@ -198,20 +199,7 @@ public static partial class ServiceComposer
     }
 
     private static string DisplayServiceSettingValue(string key, string value)
-    {
-        var normalized = key.Replace(".", "", StringComparison.Ordinal)
-            .Replace("_", "", StringComparison.Ordinal)
-            .Replace("-", "", StringComparison.Ordinal);
-        return normalized.Equals("code", StringComparison.OrdinalIgnoreCase)
-               || normalized.EndsWith("connectionstring", StringComparison.OrdinalIgnoreCase)
-               || normalized.EndsWith("passwd", StringComparison.OrdinalIgnoreCase)
-               || normalized.EndsWith("token", StringComparison.OrdinalIgnoreCase)
-               || normalized.EndsWith("password", StringComparison.OrdinalIgnoreCase)
-               || normalized.EndsWith("secret", StringComparison.OrdinalIgnoreCase)
-               || normalized.EndsWith("privatekey", StringComparison.OrdinalIgnoreCase)
-            ? "(已配置)"
-            : value;
-    }
+        => SensitiveName.IsSensitive(key) ? "(已配置)" : value;
 
     private static void RegisterServiceModuleCommands(
         CommandRegistry registry,

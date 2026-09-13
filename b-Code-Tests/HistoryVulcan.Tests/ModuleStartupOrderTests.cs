@@ -22,6 +22,17 @@ namespace HistoryVulcan.Tests
     [Collection(RuntimeModulePackageCollection.Name)]
     public sealed class ModuleStartupOrderTests
     {
+        [Theory]
+        [InlineData("HistoryAlpha", "self-dependency")]
+        [InlineData("HistoryMissing", "unknown-dependency")]
+        public void SingleModuleStillReportsInvalidDependencies(string dependency, string code)
+        {
+            var ordered = ModuleHost.OrderByDependencies(
+                new[] { "HistoryAlpha" }, name => name, _ => new[] { dependency }, out var problems);
+            Assert.Equal(["HistoryAlpha"], ordered);
+            Assert.Equal(code, Assert.Single(problems).Code);
+        }
+
         [Fact]
         public void ReadDependsOnAcceptsOnlyNonEmptyStringsAndDeduplicates()
         {
@@ -181,7 +192,7 @@ namespace HistoryVulcan.Tests
             CreateOrderPackage(modules, "alphafixture", dependsOn: ["zetafixture"]);
 
             var registry = new CommandRegistry();
-            var log = new OrderTestLog();
+            var log = new RecordingLog();
             var bus = new CommandBus(registry, log);
             var host = new ModuleHost(new RuntimeModuleDiscoverySource(modules), log)
             {
@@ -190,7 +201,7 @@ namespace HistoryVulcan.Tests
 
             try
             {
-                host.Attach(registry, bus, new OrderSettings(), Path.Combine(root, "data"));
+                host.Attach(registry, bus, new MemorySettings(), Path.Combine(root, "data"));
                 Assert.False(host.IsReady);
 
                 host.Start();
@@ -221,7 +232,7 @@ namespace HistoryVulcan.Tests
             CreateOrderPackage(modules, "zetafixture", dependsOn: []);
 
             var registry = new CommandRegistry();
-            var log = new OrderTestLog();
+            var log = new RecordingLog();
             var bus = new CommandBus(registry, log);
             var host = new ModuleHost(new RuntimeModuleDiscoverySource(modules), log)
             {
@@ -230,7 +241,7 @@ namespace HistoryVulcan.Tests
 
             try
             {
-                host.Attach(registry, bus, new OrderSettings(), Path.Combine(root, "data"));
+                host.Attach(registry, bus, new MemorySettings(), Path.Combine(root, "data"));
                 host.Start();
                 Assert.True(host.IsReady);
                 Assert.True(registry.TryGet("zetafixture.ping", out _));
@@ -293,37 +304,6 @@ namespace HistoryVulcan.Tests
             File.WriteAllLines(Path.Combine(package, "SHA256SUMS"), lines);
         }
 
-        private sealed class OrderSettings : ISettingsService
-        {
-            private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
-
-            public string? Get(string key) => _values.GetValueOrDefault(key);
-
-            public int GetInt(string key, int fallback)
-                => _values.TryGetValue(key, out var value) && int.TryParse(value, out var parsed)
-                    ? parsed
-                    : fallback;
-
-            public void Set(string key, string value) => _values[key] = value;
-
-            public IReadOnlyList<KeyValuePair<string, string>> All() => _values.ToList();
-        }
-
-        private sealed class OrderTestLog : IShellLog
-        {
-            public List<ShellLogEntry> Entries { get; } = [];
-
-            public void Log(ShellLogLevel level, string category, string message)
-                => Entries.Add(new ShellLogEntry(DateTime.Now, level, category, message));
-
-            public event EventHandler<ShellLogEntry>? EntryAdded
-            {
-                add { }
-                remove { }
-            }
-
-            public IReadOnlyList<ShellLogEntry> Snapshot() => Entries;
-        }
     }
 
     /// <summary>
