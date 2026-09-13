@@ -11,7 +11,7 @@ namespace HistoryVulcan.Services.Development;
 /// HistoryDiana 的 z 文档通道也按它枚举当前包。两边各写一份，
 /// 迟早在「z-Publish 还是别的名字」这种问题上分叉。
 /// </remarks>
-public static class PublishPackages
+internal static class PublishPackages
 {
     /// <summary>发布目录名。</summary>
     public const string PublishDirectoryName = "z-Publish";

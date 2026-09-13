@@ -1,6 +1,5 @@
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Core.Modules;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.Services.Modules;
 using HistoryVulcan.Services.Development;
@@ -8,7 +7,7 @@ using HistoryVulcan.Services.Development;
 namespace HistoryVulcan.ServiceHost;
 
 /// <summary>服务进程的通用组合根；框架不包含任何派生应用领域对象。</summary>
-public sealed class ServiceComposition : IDisposable
+internal sealed class ServiceComposition : IDisposable
 {
     public required string ServiceName { get; init; }
 
@@ -32,8 +31,6 @@ public sealed class ServiceComposition : IDisposable
     /// 解析基准不能改变，否则所有相对路径脚本会在升级后集体找不到文件。
     /// </summary>
     public string? DataDirectory { get; init; }
-
-    public IReadOnlyList<IDeferredStartupWork> DeferredWork { get; init; } = [];
 
     public bool RegisterAutostartOnFirstRun { get; init; }
 

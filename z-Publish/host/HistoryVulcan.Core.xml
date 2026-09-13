@@ -104,54 +104,76 @@
             指令回显与普通日志共用 IShellLog 管道、不同类别(L-03):
               回显 = "cmd:来源",结果 = "cmd:result:域",进度 = "cmd:progress:域"。
             </summary>
+            <remarks>
+            5.4 起区分两种总线：模块自建的总线可以自由装配确认、界面线程与远端路由；
+            宿主交给模块的那一条在装配完成后封口，这些开关只读，前端经
+            <see cref="M:HistoryVulcan.Core.Modules.IModuleContext.RegisterFrontend(HistoryVulcan.Core.Modules.IFrontend)"/> 登记，同一宿主只允许一个。
+            </remarks>
         </member>
         <member name="F:HistoryVulcan.Core.Commands.CommandBus.EchoCategoryPrefix">
             <summary>回显类别前缀;控制台按此前缀识别指令行。</summary>
         </member>
         <member name="F:HistoryVulcan.Core.Commands.CommandBus.ResultCategory">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>结果回显的日志类别前缀；完整类别为 <c>cmd:result:&lt;域&gt;:&lt;类&gt;</c>。</summary>
         </member>
         <member name="F:HistoryVulcan.Core.Commands.CommandBus.ProgressCategory">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>进度行的日志类别前缀；完整类别为 <c>cmd:progress:&lt;域&gt;:&lt;类&gt;</c>。</summary>
         </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandBus.#ctor(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Core.Logging.IShellLog)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>创建一条绑定到指定注册表的总线；解析、校验与执行都以该注册表为准。</summary>
+            <param name="registry">命令注册表。</param>
+            <param name="log">回显、结果、进度与内部故障写入的日志管道。</param>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.Registry">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>本总线解析与执行命令所用的注册表。</summary>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.Confirmation">
-            <summary>二次确认通道;未注入时带确认位的指令一律拒绝执行(安全缺省)。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.CommandBus.ConfirmationRouter">
-            <summary>需要按客户端来源选择确认通道时使用；设置后优先于 Confirmation。</summary>
+            <summary>
+            二次确认通道；没有登记前端且未设置时，带确认位的指令一律拒绝(安全缺省)。
+            宿主总线上只读，写入抛 <see cref="T:System.InvalidOperationException"/>。
+            </summary>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.UiContext">
-            <summary>UI 线程上下文;RequiresUiThread 的指令经此编组。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.CommandBus.FrontendExecutor">
             <summary>
-            界面命令中继。界面模块装载时填入，拆除时置回 null。
+            UI 线程上下文;RequiresUiThread 的指令经此编组。登记了前端时返回前端的界面上下文。
+            宿主总线上只读，写入抛 <see cref="T:System.InvalidOperationException"/>。
             </summary>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor">
             <summary>
             客户端模式下的远程总线。<see cref="P:HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemoteCommand"/> 返回 true 时整条命令
-            交给服务；服务经界面中继发回的 UI 命令可用来源标签绕过此路由并在本地执行。
+            交给远端，本地不做语法、确认与编组。宿主总线上只读。
             </summary>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemoteCommand">
             <summary>
             按命令文本和来源决定是否走远端；未设置时配了 <see cref="P:HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor"/> 即整体走远端。
+            宿主总线上只读。
             </summary>
         </member>
         <member name="E:HistoryVulcan.Core.Commands.CommandBus.Executed">
             <summary>每条指令执行完毕后触发(状态栏摘要,S-03);在执行线程上引发。</summary>
         </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandBus.Frontend">
+            <summary>当前登记的前端；没有时为 null。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.RequestConfirmation(System.String)">
+            <summary>
+            在指令之外向当前确认通道发问：登记了前端时由前端回答，否则由 <see cref="P:HistoryVulcan.Core.Commands.CommandBus.Confirmation"/> 回答。
+            </summary>
+            <remarks>
+            用于处理器执行中途才知道要不要问的场合（例如按远端状态决定是否覆盖）。
+            能在执行前决定的确认应声明 <see cref="F:HistoryVulcan.Core.Commands.CommandLevel.Ask"/>，交给总线闸口。
+            </remarks>
+            <param name="prompt">面向用户的确认文案；调用方负责不含敏感值。</param>
+            <returns>获得确认时为 true；没有任何确认通道时为 false。</returns>
+        </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandBus.Validate(System.String)">
             <summary>
             只验证语法和参数，不执行命令。配置远程执行器时，未知本地命令交由远端判定。
             </summary>
+            <param name="text">指令文本。</param>
+            <returns>通过时为 null，否则为面向用户的错误说明。</returns>
         </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandBus.InvokeAsync(System.String,System.String,System.Threading.CancellationToken)">
             <summary>
@@ -167,19 +189,45 @@
             执行一行指令文本。source 为来源标签(C-01):UI / 手动 / 脚本:文件名 / layout。
             返回值在指令(含异步长任务)完成后才落定;方法自身不抛异常。
             </summary>
+            <param name="text">指令文本。</param>
+            <param name="source">来源标签，进入回显类别与确认、远端判定。</param>
+            <param name="cancellation">取消令牌。</param>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.FormatUsage(HistoryVulcan.Core.Commands.CommandDescriptor)">
+            <summary>用法行,如 "用法: vulcan.command.help name= pos=left/right/top/bottom/tab [target=] [ratio=]"。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.ClaimFrontend(System.String,HistoryVulcan.Core.Modules.IFrontend)">
+            <summary>
+            登记前端。同一 owner 重复登记替换旧登记；其他 owner 已登记时拒绝。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.ReleaseFrontend(System.String)">
+            <summary>撤销某个 owner 的前端登记；模块卸载时由宿主调用，owner 不匹配时不做任何事。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.SealHostWiring">
+            <summary>宿主装配完成后封口：此后公开开关只读。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.SetHostConfirmation(HistoryVulcan.Core.Commands.IConfirmationService)">
+            <summary>宿主自身装配缺省确认通道；不受封口限制。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.SetHostUiContext(System.Threading.SynchronizationContext)">
+            <summary>宿主自身装配服务循环上下文；不受封口限制。</summary>
         </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandBus.InternalFault(System.Exception,System.String)">
             <summary>
             总线自身故障的统一出口：日志与返回值都只带异常**类型名**。
             </summary>
         </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandBus.FormatUsage(HistoryVulcan.Core.Commands.CommandDescriptor)">
-            <summary>用法行,如 "用法: vulcan.command.help name= pos=left/right/top/bottom/tab [target=] [ratio=]"。</summary>
+        <member name="T:HistoryVulcan.Core.Commands.CommandBus.FrontendRegistration">
+            <summary>一次前端登记；释放时只撤销自己，不误伤同 owner 的后继登记。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.FrontendRegistration.#ctor(HistoryVulcan.Core.Commands.CommandBus,System.String,HistoryVulcan.Core.Modules.IFrontend)">
+            <summary>一次前端登记；释放时只撤销自己，不误伤同 owner 的后继登记。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Commands.IConfirmationService">
             <summary>
             二次确认通道(§5.2 拦截器链的首个内置拦截器;T-08 / R-06 等危险操作依赖)。
-            Shell 层以模态对话框实现;无 UI 场景(脚本/测试)可注入自动拒绝或自动通过的实现。
+            界面以模态对话框实现;无 UI 场景(脚本/测试)可注入自动拒绝或自动通过的实现。
             </summary>
         </member>
         <member name="M:HistoryVulcan.Core.Commands.IConfirmationService.Confirm(System.String)">
@@ -400,27 +448,6 @@
         </member>
         <member name="F:HistoryVulcan.Core.Commands.CommandLevel.Ask">
             <summary>询问：执行前必须问过人；没有确认通道时拒绝执行，而不是放行。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Commands.CommandHistory">
-            <summary>
-            手输指令历史(C-11):↑/↓ 翻阅 + 持久化(默认 500 条,可配)。
-            线程安全;文件一行一条,追加式加载、整体重写保存。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandHistory.#ctor(System.String,System.Int32)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandHistory.Add(System.String)">
-            <summary>
-            追加一条已经过 CommandBus 回显脱敏的文本(与上一条重复时不重复入表)。
-            原始用户输入不得直接传入；Shell 使用 <c>cmd:手动</c> 回显作为唯一写入源。
-            </summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandHistory.Snapshot">
-            <summary>最新在末尾的快照。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Commands.CommandHistory.Save">
-            <summary>持久化到文件(退出时调用)。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Commands.ModuleDomainNaming">
             <summary>
@@ -662,15 +689,6 @@
         <member name="M:HistoryVulcan.Core.Commands.CommandResult.Fail(System.String)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
-        <member name="T:HistoryVulcan.Core.Commands.CommandSelectionState">
-            <summary>进程内共享的命令集选择，只传递稳定的指令名。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Core.Commands.CommandSelectionState.CurrentCommandName">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="E:HistoryVulcan.Core.Commands.CommandSelectionState.Changed">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
         <member name="T:HistoryVulcan.Core.Commands.SensitiveName">
             <summary>命令参数、命令名与配置键共用的敏感名称规则。</summary>
         </member>
@@ -729,10 +747,10 @@
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Modules.IModuleContext">
-            <summary>注册器在装载时交给模块的唯一运行时入口：总线与指令登记。</summary>
+            <summary>注册器在装载时交给模块的唯一运行时入口：总线、指令登记与前端登记。</summary>
         </member>
         <member name="P:HistoryVulcan.Core.Modules.IModuleContext.Bus">
-            <summary>当前宿主进程拥有的那一条命令总线。</summary>
+            <summary>当前宿主进程拥有的那一条命令总线。宿主装配的开关在其上只读。</summary>
         </member>
         <member name="M:HistoryVulcan.Core.Modules.IModuleContext.RegisterCommands(System.Action{HistoryVulcan.Core.Commands.CommandRegistry})">
             <summary>
@@ -740,26 +758,60 @@
             宿主在提交快照时一并登记，随模块卸载一并撤销。
             </summary>
         </member>
+        <member name="M:HistoryVulcan.Core.Modules.IModuleContext.RegisterFrontend(HistoryVulcan.Core.Modules.IFrontend)">
+             <summary>
+             把本模块登记为宿主唯一的前端：接管二次确认、界面线程编组与界面生命周期命令中继。
+             </summary>
+             <remarks>
+             5.4 起取代直接改写总线的 FrontendExecutor / Confirmation / ConfirmationRouter / UiContext。
+             同一宿主只允许一个前端：另一模块已登记时抛 <see cref="T:System.InvalidOperationException"/>；
+             同一模块重复登记会替换旧登记。释放返回值或模块被卸载时撤销，确认回到宿主缺省（拒绝）。
+            
+             带默认实现是刻意的：模块 Smoke 里自写的 IModuleContext 测试替身不必为此改动，
+             未覆盖本成员的替身被调用时抛 <see cref="T:System.NotSupportedException"/>。宿主提供的上下文总是覆盖它。
+             </remarks>
+             <param name="frontend">前端实现；由登记方持有其生命周期。</param>
+             <returns>撤销本次登记的句柄；重复释放无副作用。</returns>
+        </member>
         <member name="T:HistoryVulcan.Core.Modules.IModuleContextAware">
             <summary>需要登记指令或使用总线的模块实现本接口，由注册器在激活指令前调用。</summary>
         </member>
         <member name="M:HistoryVulcan.Core.Modules.IModuleContextAware.Attach(HistoryVulcan.Core.Modules.IModuleContext)">
             <summary>挂上当前宿主上下文。</summary>
         </member>
+        <member name="T:HistoryVulcan.Core.Modules.IFrontend">
+            <summary>
+            界面模块经 <see cref="M:HistoryVulcan.Core.Modules.IModuleContext.RegisterFrontend(HistoryVulcan.Core.Modules.IFrontend)"/> 交给宿主的前端能力。
+            </summary>
+            <remarks>
+            宿主只在三件事上需要界面：向坐在屏幕前的人确认、把声明了界面线程的指令编组过去、
+            以及把 <c>vulcan.app.show / hide / close / focusconsole</c> 转交出去。三件都收在这里，
+            不再以可被任意模块改写的总线属性存在。
+            </remarks>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IFrontend.UiContext">
+            <summary>界面线程上下文；声明 <see cref="P:HistoryVulcan.Core.Commands.CommandDescriptor.RequiresUiThread"/> 的指令在其上执行。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IFrontend.Confirm(System.String)">
+            <summary>向用户询问是否继续。可能在任意线程被调用，实现负责编组到界面线程。</summary>
+            <param name="prompt">面向用户的确认文案，已由总线脱敏。</param>
+            <returns>用户确认继续时为 true。</returns>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IFrontend.ExecuteAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>执行宿主转交的界面生命周期命令。</summary>
+            <param name="commandName">宿主生命周期命令名，例如 <c>vulcan.app.show</c>。</param>
+            <param name="source">原始调用来源标签。</param>
+            <param name="cancellation">调用方的取消令牌。</param>
+            <returns>界面侧的执行回执。</returns>
+        </member>
         <member name="T:HistoryVulcan.Core.Modules.ModuleCommandAttribute">
             <summary>为反射模块方法补充命令元数据。</summary>
         </member>
         <member name="P:HistoryVulcan.Core.Modules.ModuleCommandAttribute.Readonly">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>方法不改变任何状态；为 true 时可被只读消费面（例如 MCP 投影）调用。</summary>
         </member>
         <member name="P:HistoryVulcan.Core.Modules.ModuleCommandAttribute.CommandClass">
             <summary>命令在当前模块域内的功能类；未声明时归入 core。</summary>
-        </member>
-        <member name="T:HistoryVulcan.Core.Modules.IDeferredStartupWork">
-            <summary>网关就绪后执行的非关键启动工作；失败不得阻断宿主。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Modules.IDeferredStartupWork.ExecuteAsync(System.Threading.CancellationToken)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Storage.ISettingsService">
             <summary>

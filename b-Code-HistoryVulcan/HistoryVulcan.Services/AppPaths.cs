@@ -4,7 +4,7 @@ namespace HistoryVulcan.Services;
 /// 应用数据目录约定(F-02,Q9 已定):%AppData%/&lt;应用名&gt;/,
 /// 布局 / 设置 / 历史 / data / modules / panels / logs 均置于其下。
 /// </summary>
-public sealed class AppPaths
+internal sealed class AppPaths
 {
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public AppPaths(string appName, bool createBusinessDirectories = true)

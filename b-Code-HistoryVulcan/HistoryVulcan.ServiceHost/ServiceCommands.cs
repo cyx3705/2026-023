@@ -5,7 +5,7 @@ using HistoryVulcan.Core.Commands;
 
 namespace HistoryVulcan.ServiceHost;
 
-public static class ServiceCommands
+internal static class ServiceCommands
 {
     public static void RegisterAll(
         CommandRegistry registry,
@@ -145,8 +145,8 @@ public static class ServiceCommands
             ConfirmPrompt = _ => "确认退出 HistoryVulcan 前端和后台服务？",
             Handler = async ctx =>
             {
-                var frontend = composition.Bus.FrontendExecutor is { } close
-                    ? await close("vulcan.app.close", ctx.Source, ctx.Cancellation)
+                var frontend = composition.Bus.Frontend is { } ui
+                    ? await ui.ExecuteAsync("vulcan.app.close", ctx.Source, ctx.Cancellation)
                         .ConfigureAwait(false)
                     : CommandResult.Ok("界面未装载");
                 requestStop();
@@ -307,7 +307,7 @@ public static class ServiceCommands
     /// 有前端就中继，没有就明确失败。
     ///
     /// 两个中继口都不针对具体产品：外部前端走网关，进程内界面走
-    /// <see cref="CommandBus.FrontendExecutor"/>——谁登记了自己是前端就转给谁。
+    /// <c>IModuleContext.RegisterFrontend</c> 登记的唯一前端——谁登记了自己是前端就转给谁。
     /// </summary>
     private static CommandDescriptor Lifecycle(
         ServiceComposition composition,
@@ -321,8 +321,8 @@ public static class ServiceCommands
             Summary = summary,
             Handler = async context =>
             {
-                if (composition.Bus.FrontendExecutor is { } frontend)
-                    return await frontend(name, context.Source, context.Cancellation).ConfigureAwait(false);
+                if (composition.Bus.Frontend is { } frontend)
+                    return await frontend.ExecuteAsync(name, context.Source, context.Cancellation).ConfigureAwait(false);
 
                 return CommandResult.Fail("界面未装载");
             },

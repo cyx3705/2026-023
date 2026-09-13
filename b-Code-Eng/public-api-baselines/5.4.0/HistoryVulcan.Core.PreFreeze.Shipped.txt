@@ -1,0 +1,229 @@
+#nullable enable
+BaseVariable.ModuleInfoBase
+BaseVariable.ModuleInfoBase.ModuleInfoBase() -> void
+HistoryVulcan.Core.AppIdentity
+HistoryVulcan.Core.ApplicationIdentity
+HistoryVulcan.Core.ApplicationIdentity.ApplicationIdentity(string! Name, string! Version, string! InformationalVersion, string! FileVersion) -> void
+HistoryVulcan.Core.ApplicationIdentity.FileVersion.get -> string!
+HistoryVulcan.Core.ApplicationIdentity.FileVersion.init -> void
+HistoryVulcan.Core.ApplicationIdentity.InformationalVersion.get -> string!
+HistoryVulcan.Core.ApplicationIdentity.InformationalVersion.init -> void
+HistoryVulcan.Core.ApplicationIdentity.Name.get -> string!
+HistoryVulcan.Core.ApplicationIdentity.Name.init -> void
+HistoryVulcan.Core.ApplicationIdentity.Version.get -> string!
+HistoryVulcan.Core.ApplicationIdentity.Version.init -> void
+HistoryVulcan.Core.Commands.BuiltinCommandDefinitions
+HistoryVulcan.Core.Commands.CommandBus
+HistoryVulcan.Core.Commands.CommandBus.CommandBus(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+HistoryVulcan.Core.Commands.CommandBus.Confirmation.get -> HistoryVulcan.Core.Commands.IConfirmationService?
+HistoryVulcan.Core.Commands.CommandBus.Confirmation.set -> void
+HistoryVulcan.Core.Commands.CommandBus.ConfirmationRouter.get -> System.Func<HistoryVulcan.Core.Commands.CommandContext!, string!, bool>?
+HistoryVulcan.Core.Commands.CommandBus.ConfirmationRouter.set -> void
+HistoryVulcan.Core.Commands.CommandBus.ExecuteAsync(string! text, string! source, System.Threading.CancellationToken cancellation = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
+HistoryVulcan.Core.Commands.CommandBus.Executed -> System.Action<string!, string!, HistoryVulcan.Core.Commands.CommandResult!>?
+HistoryVulcan.Core.Commands.CommandBus.FrontendExecutor.get -> System.Func<string!, string!, System.Threading.CancellationToken, System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!>?
+HistoryVulcan.Core.Commands.CommandBus.FrontendExecutor.set -> void
+HistoryVulcan.Core.Commands.CommandBus.InvokeAsync(string! text, string! source, System.Threading.CancellationToken cancellation = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
+HistoryVulcan.Core.Commands.CommandBus.Registry.get -> HistoryVulcan.Core.Commands.CommandRegistry!
+HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor.get -> System.Func<string!, string!, System.Threading.CancellationToken, System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!>?
+HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor.set -> void
+HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemoteCommand.get -> System.Func<string!, string!, bool>?
+HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemoteCommand.set -> void
+HistoryVulcan.Core.Commands.CommandBus.UiContext.get -> System.Threading.SynchronizationContext?
+HistoryVulcan.Core.Commands.CommandBus.UiContext.set -> void
+HistoryVulcan.Core.Commands.CommandBus.Validate(string! text) -> string?
+HistoryVulcan.Core.Commands.CommandContext
+HistoryVulcan.Core.Commands.CommandContext.Cancellation.get -> System.Threading.CancellationToken
+HistoryVulcan.Core.Commands.CommandContext.CommandContext(HistoryVulcan.Core.Commands.CommandDescriptor! descriptor, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! values, string! source, System.IProgress<string!>? progress, System.Threading.CancellationToken cancellation) -> void
+HistoryVulcan.Core.Commands.CommandContext.Descriptor.get -> HistoryVulcan.Core.Commands.CommandDescriptor!
+HistoryVulcan.Core.Commands.CommandContext.GetBool(string! name, bool fallback = false) -> bool
+HistoryVulcan.Core.Commands.CommandContext.GetDouble(string! name, double fallback = 0) -> double
+HistoryVulcan.Core.Commands.CommandContext.GetInt(string! name, int fallback = 0) -> int
+HistoryVulcan.Core.Commands.CommandContext.GetString(string! name) -> string?
+HistoryVulcan.Core.Commands.CommandContext.Has(string! name) -> bool
+HistoryVulcan.Core.Commands.CommandContext.Progress.get -> System.IProgress<string!>?
+HistoryVulcan.Core.Commands.CommandContext.RequireString(string! name) -> string!
+HistoryVulcan.Core.Commands.CommandContext.Source.get -> string!
+HistoryVulcan.Core.Commands.CommandDescriptor
+HistoryVulcan.Core.Commands.CommandDescriptor.AllowUnspecifiedParameters.get -> bool
+HistoryVulcan.Core.Commands.CommandDescriptor.AllowUnspecifiedParameters.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Annotation(string! key) -> string?
+HistoryVulcan.Core.Commands.CommandDescriptor.Annotations.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+HistoryVulcan.Core.Commands.CommandDescriptor.Annotations.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.CommandClass.get -> string?
+HistoryVulcan.Core.Commands.CommandDescriptor.CommandClass.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.CommandDescriptor() -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.ConfirmPrompt.get -> System.Func<HistoryVulcan.Core.Commands.CommandContext!, string?>?
+HistoryVulcan.Core.Commands.CommandDescriptor.ConfirmPrompt.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Domain.get -> string?
+HistoryVulcan.Core.Commands.CommandDescriptor.Domain.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Example.get -> string?
+HistoryVulcan.Core.Commands.CommandDescriptor.Example.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Handler.get -> System.Func<HistoryVulcan.Core.Commands.CommandContext!, System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!>!
+HistoryVulcan.Core.Commands.CommandDescriptor.Handler.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Name.get -> string!
+HistoryVulcan.Core.Commands.CommandDescriptor.Name.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Parameters.get -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Commands.ParameterSpec!>!
+HistoryVulcan.Core.Commands.CommandDescriptor.Parameters.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Readonly.get -> bool
+HistoryVulcan.Core.Commands.CommandDescriptor.Readonly.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.RequiresUiThread.get -> bool
+HistoryVulcan.Core.Commands.CommandDescriptor.RequiresUiThread.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Summary.get -> string!
+HistoryVulcan.Core.Commands.CommandDescriptor.Summary.init -> void
+HistoryVulcan.Core.Commands.CommandHistory
+HistoryVulcan.Core.Commands.CommandHistory.Add(string! command) -> void
+HistoryVulcan.Core.Commands.CommandHistory.CommandHistory(string! filePath, int capacity = 500) -> void
+HistoryVulcan.Core.Commands.CommandHistory.Save() -> void
+HistoryVulcan.Core.Commands.CommandHistory.Snapshot() -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Core.Commands.CommandParser
+HistoryVulcan.Core.Commands.CommandRegistry
+HistoryVulcan.Core.Commands.CommandRegistry.All() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Commands.CommandDescriptor!>!
+HistoryVulcan.Core.Commands.CommandRegistry.Changed -> System.Action?
+HistoryVulcan.Core.Commands.CommandRegistry.CommandRegistry() -> void
+HistoryVulcan.Core.Commands.CommandRegistry.Domains() -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Core.Commands.CommandRegistry.GetCommandClass(string! name) -> string!
+HistoryVulcan.Core.Commands.CommandRegistry.GetDomain(string! name) -> string!
+HistoryVulcan.Core.Commands.CommandRegistry.GetSource(string! name) -> string!
+HistoryVulcan.Core.Commands.CommandRegistry.IsRegisteredDomain(string? candidate) -> bool
+HistoryVulcan.Core.Commands.CommandRegistry.Register(HistoryVulcan.Core.Commands.CommandDescriptor! descriptor, string! source = "framework") -> void
+HistoryVulcan.Core.Commands.CommandRegistry.Suggest(string! unknownName) -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Core.Commands.CommandRegistry.TryGet(string! name, out HistoryVulcan.Core.Commands.CommandDescriptor! descriptor) -> bool
+HistoryVulcan.Core.Commands.CommandRegistry.Unregister(string! name) -> bool
+HistoryVulcan.Core.Commands.CommandResult
+HistoryVulcan.Core.Commands.CommandResult.CommandResult() -> void
+HistoryVulcan.Core.Commands.CommandResult.Data.get -> object?
+HistoryVulcan.Core.Commands.CommandResult.Data.init -> void
+HistoryVulcan.Core.Commands.CommandResult.Message.get -> string!
+HistoryVulcan.Core.Commands.CommandResult.Message.init -> void
+HistoryVulcan.Core.Commands.CommandResult.Success.get -> bool
+HistoryVulcan.Core.Commands.CommandResult.Success.init -> void
+HistoryVulcan.Core.Commands.CommandSelectionState
+HistoryVulcan.Core.Commands.CommandSelectionState.Changed -> System.EventHandler?
+HistoryVulcan.Core.Commands.CommandSelectionState.CommandSelectionState() -> void
+HistoryVulcan.Core.Commands.CommandSelectionState.CurrentCommandName.get -> string?
+HistoryVulcan.Core.Commands.CommandSelectionState.CurrentCommandName.set -> void
+HistoryVulcan.Core.Commands.CommandSyntaxException
+HistoryVulcan.Core.Commands.CommandSyntaxException.CommandSyntaxException(string! message) -> void
+HistoryVulcan.Core.Commands.IConfirmationService
+HistoryVulcan.Core.Commands.IConfirmationService.Confirm(string! prompt) -> bool
+HistoryVulcan.Core.Commands.ModuleDomainNaming
+HistoryVulcan.Core.Commands.ParamType
+HistoryVulcan.Core.Commands.ParamType.Bool = 3 -> HistoryVulcan.Core.Commands.ParamType
+HistoryVulcan.Core.Commands.ParamType.Double = 2 -> HistoryVulcan.Core.Commands.ParamType
+HistoryVulcan.Core.Commands.ParamType.Int = 1 -> HistoryVulcan.Core.Commands.ParamType
+HistoryVulcan.Core.Commands.ParamType.String = 0 -> HistoryVulcan.Core.Commands.ParamType
+HistoryVulcan.Core.Commands.ParameterSpec
+HistoryVulcan.Core.Commands.ParameterSpec.AllowedValues.get -> string![]?
+HistoryVulcan.Core.Commands.ParameterSpec.AllowedValues.init -> void
+HistoryVulcan.Core.Commands.ParameterSpec.Default.get -> string?
+HistoryVulcan.Core.Commands.ParameterSpec.Default.init -> void
+HistoryVulcan.Core.Commands.ParameterSpec.Description.get -> string!
+HistoryVulcan.Core.Commands.ParameterSpec.Description.init -> void
+HistoryVulcan.Core.Commands.ParameterSpec.Name.get -> string!
+HistoryVulcan.Core.Commands.ParameterSpec.Name.init -> void
+HistoryVulcan.Core.Commands.ParameterSpec.ParameterSpec() -> void
+HistoryVulcan.Core.Commands.ParameterSpec.Position.get -> int?
+HistoryVulcan.Core.Commands.ParameterSpec.Position.init -> void
+HistoryVulcan.Core.Commands.ParameterSpec.Required.get -> bool
+HistoryVulcan.Core.Commands.ParameterSpec.Required.init -> void
+HistoryVulcan.Core.Commands.ParameterSpec.Type.get -> HistoryVulcan.Core.Commands.ParamType
+HistoryVulcan.Core.Commands.ParameterSpec.Type.init -> void
+HistoryVulcan.Core.Commands.ParsedCommand
+HistoryVulcan.Core.Commands.ParsedCommand.Name.get -> string!
+HistoryVulcan.Core.Commands.ParsedCommand.Name.init -> void
+HistoryVulcan.Core.Commands.ParsedCommand.Named.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+HistoryVulcan.Core.Commands.ParsedCommand.Named.init -> void
+HistoryVulcan.Core.Commands.ParsedCommand.ParsedCommand() -> void
+HistoryVulcan.Core.Commands.ParsedCommand.Positionals.get -> System.Collections.Generic.IReadOnlyList<string!>!
+HistoryVulcan.Core.Commands.ParsedCommand.Positionals.init -> void
+HistoryVulcan.Core.Commands.ParsedCommand.RawText.get -> string!
+HistoryVulcan.Core.Commands.ParsedCommand.RawText.init -> void
+HistoryVulcan.Core.Logging.IShellLog
+HistoryVulcan.Core.Logging.IShellLog.EntryAdded -> System.EventHandler<HistoryVulcan.Core.Logging.ShellLogEntry!>?
+HistoryVulcan.Core.Logging.IShellLog.Log(HistoryVulcan.Core.Logging.ShellLogLevel level, string! category, string! message) -> void
+HistoryVulcan.Core.Logging.IShellLog.Snapshot() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Logging.ShellLogEntry!>!
+HistoryVulcan.Core.Logging.ShellLogEntry
+HistoryVulcan.Core.Logging.ShellLogEntry.Category.get -> string!
+HistoryVulcan.Core.Logging.ShellLogEntry.Category.init -> void
+HistoryVulcan.Core.Logging.ShellLogEntry.Level.get -> HistoryVulcan.Core.Logging.ShellLogLevel
+HistoryVulcan.Core.Logging.ShellLogEntry.Level.init -> void
+HistoryVulcan.Core.Logging.ShellLogEntry.Message.get -> string!
+HistoryVulcan.Core.Logging.ShellLogEntry.Message.init -> void
+HistoryVulcan.Core.Logging.ShellLogEntry.ShellLogEntry(System.DateTime Time, HistoryVulcan.Core.Logging.ShellLogLevel Level, string! Category, string! Message) -> void
+HistoryVulcan.Core.Logging.ShellLogEntry.Time.get -> System.DateTime
+HistoryVulcan.Core.Logging.ShellLogEntry.Time.init -> void
+HistoryVulcan.Core.Logging.ShellLogExtensions
+HistoryVulcan.Core.Logging.ShellLogLevel
+HistoryVulcan.Core.Logging.ShellLogLevel.Debug = 1 -> HistoryVulcan.Core.Logging.ShellLogLevel
+HistoryVulcan.Core.Logging.ShellLogLevel.Error = 4 -> HistoryVulcan.Core.Logging.ShellLogLevel
+HistoryVulcan.Core.Logging.ShellLogLevel.Fatal = 5 -> HistoryVulcan.Core.Logging.ShellLogLevel
+HistoryVulcan.Core.Logging.ShellLogLevel.Info = 2 -> HistoryVulcan.Core.Logging.ShellLogLevel
+HistoryVulcan.Core.Logging.ShellLogLevel.Trace = 0 -> HistoryVulcan.Core.Logging.ShellLogLevel
+HistoryVulcan.Core.Logging.ShellLogLevel.Warn = 3 -> HistoryVulcan.Core.Logging.ShellLogLevel
+HistoryVulcan.Core.Modules.IDeferredStartupWork
+HistoryVulcan.Core.Modules.IDeferredStartupWork.ExecuteAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+HistoryVulcan.Core.Modules.IModuleContext
+HistoryVulcan.Core.Modules.IModuleContext.Bus.get -> HistoryVulcan.Core.Commands.CommandBus!
+HistoryVulcan.Core.Modules.IModuleContext.RegisterCommands(System.Action<HistoryVulcan.Core.Commands.CommandRegistry!>! configure) -> void
+HistoryVulcan.Core.Modules.IModuleContextAware
+HistoryVulcan.Core.Modules.IModuleContextAware.Attach(HistoryVulcan.Core.Modules.IModuleContext! context) -> void
+HistoryVulcan.Core.Modules.ModuleCommandAttribute
+HistoryVulcan.Core.Modules.ModuleCommandAttribute.CommandClass.get -> string?
+HistoryVulcan.Core.Modules.ModuleCommandAttribute.CommandClass.init -> void
+HistoryVulcan.Core.Modules.ModuleCommandAttribute.ModuleCommandAttribute() -> void
+HistoryVulcan.Core.Modules.ModuleCommandAttribute.Readonly.get -> bool
+HistoryVulcan.Core.Modules.ModuleCommandAttribute.Readonly.init -> void
+HistoryVulcan.Core.Storage.ISettingsService
+HistoryVulcan.Core.Storage.ISettingsService.All() -> System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string!, string!>>!
+HistoryVulcan.Core.Storage.ISettingsService.Get(string! key) -> string?
+HistoryVulcan.Core.Storage.ISettingsService.GetInt(string! key, int fallback) -> int
+HistoryVulcan.Core.Storage.ISettingsService.Set(string! key, string! value) -> void
+const HistoryVulcan.Core.Commands.CommandBus.EchoCategoryPrefix = "cmd:" -> string!
+const HistoryVulcan.Core.Commands.CommandBus.ProgressCategory = "cmd:progress" -> string!
+const HistoryVulcan.Core.Commands.CommandBus.ResultCategory = "cmd:result" -> string!
+static HistoryVulcan.Core.AppIdentity.Current.get -> HistoryVulcan.Core.ApplicationIdentity!
+static HistoryVulcan.Core.AppIdentity.From(System.Reflection.Assembly! assembly) -> HistoryVulcan.Core.ApplicationIdentity!
+static HistoryVulcan.Core.AppIdentity.Use(System.Reflection.Assembly! assembly) -> void
+static HistoryVulcan.Core.Commands.BuiltinCommandDefinitions.Bind(string! name, System.Func<HistoryVulcan.Core.Commands.CommandContext!, System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!>! handler, bool requiresUiThread = false) -> HistoryVulcan.Core.Commands.CommandDescriptor!
+static HistoryVulcan.Core.Commands.BuiltinCommandDefinitions.Contains(string! name) -> bool
+static HistoryVulcan.Core.Commands.BuiltinCommandDefinitions.Names.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static HistoryVulcan.Core.Commands.CommandBus.FormatUsage(HistoryVulcan.Core.Commands.CommandDescriptor! d) -> string!
+static HistoryVulcan.Core.Commands.CommandDescriptor.Sync(System.Func<HistoryVulcan.Core.Commands.CommandContext!, HistoryVulcan.Core.Commands.CommandResult!>! handler) -> System.Func<HistoryVulcan.Core.Commands.CommandContext!, System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!>!
+static HistoryVulcan.Core.Commands.CommandParser.IsBlankOrComment(string! line) -> bool
+static HistoryVulcan.Core.Commands.CommandParser.Parse(string! line) -> HistoryVulcan.Core.Commands.ParsedCommand!
+static HistoryVulcan.Core.Commands.CommandParser.QuoteArg(string! value) -> string!
+static HistoryVulcan.Core.Commands.CommandRegistry.GetMethod(string! name) -> string!
+static HistoryVulcan.Core.Commands.CommandResult.Fail(string! message) -> HistoryVulcan.Core.Commands.CommandResult!
+static HistoryVulcan.Core.Commands.CommandResult.Ok(string! message = "完成", object? data = null) -> HistoryVulcan.Core.Commands.CommandResult!
+static HistoryVulcan.Core.Commands.ModuleDomainNaming.ToDomain(string! moduleName) -> string!
+static HistoryVulcan.Core.Logging.ShellLogExtensions.Error(this HistoryVulcan.Core.Logging.IShellLog! log, string! category, string! message) -> void
+static HistoryVulcan.Core.Logging.ShellLogExtensions.Info(this HistoryVulcan.Core.Logging.IShellLog! log, string! category, string! message) -> void
+static HistoryVulcan.Core.Logging.ShellLogExtensions.Warn(this HistoryVulcan.Core.Logging.IShellLog! log, string! category, string! message) -> void
+virtual BaseVariable.ModuleInfoBase.Author.get -> string!
+virtual BaseVariable.ModuleInfoBase.Description.get -> string!
+virtual BaseVariable.ModuleInfoBase.Enabled.get -> bool
+virtual BaseVariable.ModuleInfoBase.MainClassType.get -> System.Type?
+virtual BaseVariable.ModuleInfoBase.ModuleName.get -> string!
+virtual BaseVariable.ModuleInfoBase.Open.get -> bool
+virtual BaseVariable.ModuleInfoBase.Version.get -> string!
+HistoryVulcan.Core.Commands.CliExposurePolicy
+HistoryVulcan.Core.Commands.CommandClassLabels
+HistoryVulcan.Core.Commands.CommandDescriptor.HiddenReason.get -> string?
+HistoryVulcan.Core.Commands.CommandDescriptor.HiddenReason.init -> void
+HistoryVulcan.Core.Commands.CommandDescriptor.Level.get -> HistoryVulcan.Core.Commands.CommandLevel
+HistoryVulcan.Core.Commands.CommandDescriptor.Level.init -> void
+HistoryVulcan.Core.Commands.CommandLevel
+HistoryVulcan.Core.Commands.CommandLevel.Ask = 1 -> HistoryVulcan.Core.Commands.CommandLevel
+HistoryVulcan.Core.Commands.CommandLevel.Run = 0 -> HistoryVulcan.Core.Commands.CommandLevel
+HistoryVulcan.Core.Commands.DomainFocus
+const HistoryVulcan.Core.Commands.CommandClassLabels.None = "无类" -> string!
+const HistoryVulcan.Core.Commands.DomainFocus.All = "全部" -> string!
+static HistoryVulcan.Core.Commands.CliExposurePolicy.ExposedCommands.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static HistoryVulcan.Core.Commands.CliExposurePolicy.IsExposed(string! commandName) -> bool
+static HistoryVulcan.Core.Commands.CliExposurePolicy.MissingCommands(HistoryVulcan.Core.Commands.CommandRegistry! registry) -> System.Collections.Generic.IReadOnlyList<string!>!
+static HistoryVulcan.Core.Commands.CliExposurePolicy.RefusalReason(string! commandName) -> string!
+static HistoryVulcan.Core.Commands.CommandClassLabels.Display(string? commandClass) -> string!
+static HistoryVulcan.Core.Commands.CommandClassLabels.ToKey(string? label) -> string!
+static HistoryVulcan.Core.Commands.DomainFocus.IsUnfocused(string? domain) -> bool
+static HistoryVulcan.Core.Commands.DomainFocus.Resolve(string? input, string? focusedDomain, System.Func<string!, bool>! isRegisteredDomain) -> string!

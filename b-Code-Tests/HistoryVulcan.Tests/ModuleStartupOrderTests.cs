@@ -201,7 +201,7 @@ namespace HistoryVulcan.Tests
 
             try
             {
-                host.Attach(registry, bus, new MemorySettings(), Path.Combine(root, "data"));
+                host.Attach(registry, bus);
                 Assert.False(host.IsReady);
 
                 host.Start();
@@ -241,7 +241,7 @@ namespace HistoryVulcan.Tests
 
             try
             {
-                host.Attach(registry, bus, new MemorySettings(), Path.Combine(root, "data"));
+                host.Attach(registry, bus);
                 host.Start();
                 Assert.True(host.IsReady);
                 Assert.True(registry.TryGet("zetafixture.ping", out _));

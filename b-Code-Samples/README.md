@@ -1,6 +1,6 @@
 # 起步示例：DemoModule
 
-对齐 HistoryVulcan 5.3.0 模块接入面的最小模块。抄这里开工，不要再抄旧的反射全暴露、本地 `ModuleInfoBase` 副本或 `.panel.json`。
+对齐 HistoryVulcan 5.4.0 模块接入面的最小模块。抄这里开工，不要再抄旧的反射全暴露、本地 `ModuleInfoBase` 副本或 `.panel.json`。
 
 本目录在宿主仓内，用同仓 `ProjectReference` 锁住与现行 Core 一致。复制到编号模块仓库后：
 

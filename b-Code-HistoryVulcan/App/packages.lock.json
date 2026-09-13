@@ -8,14 +8,14 @@
       "OneHistory.HistoryVulcan.ServiceHost": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[4.0.0, )",
-          "OneHistory.HistoryVulcan.Services": "[4.0.0, )"
+          "OneHistory.HistoryVulcan.Core": "[5.4.0, )",
+          "OneHistory.HistoryVulcan.Services": "[5.4.0, )"
         }
       },
       "OneHistory.HistoryVulcan.Services": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[4.0.0, )"
+          "OneHistory.HistoryVulcan.Core": "[5.4.0, )"
         }
       }
     },

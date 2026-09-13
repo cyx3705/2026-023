@@ -20,7 +20,7 @@ namespace HistoryVulcan.Core.Commands;
 /// 拿本名单与真实注册表对账，缺一条就整体报错，改名后第一次用 <c>--cli</c> 就会炸出来，
 /// 而不是等到某天需要救火时才发现那条恢复指令不见了。
 /// </remarks>
-public static class CliExposurePolicy
+internal static class CliExposurePolicy
 {
     /// <summary>
     /// 命令行可执行的全部指令。

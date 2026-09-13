@@ -1,7 +1,7 @@
 namespace HistoryVulcan.ServiceHost;
 
 /// <summary>宿主进程被要求做的事。</summary>
-public enum HostAction
+internal enum HostAction
 {
     /// <summary>启动后台服务（无参数时的缺省）。</summary>
     RunService,
@@ -38,7 +38,7 @@ public enum HostAction
 /// <param name="Action">要执行的动作。</param>
 /// <param name="Value">动作的参数：路径或指令文本；<see cref="HostAction.RunService"/> 时为空。</param>
 /// <param name="Error">仅 <see cref="HostAction.Error"/> 时有值。</param>
-public readonly record struct HostArguments(HostAction Action, string Value, string Error)
+internal readonly record struct HostArguments(HostAction Action, string Value, string Error)
 {
     /// <summary>结果格式；默认是人类可读文本。</summary>
     public HostOutputFormat Format { get; init; } = HostOutputFormat.Human;
@@ -48,7 +48,7 @@ public readonly record struct HostArguments(HostAction Action, string Value, str
 }
 
 /// <summary>CLI 输出格式。</summary>
-public enum HostOutputFormat
+internal enum HostOutputFormat
 {
     Human,
     Json,
@@ -57,7 +57,7 @@ public enum HostOutputFormat
 /// <summary>
 /// 入口参数判定。抽成纯函数是为了能被测试——理由见 <see cref="Parse"/>。
 /// </summary>
-public static class HostArgumentParser
+internal static class HostArgumentParser
 {
     /// <summary>无头导出命令手册。</summary>
     public const string ExportManualSwitch = "--export-command-manual";

@@ -113,7 +113,7 @@ public sealed class RuntimeModulePackageTests
 
         try
         {
-            host.Attach(registry, bus, settings, Path.Combine(temp.Path, "data"));
+            host.Attach(registry, bus);
             host.Start();
 
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
@@ -169,7 +169,7 @@ public sealed class RuntimeModulePackageTests
         try
         {
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
-            host.Attach(registry, bus, settings, Path.Combine(temp.Path, "data"));
+            host.Attach(registry, bus);
             host.Start();
             Assert.True(host.InstallPackage(package).Success);
             var firstId = Assert.Single(host.Modules).InstanceId;
@@ -216,7 +216,7 @@ public sealed class RuntimeModulePackageTests
 
         try
         {
-            host.Attach(registry, bus, settings, Path.Combine(temp.Path, "data"));
+            host.Attach(registry, bus);
             host.Start();
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
             Assert.True(host.InstallPackage(first).Success);
@@ -261,7 +261,7 @@ public sealed class RuntimeModulePackageTests
 
         try
         {
-            host.Attach(registry, bus, settings, Path.Combine(temp.Path, "data"));
+            host.Attach(registry, bus);
             host.Start();
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
             Assert.True(host.InstallPackage(good).Success);
@@ -383,7 +383,7 @@ public sealed class RuntimeModulePackageTests
 
         try
         {
-            host.Attach(registry, bus, settings, Path.Combine(temp.Path, "data"));
+            host.Attach(registry, bus);
             host.Start();
 
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.NameVariable, "contextfixture");
@@ -450,7 +450,7 @@ public sealed class RuntimeModulePackageTests
 
         try
         {
-            host.Attach(registry, bus, settings, Path.Combine(temp.Path, "data"));
+            host.Attach(registry, bus);
             host.Start();
 
             foreach (var (package, version) in new[]
@@ -501,7 +501,7 @@ public sealed class RuntimeModulePackageTests
         try
         {
             Environment.SetEnvironmentVariable(ContextAwareFixture.FailureVariable, failure);
-            host.Attach(registry, new CommandBus(registry, log), new MemorySettings(), temp.Path);
+            host.Attach(registry, new CommandBus(registry, log));
             host.Start();
             Assert.False(Assert.Single(host.Modules).Attached);
             Assert.Empty(registry.All());
@@ -532,7 +532,7 @@ public sealed class RuntimeModulePackageTests
         try
         {
             Environment.SetEnvironmentVariable(ContextAwareFixture.DataVariable, data);
-            host.Attach(registry, new CommandBus(registry, log), new MemorySettings(), temp.Path);
+            host.Attach(registry, new CommandBus(registry, log));
             host.Start();
             Assert.True(host.InstallPackage(first).Success);
             Directory.CreateDirectory(data);

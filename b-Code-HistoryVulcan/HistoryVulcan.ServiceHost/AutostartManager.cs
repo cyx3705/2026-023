@@ -3,7 +3,7 @@ using Microsoft.Win32;
 namespace HistoryVulcan.ServiceHost;
 
 /// <summary>用户级登录启动项；接口用于在测试中替换为内存实现。</summary>
-public interface IAutostartManager
+internal interface IAutostartManager
 {
     bool IsEnabled(string name);
 
@@ -20,7 +20,7 @@ public interface IAutostartManager
         => SetEnabled(name, executablePath, enabled);
 }
 
-public sealed class WindowsRunAutostartManager : IAutostartManager
+internal sealed class WindowsRunAutostartManager : IAutostartManager
 {
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
 

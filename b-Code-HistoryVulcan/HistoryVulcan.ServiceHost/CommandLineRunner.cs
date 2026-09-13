@@ -24,7 +24,7 @@ namespace HistoryVulcan.ServiceHost;
 /// 暴露面见 <see cref="CliExposurePolicy"/>：一份名单，恰好是开发管线与模块恢复。
 /// 它是三个消费面里唯一不由描述符声明的——理由与那份名单的代价都写在该类注释里。
 /// </remarks>
-public static class CommandLineRunner
+internal static class CommandLineRunner
 {
     /// <summary>
     /// 执行一条指令。

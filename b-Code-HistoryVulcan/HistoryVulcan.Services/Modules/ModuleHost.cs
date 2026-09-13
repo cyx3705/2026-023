@@ -3,7 +3,6 @@ using System.Runtime.Loader;
 using System.Threading;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Core.Storage;
 
 namespace HistoryVulcan.Services.Modules;
 
@@ -36,7 +35,7 @@ public sealed partial class ModuleHost : IDisposable
     }
 
     /// <summary>Marshals registry mutations to the consumer thread; null executes inline.</summary>
-    public SynchronizationContext? UiContext { get; set; }
+    internal SynchronizationContext? UiContext { get; set; }
 
     /// <summary>Whether modules marked as UI modules may be initialized.</summary>
     public bool EnableUiModules { get; set; } = true;
@@ -44,7 +43,7 @@ public sealed partial class ModuleHost : IDisposable
     /// <summary>Whether this host owns filesystem change detection for the module directory.</summary>
     public bool EnableFileWatching { get; set; } = true;
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    /// <summary>固定运行区根目录；发现源不是运行区时为空串。</summary>
     public string ModulesDirectory => _dir;
 
     /// <summary>Configured runtime package roots.</summary>
@@ -53,43 +52,29 @@ public sealed partial class ModuleHost : IDisposable
     /// <summary>Diagnostics from the most recent discovery scan.</summary>
     public IReadOnlyList<ModuleDiscoveryDiagnostic> DiscoveryDiagnostics => _discoveryDiagnostics;
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    /// <summary>当前快照里的模块元信息；未接上宿主的模块也在其中，并带失败原因。</summary>
     public IReadOnlyList<ModuleMeta> Modules => _current.Modules;
 
     /// <summary>当前快照持有的加载上下文数量，供服务内回滚诊断使用。</summary>
     internal int CurrentContextCount => _current.Contexts.Count;
 
     /// <summary>每次整体重载完成后触发(在重载线程上);MD-08 面板同步等旁路逻辑挂此处。</summary>
-    public event Action? ReloadCompleted;
+    internal event Action? ReloadCompleted;
 
-    /// <summary>接入指令注册表，再调用 Start；仅此重载不注入模块上下文。</summary>
-    public void Attach(CommandRegistry registry)
-    {
-        _registry = registry;
-    }
-
-    /// <summary>接入模块业务运行所需的完整宿主上下文。</summary>
-    public void Attach(
-        CommandRegistry registry,
-        CommandBus bus,
-        ISettingsService settings,
-        string dataDirectory)
+    /// <summary>接入指令注册表与宿主总线，再调用 Start；总线必须使用同一个注册表。</summary>
+    public void Attach(CommandRegistry registry, CommandBus bus)
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(bus);
-        ArgumentNullException.ThrowIfNull(settings);
-        ArgumentException.ThrowIfNullOrWhiteSpace(dataDirectory);
 
         if (!ReferenceEquals(bus.Registry, registry))
             throw new ArgumentException("模块宿主的 CommandBus 必须使用同一个 CommandRegistry。", nameof(bus));
 
         _registry = registry;
         _bus = bus;
-
-        // Preserve the existing composition signature; module contexts expose only the bus and registration.
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    /// <summary>执行首轮整体装载，等同于 <see cref="Reload"/>；调用前必须先 <see cref="Attach"/>。</summary>
     public void Start() => Reload();
 
     /// <summary>
@@ -127,6 +112,9 @@ public sealed partial class ModuleHost : IDisposable
         }
 
         var owner = match.ModuleName;
+
+        // 先撤前端再拆实例：拆到一半的界面不能再接到确认或生命周期中继。
+        _bus?.ReleaseFrontend(owner);
         if (_registry != null)
         {
             var source = $"module:{owner}";

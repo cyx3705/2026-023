@@ -31,7 +31,7 @@ public sealed class ModuleZHotReloadTests
 
         try
         {
-            host.Attach(registry, bus, settings, Path.Combine(root, "data"));
+            host.Attach(registry, bus);
             host.Start();
             Assert.Equal("contextfixture", Assert.Single(host.Modules).ModuleName);
             Assert.Contains(log.Entries, entry =>

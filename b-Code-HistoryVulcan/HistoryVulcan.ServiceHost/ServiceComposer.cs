@@ -14,7 +14,7 @@ using HistoryVulcan.Services.Modules;
 namespace HistoryVulcan.ServiceHost;
 
 /// <summary>Composes the host command bus, settings, module lifecycle and local development services.</summary>
-public static partial class ServiceComposer
+internal static partial class ServiceComposer
 {
     /// <summary>服务随登录自启动的设置键。</summary>
     public const string ServiceAutostartSettingKey = "svc.autostart";
@@ -80,9 +80,12 @@ public static partial class ServiceComposer
         var settings = new SettingsService(servicePaths);
         var registry = new CommandRegistry();
         var bus = new CommandBus(registry, log);
+
+        // 宿主总线交给模块之前封口：确认、界面线程与远端路由只由宿主装配，前端经 RegisterFrontend 登记。
+        bus.SealHostWiring();
         var modules = new ModuleHost(
             new RuntimeModuleDiscoverySource(paths.ModulesDir), log);
-        modules.Attach(registry, bus, settings, servicePaths.Root);
+        modules.Attach(registry, bus);
         RegisterServiceModuleCommands(registry, modules);
         RegisterSettingCommands(registry, settings);
 

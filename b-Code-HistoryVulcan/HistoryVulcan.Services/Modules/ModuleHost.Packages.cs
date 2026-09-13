@@ -7,7 +7,7 @@ public sealed partial class ModuleHost
     /// <summary>
     /// Validates and atomically installs a manifest package into the fixed runtime module directory.
     /// </summary>
-    public CommandResult InstallPackage(string path)
+    internal CommandResult InstallPackage(string path)
     {
         if (!TryGetRuntimeRoot(out var runtimeRoot, out var rootError))
             return CommandResult.Fail(rootError);
@@ -138,7 +138,7 @@ public sealed partial class ModuleHost
     }
 
     /// <summary>Atomically removes a named manifest package from the runtime module directory.</summary>
-    public CommandResult RemovePackage(string name)
+    internal CommandResult RemovePackage(string name)
     {
         if (!TryGetRuntimeRoot(out var runtimeRoot, out var rootError))
             return CommandResult.Fail(rootError);
@@ -203,7 +203,7 @@ public sealed partial class ModuleHost
     /// Uninstalls a module package from the fixed AppData runtime directory.
     /// This is the persistent counterpart to <see cref="Unload"/>.
     /// </summary>
-    public CommandResult Uninstall(string name) => RemovePackage(name);
+    internal CommandResult Uninstall(string name) => RemovePackage(name);
 
     private bool TryGetRuntimeRoot(out string root, out string error)
     {

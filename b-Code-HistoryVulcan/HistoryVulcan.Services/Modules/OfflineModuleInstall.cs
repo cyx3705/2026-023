@@ -17,7 +17,7 @@ namespace HistoryVulcan.Services.Modules;
 /// 校验、拷贝与回滚复用 <see cref="RuntimeModulePackageStore"/>，与活宿主的那条编排同源：
 /// 「离线装的包和在线装的包不一样」会是一类极难排查的故障。
 /// </remarks>
-public static class OfflineModuleInstall
+internal static class OfflineModuleInstall
 {
     /// <summary>安装结果：退出码与一行人读消息。</summary>
     /// <param name="ExitCode">0 成功；2 参数或校验失败；1 文件操作失败。</param>

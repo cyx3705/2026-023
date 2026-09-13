@@ -112,6 +112,7 @@ public sealed partial class ModuleHost
         int registeredBefore,
         IReadOnlySet<AssemblyLoadContext> contextsBefore)
     {
+        _bus?.ReleaseFrontend(moduleName);
         MarshalToUi(() =>
         {
             if (_registry != null)
@@ -149,6 +150,8 @@ public sealed partial class ModuleHost
         // 必须在 Build / Attach 之前把旧模块指令从活登记表拿掉。
         // HistoryAurora 的 RegisterCommands 看见 live.TryGet 为真就会跳过；
         // 若拆实例后仍留着旧指令，重载后界面命令数会变成 0，且 attachFailures 为空。
+        foreach (var owner in old.ContextsByOwner.Keys.Concat(old.Modules.Select(module => module.ModuleName)))
+            _bus?.ReleaseFrontend(owner);
         UnregisterCommands(old);
         DisposeInstances(old.Instances);
 
@@ -156,7 +159,7 @@ public sealed partial class ModuleHost
             alc.Unload();
     }
 
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
+    /// <summary>卸载全部模块、停止文件监听并摘除程序集解析钩子；重复调用无副作用。</summary>
     public void Dispose()
     {
         lock (_reloadLock)

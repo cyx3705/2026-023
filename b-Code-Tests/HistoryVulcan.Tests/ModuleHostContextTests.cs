@@ -36,7 +36,8 @@ namespace HistoryVulcan.Tests
             RuntimeModulePackageTests.CreatePackage(root, "contextfixture", "contextfixture", "v1.0.0");
             var before = System.Runtime.Loader.AssemblyLoadContext.All.ToHashSet();
             var host = new ModuleHost(new RuntimeModuleDiscoverySource(root), new NullLog()) { EnableFileWatching = false };
-            host.Attach(new CommandRegistry());
+            var registry = new CommandRegistry();
+            host.Attach(registry, new CommandBus(registry, new NullLog()));
             host.Start();
             var loaded = System.Runtime.Loader.AssemblyLoadContext.All.Single(context => context.IsCollectible && !before.Contains(context));
             var reference = new WeakReference(loaded);
@@ -58,7 +59,8 @@ namespace HistoryVulcan.Tests
                 {
                     EnableFileWatching = false,
                 };
-                host.Attach(new CommandRegistry());
+                var registry = new CommandRegistry();
+                host.Attach(registry, new CommandBus(registry, new NullLog()));
                 host.Start();
                 Assert.Single(host.Modules);
                 Assert.Single(File.ReadAllLines(marker));
@@ -80,11 +82,7 @@ namespace HistoryVulcan.Tests
                 EnableFileWatching = false,
             };
 
-            host.Attach(
-                registry,
-                bus,
-                new MemorySettings(),
-                Path.Combine(root, "data"));
+            host.Attach(registry, bus);
             host.Start();
 
             try
@@ -123,7 +121,7 @@ namespace HistoryVulcan.Tests
 
             try
             {
-                host.Attach(registry, bus, settings, dataDirectory);
+                host.Attach(registry, bus);
                 host.Start();
 
                 Assert.True(registry.TryGet("contextfixture.context-probe", out var direct));
@@ -166,7 +164,7 @@ namespace HistoryVulcan.Tests
             {
                 EnableFileWatching = false,
             };
-            host.Attach(registry, bus, new MemorySettings(), Path.Combine(root, "data"));
+            host.Attach(registry, bus);
             host.Start();
 
             try
@@ -226,7 +224,7 @@ namespace HistoryVulcan.Tests
             try
             {
                 Environment.SetEnvironmentVariable(ContextAwareFixture.DataVariable, Path.GetFullPath(dataDirectory));
-                host.Attach(registry, new CommandBus(registry, log), new MemorySettings(), dataDirectory);
+                host.Attach(registry, new CommandBus(registry, log));
                 host.Start();
                 Assert.False(File.Exists(marker), "装载阶段不应触发拆除");
 
@@ -276,7 +274,7 @@ namespace HistoryVulcan.Tests
 
             try
             {
-                host.Attach(registry, bus, settings, Path.Combine(root, "data"));
+                host.Attach(registry, bus);
                 host.Start();
 
                 Assert.Empty(host.Modules);
@@ -310,12 +308,13 @@ namespace HistoryVulcan.Tests
 
             try
             {
-                host.Attach(registry);
+                host.Attach(registry, new CommandBus(registry, log));
                 host.Start();
 
                 var module = Assert.Single(host.Modules);
                 Assert.Equal("contextfixture", module.ModuleName);
-                Assert.Single(registry.All());
+                // 回滚槽若被发现，同名指令撞名被拒、计数对不上；接入后登记的上下文指令也计入。
+                Assert.Equal(module.CommandCount, registry.All().Count);
             }
             finally
             {
@@ -344,7 +343,7 @@ namespace HistoryVulcan.Tests
 
             try
             {
-                host.Attach(registry, bus, settings, Path.Combine(root, "data"));
+                host.Attach(registry, bus);
                 host.Start();
                 Assert.Equal("contextfixture", Assert.Single(host.Modules).ModuleName);
                 Assert.True(registry.TryGet("contextfixture.Probe", out _));
@@ -390,7 +389,7 @@ namespace HistoryVulcan.Tests
 
             try
             {
-                host.Attach(registry, bus, settings, Path.Combine(root, "data"));
+                host.Attach(registry, bus);
                 host.Start();
                 Assert.True(registry.TryGet("contextfixture.context-probe", out _));
 

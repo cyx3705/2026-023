@@ -12,7 +12,7 @@ namespace HistoryVulcan.Services;
 /// - N-03 承压:文件写入走后台单线程 + 常开流,1000 条/秒不阻塞调用方
 /// 文件始终全量落盘;控制台显示级别过滤在窗口侧完成(L-04)。
 /// </summary>
-public sealed class ShellLog : IShellLog, IDisposable
+internal sealed class ShellLog : IShellLog, IDisposable
 {
     private const int BufferLimit = 50_000;          // C-05 内存缓冲上限
     private const long RollSizeBytes = 10 * 1024 * 1024; // L-02 尺寸滚动阈值

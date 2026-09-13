@@ -33,7 +33,7 @@ public sealed class PinnedModuleTests
         try
         {
             var registry = new CommandRegistry();
-            host.Attach(registry, new CommandBus(registry, log), new MemorySettings(), Path.Combine(root, "data"));
+            host.Attach(registry, new CommandBus(registry, log));
             host.Start();
             host.Reload();
             host.Reload();
@@ -65,7 +65,7 @@ public sealed class PinnedModuleTests
         try
         {
             var registry = new CommandRegistry();
-            host.Attach(registry, new CommandBus(registry, log), new MemorySettings(), Path.Combine(root, "data"));
+            host.Attach(registry, new CommandBus(registry, log));
             host.Start();
             host.Reload();
 

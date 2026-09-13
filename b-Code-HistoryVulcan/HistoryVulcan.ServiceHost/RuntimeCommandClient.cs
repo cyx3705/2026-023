@@ -7,7 +7,7 @@ using HistoryVulcan.Core.Commands;
 namespace HistoryVulcan.ServiceHost;
 
 /// <summary>连接当前用户运行中宿主的受限 CLI 客户端。</summary>
-public static class RuntimeCommandClient
+internal static class RuntimeCommandClient
 {
     /// <summary>运行时管道不可达时的专用退出码。</summary>
     public const int UnreachableExitCode = 3;

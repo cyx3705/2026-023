@@ -26,7 +26,7 @@ public sealed class DemoModuleSampleTests
 
         try
         {
-            host.Attach(registry, bus, new MemorySettings(), Path.Combine(root, "data"));
+            host.Attach(registry, bus);
             host.Start();
 
             var module = Assert.Single(host.Modules);

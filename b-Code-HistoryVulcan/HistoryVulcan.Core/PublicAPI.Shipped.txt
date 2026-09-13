@@ -17,12 +17,8 @@ HistoryVulcan.Core.Commands.CommandBus
 HistoryVulcan.Core.Commands.CommandBus.CommandBus(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Logging.IShellLog! log) -> void
 HistoryVulcan.Core.Commands.CommandBus.Confirmation.get -> HistoryVulcan.Core.Commands.IConfirmationService?
 HistoryVulcan.Core.Commands.CommandBus.Confirmation.set -> void
-HistoryVulcan.Core.Commands.CommandBus.ConfirmationRouter.get -> System.Func<HistoryVulcan.Core.Commands.CommandContext!, string!, bool>?
-HistoryVulcan.Core.Commands.CommandBus.ConfirmationRouter.set -> void
 HistoryVulcan.Core.Commands.CommandBus.ExecuteAsync(string! text, string! source, System.Threading.CancellationToken cancellation = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
 HistoryVulcan.Core.Commands.CommandBus.Executed -> System.Action<string!, string!, HistoryVulcan.Core.Commands.CommandResult!>?
-HistoryVulcan.Core.Commands.CommandBus.FrontendExecutor.get -> System.Func<string!, string!, System.Threading.CancellationToken, System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!>?
-HistoryVulcan.Core.Commands.CommandBus.FrontendExecutor.set -> void
 HistoryVulcan.Core.Commands.CommandBus.InvokeAsync(string! text, string! source, System.Threading.CancellationToken cancellation = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
 HistoryVulcan.Core.Commands.CommandBus.Registry.get -> HistoryVulcan.Core.Commands.CommandRegistry!
 HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor.get -> System.Func<string!, string!, System.Threading.CancellationToken, System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!>?
@@ -71,11 +67,6 @@ HistoryVulcan.Core.Commands.CommandDescriptor.RequiresUiThread.get -> bool
 HistoryVulcan.Core.Commands.CommandDescriptor.RequiresUiThread.init -> void
 HistoryVulcan.Core.Commands.CommandDescriptor.Summary.get -> string!
 HistoryVulcan.Core.Commands.CommandDescriptor.Summary.init -> void
-HistoryVulcan.Core.Commands.CommandHistory
-HistoryVulcan.Core.Commands.CommandHistory.Add(string! command) -> void
-HistoryVulcan.Core.Commands.CommandHistory.CommandHistory(string! filePath, int capacity = 500) -> void
-HistoryVulcan.Core.Commands.CommandHistory.Save() -> void
-HistoryVulcan.Core.Commands.CommandHistory.Snapshot() -> System.Collections.Generic.IReadOnlyList<string!>!
 HistoryVulcan.Core.Commands.CommandParser
 HistoryVulcan.Core.Commands.CommandRegistry
 HistoryVulcan.Core.Commands.CommandRegistry.All() -> System.Collections.Generic.IReadOnlyList<HistoryVulcan.Core.Commands.CommandDescriptor!>!
@@ -98,11 +89,6 @@ HistoryVulcan.Core.Commands.CommandResult.Message.get -> string!
 HistoryVulcan.Core.Commands.CommandResult.Message.init -> void
 HistoryVulcan.Core.Commands.CommandResult.Success.get -> bool
 HistoryVulcan.Core.Commands.CommandResult.Success.init -> void
-HistoryVulcan.Core.Commands.CommandSelectionState
-HistoryVulcan.Core.Commands.CommandSelectionState.Changed -> System.EventHandler?
-HistoryVulcan.Core.Commands.CommandSelectionState.CommandSelectionState() -> void
-HistoryVulcan.Core.Commands.CommandSelectionState.CurrentCommandName.get -> string?
-HistoryVulcan.Core.Commands.CommandSelectionState.CurrentCommandName.set -> void
 HistoryVulcan.Core.Commands.CommandSyntaxException
 HistoryVulcan.Core.Commands.CommandSyntaxException.CommandSyntaxException(string! message) -> void
 HistoryVulcan.Core.Commands.IConfirmationService
@@ -161,8 +147,6 @@ HistoryVulcan.Core.Logging.ShellLogLevel.Fatal = 5 -> HistoryVulcan.Core.Logging
 HistoryVulcan.Core.Logging.ShellLogLevel.Info = 2 -> HistoryVulcan.Core.Logging.ShellLogLevel
 HistoryVulcan.Core.Logging.ShellLogLevel.Trace = 0 -> HistoryVulcan.Core.Logging.ShellLogLevel
 HistoryVulcan.Core.Logging.ShellLogLevel.Warn = 3 -> HistoryVulcan.Core.Logging.ShellLogLevel
-HistoryVulcan.Core.Modules.IDeferredStartupWork
-HistoryVulcan.Core.Modules.IDeferredStartupWork.ExecuteAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 HistoryVulcan.Core.Modules.IModuleContext
 HistoryVulcan.Core.Modules.IModuleContext.Bus.get -> HistoryVulcan.Core.Commands.CommandBus!
 HistoryVulcan.Core.Modules.IModuleContext.RegisterCommands(System.Action<HistoryVulcan.Core.Commands.CommandRegistry!>! configure) -> void
@@ -207,7 +191,6 @@ virtual BaseVariable.ModuleInfoBase.MainClassType.get -> System.Type?
 virtual BaseVariable.ModuleInfoBase.ModuleName.get -> string!
 virtual BaseVariable.ModuleInfoBase.Open.get -> bool
 virtual BaseVariable.ModuleInfoBase.Version.get -> string!
-HistoryVulcan.Core.Commands.CliExposurePolicy
 HistoryVulcan.Core.Commands.CommandClassLabels
 HistoryVulcan.Core.Commands.CommandDescriptor.HiddenReason.get -> string?
 HistoryVulcan.Core.Commands.CommandDescriptor.HiddenReason.init -> void
@@ -219,11 +202,13 @@ HistoryVulcan.Core.Commands.CommandLevel.Run = 0 -> HistoryVulcan.Core.Commands.
 HistoryVulcan.Core.Commands.DomainFocus
 const HistoryVulcan.Core.Commands.CommandClassLabels.None = "无类" -> string!
 const HistoryVulcan.Core.Commands.DomainFocus.All = "全部" -> string!
-static HistoryVulcan.Core.Commands.CliExposurePolicy.ExposedCommands.get -> System.Collections.Generic.IReadOnlyList<string!>!
-static HistoryVulcan.Core.Commands.CliExposurePolicy.IsExposed(string! commandName) -> bool
-static HistoryVulcan.Core.Commands.CliExposurePolicy.MissingCommands(HistoryVulcan.Core.Commands.CommandRegistry! registry) -> System.Collections.Generic.IReadOnlyList<string!>!
-static HistoryVulcan.Core.Commands.CliExposurePolicy.RefusalReason(string! commandName) -> string!
 static HistoryVulcan.Core.Commands.CommandClassLabels.Display(string? commandClass) -> string!
 static HistoryVulcan.Core.Commands.CommandClassLabels.ToKey(string? label) -> string!
 static HistoryVulcan.Core.Commands.DomainFocus.IsUnfocused(string? domain) -> bool
 static HistoryVulcan.Core.Commands.DomainFocus.Resolve(string? input, string? focusedDomain, System.Func<string!, bool>! isRegisteredDomain) -> string!
+HistoryVulcan.Core.Commands.CommandBus.RequestConfirmation(string! prompt) -> bool
+HistoryVulcan.Core.Modules.IFrontend
+HistoryVulcan.Core.Modules.IFrontend.Confirm(string! prompt) -> bool
+HistoryVulcan.Core.Modules.IFrontend.ExecuteAsync(string! commandName, string! source, System.Threading.CancellationToken cancellation) -> System.Threading.Tasks.Task<HistoryVulcan.Core.Commands.CommandResult!>!
+HistoryVulcan.Core.Modules.IFrontend.UiContext.get -> System.Threading.SynchronizationContext!
+HistoryVulcan.Core.Modules.IModuleContext.RegisterFrontend(HistoryVulcan.Core.Modules.IFrontend! frontend) -> System.IDisposable!

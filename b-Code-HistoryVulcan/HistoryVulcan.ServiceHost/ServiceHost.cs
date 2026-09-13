@@ -5,13 +5,10 @@ using HistoryVulcan.Core.Logging;
 namespace HistoryVulcan.ServiceHost;
 
 /// <summary>无界面的用户会话服务宿主，负责消息循环与通用模块装配。</summary>
-public static class ServiceHost
+internal static class ServiceHost
 {
     internal static void InstallDefaultConfirmation(ServiceComposition composition)
-    {
-        composition.Bus.Confirmation = new DenyConfirmation(composition.Log);
-        composition.Bus.ConfirmationRouter = (_, prompt) => composition.Bus.Confirmation?.Confirm(prompt) ?? false;
-    }
+        => composition.Bus.SetHostConfirmation(new DenyConfirmation(composition.Log));
 
     private static readonly TimeSpan RestartMutexWait = TimeSpan.FromSeconds(10);
 
@@ -28,7 +25,7 @@ public static class ServiceHost
 
         using var loop = new ServiceRunLoop();
         SynchronizationContext.SetSynchronizationContext(new ServiceRunLoopSynchronizationContext(loop));
-        composition.Bus.UiContext = SynchronizationContext.Current;
+        composition.Bus.SetHostUiContext(SynchronizationContext.Current);
         if (composition.Modules != null)
             composition.Modules.UiContext = SynchronizationContext.Current;
 
@@ -46,7 +43,6 @@ public static class ServiceHost
         // Complete initial module discovery before exposing the runtime CLI.
         try
         {
-            composition.Modules?.Attach(composition.Registry);
             composition.Modules?.Start();
         }
         catch (Exception ex)
@@ -87,14 +83,6 @@ public static class ServiceHost
             }
         }
 
-        // 原先排在 DispatcherPriority.ApplicationIdle，意图是"排在已入队的启动工作之后"。
-        // FIFO 队列天然满足该次序，无需优先级概念。
-        loop.Post(() =>
-        {
-            foreach (var work in composition.DeferredWork)
-                _ = Task.Run(() => RunDeferredAsync(work, composition.Log));
-        });
-
         try
         {
             return loop.Run(ex => composition.Log.Error("svc", $"服务循环回调异常: {ex.GetType().Name}: {ex.Message}"));
@@ -104,18 +92,6 @@ public static class ServiceHost
             runtimePipe.Dispose();
             composition.Dispose();
             mutex.ReleaseMutex();
-        }
-    }
-
-    private static async Task RunDeferredAsync(HistoryVulcan.Core.Modules.IDeferredStartupWork work, IShellLog log)
-    {
-        try
-        {
-            await work.ExecuteAsync(CancellationToken.None).ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            log.Warn("startup", $"延迟启动任务 {work.GetType().Name} 失败: {ex.Message}");
         }
     }
 

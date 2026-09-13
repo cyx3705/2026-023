@@ -7,7 +7,7 @@ using HistoryVulcan.Services.Modules;
 namespace HistoryVulcan.ServiceHost;
 
 /// <summary>GUI 与 Console 入口共用的参数分派器。</summary>
-public static class HostEntryPoint
+internal static class HostEntryPoint
 {
     public static int Run(string[] args, Assembly identityAssembly)
     {

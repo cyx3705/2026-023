@@ -153,7 +153,9 @@ public sealed partial class ModuleHost
         string owner,
         CommandBus bus) : IModuleContext
     {
-        public CommandBus Bus { get; } = bus;
+        public CommandBus Bus => bus;
+
+        public IDisposable RegisterFrontend(IFrontend frontend) => bus.ClaimFrontend(owner, frontend);
 
         public void RegisterCommands(Action<CommandRegistry> configure)
         {

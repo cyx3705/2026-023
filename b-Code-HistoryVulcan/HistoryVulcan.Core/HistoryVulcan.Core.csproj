@@ -13,7 +13,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="HistoryVulcan.Services" />
     <InternalsVisibleTo Include="HistoryVulcan.ServiceHost" />
+    <InternalsVisibleTo Include="HistoryVulcan.Tests" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="All" />
   </ItemGroup>

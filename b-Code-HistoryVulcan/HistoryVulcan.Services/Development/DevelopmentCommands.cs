@@ -26,7 +26,7 @@ namespace HistoryVulcan.Services.Development;
 /// 工作区（<see cref="WorktreeCommands"/>）与发布（<see cref="ReleaseCommands"/>）仍注册，但对 MCP 隐藏；
 /// 宿主打包走 <c>--cli vulcan.release.cycle</c>。
 /// </remarks>
-public static class DevelopmentCommands
+internal static class DevelopmentCommands
 {
     /// <summary>把开发路线的全部指令注册进宿主注册表。</summary>
     /// <param name="registry">宿主注册表。</param>

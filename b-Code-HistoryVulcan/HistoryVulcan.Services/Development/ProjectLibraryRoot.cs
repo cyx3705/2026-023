@@ -6,7 +6,7 @@ namespace HistoryVulcan.Services.Development;
 /// <summary>
 /// 项目库根：一项目一仓的 HistoryClio。旧 Vesta 配置改写到 Clio。
 /// </summary>
-public static class ProjectLibraryRoot
+internal static class ProjectLibraryRoot
 {
     /// <summary>项目库的缺省根：一项目一仓的 HistoryClio。</summary>
     internal const string Default = @"C:\OneHistory\HistoryClio";

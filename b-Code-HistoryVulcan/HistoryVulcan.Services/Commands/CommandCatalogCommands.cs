@@ -73,7 +73,7 @@ public sealed record CommandCatalogDetail(
 public sealed record CommandDomainInfo(string Domain, int Count);
 
 /// <summary>V2.1.3 全指令结构化目录，注册表是唯一上游。</summary>
-public static class CommandCatalogCommands
+internal static class CommandCatalogCommands
 {
     /// <summary>
     /// 注册核心目录指令。4.0.0 从 internal 提为 public：调用方在独立程序集，

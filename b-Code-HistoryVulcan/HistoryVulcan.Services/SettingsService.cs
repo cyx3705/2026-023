@@ -7,7 +7,7 @@ namespace HistoryVulcan.Services;
 /// 应用设置(F-01/F-03):%AppData%/&lt;应用名&gt;/settings.json,扁平键值对。
 /// vulcan.app.set / vulcan.app.get 指令与派生应用共用;写入即落盘。
 /// </summary>
-public sealed class SettingsService : ISettingsService
+internal sealed class SettingsService : ISettingsService
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
