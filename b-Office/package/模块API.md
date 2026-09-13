@@ -1,33 +1,38 @@
 # HistoryVulcan 模块 API
 
-适用宿主：**5.3.0 / v5.3.0**。本文定义模块接入与消费语义，工作区操作见[模块开发手册](模块开发手册.md)。宿主提供模块注册、命令总线和开发/发布管线；界面归 Aurora、工作台/快捷键归 Mercury、Web/MCP 归 Portunus。
+适用宿主：**5.4.0 / v5.4.0**。本文定义模块接入与消费语义，工作区操作见[模块开发手册](模块开发手册.md)。宿主提供模块注册、命令总线和开发/发布管线；界面归 Aurora、工作台/快捷键归 Mercury、Web/MCP 归 Portunus。
 
 ## 1. 引用与兼容
 
 模块引用已发布的 `z-Publish/host/HistoryVulcan.*.dll`，设 `<Private>false</Private>` 并在构建前验证目标存在。源码联调须显式开关，不自动回退到宿主 ProjectReference。本仓 `b-Code-Samples/DemoModule` 是最小示例，复制到模块仓库后改为上述 HintPath 引用。
 
-现行公开面以 5.3.0 Shipped 为准。5.2/5.3.0 经明确批准删除过期 API，不保证历史二进制兼容；后续常规删除或改签须走主版本。迁移要点：
+现行公开面以 5.4.0 Shipped 为准。5.2、5.3.0、5.4.0 经明确批准删除或收回过期 API，不保证历史二进制兼容；后续常规删除或改签须走主版本。迁移要点：
 
 | 已移除面 | 现行方式 |
 | --- | --- |
+| 宿主总线的 FrontendExecutor、ConfirmationRouter；宿主总线上写 Confirmation / UiContext / RemoteExecutor / ShouldUseRemoteCommand（5.4.0） | 界面模块调用 `IModuleContext.RegisterFrontend(IFrontend)` 登记唯一前端；处理器执行中途要确认时调 `Bus.RequestConfirmation(prompt)`。模块自建的 CommandBus 不受影响 |
+| ModuleHost 单参与四参 Attach（5.4.0） | `Attach(registry, bus)`；设置与数据目录由模块自持 |
+| AppPaths、SettingsService、ShellLog、CommandHistory、CommandSelectionState、IDeferredStartupWork、CliExposurePolicy 及 ServiceHost 程序集全部类型（5.4.0） | 宿主内部实现，不再公开。数据根按 `%AppData%\<应用名>\` 约定自行拼接；设置实现 ISettingsService 自持 |
+| ModuleHost.InstallPackage / RemovePackage / Uninstall / UiContext / ReloadCompleted（5.4.0） | 装卸走 `vulcan.module.*` 命令与开发管线 |
 | ShouldUseRemote、HasAnnotation、公开 Legacy*/DomainsOf/IsNone/WouldPrefix 辅助方法 | 使用 ShouldUseRemoteCommand、现行分类/域解析；注解由消费方解释 |
 | ZModuleDiscoverySource、旧目录构造/切换、确认源和 EnableCommands | 固定运行区完整包发现，统一模块注册 |
 | ModuleDiscoveryEntry.McpExposure | 构造函数不再接受该参数；旧 manifest 扩展字段被忽略 |
-| MCP 专用设置注册/迁移、ShellRelayConfirmation | 通用设置及当前 Bus.Confirmation；网关管理走 Portunus 自有入口 |
+| MCP 专用设置注册/迁移、ShellRelayConfirmation | 通用设置；网关管理走 Portunus 自有入口 |
 
-精确删除记录保存在宿主仓 `b-Code-Eng/public-api-baselines/5.3.0/` 的 PreFreeze 文件。FrontendExecutor、RemoteExecutor、ShouldUseRemoteCommand 及现用模块管理、目录 DTO、设置和路径合同继续保留。
+精确删除记录保存在宿主仓 `b-Code-Eng/public-api-baselines/<版本>/` 的 PreFreeze 文件。Services 仍公开模块测试装载器——ModuleHost 构造、Attach、Start / Reload / Unload、Modules、DiscoveryDiagnostics、EnableUiModules / EnableFileWatching——连同发现记录、ModuleMeta 与命令目录 DTO，供模块 Smoke 走正式装载路径。
 
 ## 2. 模块入口与就绪
 
 | 类型 | 用途 |
 | --- | --- |
-| IModuleContext | Bus 执行命令，RegisterCommands 注册命令 |
+| IModuleContext | Bus 执行命令，RegisterCommands 注册命令，RegisterFrontend 登记前端 |
 | IModuleContextAware | Attach 保存上下文并接入 |
+| IFrontend | 界面模块实现：UiContext、Confirm、界面生命周期命令 ExecuteAsync |
 | ModuleInfoBase | 声明模块名、版本和主类型 |
 | CommandRegistry / CommandDescriptor | 命令定义、参数与元数据 |
 | CommandBus / CommandResult | 执行及文本/结构化回执 |
 
-IModuleContext 不提供设置、日志、数据目录或 UI 领域接口；状态由模块管理，宿主能力用总线集成。不要实现已移除的 IUiModule / IShellUi* 或复制 ModuleHost。
+IModuleContext 不提供设置、日志或数据目录；状态由模块管理，宿主能力用总线集成。不要实现已移除的 IUiModule / IShellUi* 或复制 ModuleHost。
 
 宿主先发现程序集，再逐个 Attach，成功一个才发布其命令。`dependsOn` 是模块名数组，只约束次序，例如 `{"dependsOn":["HistoryAurora"]}`；缺失、环或自依赖只记诊断。无依赖及环内按名称排序。
 
@@ -35,11 +40,17 @@ Attach 时只有此前成功模块的命令可见，不应在此跨模块调用�
 
 Attach 失败时该模块全部命令不可执行；冷启动保留诊断并继续，热安装失败回滚。同内容包仅在 `Attached=true` 时是幂等成功，失败或未装载实例可重装修复。
 
+### 前端登记
+
+`RegisterFrontend` 带默认实现，模块自写的 IModuleContext 测试替身无需改动，未覆盖时调用抛 NotSupportedException。同一宿主只允许一个前端。另一模块已登记时 `RegisterFrontend` 抛 InvalidOperationException；同一模块重复登记替换旧登记，旧句柄释放不影响后继登记。释放返回的句柄、模块卸载、热装失败或 Attach 失败时宿主撤销登记，确认回到宿主缺省（拒绝）。
+
+登记期间：`Level=Ask` 的命令由前端确认；`RequiresUiThread` 命令编组到前端的 UiContext；`vulcan.app.show / hide / close / focusconsole` 与 `vulcan.app.quit` 的关窗步骤转交前端。宿主交给模块的 Bus 上，Confirmation、UiContext、RemoteExecutor、ShouldUseRemoteCommand 只读，写入抛 InvalidOperationException。
+
 ## 3. 命令契约
 
 业务命令用小写 `<域>.<类>.<方法>`；域取模块所有者名称去 History 前缀，如 HistoryJanus → janus。两段直接方法仍受支持，显式 CommandClass 优先。
 
-命令声明 Name、CommandClass、Summary、Handler；有输入时给 Parameters 与 Example。Readonly 表达写入性，Level 表达确认，HiddenReason 表达隐藏原因；默认确认拒绝，界面接管当前 Bus.Confirmation 后生效。
+命令声明 Name、CommandClass、Summary、Handler；有输入时给 Parameters 与 Example。Readonly 表达写入性，Level 表达确认，HiddenReason 表达隐藏原因；默认确认拒绝，前端登记后由前端确认。能在执行前决定的确认用 Level=Ask，执行中途才知道的用 `Bus.RequestConfirmation`，不要自取确认通道。
 
 Annotations 由模块解释；活对象放 CommandResult.Data，由调用方管理类型和生命周期。处理器不直接操作宿主窗口、模块槽或源码目录。
 

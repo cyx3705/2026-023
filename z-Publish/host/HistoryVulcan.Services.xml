@@ -563,7 +563,7 @@
             <summary>Whether this host owns filesystem change detection for the module directory.</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.ModulesDirectory">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>固定运行区根目录；发现源不是运行区时为空串。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.DiscoveryRoots">
             <summary>Configured runtime package roots.</summary>
@@ -572,7 +572,7 @@
             <summary>Diagnostics from the most recent discovery scan.</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Modules">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>当前快照里的模块元信息；未接上宿主的模块也在其中，并带失败原因。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.CurrentContextCount">
             <summary>当前快照持有的加载上下文数量，供服务内回滚诊断使用。</summary>
@@ -580,14 +580,11 @@
         <member name="E:HistoryVulcan.Services.Modules.ModuleHost.ReloadCompleted">
             <summary>每次整体重载完成后触发(在重载线程上);MD-08 面板同步等旁路逻辑挂此处。</summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.CommandRegistry)">
-            <summary>接入指令注册表，再调用 Start；仅此重载不注入模块上下文。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Core.Commands.CommandBus,HistoryVulcan.Core.Storage.ISettingsService,System.String)">
-            <summary>接入模块业务运行所需的完整宿主上下文。</summary>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Core.Commands.CommandBus)">
+            <summary>接入指令注册表与宿主总线，再调用 Start；总线必须使用同一个注册表。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Start">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>执行首轮整体装载，等同于 <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.Reload"/>；调用前必须先 <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.Attach(HistoryVulcan.Core.Commands.CommandRegistry,HistoryVulcan.Core.Commands.CommandBus)"/>。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Unload(System.String)">
             <summary>
@@ -664,7 +661,7 @@
             </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Dispose">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>卸载全部模块、停止文件监听并摘除程序集解析钩子；重复调用无副作用。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.DisposeInstances(System.Collections.Generic.IReadOnlyList{System.Object})">
              <summary>
