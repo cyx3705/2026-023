@@ -1,10 +1,1 @@
 #nullable enable
-*REMOVED*HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemote.get -> System.Func<string!, bool>?
-*REMOVED*HistoryVulcan.Core.Commands.CommandBus.ShouldUseRemote.set -> void
-*REMOVED*HistoryVulcan.Core.Commands.CommandDescriptor.HasAnnotation(string! key) -> bool
-*REMOVED*static HistoryVulcan.Core.Commands.CommandClassLabels.IsNone(string? commandClass) -> bool
-*REMOVED*static HistoryVulcan.Core.Commands.CommandRegistry.DomainsOf(System.Collections.Generic.IEnumerable<string!>! commandNames) -> System.Collections.Generic.IReadOnlySet<string!>!
-*REMOVED*static HistoryVulcan.Core.Commands.CommandRegistry.LegacyClass(string! name) -> string!
-*REMOVED*static HistoryVulcan.Core.Commands.CommandRegistry.LegacyDomain(string! name) -> string!
-*REMOVED*static HistoryVulcan.Core.Commands.CommandRegistry.LegacyMethod(string! name) -> string!
-*REMOVED*static HistoryVulcan.Core.Commands.DomainFocus.WouldPrefix(string? input, string? focusedDomain, System.Func<string!, bool>! isRegisteredDomain) -> bool

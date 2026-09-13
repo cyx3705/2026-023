@@ -19,17 +19,9 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <Deterministic>true</Deterministic>
 
-    <PackageReadmeFile>PACKAGE.md</PackageReadmeFile>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <IsPackable>false</IsPackable>
     <DebugType>portable</DebugType>
-    <EnablePackageValidation>true</EnablePackageValidation>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)PACKAGE.md" Pack="true" PackagePath="/" />
-  </ItemGroup>
 
 </Project>

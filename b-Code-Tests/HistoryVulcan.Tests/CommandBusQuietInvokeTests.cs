@@ -120,17 +120,4 @@ public sealed class CommandBusQuietInvokeTests
         Assert.False(result.Success);
     }
 
-    private sealed class RecordingLog : IShellLog
-    {
-        private readonly ConcurrentQueue<ShellLogEntry> _entries = new();
-
-        public IReadOnlyList<ShellLogEntry> Entries => _entries.ToArray();
-
-        public void Log(ShellLogLevel level, string category, string message)
-            => _entries.Enqueue(new ShellLogEntry(DateTime.UtcNow, level, category, message));
-
-        public event EventHandler<ShellLogEntry>? EntryAdded { add { } remove { } }
-
-        public IReadOnlyList<ShellLogEntry> Snapshot() => Entries;
-    }
 }

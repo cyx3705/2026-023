@@ -58,7 +58,7 @@ public sealed class CommandLevelGateTests
             }),
         });
 
-        var bus = new CommandBus(registry, new SilentLog())
+        var bus = new CommandBus(registry, new NullLog())
         {
             Confirmation = new RecordingConfirmation(prompts),
         };
@@ -118,17 +118,10 @@ public sealed class CommandLevelGateTests
             }),
         });
 
-        var result = await new CommandBus(registry, new SilentLog()).ExecuteAsync("sample.ask", "Test");
+        var result = await new CommandBus(registry, new NullLog()).ExecuteAsync("sample.ask", "Test");
 
         Assert.False(result.Success);
         Assert.False(executed);
-    }
-
-    private sealed class SilentLog : IShellLog
-    {
-        public void Log(ShellLogLevel level, string category, string message) { }
-        public event EventHandler<ShellLogEntry>? EntryAdded { add { } remove { } }
-        public IReadOnlyList<ShellLogEntry> Snapshot() => [];
     }
 
     private sealed class RecordingConfirmation(List<string> prompts) : IConfirmationService

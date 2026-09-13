@@ -1,0 +1,7 @@
+#nullable enable
+*REMOVED*HistoryVulcan.ServiceHost.ShellRelayConfirmation
+*REMOVED*HistoryVulcan.ServiceHost.ShellRelayConfirmation.Confirm(string! prompt) -> bool
+*REMOVED*HistoryVulcan.ServiceHost.ShellRelayConfirmation.ConfirmRemote(string! client, string! prompt, int timeoutSeconds) -> bool?
+*REMOVED*static HistoryVulcan.ServiceHost.ServiceComposer.MigrateLegacyMcpSettings(HistoryVulcan.Core.Storage.ISettingsService! legacy, HistoryVulcan.Core.Storage.ISettingsService! service, HistoryVulcan.Core.Logging.IShellLog! log) -> void
+*REMOVED*static HistoryVulcan.ServiceHost.ServiceComposer.RegisterServiceMcpSettingCommands(HistoryVulcan.Core.Commands.CommandRegistry! registry, HistoryVulcan.Core.Storage.ISettingsService! settings) -> void
+*REMOVED*HistoryVulcan.ServiceHost.ShellRelayConfirmation.ShellRelayConfirmation(HistoryVulcan.Core.Logging.IShellLog! log) -> void
