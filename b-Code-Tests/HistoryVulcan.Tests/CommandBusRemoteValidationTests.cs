@@ -72,6 +72,42 @@ public sealed class CommandBusRemoteValidationTests
         Assert.Null(bus.Validate("local.needsvalue count=3"));
     }
 
+    /// <summary>
+    /// DEC-064：交给远端的命令由远端总线记回显与结果，本地不记——界面与宿主共用一份控制台日志后，
+    /// 两边各记一遍就是每条命令出现两次。本地执行的命令照旧回显。
+    /// </summary>
+    [Fact]
+    public async Task RemoteRoutedCommandsLeaveEchoAndResultToTheRemoteBus()
+    {
+        var registry = new CommandRegistry();
+        registry.Register(new CommandDescriptor
+        {
+            Name = "local.ping",
+            Summary = "ping",
+            Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("pong")),
+        });
+        var log = new RecordingLog();
+        var executed = new List<string>();
+        var bus = new CommandBus(registry, log)
+        {
+            RemoteExecutor = (_, _, _) => Task.FromResult(CommandResult.Ok("relayed")),
+            ShouldUseRemoteCommand = (text, _) => !text.StartsWith("local.", StringComparison.Ordinal),
+        };
+        bus.Executed += (text, _, _) => executed.Add(text);
+
+        var relayed = await bus.ExecuteAsync("remote.work", "UI");
+        Assert.Equal("relayed", relayed.Message);
+        Assert.Empty(log.Entries);
+        Assert.Contains("remote.work", Assert.Single(executed), StringComparison.Ordinal);
+
+        var local = await bus.ExecuteAsync("local.ping", "UI");
+        Assert.True(local.Success, local.Message);
+        Assert.Contains(log.Entries, entry => entry.Category == CommandBus.EchoCategoryPrefix + "UI");
+        Assert.Contains(
+            log.Entries,
+            entry => entry.Category.StartsWith(CommandBus.ResultCategory + ":local", StringComparison.Ordinal));
+    }
+
     private static CommandBus NewBus() => new(new CommandRegistry(), new NullLog());
 
 }

@@ -151,6 +151,30 @@ namespace HistoryVulcan.Tests
             }
         }
 
+        /// <summary>
+        /// DEC-064：模块拿到的日志就是总线写回显、进度与结果的那一份。
+        /// 宿主与总线故意用两份不同的日志，写到宿主那份不算数。
+        /// </summary>
+        [Fact]
+        public void HostContextExposesTheBusLog()
+        {
+            using var temp = new TemporaryDirectory();
+            RuntimeModulePackageTests.CreatePackage(temp.Path, "contextfixture", "contextfixture", "v1.0.0");
+            var registry = new CommandRegistry();
+            var busLog = new RecordingLog();
+            using var host = new ModuleHost(new RuntimeModuleDiscoverySource(temp.Path), new NullLog())
+            {
+                EnableFileWatching = false,
+            };
+
+            host.Attach(registry, new CommandBus(registry, busLog));
+            host.Start();
+
+            Assert.Contains(
+                busLog.Entries,
+                entry => entry.Category == "contextfixture" && entry.Message == ContextAwareFixture.LogProbe);
+        }
+
         [Fact]
         public async Task UiCommandsFailClearlyWhenNoUiModuleIsLoaded()
         {
@@ -460,10 +484,14 @@ namespace HistoryVulcan.Tests
         public const string DataVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_DATA";
         public const string FailureVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_FAILURE";
 
+        /// <summary>接入时写进 <see cref="IModuleContext.Log"/> 的一行；测试据此确认它就是总线的日志。</summary>
+        public const string LogProbe = "context-log-probe";
+
         private string? _dataDirectory;
 
         public void Attach(IModuleContext context)
         {
+            context.Log.Info("contextfixture", LogProbe);
             _dataDirectory = Environment.GetEnvironmentVariable(DataVariable);
             var failure = Environment.GetEnvironmentVariable(FailureVariable);
             if (failure == "before")

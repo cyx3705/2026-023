@@ -767,6 +767,9 @@
              因为「装上了没有」这句话在接上之前还不成立。
              </summary>
         </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.ModuleContext.Log">
+            <summary>总线写回显、进度与结果的那一份日志（5.5.0，REQ-HOST-004）。</summary>
+        </member>
         <member name="F:HistoryVulcan.Services.Modules.ModuleHost.ReadyHookSuffix">
             <summary>模块可选声明的就绪钩子后缀：<c>&lt;域&gt;.host.ready</c>。</summary>
         </member>

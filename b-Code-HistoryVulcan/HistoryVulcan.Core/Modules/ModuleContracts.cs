@@ -2,9 +2,11 @@
 //
 // 5.0 起宿主不再向模块注入设置、日志、数据根或界面抽象。
 // 模块只拿到命令总线、把指令暂存进当前快照的登记口，以及（5.4 起）登记唯一前端的入口。
+// 5.5 起另给宿主那唯一一份日志：控制台只显示它，界面不再自建第二份。
 // 身份仍是 BaseVariable.ModuleInfoBase 的全名鸭子类型（MD-02）。
 
 using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Core.Logging;
 
 namespace HistoryVulcan.Core.Modules;
 
@@ -13,6 +15,19 @@ public interface IModuleContext
 {
     /// <summary>当前宿主进程拥有的那一条命令总线。宿主装配的开关在其上只读。</summary>
     CommandBus Bus { get; }
+
+    /// <summary>
+    /// 宿主那唯一一份日志（5.5.0）：<see cref="Bus"/> 上每条指令的回显、进度与结果都写在这里，并落宿主日志文件。
+    /// </summary>
+    /// <remarks>
+    /// 控制台应当显示这一份，而不是在界面里另建日志：经总线执行的指令——不论来自界面、CLI、MCP
+    /// 还是模块的嵌套调用——过程只会出现在这里。模块自己的运行日志也可以写进来，与指令日志同处可查。
+    ///
+    /// 带默认实现是刻意的：模块 Smoke 里自写的 IModuleContext 测试替身不必为此改动，
+    /// 未覆盖本成员的替身被读取时抛 <see cref="NotSupportedException"/>。宿主提供的上下文总是覆盖它。
+    /// </remarks>
+    IShellLog Log
+        => throw new NotSupportedException("当前 IModuleContext 实现不提供宿主日志；只有宿主提供的上下文提供。");
 
     /// <summary>
     /// 把本模块指令暂存进当前快照。传入的注册表与活注册表隔离；

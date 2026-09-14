@@ -192,9 +192,15 @@ public sealed class CommandBus
     {
         var request = CommandRequest.Create(text, _registry);
 
+        // 交给远端的命令由远端总线回显、记进度和结果（5.5.0，REQ-HOST-004）。本地再记一遍，
+        // 界面与宿主共用同一份控制台日志时，每条命令就出现两次；而且本地注册表不认识远端命令，
+        // 回显无法按参数脱敏。
+        var remote = RoutesToRemote(request, source);
+
         // 1. 回显
         var displayText = request.DisplayText();
-        _log.Log(ShellLogLevel.Info, EchoCategoryPrefix + source, displayText);
+        if (!remote)
+            _log.Log(ShellLogLevel.Info, EchoCategoryPrefix + source, displayText);
 
         CommandResult result;
         try
@@ -214,10 +220,13 @@ public sealed class CommandBus
         result = request.RedactResult(result);
 
         // 2. 结果回显(错误红色高亮由控制台按级别渲染,C-02)
-        _log.Log(
-            result.Success ? ShellLogLevel.Info : ShellLogLevel.Error,
-            $"{ResultCategory}:{request.Domain}:{request.CommandClass}",
-            (result.Success ? "✓ " : "✗ ") + result.Message);
+        if (!remote)
+        {
+            _log.Log(
+                result.Success ? ShellLogLevel.Info : ShellLogLevel.Error,
+                $"{ResultCategory}:{request.Domain}:{request.CommandClass}",
+                (result.Success ? "✓ " : "✗ ") + result.Message);
+        }
 
         Executed?.Invoke(displayText, source, result);
         return result;
@@ -292,6 +301,13 @@ public sealed class CommandBus
         }
     }
 
+    /// <summary>本总线写回显、进度与结果的日志；宿主上下文经 <see cref="IModuleContext.Log"/> 交给模块。</summary>
+    internal IShellLog Log => _log;
+
+    /// <summary>这条命令是否整条交给 <see cref="RemoteExecutor"/>。</summary>
+    private bool RoutesToRemote(CommandRequest request, string source)
+        => _remoteExecutor != null && (_shouldUseRemoteCommand?.Invoke(request.Text, source) ?? true);
+
     private bool HasConfirmationChannel => Frontend != null || _confirmation != null;
 
     private bool Confirm(string prompt)
@@ -317,9 +333,8 @@ public sealed class CommandBus
         string source,
         CancellationToken cancellation)
     {
-        var remote = _remoteExecutor;
-        if (remote != null && (_shouldUseRemoteCommand?.Invoke(request.Text, source) ?? true))
-            return await remote(request.Text, source, cancellation).ConfigureAwait(false);
+        if (RoutesToRemote(request, source))
+            return await _remoteExecutor!(request.Text, source, cancellation).ConfigureAwait(false);
 
         if (request.SyntaxError != null)
             return CommandResult.Fail(request.SyntaxError);

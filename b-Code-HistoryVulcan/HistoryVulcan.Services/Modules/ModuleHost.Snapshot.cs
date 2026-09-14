@@ -155,6 +155,9 @@ public sealed partial class ModuleHost
     {
         public CommandBus Bus => bus;
 
+        /// <summary>总线写回显、进度与结果的那一份日志（5.5.0，REQ-HOST-004）。</summary>
+        public HistoryVulcan.Core.Logging.IShellLog Log => bus.Log;
+
         public IDisposable RegisterFrontend(IFrontend frontend) => bus.ClaimFrontend(owner, frontend);
 
         public void RegisterCommands(Action<CommandRegistry> configure)

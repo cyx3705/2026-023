@@ -104,15 +104,15 @@
       "demomodule": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[5.4.0, )"
+          "OneHistory.HistoryVulcan.Core": "[5.5.0, )"
         }
       },
       "HistoryVulcan": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[5.4.0, )",
-          "OneHistory.HistoryVulcan.ServiceHost": "[5.4.0, )",
-          "OneHistory.HistoryVulcan.Services": "[5.4.0, )"
+          "OneHistory.HistoryVulcan.Core": "[5.5.0, )",
+          "OneHistory.HistoryVulcan.ServiceHost": "[5.5.0, )",
+          "OneHistory.HistoryVulcan.Services": "[5.5.0, )"
         }
       },
       "OneHistory.HistoryVulcan.Core": {
@@ -121,14 +121,14 @@
       "OneHistory.HistoryVulcan.ServiceHost": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[5.4.0, )",
-          "OneHistory.HistoryVulcan.Services": "[5.4.0, )"
+          "OneHistory.HistoryVulcan.Core": "[5.5.0, )",
+          "OneHistory.HistoryVulcan.Services": "[5.5.0, )"
         }
       },
       "OneHistory.HistoryVulcan.Services": {
         "type": "Project",
         "dependencies": {
-          "OneHistory.HistoryVulcan.Core": "[5.4.0, )"
+          "OneHistory.HistoryVulcan.Core": "[5.5.0, )"
         }
       }
     }
