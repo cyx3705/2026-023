@@ -337,6 +337,41 @@
           "description": "Run HistoryJuno Release build ({configuration})"
         }
       ]
+    },
+    {
+      "name": "HistoryApollo",
+      "kind": "module",
+      "projectDirectory": "2026-030-HistoryApollo",
+      "versionProps": "b-Code\\HistoryApollo\\HistoryApolloVersion.props",
+      "versionProperty": "HistoryApolloVersion",
+      "sourceManifest": "b-Code\\HistoryApollo\\module.manifest.json",
+      "snapshotManifest": "module.manifest.json",
+      "identityProperty": "name",
+      "candidateDirectory": "z-Publish",
+      "formalDirectory": "z-Publish",
+      "package": {
+        "project": "b-Code\\HistoryApollo\\HistoryApollo.csproj",
+        "files": [
+          "HistoryApollo.dll",
+          "HistoryApollo.xml",
+          "module.manifest.json"
+        ]
+      },
+      "packageDocuments": "b-Office\\package",
+      "validation": [
+        {
+          "tool": "dotnet.exe",
+          "arguments": [
+            "run",
+            "--project",
+            "b-Code\\HistoryApollo.Tests\\HistoryApollo.Tests.csproj",
+            "-c",
+            "Release",
+            "-p:NuGetAudit=false"
+          ],
+          "description": "Run HistoryApollo offline tests"
+        }
+      ]
     }
   ]
 }
