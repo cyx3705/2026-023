@@ -213,6 +213,12 @@
         <member name="M:HistoryVulcan.Core.Commands.CommandBus.SetHostUiContext(System.Threading.SynchronizationContext)">
             <summary>宿主自身装配服务循环上下文；不受封口限制。</summary>
         </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandBus.Log">
+            <summary>本总线写回显、进度与结果的日志；宿主上下文经 <see cref="P:HistoryVulcan.Core.Modules.IModuleContext.Log"/> 交给模块。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.RoutesToRemote(HistoryVulcan.Core.Commands.CommandRequest,System.String)">
+            <summary>这条命令是否整条交给 <see cref="P:HistoryVulcan.Core.Commands.CommandBus.RemoteExecutor"/>。</summary>
+        </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandBus.InternalFault(System.Exception,System.String)">
             <summary>
             总线自身故障的统一出口：日志与返回值都只带异常**类型名**。
@@ -751,6 +757,18 @@
         </member>
         <member name="P:HistoryVulcan.Core.Modules.IModuleContext.Bus">
             <summary>当前宿主进程拥有的那一条命令总线。宿主装配的开关在其上只读。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IModuleContext.Log">
+             <summary>
+             宿主那唯一一份日志（5.5.0）：<see cref="P:HistoryVulcan.Core.Modules.IModuleContext.Bus"/> 上每条指令的回显、进度与结果都写在这里，并落宿主日志文件。
+             </summary>
+             <remarks>
+             控制台应当显示这一份，而不是在界面里另建日志：经总线执行的指令——不论来自界面、CLI、MCP
+             还是模块的嵌套调用——过程只会出现在这里。模块自己的运行日志也可以写进来，与指令日志同处可查。
+            
+             带默认实现是刻意的：模块 Smoke 里自写的 IModuleContext 测试替身不必为此改动，
+             未覆盖本成员的替身被读取时抛 <see cref="T:System.NotSupportedException"/>。宿主提供的上下文总是覆盖它。
+             </remarks>
         </member>
         <member name="M:HistoryVulcan.Core.Modules.IModuleContext.RegisterCommands(System.Action{HistoryVulcan.Core.Commands.CommandRegistry})">
             <summary>

@@ -1,12 +1,12 @@
 # HistoryVulcan 模块 API
 
-适用宿主：**5.4.0 / v5.4.0**。本文定义模块接入与消费语义，工作区操作见[模块开发手册](模块开发手册.md)。宿主提供模块注册、命令总线和开发/发布管线；界面归 Aurora、工作台/快捷键归 Mercury、Web/MCP 归 Portunus。
+适用宿主：**5.5.0**（冻结线 v5.4.0）。本文定义模块接入与消费语义，工作区操作见[模块开发手册](模块开发手册.md)。宿主提供模块注册、命令总线和开发/发布管线；界面归 Aurora、工作台/快捷键归 Mercury、Web/MCP 归 Portunus。
 
 ## 1. 引用与兼容
 
 模块引用已发布的 `z-Publish/host/HistoryVulcan.*.dll`，设 `<Private>false</Private>` 并在构建前验证目标存在。源码联调须显式开关，不自动回退到宿主 ProjectReference。本仓 `b-Code-Samples/DemoModule` 是最小示例，复制到模块仓库后改为上述 HintPath 引用。
 
-现行公开面以 5.4.0 Shipped 为准。5.2、5.3.0、5.4.0 经明确批准删除或收回过期 API，不保证历史二进制兼容；后续常规删除或改签须走主版本。迁移要点：
+现行公开面以 5.4.0 Shipped 加 5.5.0 新增的 `IModuleContext.Log` 为准。5.2、5.3.0、5.4.0 经明确批准删除或收回过期 API，不保证历史二进制兼容；后续常规删除或改签须走主版本。迁移要点：
 
 | 已移除面 | 现行方式 |
 | --- | --- |
@@ -25,14 +25,14 @@
 
 | 类型 | 用途 |
 | --- | --- |
-| IModuleContext | Bus 执行命令，RegisterCommands 注册命令，RegisterFrontend 登记前端 |
+| IModuleContext | Bus 执行命令，RegisterCommands 注册命令，RegisterFrontend 登记前端，Log 取宿主唯一日志（5.5.0） |
 | IModuleContextAware | Attach 保存上下文并接入 |
 | IFrontend | 界面模块实现：UiContext、Confirm、界面生命周期命令 ExecuteAsync |
 | ModuleInfoBase | 声明模块名、版本和主类型 |
 | CommandRegistry / CommandDescriptor | 命令定义、参数与元数据 |
 | CommandBus / CommandResult | 执行及文本/结构化回执 |
 
-IModuleContext 不提供设置、日志或数据目录；状态由模块管理，宿主能力用总线集成。不要实现已移除的 IUiModule / IShellUi* 或复制 ModuleHost。
+IModuleContext 不提供设置或数据目录；状态由模块管理，宿主能力用总线集成。日志例外，见下文「宿主日志」。不要实现已移除的 IUiModule / IShellUi* 或复制 ModuleHost。
 
 宿主先发现程序集，再逐个 Attach，成功一个才发布其命令。`dependsOn` 是模块名数组，只约束次序，例如 `{"dependsOn":["HistoryAurora"]}`；缺失、环或自依赖只记诊断。无依赖及环内按名称排序。
 
@@ -45,6 +45,16 @@ Attach 失败时该模块全部命令不可执行；冷启动保留诊断并继�
 `RegisterFrontend` 带默认实现，模块自写的 IModuleContext 测试替身无需改动，未覆盖时调用抛 NotSupportedException。同一宿主只允许一个前端。另一模块已登记时 `RegisterFrontend` 抛 InvalidOperationException；同一模块重复登记替换旧登记，旧句柄释放不影响后继登记。释放返回的句柄、模块卸载、热装失败或 Attach 失败时宿主撤销登记，确认回到宿主缺省（拒绝）。
 
 登记期间：`Level=Ask` 的命令由前端确认；`RequiresUiThread` 命令编组到前端的 UiContext；`vulcan.app.show / hide / close / focusconsole` 与 `vulcan.app.quit` 的关窗步骤转交前端。宿主交给模块的 Bus 上，Confirmation、UiContext、RemoteExecutor、ShouldUseRemoteCommand 只读，写入抛 InvalidOperationException。
+
+### 宿主日志（5.5.0）
+
+`IModuleContext.Log` 是宿主那唯一一份日志：Bus 上每条指令的回显（`cmd:<来源>`）、进度（`cmd:progress:<域>:<类>`）与结果（`cmd:result:<域>:<类>`）都写在这里并落盘。
+来自界面、CLI、MCP 还是模块嵌套调用都一样。**控制台只显示这一份**，界面模块不得另建日志来显示命令输出；模块自己的运行日志也可以写进来。
+带默认实现，模块自写的 IModuleContext 测试替身无需改动，未覆盖时读取抛 NotSupportedException。
+
+要让人看见长任务的过程，在处理器里写 `CommandContext.Progress`，不要等结束后在回执里汇总；经 Bus 调用别的模块时，对方的过程由对方自己写，调用方不复述。
+
+任何 CommandBus 把命令交给 RemoteExecutor 时，本地不回显、不记结果，由执行它的那条总线记一次。界面模块自建总线转发到宿主的命令，回显与结果出现在宿主日志里。
 
 ## 3. 命令契约
 
