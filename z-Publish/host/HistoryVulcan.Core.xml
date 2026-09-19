@@ -193,6 +193,40 @@
             <param name="source">来源标签，进入回显类别与确认、远端判定。</param>
             <param name="cancellation">取消令牌。</param>
         </member>
+        <member name="F:HistoryVulcan.Core.Commands.CommandBus.BulkMessageLimit">
+             <summary>
+             一条结果算不算「大段」的界线（字符）。
+            
+             取 200 不是拍的：按三天真机日志统计，成功结果里 1211 条不超过 120 字、31 条在 121～200 之间，
+             再往上直接跳到 401 字以上（134 条）与 2000 字以上（262 条）——200 正落在那道空档里。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.LogResult(HistoryVulcan.Core.Commands.CommandRequest,HistoryVulcan.Core.Commands.CommandResult)">
+             <summary>
+             结果回显的分级（5.6.0，REQ-HOST-006）。
+            
+             **为什么级别归宿主管**：<see cref="T:HistoryVulcan.Core.Commands.CommandResult"/> 里没有级别这一项，模块也无从声明；
+             从第一版起就是这里一句 <c>result.Success ? Info : Error</c> 写死的。于是
+             <c>vulcan.command.list</c> 的整张命令集、各模块 <c>*.ui.data</c> 那一行几十 KB 的 JSON，
+             全都以 Info 进控制台——按 Info 看控制台时，人要读的那几行被淹在里面。
+            
+             现在按**结果的形状**分：一句话的结果照旧进 Info，多行或超长的结果在 Info 上只留一行提要、
+             正文降到 Debug。控制台因此在 Info 档位上是一张菜单，正文一个字没丢，切到 Debug 就在原位。
+            
+             **失败永远不降**：错误再长也整条进 Error。要消灭的是"看不见人要读的那几行"，
+             不是"看不见出了什么错"。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.IsBulk(System.String)">
+            <summary>多行或超长即为大段。两者同一个症状：控制台上一条消息占掉整屏。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandBus.Digest(System.String,System.String)">
+            <summary>
+            大段结果在 Info 上的提要。多行结果的第一行本来就是模块写的那句摘要
+            （"命令集: 249 / 249 条"、"已扫描 37 个项目"），直接拿来用；
+            单行的超长结果没有这样一句，只报体量——它上面紧挨着的回显行已经说清是哪条指令。
+            </summary>
+        </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandBus.FormatUsage(HistoryVulcan.Core.Commands.CommandDescriptor)">
             <summary>用法行,如 "用法: vulcan.command.help name= pos=left/right/top/bottom/tab [target=] [ratio=]"。</summary>
         </member>
