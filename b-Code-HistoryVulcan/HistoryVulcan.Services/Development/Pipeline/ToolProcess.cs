@@ -40,9 +40,8 @@ internal static class ToolProcess
     {
         try
         {
-            var result = Execute("git",
-                ["-c", "core.quotepath=false", "-c", "i18n.logOutputEncoding=utf-8", .. arguments],
-                workingDirectory, TimeSpan.FromMinutes(3));
+            // 两条 -c 不在这里拼：它们对**每一条** git 都该生效，已统一由 Execute 补上。
+            var result = Execute("git", arguments, workingDirectory, TimeSpan.FromMinutes(3));
             return (result.Output.Trim(), result.ExitCode == 0 ? null
                 : string.IsNullOrWhiteSpace(result.Error) ? $"git 退出码 {result.ExitCode}" : result.Error.Trim());
         }
@@ -58,6 +57,8 @@ internal static class ToolProcess
     {
         if (Path.GetFileName(fileName).ToLowerInvariant() is "powershell" or "powershell.exe" or "pwsh" or "pwsh.exe")
             throw new InvalidOperationException($"开发管线禁止调用 {fileName}。");
+
+        arguments = WithGitOutputSettings(fileName, arguments);
 
         var start = new ProcessStartInfo(fileName)
         {
@@ -98,6 +99,24 @@ internal static class ToolProcess
 
         return new ToolResult(process.ExitCode, output.GetAwaiter().GetResult(), error.GetAwaiter().GetResult());
     }
+
+    /// <summary>
+    /// 每一条 git 都按同一套输出设置跑。
+    ///
+    /// <c>core.quotepath</c> 默认开着，git 会把路径里的非 ASCII 字节打成 <c>\346\212\200</c>
+    /// 这种三位八进制码。本体系的项目名和文件名大量是中文，于是 <c>vulcan.dev.submit</c>
+    /// 摆给人看的脏文件清单整片是数字串——要核对"这次带走了哪些文件"时，那份清单等于没用。
+    /// 此前只有 <see cref="Git"/> 自己拼了这两条 <c>-c</c>，而清单走的是
+    /// <see cref="Capture"/>，绕过了它；补在进程层才不会再漏下一个调用点。
+    ///
+    /// 两条 <c>-c</c> 只影响 git **打印**的内容，不影响它做了什么。
+    /// </summary>
+    private static IReadOnlyList<string> WithGitOutputSettings(
+        string fileName, IReadOnlyList<string> arguments)
+        => Path.GetFileNameWithoutExtension(fileName)
+            .Equals("git", StringComparison.OrdinalIgnoreCase)
+            ? ["-c", "core.quotepath=false", "-c", "i18n.logOutputEncoding=utf-8", .. arguments]
+            : arguments;
 }
 
 internal sealed record ToolResult(int ExitCode, string Output, string Error);
