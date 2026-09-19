@@ -219,17 +219,77 @@ public sealed class CommandBus
 
         result = request.RedactResult(result);
 
-        // 2. 结果回显(错误红色高亮由控制台按级别渲染,C-02)
+        // 2. 结果回显(错误红色高亮由控制台按级别渲染,C-02;大段结果降到 Debug,见 LogResult)
         if (!remote)
-        {
-            _log.Log(
-                result.Success ? ShellLogLevel.Info : ShellLogLevel.Error,
-                $"{ResultCategory}:{request.Domain}:{request.CommandClass}",
-                (result.Success ? "✓ " : "✗ ") + result.Message);
-        }
+            LogResult(request, result);
 
         Executed?.Invoke(displayText, source, result);
         return result;
+    }
+
+    /// <summary>
+    /// 一条结果算不算「大段」的界线（字符）。
+    ///
+    /// 取 200 不是拍的：按三天真机日志统计，成功结果里 1211 条不超过 120 字、31 条在 121～200 之间，
+    /// 再往上直接跳到 401 字以上（134 条）与 2000 字以上（262 条）——200 正落在那道空档里。
+    /// </summary>
+    private const int BulkMessageLimit = 200;
+
+    /// <summary>
+    /// 结果回显的分级（5.6.0，REQ-HOST-006）。
+    ///
+    /// **为什么级别归宿主管**：<see cref="CommandResult"/> 里没有级别这一项，模块也无从声明；
+    /// 从第一版起就是这里一句 <c>result.Success ? Info : Error</c> 写死的。于是
+    /// <c>vulcan.command.list</c> 的整张命令集、各模块 <c>*.ui.data</c> 那一行几十 KB 的 JSON，
+    /// 全都以 Info 进控制台——按 Info 看控制台时，人要读的那几行被淹在里面。
+    ///
+    /// 现在按**结果的形状**分：一句话的结果照旧进 Info，多行或超长的结果在 Info 上只留一行提要、
+    /// 正文降到 Debug。控制台因此在 Info 档位上是一张菜单，正文一个字没丢，切到 Debug 就在原位。
+    ///
+    /// **失败永远不降**：错误再长也整条进 Error。要消灭的是"看不见人要读的那几行"，
+    /// 不是"看不见出了什么错"。
+    /// </summary>
+    private void LogResult(CommandRequest request, CommandResult result)
+    {
+        var category = $"{ResultCategory}:{request.Domain}:{request.CommandClass}";
+        var mark = result.Success ? "✓ " : "✗ ";
+
+        if (!result.Success)
+        {
+            _log.Log(ShellLogLevel.Error, category, mark + result.Message);
+            return;
+        }
+
+        if (!IsBulk(result.Message))
+        {
+            _log.Log(ShellLogLevel.Info, category, mark + result.Message);
+            return;
+        }
+
+        _log.Log(ShellLogLevel.Info, category, Digest(mark, result.Message));
+        _log.Log(ShellLogLevel.Debug, category, mark + result.Message);
+    }
+
+    /// <summary>多行或超长即为大段。两者同一个症状：控制台上一条消息占掉整屏。</summary>
+    private static bool IsBulk(string message)
+        => message.Contains('\n', StringComparison.Ordinal) || message.Length > BulkMessageLimit;
+
+    /// <summary>
+    /// 大段结果在 Info 上的提要。多行结果的第一行本来就是模块写的那句摘要
+    /// （"命令集: 249 / 249 条"、"已扫描 37 个项目"），直接拿来用；
+    /// 单行的超长结果没有这样一句，只报体量——它上面紧挨着的回显行已经说清是哪条指令。
+    /// </summary>
+    private static string Digest(string mark, string message)
+    {
+        var newline = message.IndexOf('\n', StringComparison.Ordinal);
+        if (newline < 0)
+            return $"{mark}（{message.Length} 字，DEBUG 级可见）";
+
+        var head = message[..newline].TrimEnd('\r');
+        var rest = message.Count(character => character == '\n');
+        return head.Length <= BulkMessageLimit
+            ? $"{mark}{head}（另有 {rest} 行，DEBUG 级可见）"
+            : $"{mark}（{message.Length} 字 / {rest + 1} 行，DEBUG 级可见）";
     }
 
     /// <summary>用法行,如 "用法: vulcan.command.help name= pos=left/right/top/bottom/tab [target=] [ratio=]"。</summary>
@@ -354,11 +414,14 @@ public sealed class CommandBus
         if (bindError != null)
             return CommandResult.Fail($"{bindError}\n{FormatUsage(descriptor)}");
 
+        var progressCategory = $"{ProgressCategory}:{request.Domain}:{request.CommandClass}";
         var progress = new Progress<string>(line =>
-            _log.Log(
-                ShellLogLevel.Info,
-                $"{ProgressCategory}:{request.Domain}:{request.CommandClass}",
-                request.Mask(line)));
+        {
+            // 进度行与结果同一把尺子：一句一行的进度留在 Info（git 传输、Apollo 逐轮过程
+            // 都靠它），而整块贴上来的那种降到 Debug。
+            var masked = request.Mask(line);
+            _log.Log(IsBulk(masked) ? ShellLogLevel.Debug : ShellLogLevel.Info, progressCategory, masked);
+        });
         var context = new CommandContext(descriptor, values, source, progress, cancellation);
 
         // 拦截:二次确认(§5.2;T-08/R-06 需要询问的操作在「手输指令路径」的统一闸口)
