@@ -1,0 +1,117 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0/win-x64",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {},
+    ".NETCoreApp,Version=v8.0/win-x64": {
+      "HistoryVulcan/5.6.0": {
+        "dependencies": {
+          "OneHistory.HistoryVulcan.Core": "5.6.0",
+          "OneHistory.HistoryVulcan.ServiceHost": "5.6.0",
+          "OneHistory.HistoryVulcan.Services": "5.6.0",
+          "HistoryVulcan.Core": "5.6.0.0",
+          "HistoryVulcan.ServiceHost": "5.6.0.0",
+          "HistoryVulcan.Services": "5.6.0.0"
+        },
+        "runtime": {
+          "HistoryVulcan.dll": {}
+        }
+      },
+      "OneHistory.HistoryVulcan.Core/5.6.0": {
+        "runtime": {
+          "HistoryVulcan.Core.dll": {
+            "assemblyVersion": "5.6.0.0",
+            "fileVersion": "5.6.0.0"
+          }
+        }
+      },
+      "OneHistory.HistoryVulcan.ServiceHost/5.6.0": {
+        "dependencies": {
+          "OneHistory.HistoryVulcan.Core": "5.6.0",
+          "OneHistory.HistoryVulcan.Services": "5.6.0"
+        },
+        "runtime": {
+          "HistoryVulcan.ServiceHost.dll": {
+            "assemblyVersion": "5.6.0.0",
+            "fileVersion": "5.6.0.0"
+          }
+        }
+      },
+      "OneHistory.HistoryVulcan.Services/5.6.0": {
+        "dependencies": {
+          "OneHistory.HistoryVulcan.Core": "5.6.0"
+        },
+        "runtime": {
+          "HistoryVulcan.Services.dll": {
+            "assemblyVersion": "5.6.0.0",
+            "fileVersion": "5.6.0.0"
+          }
+        }
+      },
+      "HistoryVulcan.Core/5.6.0.0": {
+        "runtime": {
+          "HistoryVulcan.Core.dll": {
+            "assemblyVersion": "5.6.0.0",
+            "fileVersion": "5.6.0.0"
+          }
+        }
+      },
+      "HistoryVulcan.ServiceHost/5.6.0.0": {
+        "runtime": {
+          "HistoryVulcan.ServiceHost.dll": {
+            "assemblyVersion": "5.6.0.0",
+            "fileVersion": "5.6.0.0"
+          }
+        }
+      },
+      "HistoryVulcan.Services/5.6.0.0": {
+        "runtime": {
+          "HistoryVulcan.Services.dll": {
+            "assemblyVersion": "5.6.0.0",
+            "fileVersion": "5.6.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "HistoryVulcan/5.6.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "OneHistory.HistoryVulcan.Core/5.6.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "OneHistory.HistoryVulcan.ServiceHost/5.6.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "OneHistory.HistoryVulcan.Services/5.6.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "HistoryVulcan.Core/5.6.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "HistoryVulcan.ServiceHost/5.6.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "HistoryVulcan.Services/5.6.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
