@@ -291,19 +291,88 @@
             <summary>把一条指令交给当前用户的活宿主执行。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Development.DevPipelineCommands">
+             <summary>
+             模块开发管线的公开三步：开工作区、送审、通过后并回。
+             </summary>
+             <remarks>
+             图面只留三条，且<strong>不配 MCP</strong>：只走同目录 Console <c>HistoryVulcan.Cli.exe --cli</c>。
+             内部仍调用 <see cref="T:HistoryVulcan.Services.Development.WorktreeCommands"/> 与 <see cref="T:HistoryVulcan.Services.Development.ReleaseCommands"/>。
+             HistoryVulcan 自身不走这三条，宿主打包用 <c>--cli vulcan.release.cycle</c>。
+            
+             5.7.0 起 submit / finish 只需要 <c>worktree=</c>：模块由工作区所在项目反查发布登记表，
+             提交说明缺省取工作区名里的 slug（REQ-HOST-072）。
+             </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.DevPipelineCommands.CliExe">
+            <summary>CLI 可执行文件名，回执里给出可直接复制的命令时用。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.DevPipelineCommands.MovesConversationRoot(System.String)">
             <summary>
-            模块开发管线的公开三步：开工作区、送审、通过后并回。
+            迁根提示只对能切对话根的 AI 有意义（5.7.0，U4）。其他 AI 每条回执都读一整段只是噪声。
             </summary>
-            <remarks>
-            图面只留三条，且<strong>不配 MCP</strong>：只走同目录 Console <c>HistoryVulcan.Cli.exe --cli</c>。
-            内部仍调用 <see cref="T:HistoryVulcan.Services.Development.WorktreeCommands"/> 与 <see cref="T:HistoryVulcan.Services.Development.ReleaseCommands"/>。
-            HistoryVulcan 自身不走这三条，宿主打包用 <c>--cli vulcan.release.cycle</c>。
-            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.DevPipelineCommands.TryParseWorktreeName(System.String,System.String@,System.String@)">
+            <summary>
+            拆工作区名 <c>&lt;短SHA&gt;-&lt;序号&gt;-&lt;agent&gt;-&lt;slug&gt;</c>（见 <see cref="M:HistoryVulcan.Services.Development.WorktreeCommands.TryAllocateName(System.String,System.String,System.String,System.String,System.String,System.String,System.String@,System.String@,System.String@,System.String@)"/>）。
+            slug 本身可以带连字符，因此只切前三刀。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.DevPipelineCommands.TryResolveWorktreeProject(HistoryVulcan.Core.Storage.ISettingsService,System.String,System.String@,System.String@,System.String@)">
+             <summary>
+             由工作区反查它属于哪个项目（5.7.0，U1）。
+            
+             绝对路径：问 git 这条工作树的公共 .git 在哪，项目就是它的上级目录。
+             目录名：在工作区根下找唯一一个含这个子目录的项目目录——start 就是按「根/项目/名」放的。
+             找到多个时不猜。
+             </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.DevPipelineCommands.TryResolveTarget(HistoryVulcan.Core.Storage.ISettingsService,System.String,System.String,HistoryVulcan.Services.Development.Pipeline.ReleaseTarget@,System.String@,System.String@)">
+            <summary>
+            submit / finish 的目标解析（5.7.0，U1）：<c>name</c> 可省略，由工作区项目推出；
+            写了而与工作区不一致时拒绝，并把两个值都说出来——不替人选。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.DevPipelineCommands.MainTreeWarning(System.String,System.String)">
+            <summary>
+            主树上的未提交改动（5.7.0，U5）。它们不在工作区里，也不会进本次提交；
+            直接在主树上改代码的人要到 finish 才发现并不回去，所以在 start 与 submit 就说出来。只警告，不拦。
+            </summary>
         </member>
         <member name="T:HistoryVulcan.Services.Development.ModulePackageHotReload">
             <summary>
             Module test and deploy both call Vulcan's package hot-reload:
             <c>vulcan.module.install</c>. That is the same path as the Modules page 热重载 button.
+            </summary>
+        </member>
+        <member name="F:HistoryVulcan.Services.Development.ModulePackageHotReload.HostLogHint">
+            <summary>宿主日志位置，附着失败时指给人看。原因全文只在那里。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ModulePackageHotReload.VerifyAttachedAsync(HistoryVulcan.Services.Development.DevelopmentContext,System.String,System.String,System.Threading.CancellationToken)">
+             <summary>
+             5.7.0（U3）：装完再问一次活宿主，这个模块到底接上没有。
+            
+             <c>vulcan.module.install</c> 成功只证明包装进去了。曾出现回执成功、模块却 <c>attached=false</c>
+             （PendingAttach 重复）的情况，使用者因此每次都要另外核对。这里把核对并进管线：
+             没接上、版本不是候选版本、或带着附着失败，一律算失败。
+             问不到（没有 module.list、读不出身份、形状认不出）时不冒充成功也不冒充失败，照实写「未核对」。
+             </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.ModuleAttachState">
+            <summary>
+            <c>vulcan.module.list</c> 里一个模块的附着读数。
+            同进程拿到的是 <c>ModuleMeta</c> 列表，经 --runtime 管道回来的是驼峰 JSON；两种都统一成 JSON 再按名字读。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ModuleAttachState.#ctor(System.String,System.Boolean,System.Int32,System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>
+            <c>vulcan.module.list</c> 里一个模块的附着读数。
+            同进程拿到的是 <c>ModuleMeta</c> 列表，经 --runtime 管道回来的是驼峰 JSON；两种都统一成 JSON 再按名字读。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ModuleAttachState.TryFind(System.Object,System.String,HistoryVulcan.Services.Development.ModuleAttachState@)">
+            <summary>
+            在模块列表里找 <paramref name="moduleName"/>。返回 false 表示**认不出这是一张模块列表**；
+            返回 true 而 <paramref name="state"/> 为空，才是「列表里确实没有它」。两者后果不同，不能混成一个 null。
             </summary>
         </member>
         <member name="T:HistoryVulcan.Services.Development.Pipeline.MsBuildOutputResolver">
@@ -354,6 +423,12 @@
         </member>
         <member name="T:HistoryVulcan.Services.Development.Pipeline.ToolProcess">
             <summary>开发与发布共用的工具进程：并发读输出、限时等待，失败时保留诊断。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.Pipeline.ToolProcess.CaptureLines(System.String,System.Collections.Generic.IReadOnlyList{System.String},System.String)">
+            <summary>
+            与 <see cref="M:HistoryVulcan.Services.Development.Pipeline.ToolProcess.Capture(System.String,System.Collections.Generic.IReadOnlyList{System.String},System.String)"/> 相同，但只裁掉尾部换行。
+            <c>git status --porcelain</c> 这类按列对齐的输出，首行开头的空格是状态列的一部分，不能裁。
+            </summary>
         </member>
         <member name="M:HistoryVulcan.Services.Development.Pipeline.ToolProcess.WithGitOutputSettings(System.String,System.Collections.Generic.IReadOnlyList{System.String})">
              <summary>
@@ -482,6 +557,9 @@
         </member>
         <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.FindIdleWorktree(System.String,System.String)">
             <summary>找出"开了但没干活"的工作区：既无未提交改动，其分支也没有领先主干的提交。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.LastLine(System.String)">
+            <summary>多行回执的最后一行——热装回执的附着核对结论就在那里。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleDirectoryWatcher">
              <summary>

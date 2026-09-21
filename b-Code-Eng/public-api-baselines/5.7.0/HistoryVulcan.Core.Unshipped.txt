@@ -1,0 +1,2 @@
+#nullable enable
+HistoryVulcan.Core.Modules.IModuleContext.Log.get -> HistoryVulcan.Core.Logging.IShellLog!
