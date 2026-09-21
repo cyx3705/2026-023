@@ -36,6 +36,18 @@ internal static class ToolProcess
         return result.Output.Trim();
     }
 
+    /// <summary>
+    /// 与 <see cref="Capture"/> 相同，但只裁掉尾部换行。
+    /// <c>git status --porcelain</c> 这类按列对齐的输出，首行开头的空格是状态列的一部分，不能裁。
+    /// </summary>
+    public static string CaptureLines(string fileName, IReadOnlyList<string> arguments, string workingDirectory)
+    {
+        var result = Execute(fileName, arguments, workingDirectory);
+        if (result.ExitCode != 0)
+            throw new InvalidOperationException($"{fileName} 失败，退出码 {result.ExitCode}：{result.Error}");
+        return result.Output.TrimEnd('\r', '\n');
+    }
+
     internal static (string Output, string? Error) Git(string workingDirectory, params string[] arguments)
     {
         try

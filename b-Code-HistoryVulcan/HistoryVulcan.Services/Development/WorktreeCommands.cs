@@ -181,7 +181,9 @@ internal static class WorktreeCommands
         text.Append($"\n分支: {branch}（基于 {head}）");
         text.Append($"\n项目: {projectPath}");
         text.Append($"\n{overrideNote}");
-        text.Append("\ngrok 按手册四步把对话根迁进此工作区；其他 AI 不要切根，按上面的路径改文件。若对话根就是此工作区，finish 前先迁走再 vulcan.dev.finish。对话根在另一条 F 盘残留目录上，finish 这条工作区不会删掉当前根。");
+        // 5.7.0（U4）：迁根只与能切对话根的 AI 有关，其他 AI 每次读一整段只是噪声。
+        if (DevPipelineCommands.MovesConversationRoot(author))
+            text.Append("\ngrok 按手册四步把对话根迁进此工作区；其他 AI 不要切根，按上面的路径改文件。若对话根就是此工作区，finish 前先迁走再 vulcan.dev.finish。对话根在另一条 F 盘残留目录上，finish 这条工作区不会删掉当前根。");
         return CommandResult.Ok(text.ToString(), new
         {
             Name = name,
@@ -358,6 +360,7 @@ internal static class WorktreeCommands
         var removed = RemoveMergedWorktree(host.Settings, projectName, worktreeName);
 
         string reloadNote;
+        var reloadFailed = false;
         if (resolved && module.Kind.Equals("host", StringComparison.OrdinalIgnoreCase))
         {
             reloadNote = "宿主 EXE 不随模块热重载替换；新快照在下次启动正式 HistoryVulcan.exe 时生效。";
@@ -366,9 +369,12 @@ internal static class WorktreeCommands
         {
             var reload = await ModulePackageHotReload.InstallCurrentAsync(
                 host, projectPath, moduleName!, "host:vulcan.worktree.merge", cancellation).ConfigureAwait(false);
+            // 5.7.0（U3）：热装回执带附着核对。没接上时合并与回收已经做完、不回滚，
+            // 但整条 finish 的结论必须是失败——否则「已并回」读起来就像「已上线」。
+            reloadFailed = !reload.Success;
             reloadNote = reload.Success
-                ? "已把合并后的版本化候选热重载到 Vulcan 运行区"
-                : $"合并后热重载未成功（{reload.Message}），请从候选或 history 再调同一热重载接口";
+                ? "已把合并后的版本化候选热重载到 Vulcan 运行区。\n" + LastLine(reload.Message)
+                : $"合并与回收已完成，但热重载未成功（不回滚）：{reload.Message}\n请从候选或 history 再调同一热重载接口。";
         }
         else
         {
@@ -376,7 +382,7 @@ internal static class WorktreeCommands
         }
 
         var text = new StringBuilder($"{mergeNote}。\n{removed.Message}\n{reloadNote}");
-        if (!removed.Success)
+        if (!removed.Success || reloadFailed)
             return CommandResult.Fail(text.ToString());
         return CommandResult.Ok(text.ToString(), new
         {
@@ -385,6 +391,11 @@ internal static class WorktreeCommands
             Worktree = worktreePath,
         });
     }
+
+    /// <summary>多行回执的最后一行——热装回执的附着核对结论就在那里。</summary>
+    private static string LastLine(string message)
+        => message.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .LastOrDefault() ?? "";
 
     private static CommandResult List(ISettingsService settings, string? project)
     {
@@ -600,7 +611,7 @@ internal static class WorktreeCommands
         return false;
     }
 
-    private static string ResolveRoot(ISettingsService settings, string? rootOverride)
+    internal static string ResolveRoot(ISettingsService settings, string? rootOverride)
     {
         if (!string.IsNullOrWhiteSpace(rootOverride) && Path.IsPathFullyQualified(rootOverride.Trim()))
             return rootOverride.Trim();

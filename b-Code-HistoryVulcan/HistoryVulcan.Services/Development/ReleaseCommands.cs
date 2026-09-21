@@ -331,7 +331,9 @@ internal static class ReleaseCommands
                 return CommandResult.Fail($"项目主树不存在：{repoRoot}");
         }
 
-        var status = ToolProcess.Capture(
+        // 5.7.0（U4）：只裁尾部换行。Capture 的 Trim() 会吃掉首行状态列前的空格，
+        // 清单于是首行写成「M a」、其余写成「 M b」。
+        var status = ToolProcess.CaptureLines(
             "git", ["status", "--porcelain", "--", $":!{module.FormalDirectory}/**"], repoRoot);
         if (status.Length > 0 && !allowDirty)
             return new CommandResult
@@ -356,7 +358,7 @@ internal static class ReleaseCommands
                 + $"测试: {(tests.Count == 0 ? "无额外模块测试" : string.Join("; ", tests))}\n"
                 + $"文件摘要: {(files.Count == 0 ? "由发布输出决定" : string.Join(", ", files))}\n将执行阶段: {string.Join(", ", stages)}\n"
                 + $"脏树: {(status.Length == 0 ? "否" : "是（已授权）")}\n"
-                + (status.Length == 0 ? "" : $"脏树文件:\n{status}")
+                + (status.Length == 0 ? "" : $"脏树文件:\n{status}\n")
                 + "不会写日志、候选、运行区、暂存区或触发热重载。",
                 new
                 {
@@ -409,8 +411,8 @@ internal static class ReleaseCommands
         text.Append("\n测试不通过时，从主树候选或 z-Publish/history 再调同一热重载接口，不会自动恢复。");
         if (isWorktree)
         {
+            // 迁根提示由 vulcan.dev.submit 按工作区的 agent 决定是否追加（5.7.0，U4）。
             text.Append("\n可继续在此工作区开发。人审批通过后 vulcan.dev.finish。");
-            text.Append("\n若对话根已在工作区内（grok 切过根），finish 前先迁到该模块 Clio 主树。其他 AI 不迁根：对话根不是正在 finish 的那条工作区就可以 finish；不要因为对话根在另一条 F 盘残留目录就停住。");
         }
 
         return reload.Success
