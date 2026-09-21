@@ -2,8 +2,6 @@
 
 > OneHistory 模块宿主：模块生命周期、命令总线、CLI 与发布管线
 
-![OneHistory Logo](./b-Office/Logo.png)
-
 ## 定位
 
 HistoryVulcan 是 OneHistory 的模块宿主：负责模块发现、校验、装卸与热重载，命令注册与执行，
@@ -85,6 +83,9 @@ dotnet test .\b-Code-Tests\HistoryVulcan.Tests\HistoryVulcan.Tests.csproj -c Rel
 - `--cli` 离线组合执行；`--runtime` 只连接活宿主，仅放行 `vulcan.module.list/ready/reload/install`。
 - 模块发布登记表：[`module-publish.manifest.json`](./b-Code-Eng/pipeline/module-publish.manifest.json)。
 
----
+## 保留内容
+- 本模板项目介绍：此为最初的准备的项目模板
+    每个分支项目都会由他去继承
+- 作者：Pinavia - 2025
 
-作者：Pinavia
+![logo](./b-Office/Logo.png)
