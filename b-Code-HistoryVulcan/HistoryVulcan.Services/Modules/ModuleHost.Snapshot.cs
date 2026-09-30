@@ -1,4 +1,5 @@
 using System.Runtime.Loader;
+using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Modules;
 
@@ -149,16 +150,47 @@ public sealed partial class ModuleHost
         string Origin);
 
     private sealed class ModuleContext(
+        ModuleHost host,
         Snapshot snapshot,
         string owner,
+        string commandPrefix,
         CommandBus bus) : IModuleContext
     {
+        private readonly HashSet<string> _domains = new(StringComparer.Ordinal)
+        {
+            ModuleDomainNaming.ToDomain(owner),
+            commandPrefix.Trim().ToLowerInvariant(),
+        };
+
+        private ModuleEnvironment? _environment;
+
         public CommandBus Bus => bus;
 
-        /// <summary>总线写回显、进度与结果的那一份日志（5.5.0，REQ-HOST-004）。</summary>
+        // 5.5.0：宿主唯一日志。进度、结果、界面操作与模块自己的诊断都写这一份。
         public HistoryVulcan.Core.Logging.IShellLog Log => bus.Log;
 
         public IDisposable RegisterFrontend(IFrontend frontend) => bus.ClaimFrontend(owner, frontend);
+
+        public IModuleEnvironment Environment
+            => _environment ??= new ModuleEnvironment(
+                owner, host.ModuleDataDirectory(owner), host.RunMode, AppIdentity.Current.Version);
+
+        public IDisposable Subscribe(string topic, Action<BusEvent> handler)
+            => bus.Events.Subscribe(topic, owner, handler);
+
+        public void Publish(string topic, object? payload)
+        {
+            var value = (topic ?? "").Trim();
+            var domain = value.Split('.')[0];
+            if (!_domains.Contains(domain))
+            {
+                throw new ArgumentException(
+                    $"模块 {owner} 只能发布自己指令域的主题（{string.Join(" / ", _domains.Order(StringComparer.Ordinal))}.*），不能发布 {value}。",
+                    nameof(topic));
+            }
+
+            bus.Events.Publish(value, "module:" + owner, payload);
+        }
 
         public void RegisterCommands(Action<CommandRegistry> configure)
         {
@@ -176,8 +208,32 @@ public sealed partial class ModuleHost
                 }
 
                 snapshot.PendingCommands.Add((descriptor, owner));
+                _domains.Add(descriptor.Name.Split('.')[0].ToLowerInvariant());
             }
         }
+    }
+
+    /// <summary>
+    /// 宿主给模块的运行环境（5.9.0，DEC-070）。数据目录在第一次取用时创建：
+    /// 路径归宿主，内容归模块；装包、热重载、卸载都不动它。
+    /// </summary>
+    private sealed class ModuleEnvironment(
+        string moduleName, string dataDirectory, HostRunMode runMode, string hostVersion) : IModuleEnvironment
+    {
+        public string ModuleName => moduleName;
+
+        public string DataDirectory
+        {
+            get
+            {
+                Directory.CreateDirectory(dataDirectory);
+                return dataDirectory;
+            }
+        }
+
+        public HostRunMode RunMode => runMode;
+
+        public string HostVersion => hostVersion;
     }
 
 }

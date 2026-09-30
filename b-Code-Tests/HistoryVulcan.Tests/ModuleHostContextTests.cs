@@ -140,7 +140,7 @@ namespace HistoryVulcan.Tests
                 // Attach 与 Dispose 都是生命周期契约的实现，不得成为指令——
                 // 尤其是 Dispose：远端调用它等于拆掉半个模块。
                 Assert.False(registry.TryGet("contextfixture.Dispose", out _));
-                Assert.Equal(2, Assert.Single(host.Modules).CommandCount);
+                Assert.Equal(ContextFixtureModuleInfo.CommandCount, Assert.Single(host.Modules).CommandCount);
             }
             finally
             {
@@ -448,6 +448,12 @@ namespace HistoryVulcan.Tests
 
     public sealed class ContextFixtureModuleInfo : BaseVariable.ModuleInfoBase
     {
+        /// <summary>
+        /// 夹具的指令数：Attach 里显式登记 4 条（context-probe，以及 5.9.0 为统一契约加的 context-env /
+        /// context-publish / context-subscribe），再加反射投影的 Probe。
+        /// </summary>
+        public const int CommandCount = 5;
+
         public const string ConstructionVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_CONSTRUCTION";
 
         public ContextFixtureModuleInfo()
@@ -496,15 +502,67 @@ namespace HistoryVulcan.Tests
             var failure = Environment.GetEnvironmentVariable(FailureVariable);
             if (failure == "before")
                 throw new InvalidOperationException("fixture attach failed before registration");
-            context.RegisterCommands(registry => registry.Register(new CommandDescriptor
+            var prefix = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.NameVariable) ?? "contextfixture";
+            context.RegisterCommands(registry =>
             {
-                Name = (Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.NameVariable) ?? "contextfixture") + ".context-probe",
-                Domain = "spoofed-domain",
-                CommandClass = "context",
-                Summary = "Proves RegisterCommands staged a command owned by this module.",
-                Readonly = true,
-                Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("registered")),
-            }));
+                registry.Register(new CommandDescriptor
+                {
+                    Name = prefix + ".context-probe",
+                    Domain = "spoofed-domain",
+                    CommandClass = "context",
+                    Summary = "Proves RegisterCommands staged a command owned by this module.",
+                    Readonly = true,
+                    Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("registered")),
+                });
+
+                // 5.9.0（DEC-070）：经总线暴露上下文，测试进程才看得见夹具拿到了什么（静态字段跨加载上下文不可见）。
+                registry.Register(new CommandDescriptor
+                {
+                    Name = prefix + ".context-env",
+                    CommandClass = "context",
+                    Summary = "Reports the environment the host handed to this module.",
+                    Readonly = true,
+                    Handler = CommandDescriptor.Sync(_ =>
+                    {
+                        var environment = context.Environment;
+                        return CommandResult.Ok(string.Join("|",
+                            environment.ModuleName, environment.DataDirectory, environment.RunMode, environment.HostVersion));
+                    }),
+                });
+                registry.Register(new CommandDescriptor
+                {
+                    Name = prefix + ".context-publish",
+                    CommandClass = "context",
+                    Summary = "Publishes an event under the given topic.",
+                    Parameters = [new ParameterSpec { Name = "topic", Description = "topic", Required = true, Position = 0 }],
+                    Handler = CommandDescriptor.Sync(ctx =>
+                    {
+                        try
+                        {
+                            context.Publish(ctx.RequireString("topic"), new { from = "fixture" });
+                            return CommandResult.Ok("published");
+                        }
+                        catch (ArgumentException ex)
+                        {
+                            return CommandResult.Fail(ex.Message);
+                        }
+                    }),
+                });
+                registry.Register(new CommandDescriptor
+                {
+                    Name = prefix + ".context-subscribe",
+                    CommandClass = "context",
+                    Summary = "Subscribes to a topic and appends every event to a file in the data directory.",
+                    Parameters = [new ParameterSpec { Name = "topic", Description = "topic", Required = true, Position = 0 }],
+                    Handler = CommandDescriptor.Sync(ctx =>
+                    {
+                        var file = Path.Combine(context.Environment.DataDirectory, "events.txt");
+                        context.Subscribe(ctx.RequireString("topic"), evt =>
+                            File.AppendAllText(file, $"{evt.Topic} {evt.Source} {evt.Payload.GetRawText()}{Environment.NewLine}"));
+                        return CommandResult.Ok(file);
+                    }),
+                });
+            });
             if (failure is "after" or "after-once")
             {
                 if (failure == "after-once")

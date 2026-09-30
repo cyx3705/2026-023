@@ -15,6 +15,9 @@ internal enum HostAction
     /// <summary>离线安装模块包。</summary>
     InstallModule,
 
+    /// <summary>测试装载：只装一个候选包，可再执行一条指令（5.9.0，DEC-070）。</summary>
+    Probe,
+
     /// <summary>执行一条已声明命令行暴露的指令。</summary>
     RunCommand,
 
@@ -45,6 +48,9 @@ internal readonly record struct HostArguments(HostAction Action, string Value, s
 
     /// <summary>是否为运行时动作提供一次性本地批准。</summary>
     public bool Approve { get; init; }
+
+    /// <summary><c>--probe</c> 之后跟的 <c>--cli</c> 指令；为空时只报告装载结果。</summary>
+    public string ProbeCommand { get; init; } = "";
 }
 
 /// <summary>CLI 输出格式。</summary>
@@ -67,6 +73,8 @@ internal static class HostArgumentParser
 
     /// <summary>离线安装模块包。</summary>
     public const string InstallModuleSwitch = "--install-module";
+
+    public const string ProbeSwitch = "--probe";
 
     /// <summary>执行一条指令。</summary>
     public const string CommandLineSwitch = "--cli";
@@ -147,6 +155,20 @@ internal static class HostArgumentParser
             return new HostArguments(action, args[index + 1], "") { Format = resolvedFormat };
         }
 
+        // 5.9.0（DEC-070）：--probe <包目录> [--cli <指令...>]。模块测试用它代替直接构造宿主的 ModuleHost。
+        var probe = IndexOf(args, ProbeSwitch);
+        if (probe >= 0)
+        {
+            if (probe + 1 >= args.Length || args[probe + 1].StartsWith("--", StringComparison.Ordinal))
+                return new HostArguments(HostAction.Error, "", $"{ProbeSwitch} 需要一个包目录。") { Format = resolvedFormat };
+            var probeCli = IndexOf(args, CommandLineSwitch);
+            return new HostArguments(HostAction.Probe, args[probe + 1], "")
+            {
+                Format = resolvedFormat,
+                ProbeCommand = probeCli > probe ? JoinCommandArguments(args, probeCli + 1) : "",
+            };
+        }
+
         var runtime = IndexOf(args, RuntimeSwitch);
         if (runtime >= 0)
         {
@@ -188,6 +210,7 @@ internal static class HostArgumentParser
         $"  ... {FormatSwitch} json                              输出单一 JSON 结果",
         $"  ... {ApproveSwitch}                                  批准运行时动作",
         $"  HistoryVulcan.exe {InstallModuleSwitch} <包目录>    离线安装模块包（宿主起不来时用）",
+        $"  HistoryVulcan.Cli.exe {ProbeSwitch} <包目录> [{CommandLineSwitch} <指令>]  只装这个包做测试，可再执行一条指令",
         $"  HistoryVulcan.exe {ExportManualSwitch} <路径>",
         $"  HistoryVulcan.exe {RepairAutostartSwitch}",
     ];

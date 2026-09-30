@@ -3,6 +3,7 @@ using System.Runtime.Loader;
 using System.Threading;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
+using HistoryVulcan.Core.Modules;
 
 namespace HistoryVulcan.Services.Modules;
 
@@ -37,6 +38,27 @@ public sealed partial class ModuleHost : IDisposable
     /// <summary>Marshals registry mutations to the consumer thread; null executes inline.</summary>
     internal SynchronizationContext? UiContext { get; set; }
 
+    /// <summary>交给模块的运行方式（5.9.0，DEC-070）。组合根按入口设置。</summary>
+    internal HostRunMode RunMode { get; set; } = HostRunMode.Service;
+
+    /// <summary>
+    /// 模块数据目录的根（5.9.0，DEC-070）：每个模块得到 <c>&lt;根&gt;/&lt;模块名&gt;</c>，独立于包槽位。
+    /// 未设置（模块 Smoke 直接构造的宿主）时落在临时目录，不碰正式运行区。
+    /// </summary>
+    internal string? ModuleDataRoot { get; set; }
+
+    internal string ModuleDataDirectory(string moduleName)
+        => Path.Combine(
+            ModuleDataRoot ?? Path.Combine(Path.GetTempPath(), "HistoryVulcan-ModuleData"),
+            moduleName);
+
+    /// <summary>模块被撤下时一并撤掉它登记的前端与事件订阅。</summary>
+    private void ReleaseModuleHooks(string owner)
+    {
+        _bus?.ReleaseFrontend(owner);
+        _bus?.Events.RemoveOwner(owner);
+    }
+
     /// <summary>Whether modules marked as UI modules may be initialized.</summary>
     public bool EnableUiModules { get; set; } = true;
 
@@ -53,7 +75,9 @@ public sealed partial class ModuleHost : IDisposable
     public IReadOnlyList<ModuleDiscoveryDiagnostic> DiscoveryDiagnostics => _discoveryDiagnostics;
 
     /// <summary>当前快照里的模块元信息；未接上宿主的模块也在其中，并带失败原因。</summary>
-    public IReadOnlyList<ModuleMeta> Modules => _current.Modules;
+    public IReadOnlyList<ModuleMeta> Modules => _current.Modules
+        .Select(module => module with { DataDirectory = ModuleDataDirectory(module.ModuleName) })
+        .ToList();
 
     /// <summary>当前快照持有的加载上下文数量，供服务内回滚诊断使用。</summary>
     internal int CurrentContextCount => _current.Contexts.Count;
@@ -114,7 +138,7 @@ public sealed partial class ModuleHost : IDisposable
         var owner = match.ModuleName;
 
         // 先撤前端再拆实例：拆到一半的界面不能再接到确认或生命周期中继。
-        _bus?.ReleaseFrontend(owner);
+        ReleaseModuleHooks(owner);
         if (_registry != null)
         {
             var source = $"module:{owner}";

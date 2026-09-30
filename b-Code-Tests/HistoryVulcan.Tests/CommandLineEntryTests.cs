@@ -198,6 +198,7 @@ public sealed class CommandLineEntryTests
                 "vulcan.command.domains",
                 "vulcan.command.list",
                 "vulcan.command.show",
+                "vulcan.host.info",
                 "vulcan.module.install",
                 "vulcan.module.list",
                 "vulcan.module.ready",

@@ -50,6 +50,32 @@ public interface IModuleContext
     /// <returns>撤销本次登记的句柄；重复释放无副作用。</returns>
     IDisposable RegisterFrontend(IFrontend frontend)
         => throw new NotSupportedException("当前 IModuleContext 实现不支持前端登记；只有宿主提供的上下文支持。");
+
+    /// <summary>
+    /// 宿主给出的运行环境：数据目录、运行方式、宿主版本（5.9.0，DEC-070）。
+    /// 模块不要再自己拼 <c>%AppData%</c> 路径或读进程参数判断运行方式。
+    /// </summary>
+    IModuleEnvironment Environment
+        => throw new NotSupportedException("当前 IModuleContext 实现不提供运行环境；只有宿主提供的上下文提供。");
+
+    /// <summary>
+    /// 订阅总线事件（5.9.0，DEC-070）。<paramref name="topic"/> 是完整主题名；以 <c>.*</c> 结尾表示前缀订阅。
+    /// 处理器在线程池上异步调用，抛出的异常只记日志。释放返回值即退订；模块卸载时宿主自动退订。
+    /// </summary>
+    /// <param name="topic">主题名或以 <c>.*</c> 结尾的前缀。</param>
+    /// <param name="handler">事件处理器。</param>
+    /// <returns>退订句柄；重复释放无副作用。</returns>
+    IDisposable Subscribe(string topic, Action<BusEvent> handler)
+        => throw new NotSupportedException("当前 IModuleContext 实现不支持事件订阅；只有宿主提供的上下文支持。");
+
+    /// <summary>
+    /// 发布一条总线事件（5.9.0，DEC-070）。主题必须以本模块的指令域加点开头；
+    /// <paramref name="payload"/> 按 JSON 序列化，订阅方只按 JSON 形状读取。
+    /// </summary>
+    /// <param name="topic">主题名，例如 <c>portunus.endpoint.changed</c>。</param>
+    /// <param name="payload">载荷；null 发布空对象。</param>
+    void Publish(string topic, object? payload)
+        => throw new NotSupportedException("当前 IModuleContext 实现不支持事件发布；只有宿主提供的上下文支持。");
 }
 
 /// <summary>需要登记指令或使用总线的模块实现本接口，由注册器在激活指令前调用。</summary>

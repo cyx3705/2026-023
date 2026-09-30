@@ -112,7 +112,7 @@ public sealed partial class ModuleHost
         int registeredBefore,
         IReadOnlySet<AssemblyLoadContext> contextsBefore)
     {
-        _bus?.ReleaseFrontend(moduleName);
+        ReleaseModuleHooks(moduleName);
         MarshalToUi(() =>
         {
             if (_registry != null)
@@ -151,7 +151,7 @@ public sealed partial class ModuleHost
         // HistoryAurora 的 RegisterCommands 看见 live.TryGet 为真就会跳过；
         // 若拆实例后仍留着旧指令，重载后界面命令数会变成 0，且 attachFailures 为空。
         foreach (var owner in old.ContextsByOwner.Keys.Concat(old.Modules.Select(module => module.ModuleName)))
-            _bus?.ReleaseFrontend(owner);
+            ReleaseModuleHooks(owner);
         UnregisterCommands(old);
         DisposeInstances(old.Instances);
 

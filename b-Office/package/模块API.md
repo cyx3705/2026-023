@@ -1,6 +1,6 @@
 # HistoryVulcan 模块 API
 
-适用宿主：**5.6.0**（冻结线 v5.4.0）。本文定义模块接入与消费语义，工作区操作见[模块开发手册](模块开发手册.md)。宿主提供模块注册、命令总线和开发/发布管线；界面归 Aurora、工作台/快捷键归 Mercury、Web/MCP 归 Portunus。
+适用宿主：**5.9.0**（冻结线 v5.4.0）。本文定义模块接入与消费语义，工作区操作见[模块开发手册](模块开发手册.md)。宿主提供模块注册、命令总线和开发/发布管线；界面归 Aurora、工作台/快捷键归 Mercury、Web/MCP 归 Portunus。
 
 ## 1. 引用与兼容
 
@@ -55,6 +55,38 @@ Attach 失败时该模块全部命令不可执行；冷启动保留诊断并继�
 要让人看见长任务的过程，在处理器里写 `CommandContext.Progress`，不要等结束后在回执里汇总；经 Bus 调用别的模块时，对方的过程由对方自己写，调用方不复述。
 
 任何 CommandBus 把命令交给 RemoteExecutor 时，本地不回显、不记结果，由执行它的那条总线记一次。界面模块自建总线转发到宿主的命令，回显与结果出现在宿主日志里。
+
+### 统一契约（5.9.0）
+
+宿主给模块的只有**一条总线和一个上下文**。5.9.0 把此前没有契约、模块只好各自猜的部分补齐；6.0.0 会把 `Bus` / `RegisterCommands`
+的类型收窄成接口、把 Services 的公开类型收回宿主内部。**新代码请只用本节列出的东西**，现在就按它写，6.0.0 时不用再改。
+
+| 需要 | 用这个 | 不要再 |
+| --- | --- | --- |
+| 执行指令、中途确认 | 把 `context.Bus` 存成 `ICommandBus`，只调 `ExecuteAsync` / `RequestConfirmation` | 碰 `Bus.Registry`、`RemoteExecutor`、`Validate`、`InvokeAsync`、`Executed` |
+| 可写数据目录 | `context.Environment.DataDirectory`（`%AppData%\HistoryVulcan\ModuleData\<模块名>`，装包/热装/卸载都保留，`uninstall purge=true` 才删） | 自己拼 `%AppData%` 路径、写进包槽位 |
+| 运行方式 | `context.Environment.RunMode`：`Service` / `OfflineCli` / `Probe` | 读进程参数判断是不是 `--cli` |
+| 宿主版本、项目库、工作区根、运行区、宿主可执行文件 | 执行 `vulcan.host.info`，读 Data | 按进程名找宿主、写死 `2026-023-HistoryVulcan/z-Publish`、读宿主设置文件 |
+| 指令目录、单条详情、模块列表 | 执行 `vulcan.command.list` / `show`、`vulcan.module.list`，**按 JSON 字段名读 Data** | 把 Data 强转成宿主的 C# 类型、引用 `HistoryVulcan.Services` |
+| 输入校验、未知指令建议、目录版本 | `vulcan.command.validate text=`、`vulcan.command.suggest name=`、`vulcan.command.revision` | 调 `Bus.Validate`、`Registry.Suggest` |
+| 目录/模块/执行/日志变化 | `context.Subscribe("vulcan.catalog.changed" …)`，见下表 | 挂 `Registry.Changed`、`Bus.Executed`、`IShellLog.EntryAdded` |
+| 通知别的模块 | `context.Publish("<本模块指令域>.<事件>", 载荷)` | 写文件让对方去读 |
+| 装载冒烟 | `HistoryVulcan.Cli.exe --probe <包目录> --cli "<指令>" --format json` | `new ModuleHost(...)` |
+
+宿主发布的主题（载荷为 JSON，字段只增不减）：
+
+| 主题 | 载荷 | 说明 |
+| --- | --- | --- |
+| `vulcan.catalog.changed` | `{ revision }` | 指令目录变了；去抖，一轮装载只发一两次 |
+| `vulcan.module.changed` | `{ modules: [{ name, version, attached, commandCount }] }` | 模块清单变了（整轮重载、单包装卸都经这里） |
+| `vulcan.command.executed` | `{ name, source, success, summary }` | 一条指令执行完；不含指令全文与 Data |
+| `vulcan.log.entry` | `{ time, level, category, message }` | 宿主日志新增一行；**订阅方不要把它再写回日志**，否则绕圈 |
+
+事件规则：主题是小写点分段、至少两段；订阅可用 `前缀.*`。每个订阅按发布顺序串行收到事件，处理器在线程池上运行，抛出的异常只记日志。
+事件是通知不是调用：要细节就再执行只读指令。模块只能发布以自己指令域开头的主题，来源记为 `module:<模块名>`；模块卸载时它的订阅自动退掉。
+
+`--probe` 把包复制到临时运行区装载（manifest `dependsOn` 里正式运行区已有的包一并复制），数据目录也在临时目录；
+输出是否接上、指令数、附着失败与发现诊断，给了 `--cli` 就再执行那条指令。退出码 0 接上且指令成功，1 没接上或指令失败，2 用法错误。
 
 ## 3. 命令契约
 

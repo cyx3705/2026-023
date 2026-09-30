@@ -38,6 +38,9 @@ internal static class CliExposurePolicy
         "vulcan.cli.list",
         "vulcan.cli.show",
 
+        // 宿主自报版本、运行方式与各个根目录（5.9.0，DEC-070）：脚本与模块测试不再按固定路径猜
+        "vulcan.host.info",
+
         // 查目录：动手之前先看得见现状
         "vulcan.command.domains",
         "vulcan.command.list",

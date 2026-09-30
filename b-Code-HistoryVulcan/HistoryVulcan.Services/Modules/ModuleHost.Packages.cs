@@ -203,7 +203,32 @@ public sealed partial class ModuleHost
     /// Uninstalls a module package from the fixed AppData runtime directory.
     /// This is the persistent counterpart to <see cref="Unload"/>.
     /// </summary>
-    internal CommandResult Uninstall(string name) => RemovePackage(name);
+    internal CommandResult Uninstall(string name, bool purge = false)
+    {
+        var removed = RemovePackage(name);
+        var dataDirectory = ModuleDataDirectory(name?.Trim() ?? "");
+        if (!removed.Success || !RuntimeModulePackageStore.IsSafeModuleName(name?.Trim() ?? ""))
+            return removed;
+
+        // 5.9.0（DEC-070）：数据目录独立于包槽位，卸载默认保留，只有 purge 才删。
+        if (!purge)
+        {
+            return Directory.Exists(dataDirectory)
+                ? CommandResult.Ok($"{removed.Message}\n数据目录已保留：{dataDirectory}（purge=true 才删除）", removed.Data)
+                : removed;
+        }
+
+        try
+        {
+            if (Directory.Exists(dataDirectory))
+                Directory.Delete(dataDirectory, recursive: true);
+            return CommandResult.Ok($"{removed.Message}\n已删除数据目录：{dataDirectory}", removed.Data);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return CommandResult.Fail($"{removed.Message}\n模块包已移除，但数据目录删除失败：{dataDirectory}：{ex.Message}");
+        }
+    }
 
     private bool TryGetRuntimeRoot(out string root, out string error)
     {

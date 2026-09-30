@@ -41,6 +41,53 @@
         <member name="M:HistoryVulcan.Core.Commands.BuiltinCommandDefinitions.Bind(System.String,System.Func{HistoryVulcan.Core.Commands.CommandContext,System.Threading.Tasks.Task{HistoryVulcan.Core.Commands.CommandResult}},System.Boolean)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
+        <member name="T:HistoryVulcan.Core.Commands.BusEventHub">
+            <summary>
+            总线事件中枢（5.9.0，DEC-070）：具名主题的发布与订阅。
+            </summary>
+            <remarks>
+            <para>事件是通知，不是调用。发布方不等待、不知道谁在听；订阅方要细节就再执行只读指令。</para>
+            <para>
+            每个订阅有自己的串行队列：同一订阅按发布顺序收到事件（控制台显示日志靠这一点），
+            不同订阅之间互不阻塞。处理器抛出的异常记进 <see cref="F:HistoryVulcan.Core.Commands.BusEventHub.LogCategory"/>，
+            宿主转发日志事件时跳过这一类，免得「处理器出错 → 记日志 → 再投给处理器」绕圈。
+            </para>
+            </remarks>
+        </member>
+        <member name="F:HistoryVulcan.Core.Commands.BusEventHub.LogCategory">
+            <summary>事件中枢自己的日志类别；宿主不把这一类转发成 <c>vulcan.log.entry</c>。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.BusEventHub.TopicPattern">
+            <remarks>
+            Pattern:<br/>
+            <code>^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)+$</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at the beginning of the string.<br/>
+            ○ Match a character in the set [0-9a-z].<br/>
+            ○ Match a character in the set [-0-9a-z] atomically any number of times.<br/>
+            ○ Loop greedily at least once.<br/>
+                ○ 1st capture group.<br/>
+                    ○ Match '.'.<br/>
+                    ○ Match a character in the set [0-9a-z].<br/>
+                    ○ Match a character in the set [-0-9a-z] atomically any number of times.<br/>
+            ○ Match if at the end of the string or if before an ending newline.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.BusEventHub.Subscribe(System.String,System.String,System.Action{HistoryVulcan.Core.Modules.BusEvent})">
+            <param name="topic">完整主题，或以 <c>.*</c> 结尾的前缀。</param>
+            <param name="owner">订阅方：<c>host</c> 或模块名；模块卸载时按它整批退订。</param>
+            <param name="handler">处理器。</param>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.BusEventHub.Publish(System.String,System.String,System.Object)">
+            <param name="topic">完整主题名。</param>
+            <param name="source">发布方：<c>host</c> 或 <c>module:&lt;名&gt;</c>。</param>
+            <param name="payload">载荷，按 JSON（camelCase）序列化；null 发布空对象。</param>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.BusEventHub.RemoveOwner(System.String)">
+            <summary>模块卸载时撤掉它的全部订阅。</summary>
+        </member>
         <member name="T:HistoryVulcan.Core.Commands.CliExposurePolicy">
              <summary>
              决定一条指令能否经命令行入口执行。
@@ -123,6 +170,9 @@
             <summary>创建一条绑定到指定注册表的总线；解析、校验与执行都以该注册表为准。</summary>
             <param name="registry">命令注册表。</param>
             <param name="log">回显、结果、进度与内部故障写入的日志管道。</param>
+        </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandBus.Events">
+            <summary>总线事件中枢（5.9.0，DEC-070）。模块经 IModuleContext.Subscribe / Publish 使用。</summary>
         </member>
         <member name="P:HistoryVulcan.Core.Commands.CommandBus.Registry">
             <summary>本总线解析与执行命令所用的注册表。</summary>
@@ -310,6 +360,21 @@
         </member>
         <member name="M:HistoryVulcan.Core.Commands.CommandContext.GetBool(System.String,System.Boolean)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.ICommandBus">
+            <summary>模块看得到的总线：执行指令与中途请求确认。目录、校验、补全一律走只读指令。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.ICommandBus.ExecuteAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>执行一条指令文本。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.ICommandBus.RequestConfirmation(System.String)">
+            <summary>处理器执行中途请求确认；没有前端时宿主按拒绝处理。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.ICommandRegistrar">
+            <summary>模块看得到的登记口：只能加指令，不能枚举、删除或改写宿主表。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.ICommandRegistrar.Register(HistoryVulcan.Core.Commands.CommandDescriptor)">
+            <summary>登记一条指令；来源由宿主按模块盖章。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Commands.CommandDescriptor">
              <summary>
@@ -647,6 +712,12 @@
             help 自动收录;名称冲突在注册时立即报错,禁止静默覆盖(P0)。
             </summary>
         </member>
+        <member name="P:HistoryVulcan.Core.Commands.CommandRegistry.Revision">
+            <summary>目录版本：每次登记或注销加一。消费方据此判断要不要重拉目录（5.9.0，DEC-070）。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.CommandRegistry.HistoryVulcan#Core#Commands#ICommandRegistrar#Register(HistoryVulcan.Core.Commands.CommandDescriptor)">
+            <summary>窄登记口：来源用缺省值，模块的来源由宿主暂存表提交时盖章。</summary>
+        </member>
         <member name="E:HistoryVulcan.Core.Commands.CommandRegistry.Changed">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
@@ -825,6 +896,29 @@
              <param name="frontend">前端实现；由登记方持有其生命周期。</param>
              <returns>撤销本次登记的句柄；重复释放无副作用。</returns>
         </member>
+        <member name="P:HistoryVulcan.Core.Modules.IModuleContext.Environment">
+            <summary>
+            宿主给出的运行环境：数据目录、运行方式、宿主版本（5.9.0，DEC-070）。
+            模块不要再自己拼 <c>%AppData%</c> 路径或读进程参数判断运行方式。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IModuleContext.Subscribe(System.String,System.Action{HistoryVulcan.Core.Modules.BusEvent})">
+            <summary>
+            订阅总线事件（5.9.0，DEC-070）。<paramref name="topic"/> 是完整主题名；以 <c>.*</c> 结尾表示前缀订阅。
+            处理器在线程池上异步调用，抛出的异常只记日志。释放返回值即退订；模块卸载时宿主自动退订。
+            </summary>
+            <param name="topic">主题名或以 <c>.*</c> 结尾的前缀。</param>
+            <param name="handler">事件处理器。</param>
+            <returns>退订句柄；重复释放无副作用。</returns>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.IModuleContext.Publish(System.String,System.Object)">
+            <summary>
+            发布一条总线事件（5.9.0，DEC-070）。主题必须以本模块的指令域加点开头；
+            <paramref name="payload"/> 按 JSON 序列化，订阅方只按 JSON 形状读取。
+            </summary>
+            <param name="topic">主题名，例如 <c>portunus.endpoint.changed</c>。</param>
+            <param name="payload">载荷；null 发布空对象。</param>
+        </member>
         <member name="T:HistoryVulcan.Core.Modules.IModuleContextAware">
             <summary>需要登记指令或使用总线的模块实现本接口，由注册器在激活指令前调用。</summary>
         </member>
@@ -864,6 +958,54 @@
         </member>
         <member name="P:HistoryVulcan.Core.Modules.ModuleCommandAttribute.CommandClass">
             <summary>命令在当前模块域内的功能类；未声明时归入 core。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Modules.HostRunMode">
+            <summary>宿主当前的运行方式。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Modules.HostRunMode.Service">
+            <summary>正式后台服务（登录启动的 HistoryVulcan.exe）。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Modules.HostRunMode.OfflineCli">
+            <summary>离线命令行组合（HistoryVulcan.Cli.exe --cli），执行一条指令后退出。</summary>
+        </member>
+        <member name="F:HistoryVulcan.Core.Modules.HostRunMode.Probe">
+            <summary>测试装载（HistoryVulcan.Cli.exe --probe），只装一个候选包。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Modules.IModuleEnvironment">
+            <summary>宿主交给模块的运行环境。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IModuleEnvironment.ModuleName">
+            <summary>本模块的名字（manifest name）。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IModuleEnvironment.DataDirectory">
+            <summary>
+            本模块的可写数据目录。独立于包槽位：装包、热重载、卸载都不动它，只有
+            <c>vulcan.module.uninstall purge=true</c> 才删除。目录由宿主创建。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IModuleEnvironment.RunMode">
+            <summary>宿主当前的运行方式。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IModuleEnvironment.HostVersion">
+            <summary>宿主版本（三段语义化版本）。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Modules.BusEvent">
+            <summary>总线上的一条事件。事件是通知不是调用：要细节就再执行只读指令。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Modules.BusEvent.#ctor(System.String,System.String,System.DateTimeOffset,System.Text.Json.JsonElement)">
+            <summary>构造一条事件；由宿主的事件中枢创建。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.BusEvent.Topic">
+            <summary>具名主题，前缀是发布方的指令域（宿主为 <c>vulcan.</c>）。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.BusEvent.Source">
+            <summary>发布方：<c>host</c> 或 <c>module:&lt;模块名&gt;</c>。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.BusEvent.Time">
+            <summary>发布时间。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.BusEvent.Payload">
+            <summary>JSON 载荷；契约是 JSON 形状，不是任何 CLR 类型。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Storage.ISettingsService">
             <summary>
@@ -920,66 +1062,98 @@
         <member name="P:BaseVariable.ModuleInfoBase.Enabled">
             <summary>是否启用该模块(false 时整个模块不注册)。</summary>
         </member>
-        <member name="T:System.Text.RegularExpressions.Generated.NamePattern_0">
-            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the NamePattern method.</summary>
+        <member name="T:System.Text.RegularExpressions.Generated.TopicPattern_0">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the TopicPattern method.</summary>
         </member>
-        <member name="F:System.Text.RegularExpressions.Generated.NamePattern_0.Instance">
+        <member name="F:System.Text.RegularExpressions.Generated.TopicPattern_0.Instance">
             <summary>Cached, thread-safe singleton instance.</summary>
         </member>
-        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_0.#ctor">
+        <member name="M:System.Text.RegularExpressions.Generated.TopicPattern_0.#ctor">
             <summary>Initializes the instance.</summary>
         </member>
-        <member name="T:System.Text.RegularExpressions.Generated.NamePattern_0.RunnerFactory">
+        <member name="T:System.Text.RegularExpressions.Generated.TopicPattern_0.RunnerFactory">
             <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
         </member>
-        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_0.RunnerFactory.CreateInstance">
+        <member name="M:System.Text.RegularExpressions.Generated.TopicPattern_0.RunnerFactory.CreateInstance">
             <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
         </member>
-        <member name="T:System.Text.RegularExpressions.Generated.NamePattern_0.RunnerFactory.Runner">
+        <member name="T:System.Text.RegularExpressions.Generated.TopicPattern_0.RunnerFactory.Runner">
             <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
         </member>
-        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_0.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+        <member name="M:System.Text.RegularExpressions.Generated.TopicPattern_0.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
             <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
             <param name="inputSpan">The text being scanned by the regular expression.</param>
         </member>
-        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_0.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+        <member name="M:System.Text.RegularExpressions.Generated.TopicPattern_0.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
             <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
             <param name="inputSpan">The text being scanned by the regular expression.</param>
             <returns>true if a possible match was found; false if no more matches are possible.</returns>
         </member>
-        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_0.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+        <member name="M:System.Text.RegularExpressions.Generated.TopicPattern_0.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
             <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
             <param name="inputSpan">The text being scanned by the regular expression.</param>
             <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
         </member>
-        <member name="T:System.Text.RegularExpressions.Generated.KeyPattern_1">
-            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the KeyPattern method.</summary>
+        <member name="T:System.Text.RegularExpressions.Generated.NamePattern_1">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the NamePattern method.</summary>
         </member>
-        <member name="F:System.Text.RegularExpressions.Generated.KeyPattern_1.Instance">
+        <member name="F:System.Text.RegularExpressions.Generated.NamePattern_1.Instance">
             <summary>Cached, thread-safe singleton instance.</summary>
         </member>
-        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_1.#ctor">
+        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_1.#ctor">
             <summary>Initializes the instance.</summary>
         </member>
-        <member name="T:System.Text.RegularExpressions.Generated.KeyPattern_1.RunnerFactory">
+        <member name="T:System.Text.RegularExpressions.Generated.NamePattern_1.RunnerFactory">
             <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
         </member>
-        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_1.RunnerFactory.CreateInstance">
+        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_1.RunnerFactory.CreateInstance">
             <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
         </member>
-        <member name="T:System.Text.RegularExpressions.Generated.KeyPattern_1.RunnerFactory.Runner">
+        <member name="T:System.Text.RegularExpressions.Generated.NamePattern_1.RunnerFactory.Runner">
             <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
         </member>
-        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_1.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_1.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
             <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
             <param name="inputSpan">The text being scanned by the regular expression.</param>
         </member>
-        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_1.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_1.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
             <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
             <param name="inputSpan">The text being scanned by the regular expression.</param>
             <returns>true if a possible match was found; false if no more matches are possible.</returns>
         </member>
-        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_1.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+        <member name="M:System.Text.RegularExpressions.Generated.NamePattern_1.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.KeyPattern_2">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the KeyPattern method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.KeyPattern_2.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_2.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.KeyPattern_2.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_2.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.KeyPattern_2.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_2.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_2.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.KeyPattern_2.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
             <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
             <param name="inputSpan">The text being scanned by the regular expression.</param>
             <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
@@ -995,6 +1169,9 @@
         </member>
         <member name="M:System.Text.RegularExpressions.Generated.Utilities.StackPush(System.Int32[]@,System.Int32@,System.Int32,System.Int32)">
             <summary>Pushes 2 values onto the backtracking stack.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_ascii_20FF0300000000FEFFFF07">
+            <summary>Supports searching for characters in or not in "-0123456789abcdefghijklmnopqrstuvwxyz".</summary>
         </member>
     </members>
 </doc>

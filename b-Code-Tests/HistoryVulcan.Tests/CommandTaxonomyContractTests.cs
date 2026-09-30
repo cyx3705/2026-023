@@ -148,6 +148,9 @@ public sealed class CommandTaxonomyContractTests
             {
                 "vulcan.app.quit",
                 "vulcan.command.run",
+                "vulcan.command.revision",
+                "vulcan.command.suggest",
+                "vulcan.command.validate",
                 "vulcan.module.install",
                 "vulcan.module.remove",
                 "vulcan.module.uninstall",

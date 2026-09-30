@@ -18,6 +18,9 @@ public sealed record ModuleMeta(
     /// </summary>
     public IReadOnlyList<string> AttachFailures { get; init; } = [];
 
+    /// <summary>宿主给本模块的数据目录（5.9.0，DEC-070）；独立于包槽位，卸载默认保留。</summary>
+    public string DataDirectory { get; init; } = "";
+
     /// <summary>本模块是否真正接上了宿主。</summary>
     public bool Attached => AttachFailures.Count == 0;
 }

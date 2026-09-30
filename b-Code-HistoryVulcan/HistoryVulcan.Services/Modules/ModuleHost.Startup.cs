@@ -209,7 +209,7 @@ public sealed partial class ModuleHost
                 continue;
             }
 
-            AttachModuleContexts(snap, module.Types, module.Owner);
+            AttachModuleContexts(snap, module.Types, module.Owner, module.CommandPrefix);
             MarshalToUi(() =>
             {
                 if (!snap.AttachFailures.ContainsKey(module.Owner))

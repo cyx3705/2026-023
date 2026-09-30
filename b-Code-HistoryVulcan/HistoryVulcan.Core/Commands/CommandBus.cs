@@ -15,7 +15,7 @@ namespace HistoryVulcan.Core.Commands;
 /// 宿主交给模块的那一条在装配完成后封口，这些开关只读，前端经
 /// <see cref="IModuleContext.RegisterFrontend"/> 登记，同一宿主只允许一个。
 /// </remarks>
-public sealed class CommandBus
+public sealed class CommandBus : ICommandBus
 {
     /// <summary>回显类别前缀;控制台按此前缀识别指令行。</summary>
     public const string EchoCategoryPrefix = "cmd:";
@@ -45,7 +45,11 @@ public sealed class CommandBus
         ArgumentNullException.ThrowIfNull(log);
         _registry = registry;
         _log = log;
+        Events = new BusEventHub(log);
     }
+
+    /// <summary>总线事件中枢（5.9.0，DEC-070）。模块经 IModuleContext.Subscribe / Publish 使用。</summary>
+    internal BusEventHub Events { get; }
 
     /// <summary>本总线解析与执行命令所用的注册表。</summary>
     public CommandRegistry Registry => _registry;

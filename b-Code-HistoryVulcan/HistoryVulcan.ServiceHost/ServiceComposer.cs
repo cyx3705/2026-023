@@ -71,6 +71,12 @@ internal static partial class ServiceComposer
     }
 
     public static ServiceComposition Build(string executablePath, Assembly identityAssembly)
+        => Build(executablePath, identityAssembly, probe: null);
+
+    /// <summary>测试装载（<c>--probe</c>）用的运行区与数据根：都在临时目录，不碰正式运行区。</summary>
+    internal sealed record ProbeRoots(string ModulesDirectory, string ModuleDataRoot);
+
+    internal static ServiceComposition Build(string executablePath, Assembly identityAssembly, ProbeRoots? probe)
     {
         AppIdentity.Use(identityAssembly);
         var identity = AppIdentity.Current;
@@ -84,7 +90,12 @@ internal static partial class ServiceComposer
         // 宿主总线交给模块之前封口：确认、界面线程与远端路由只由宿主装配，前端经 RegisterFrontend 登记。
         bus.SealHostWiring();
         var modules = new ModuleHost(
-            new RuntimeModuleDiscoverySource(paths.ModulesDir), log);
+            new RuntimeModuleDiscoverySource(probe?.ModulesDirectory ?? paths.ModulesDir), log)
+        {
+            // 5.9.0（DEC-070）：模块数据目录独立于包槽位，装包、热重载、卸载都不动它。
+            ModuleDataRoot = probe?.ModuleDataRoot ?? Path.Combine(paths.Root, ModuleDataDirectoryName),
+            RunMode = probe != null ? HistoryVulcan.Core.Modules.HostRunMode.Probe : HistoryVulcan.Core.Modules.HostRunMode.Service,
+        };
         modules.Attach(registry, bus);
         RegisterServiceModuleCommands(registry, modules);
         RegisterSettingCommands(registry, settings);
@@ -97,6 +108,7 @@ internal static partial class ServiceComposer
             registry,
             source: "framework:service");
 
+        var hostEvents = new HistoryVulcan.Services.Modules.HostEventPublisher(registry, bus, log, modules);
         var composition = new ServiceComposition
         {
             ServiceName = identity.Name + ".Backend",
@@ -110,7 +122,9 @@ internal static partial class ServiceComposer
             DataDirectory = paths.Root,
             RegisterAutostartOnFirstRun = true,
             Autostart = new WindowsRunAutostartManager(),
+            HostEvents = hostEvents,
         };
+        RegisterHostInfoCommand(registry, composition, executablePath, settings);
 
         // 服务指令（vulcan.svc.* / vulcan.app.*）在这里注册而不是在 Run 里（4.5.0）。
         //
@@ -203,6 +217,50 @@ internal static partial class ServiceComposer
 
     private static string DisplayServiceSettingValue(string key, string value)
         => SensitiveName.IsSensitive(key) ? "(已配置)" : value;
+
+    /// <summary>模块数据目录根的名字：<c>%AppData%\HistoryVulcan\ModuleData\&lt;模块名&gt;</c>（5.9.0，DEC-070）。</summary>
+    internal const string ModuleDataDirectoryName = "ModuleData";
+
+    /// <summary>
+    /// <c>vulcan.host.info</c>（5.9.0，DEC-070）：宿主的版本、运行方式与各个根目录。
+    /// 模块以前按进程名找宿主可执行文件、按固定路径猜 z-Publish、直接读宿主设置文件，现在一律问这一条。
+    /// </summary>
+    private static void RegisterHostInfoCommand(
+        CommandRegistry registry, ServiceComposition composition, string executablePath, ISettingsService settings)
+    {
+        registry.Register(new CommandDescriptor
+        {
+            Name = "vulcan.host.info",
+            Domain = "vulcan",
+            CommandClass = "host",
+            Summary = "宿主版本、运行方式，以及项目库、工作区、模块运行区、模块数据目录与宿主可执行文件的位置",
+            Example = "vulcan.host.info",
+            Readonly = true,
+            Handler = CommandDescriptor.Sync(_ =>
+            {
+                var modules = composition.Modules;
+                var info = new
+                {
+                    version = AppIdentity.Current.Version,
+                    runMode = (modules?.RunMode ?? HistoryVulcan.Core.Modules.HostRunMode.Service).ToString(),
+                    libraryRoot = HistoryVulcan.Services.Development.ProjectLibraryRoot.Resolve(settings),
+                    worktreeRoot = HistoryVulcan.Services.Development.WorktreeCommands.ResolveRoot(settings, null),
+                    modulesRoot = modules?.ModulesDirectory ?? "",
+                    moduleDataRoot = modules?.ModuleDataRoot ?? "",
+                    dataRoot = composition.DataDirectory ?? "",
+                    // 服务与命令行同目录发布；从 Cli 进程问时也报正式服务程序，Mercury 据此拉起宿主。
+                    hostExecutable = Path.Combine(
+                        Path.GetDirectoryName(executablePath) ?? "", AppIdentity.Current.Name + ".exe"),
+                };
+                return CommandResult.Ok(
+                    $"HistoryVulcan {info.version}（{info.runMode}）\n"
+                    + $"项目库: {info.libraryRoot}\n工作区根: {info.worktreeRoot}\n"
+                    + $"模块运行区: {info.modulesRoot}\n模块数据: {info.moduleDataRoot}\n"
+                    + $"宿主数据: {info.dataRoot}\n宿主可执行文件: {info.hostExecutable}",
+                    info);
+            }),
+        }, "framework:service");
+    }
 
     private static void RegisterServiceModuleCommands(
         CommandRegistry registry,
@@ -350,7 +408,7 @@ internal static partial class ServiceComposer
             HiddenReason = "运行包变更只允许认证的本机宿主通道",
             Domain = "vulcan",
             CommandClass = "module",
-            Summary = "卸载模块并从 AppData 运行区删除完整模块包",
+            Summary = "卸载模块并从 AppData 运行区删除完整模块包；数据目录默认保留，purge=true 一并删除",
             Example = "vulcan.module.uninstall name=HistoryJanus",
             Level = CommandLevel.Ask,
             Annotations = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -360,19 +418,31 @@ internal static partial class ServiceComposer
                 ["ui.button.command"] = "vulcan.module.uninstall",
                 ["ui.button.confirm"] = "确认卸载模块并删除其运行包？",
             },
-            Parameters = [new ParameterSpec
-            {
-                Name = "name",
-                Description = "vulcan.module.list 中的模块名",
-                Required = true,
-                Position = 0,
-            }],
+            Parameters =
+            [
+                new ParameterSpec
+                {
+                    Name = "name",
+                    Description = "vulcan.module.list 中的模块名",
+                    Required = true,
+                    Position = 0,
+                },
+                new ParameterSpec
+                {
+                    Name = "purge",
+                    Description = "同时删除该模块的数据目录（ModuleData\\<模块名>）；默认保留",
+                    Type = ParamType.Bool,
+                    Default = "false",
+                    AllowedValues = ["true", "false"],
+                },
+            ],
             Handler = async ctx =>
             {
                 if (!IsLocalModuleMutationSource(ctx.Source))
                     return CommandResult.Fail("模块卸载只允许认证的本机宿主通道。");
                 var target = ctx.RequireString("name");
-                return await Task.Run(() => host.Uninstall(target), ctx.Cancellation)
+                var purge = ctx.GetBool("purge");
+                return await Task.Run(() => host.Uninstall(target, purge), ctx.Cancellation)
                     .ConfigureAwait(false);
             },
         }, "framework:service");
@@ -428,6 +498,8 @@ internal static partial class ServiceComposer
            || source.Equals("手动", StringComparison.OrdinalIgnoreCase)
            || source.StartsWith("脚本:", StringComparison.OrdinalIgnoreCase)
            || source.StartsWith("host:", StringComparison.OrdinalIgnoreCase)
+           || source.StartsWith("module:", StringComparison.OrdinalIgnoreCase)
+           // 5.9.0 前 Diana 用自己的指令名当来源；6.0.0 起来源由宿主盖章，届时删除这条兼容（DEC-070）。
            || source.StartsWith("diana.", StringComparison.OrdinalIgnoreCase)
            || source.Equals("cli:runtime", StringComparison.OrdinalIgnoreCase)
            || source.Equals("cli:local", StringComparison.OrdinalIgnoreCase);

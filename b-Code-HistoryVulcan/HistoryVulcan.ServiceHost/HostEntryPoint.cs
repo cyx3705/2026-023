@@ -29,6 +29,8 @@ internal static class HostEntryPoint
                 return InstallModule(parsed.Value, identityAssembly);
             case HostAction.RunCommand:
                 return CommandLineRunner.Run(parsed.Value, identityAssembly, parsed.Format);
+            case HostAction.Probe:
+                return ModuleProbeRunner.Run(parsed.Value, parsed.ProbeCommand, identityAssembly, parsed.Format);
             case HostAction.RunRuntime:
                 return RuntimeCommandClient.Run(parsed.Value, identityAssembly, parsed.Format, parsed.Approve);
             case HostAction.Help:

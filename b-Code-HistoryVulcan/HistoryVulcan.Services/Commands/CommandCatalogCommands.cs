@@ -36,6 +36,13 @@ public sealed record CommandCatalogRow(
 
     /// <summary>三段式命令名的末段方法名。</summary>
     public string Method { get; init; } = "";
+
+    /// <summary>执行前是否要二次确认（5.9.0，DEC-070）。网关据此决定是否拒绝远端调用，不再直接查宿主注册表；
+    /// 确认文案按参数生成，只在执行时出现。</summary>
+    public bool RequiresConfirmation { get; init; }
+
+    /// <summary>是否接受未声明的参数（5.9.0，DEC-070）。</summary>
+    public bool AllowUnspecifiedParameters { get; init; }
 }
 
 /// <summary>一条指令的单个参数说明。</summary>
@@ -90,7 +97,74 @@ internal static class CommandCatalogCommands
         registry.Register(BuildList(registry), source);
         registry.Register(BuildShow(registry), source);
         registry.Register(BuildDomains(registry), source);
+        registry.Register(BuildValidate(registry), source);
+        registry.Register(BuildSuggest(registry), source);
+        registry.Register(BuildRevision(registry), source);
     }
+
+    // 5.9.0（DEC-070）：以下三条是前端、网关用的目录查询，取代直接调宿主总线与注册表的内部成员。
+    // 隐藏理由写字面值：CommandTaxonomyContractTests 逐行核对隐藏声明。
+
+    private static CommandDescriptor BuildValidate(CommandRegistry registry) => new()
+    {
+        Name = "vulcan.command.validate",
+        HiddenReason = "前端与网关用的目录查询，经总线调用；不对 MCP 暴露。",
+        Domain = "vulcan",
+        CommandClass = "command",
+        Summary = "校验一行指令文本：语法、指令是否存在、参数能否绑定；不执行",
+        Readonly = true,
+        Example = "vulcan.command.validate text=\"vulcan.module.list\"",
+        Parameters = [StringParam("text", "要校验的指令文本", required: true, position: 0)],
+        Handler = CommandDescriptor.Sync(ctx =>
+        {
+            var text = ctx.RequireString("text");
+            var request = CommandRequest.Create(text, registry);
+            string? error = request.SyntaxError;
+            if (error == null && request.Descriptor is not { } descriptor)
+                error = $"未知指令: {request.Name}";
+            else if (error == null)
+                error = CommandArguments.Bind(request.Descriptor!, request.Parsed!, out _);
+            var usage = request.Descriptor is { } known ? CommandBus.FormatUsage(known) : null;
+            return error == null
+                ? CommandResult.Ok("可以执行。", new { ok = true, name = request.Name, usage })
+                : CommandResult.Ok(error, new { ok = false, name = request.Name, usage, error });
+        }),
+    };
+
+    private static CommandDescriptor BuildSuggest(CommandRegistry registry) => new()
+    {
+        Name = "vulcan.command.suggest",
+        HiddenReason = "前端与网关用的目录查询，经总线调用；不对 MCP 暴露。",
+        Domain = "vulcan",
+        CommandClass = "command",
+        Summary = "按名字给出最接近的已登记指令，用于未知指令提示与补全",
+        Readonly = true,
+        Example = "vulcan.command.suggest name=vulcan.modle.list",
+        Parameters = [StringParam("name", "（可能拼错的）指令名", required: true, position: 0)],
+        Handler = CommandDescriptor.Sync(ctx =>
+        {
+            var names = registry.Suggest(ctx.RequireString("name").Trim());
+            return CommandResult.Ok(
+                names.Count == 0 ? "没有相近的指令。" : "相近的指令: " + string.Join("、", names),
+                names);
+        }),
+    };
+
+    private static CommandDescriptor BuildRevision(CommandRegistry registry) => new()
+    {
+        Name = "vulcan.command.revision",
+        HiddenReason = "前端与网关用的目录查询，经总线调用；不对 MCP 暴露。",
+        Domain = "vulcan",
+        CommandClass = "command",
+        Summary = "当前指令目录的版本号；每次登记或注销加一，用来判断要不要重拉目录",
+        Readonly = true,
+        Example = "vulcan.command.revision",
+        Handler = CommandDescriptor.Sync(_ =>
+        {
+            var revision = registry.Revision;
+            return CommandResult.Ok($"目录版本 {revision}", new { revision });
+        }),
+    };
 
     private static CommandDescriptor BuildCliList() => new()
     {
@@ -105,9 +179,8 @@ internal static class CommandCatalogCommands
             var rows = CliExposurePolicy.ExposedCommands.Select(name => new
             {
                 Name = name,
-                Mode = name.StartsWith("portunus.", StringComparison.OrdinalIgnoreCase)
-                    ? "runtime-only"
-                    : "offline",
+                // 白名单只含离线指令；5.9.0 删掉按模块前缀判 runtime-only 的死分支（DEC-070）。
+                Mode = "offline",
                 SideEffect = name.EndsWith("list", StringComparison.OrdinalIgnoreCase)
                     || name.EndsWith("show", StringComparison.OrdinalIgnoreCase)
                     || name.Contains("status", StringComparison.OrdinalIgnoreCase)
@@ -138,9 +211,8 @@ internal static class CommandCatalogCommands
             if (exposed == null)
                 return CommandResult.Fail($"指令 {name} 不在 CLI 白名单中；请使用 vulcan.cli.list。\n"
                     + "运行中的宿主请改用 HistoryVulcan.Cli.exe --runtime。");
-            var mode = exposed.StartsWith("portunus.", StringComparison.OrdinalIgnoreCase)
-                ? "runtime-only" : "offline";
-            var approval = mode == "runtime-only" ? "--approve for actions" : "none";
+            const string mode = "offline";
+            const string approval = "none";
             if (!registry.TryGet(exposed, out var descriptor))
             {
                 return CommandResult.Ok(
@@ -294,6 +366,8 @@ internal static class CommandCatalogCommands
         {
             CommandClass = registry.GetCommandClass(descriptor.Name),
             Method = CommandRegistry.GetMethod(descriptor.Name),
+            RequiresConfirmation = descriptor.ConfirmPrompt != null,
+            AllowUnspecifiedParameters = descriptor.AllowUnspecifiedParameters,
         };
     }
 

@@ -69,6 +69,8 @@ internal static class CommandLineRunner
             {
                 composition.Modules.EnableUiModules = false;
                 composition.Modules.EnableFileWatching = false;
+                // 5.9.0（DEC-070）：模块从 Environment.RunMode 得知这是离线组合，不必再读进程参数。
+                composition.Modules.RunMode = HistoryVulcan.Core.Modules.HostRunMode.OfflineCli;
             }
             if (composition.Development is { } pipeline)
             {

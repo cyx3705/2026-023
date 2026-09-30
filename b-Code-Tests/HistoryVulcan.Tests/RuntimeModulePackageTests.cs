@@ -187,7 +187,7 @@ public sealed class RuntimeModulePackageTests
             // 用旧类型先接一遍，指令因此照样在，而新实例撞重名后 attached=false。
             // 这条路径与 HotInstallOverALoadedModuleAttachesItExactlyOnce 是同一个不变量的两条入口。
             Assert.True(loaded.Attached, string.Join("；", loaded.AttachFailures));
-            Assert.Equal(2, loaded.CommandCount);
+            Assert.Equal(ContextFixtureModuleInfo.CommandCount, loaded.CommandCount);
         }
         finally
         {
@@ -470,12 +470,12 @@ public sealed class RuntimeModulePackageTests
                     loaded.Attached,
                     $"{version} 未接上宿主: {string.Join("；", loaded.AttachFailures)}");
 
-                // 夹具恰好两条：Attach 里显式注册的 context-probe，与反射投影的 Probe。
+                // 夹具指令数见 ContextFixtureModuleInfo.CommandCount（Attach 显式登记的几条加反射投影的 Probe）。
                 // 数错了就说明接入阶段把别的一份指令面也算了进来。
-                Assert.Equal(2, loaded.CommandCount);
+                Assert.Equal(ContextFixtureModuleInfo.CommandCount, loaded.CommandCount);
                 Assert.True(registry.TryGet("contextfixture.context-probe", out _));
                 Assert.True(registry.TryGet("contextfixture.Probe", out _));
-                Assert.Equal(2, registry.All().Count(command =>
+                Assert.Equal(ContextFixtureModuleInfo.CommandCount, registry.All().Count(command =>
                     registry.GetSource(command.Name)
                         .Equals("module:contextfixture", StringComparison.OrdinalIgnoreCase)));
             }
@@ -509,7 +509,7 @@ public sealed class RuntimeModulePackageTests
             var retry = host.InstallPackage(package);
             Assert.True(retry.Success, retry.Message);
             Assert.True(Assert.Single(host.Modules).Attached);
-            Assert.Equal(2, registry.All().Count);
+            Assert.Equal(ContextFixtureModuleInfo.CommandCount, registry.All().Count);
         }
         finally { Environment.SetEnvironmentVariable(ContextAwareFixture.FailureVariable, previous); }
     }
@@ -549,7 +549,7 @@ public sealed class RuntimeModulePackageTests
             var module = Assert.Single(host.Modules);
             Assert.Equal("v1.0.0", module.Version);
             Assert.True(module.Attached);
-            Assert.Equal(2, registry.All().Count);
+            Assert.Equal(ContextFixtureModuleInfo.CommandCount, registry.All().Count);
         }
         finally
         {

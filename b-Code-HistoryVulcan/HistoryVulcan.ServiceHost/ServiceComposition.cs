@@ -21,6 +21,9 @@ internal sealed class ServiceComposition : IDisposable
 
     public ModuleHost? Modules { get; init; }
 
+    /// <summary>宿主事件发布器（5.9.0，DEC-070），随组合一起释放。</summary>
+    internal IDisposable? HostEvents { get; set; }
+
     internal DevelopmentContext? Development { get; init; }
 
     /// <summary>
@@ -54,6 +57,7 @@ internal sealed class ServiceComposition : IDisposable
 
     public void Dispose()
     {
+        HostEvents?.Dispose();
         Modules?.Dispose();
         DisposeApplicationServices?.Invoke();
         if (Log is IDisposable disposable)
