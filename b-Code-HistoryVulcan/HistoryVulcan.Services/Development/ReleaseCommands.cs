@@ -1,6 +1,5 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.Services.Development.Pipeline;
@@ -10,27 +9,10 @@ namespace HistoryVulcan.Services.Development;
 /// <summary>
 /// 发布管线的命令面：在宿主进程内跑构建、合同、门禁并写入候选。
 /// </summary>
-/// <remarks>
-/// 关键约束：运行状态只落在日志文件里，不放在本模块的内存里。
-/// 门禁提交后对模块调用 <c>vulcan.module.install</c> 热重载（与测试、模块页按钮同一接口）。
-/// 热重载会替换目标模块，不替换宿主。运行状态只落日志：start 立即返回 run 标识，
-/// status/log 一律现场读日志目录，目标模块被换掉也不影响追踪。
-///
-/// 管线在宿主进程内执行；日志与纯 ASCII 的 <c>.exit</c> 文件仍落在数据目录，
-/// 便于 status 判断「仍在跑 / 成功 / 失败」，不依赖进程句柄。
-/// </remarks>
+/// <remarks>管线同步完成构建、门禁与提交后返回；status/log 从磁盘读取日志与 .exit 结果。</remarks>
 internal static class ReleaseCommands
 {
     private const string ExitFileSuffix = ".exit";
-    /// <summary>
-    /// 发布引擎所在的项目。随开发路线一同迁入宿主（4.6.0），此前是 2026-019-HistoryDiana。
-    /// </summary>
-    /// <remarks>
-    /// 登记表必须与指令面同仓：指令面在宿主而登记留在模块，等于「宿主活着但发布跑不了」。
-    /// 指令面在宿主而引擎留在模块，等于「宿主活着但发布跑不了」——
-    /// 而这条路线搬进宿主的全部理由就是它不该依赖任何模块。
-    /// </remarks>
-    private const string PipelineProjectName = "2026-023-HistoryVulcan";
 
     public static void Register(CommandRegistry registry, DevelopmentContext host)
     {
@@ -43,7 +25,7 @@ internal static class ReleaseCommands
             HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。本条不对 MCP 暴露。",
             Domain = "vulcan",
             CommandClass = "release",
-            Summary = "列出可发布的模块和宿主及其项目目录",
+            Summary = "列出项目库里自带 publish 描述的模块（现场扫描，宿主不保存）",
             Example = "vulcan.release.modules",
             Readonly = true,
             Handler = CommandDescriptor.Sync(_ => Modules(host.Settings)),
@@ -102,17 +84,21 @@ internal static class ReleaseCommands
                 Text("name", "只接受宿主 HistoryVulcan；模块请用 vulcan.dev.submit / finish", required: true, position: 0),
                 Text("msg", "提交说明", required: true, position: 1),
                 Text("worktree", "AI 工作区目录名或绝对路径；省略则在主树正式促级后提交"),
+                Bool("allowDirty", "允许从有未提交变更的工作树提交", "false"),
+                Bool("dryRun", "只预检，不写文件、不构建、不提交、不热重载", "false"),
             ],
             Handler = async context =>
             {
                 var name = context.RequireString("name");
-                if (!DevPipelineCommands.IsHostProject(host.Settings, name))
+                if (!ReleaseCatalog.IsHost(name))
                     return CommandResult.Fail(DevPipelineCommands.ModuleUseSubmitFinish);
                 return await CycleAsync(
                     host,
-                    name,
+                    ReleaseCatalog.Host(),
                     context.RequireString("msg"),
                     context.GetString("worktree"),
+                    context.GetBool("allowDirty"),
+                    context.GetBool("dryRun"),
                     context.Progress,
                     context.Cancellation).ConfigureAwait(false);
             },
@@ -121,147 +107,62 @@ internal static class ReleaseCommands
 
     private static CommandResult Modules(ISettingsService settings)
     {
-        var registryPath = RegistryPath(settings);
-        if (!File.Exists(registryPath))
-            return CommandResult.Fail($"找不到发布登记表：{registryPath}");
-
-        List<(string Name, string Kind, string Project)> rows = [];
-        try
-        {
-            using var document = JsonDocument.Parse(File.ReadAllText(registryPath));
-            if (document.RootElement.TryGetProperty("modules", out var modules))
-            {
-                foreach (var module in modules.EnumerateArray())
-                {
-                    rows.Add((
-                        module.TryGetProperty("name", out var name) ? name.GetString() ?? "" : "",
-                        module.TryGetProperty("kind", out var kind) ? kind.GetString() ?? "" : "",
-                        module.TryGetProperty("projectDirectory", out var dir) ? dir.GetString() ?? "" : ""));
-                }
-            }
-        }
-        catch (JsonException ex)
-        {
-            return CommandResult.Fail($"发布登记表解析失败：{ex.Message}");
-        }
-
-        rows = rows.Where(row => row.Name.Length > 0).ToList();
-        if (!rows.Any(row => row.Name.Equals("HistoryVulcan", StringComparison.OrdinalIgnoreCase)))
-            rows.Add(("HistoryVulcan", "host", "2026-023-HistoryVulcan"));
-        rows = rows.OrderBy(row => row.Name, StringComparer.Ordinal).ToList();
-        var text = new StringBuilder($"已登记发布目标: {rows.Count} 个");
+        var errors = new List<string>();
+        var rows = ReleaseCatalog.Discover(ProjectLibraryRoot.Resolve(settings), errors);
+        var text = new StringBuilder($"自带 publish 描述的模块: {rows.Count} 个");
         foreach (var row in rows)
-            text.Append($"\n  {row.Name,-18} {row.Kind,-8} {row.Project}");
-        return CommandResult.Ok(text.ToString(), rows.Select(row => new { row.Name, row.Kind, row.Project }).ToList());
+            text.Append($"\n  {row.Name,-18} {row.ProjectDirectory}");
+        foreach (var error in errors)
+            text.Append("\n  描述有误 ").Append(error);
+        return CommandResult.Ok(text.ToString(), rows.Select(row =>
+            new { row.Name, row.Kind, Project = row.ProjectDirectory }).ToList());
     }
 
-    private static CommandResult Start(
-        DevelopmentContext host,
-        string name,
-        bool publish,
-        string? worktree,
-        string? commitRoot = null,
-        string? commitMessage = null)
+    private static CommandResult RunPipeline(
+        DevelopmentContext host, ReleaseTarget target, string projectRoot, bool publish,
+        string commitMessage, out string run)
     {
-        var moduleName = name.Trim();
-        var registryPath = RegistryPath(host.Settings);
-        if (!File.Exists(registryPath))
-            return CommandResult.Fail($"找不到发布登记表：{registryPath}");
-
-        bool known;
-        var moduleProject = moduleName;
-        try
-        {
-            using var document = JsonDocument.Parse(File.ReadAllText(registryPath));
-            known = false;
-            if (document.RootElement.TryGetProperty("modules", out var modules))
-            {
-                foreach (var module in modules.EnumerateArray())
-                {
-                    if (!module.TryGetProperty("name", out var value)
-                        || !string.Equals(value.GetString(), moduleName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    known = true;
-                    if (module.TryGetProperty("projectDirectory", out var dir) && dir.GetString() is { Length: > 0 } project)
-                        moduleProject = project;
-                    break;
-                }
-            }
-        }
-        catch (JsonException ex)
-        {
-            return CommandResult.Fail($"发布登记表解析失败：{ex.Message}");
-        }
-
-        // 宿主是管线里的内置特例，不在登记表里，但确实可发布。
-        if (!known && !moduleName.Equals("HistoryVulcan", StringComparison.OrdinalIgnoreCase))
-            return CommandResult.Fail($"{moduleName} 不在发布登记表里，见 vulcan.release.modules。");
-
-        // 工作区不写正式 Clio z：publish 只从主树来。无 publish 时管线把候选写入该工作树自己的 z-*。
-        string? projectRootOverride = null;
-        if (!string.IsNullOrWhiteSpace(worktree))
-        {
-            if (publish)
-                return CommandResult.Fail("worktree 与 publish=true 互斥：正式促级只能从主树构建。");
-            projectRootOverride = Path.IsPathFullyQualified(worktree.Trim())
-                ? worktree.Trim()
-                : Path.Combine(WorktreeCommands.ResolveRootPublic(host.Settings), moduleProject, worktree.Trim());
-            if (!Directory.Exists(projectRootOverride))
-                return CommandResult.Fail($"工作区不存在：{projectRootOverride}");
-        }
-
         var logDirectory = LogDirectory(host);
         Directory.CreateDirectory(logDirectory);
-        var run = $"{DateTime.Now:yyyyMMdd-HHmmss}-{moduleName}";
+        run = $"{DateTime.Now:yyyyMMdd-HHmmss}-{target.Name}-{Guid.NewGuid():N}";
         var logPath = Path.Combine(logDirectory, run + ".log");
-        File.WriteAllText(logPath, "", new UTF8Encoding(false));
-
-        var projectRoot = projectRootOverride
-            ?? Path.Combine(ProjectLibraryRoot.Resolve(host.Settings), moduleProject);
-        var hostSnapshot = PublishPackages.ResolveHostSnapshot(
-            Path.Combine(ProjectLibraryRoot.Resolve(host.Settings), PipelineProjectName));
         var exit = 1;
-        using (var log = new StreamWriter(logPath, append: true, new UTF8Encoding(false)) { AutoFlush = true })
+        var failure = "";
+        using (var log = new StreamWriter(logPath, append: false, new UTF8Encoding(false)) { AutoFlush = true })
         {
             try
             {
+                var hostSnapshot = PublishPackages.ResolveHostSnapshot(PipelineProjectRoot(host.Settings));
                 ReleaseEngine.Execute(
-                    new ReleaseRequest(
-                        moduleName,
-                        projectRoot,
-                        registryPath,
-                        hostSnapshot,
-                        publish,
-                        RequireCleanSource: false),
-                    log);
-                if (!string.IsNullOrWhiteSpace(commitRoot) && !string.IsNullOrWhiteSpace(commitMessage))
-                    CommitAfterPipeline(commitRoot, commitMessage, log);
+                    new ReleaseRequest(target, projectRoot,
+                        target.Kind == "host" ? FreezePath(host.Settings) : null,
+                        hostSnapshot, publish, RequireCleanSource: false), log);
+                CommitAfterPipeline(projectRoot, commitMessage, log);
                 exit = 0;
             }
             catch (Exception ex)
             {
                 log.WriteLine(ex.ToString());
-                exit = 1;
+                failure = ex.Message;
             }
         }
 
         File.WriteAllText(logPath + ExitFileSuffix, exit.ToString(), Encoding.ASCII);
-        if (exit != 0)
-            return CommandResult.Fail($"发布管线失败。run={run}\n日志: {logPath}");
+        return exit == 0
+            ? CommandResult.Ok($"发布管线完成。run={run}\n日志: {logPath}")
+            : CommandResult.Fail($"发布管线失败：{Brief(failure, FailureLines)}\n完整日志: {logPath}");
+    }
 
-        var mode = publish
-            ? "构建 + 门禁 + 正式促级"
-            : projectRootOverride != null
-                ? "构建 + 门禁 + 写入工作区 z"
-                : "只构建候选并跑门禁";
-        if (!string.IsNullOrWhiteSpace(commitRoot))
-            mode += " + 提交";
-        return CommandResult.Ok(
-            $"已完成 {moduleName} 的发布管线（{mode}），run={run}\n日志: {logPath}",
-            new { Run = run, Module = moduleName, Publish = publish, Log = logPath });
+    /// <summary>失败回执里带的原因行数。原因就在回执里，调用方多数时候不必再去翻日志（5.8.0，REQ-HOST-079）。</summary>
+    private const int FailureLines = 12;
+
+    /// <summary>截到前 <paramref name="lines"/> 行；多出的只报行数。</summary>
+    internal static string Brief(string text, int lines)
+    {
+        var all = text.Replace("\r", "").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        return all.Length <= lines
+            ? string.Join("\n", all)
+            : string.Join("\n", all.Take(lines)) + $"\n…另有 {all.Length - lines} 行，见日志";
     }
 
     private static void CommitAfterPipeline(string commitRoot, string commitMessage, TextWriter log)
@@ -352,17 +253,21 @@ internal static class ReleaseCommands
     }
 
     /// <summary>读日志末尾；允许被子进程同时写入，因此以共享模式打开。</summary>
-    private static List<string> ReadTail(string path, int lines, out int exitCode, out bool finished)
+    internal static List<string> ReadTail(string path, int lines, out int exitCode, out bool finished)
     {
         exitCode = 0;
         finished = false;
-        var all = new List<string>();
+        var tail = new Queue<string>(lines);
         try
         {
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
             using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
             while (reader.ReadLine() is { } line)
-                all.Add(line);
+            {
+                if (tail.Count == lines)
+                    tail.Dequeue();
+                tail.Enqueue(line);
+            }
         }
         catch (IOException)
         {
@@ -382,36 +287,37 @@ internal static class ReleaseCommands
             }
         }
 
-        return all.Count <= lines ? all : all.GetRange(all.Count - lines, lines);
+        return tail.ToList();
     }
 
-    /// <summary>发布登记表在项目里的位置。管线实现已迁入宿主源码，不再调用 PowerShell 引擎脚本。</summary>
-    private const string PipelineDirectory = "b-Code-Eng/pipeline";
+    /// <summary>
+    /// 宿主冻结标签表的位置。它只守宿主自己的冻结标签；模块的发布描述在模块仓的 project.manifest.json（DEC-069）。
+    /// </summary>
+    internal const string FreezeFile = "b-Code-Eng/pipeline/host-freeze.json";
 
     private static string PipelineProjectRoot(ISettingsService settings)
-        => Path.Combine(ProjectLibraryRoot.Resolve(settings), PipelineProjectName);
+        => Path.Combine(ProjectLibraryRoot.Resolve(settings), ReleaseCatalog.HostProjectDirectory);
 
-    private static string RegistryPath(ISettingsService settings)
-        => Path.Combine(PipelineProjectRoot(settings), PipelineDirectory, "module-publish.manifest.json");
+    private static string FreezePath(ISettingsService settings)
+        => Path.Combine(PipelineProjectRoot(settings), FreezeFile);
 
     private static string LogDirectory(DevelopmentContext host)
         => Path.Combine(host.DataDirectory, "release");
 
     internal static async Task<CommandResult> CycleAsync(
         DevelopmentContext host,
-        string name,
+        ReleaseTarget module,
         string message,
         string? worktree,
+        bool allowDirty,
+        bool dryRun,
         IProgress<string>? progress,
         CancellationToken cancellation)
     {
-        var moduleName = name.Trim();
+        var moduleName = module.Name;
         var commitMessage = message.Trim();
         if (commitMessage.Length == 0)
             return CommandResult.Fail("msg 不能为空。");
-
-        if (!TryResolveModule(host.Settings, moduleName, out var module))
-            return CommandResult.Fail($"{moduleName} 不在发布登记表里，见 vulcan.release.modules。");
 
         var mainProject = Path.Combine(ProjectLibraryRoot.Resolve(host.Settings), module.ProjectDirectory);
         var isWorktree = !string.IsNullOrWhiteSpace(worktree);
@@ -430,33 +336,59 @@ internal static class ReleaseCommands
                 return CommandResult.Fail($"项目主树不存在：{repoRoot}");
         }
 
-        var started = Start(
-            host,
-            moduleName,
-            publish: !isWorktree,
-            worktree: isWorktree ? repoRoot : null,
-            commitRoot: repoRoot,
-            commitMessage: commitMessage);
-        if (!started.Success)
-            return started;
+        // 5.7.0（U4）：只裁尾部换行。Capture 的 Trim() 会吃掉首行状态列前的空格，
+        // 清单于是首行写成「M a」、其余写成「 M b」。
+        var status = ToolProcess.CaptureLines(
+            "git", ["status", "--porcelain", "--", $":!{module.FormalDirectory}/**"], repoRoot);
+        if (status.Length > 0 && !allowDirty)
+            return new CommandResult
+            {
+                Success = false,
+                Message = $"工作树不干净，已拒绝提交（退出码 2）。请传 allowDirty=true。\n{status}",
+                Data = new { ExitCode = 2, DirtyFiles = DirtyFiles(status) },
+            };
 
-        var run = ReadRunId(started);
-        if (string.IsNullOrWhiteSpace(run))
-            return CommandResult.Fail("管线已拉起，但没有返回 run 标识。\n" + started.Message);
-
-        progress?.Report($"已拉起 {run}，等待门禁和提交结束…");
-        // Start 在本进程内跑完并写 .exit。随后仍读日志目录确认，避免客户端超时取消热重载。
-        var (finished, exitCode, tail) = await WaitForRunAsync(host, run, progress, CancellationToken.None)
-            .ConfigureAwait(false);
-        if (!finished)
-            return CommandResult.Fail($"cycle 等待结束：{tail}\nrun={run}");
-        if (exitCode != 0)
+        if (dryRun)
         {
-            return CommandResult.Fail(
-                $"cycle 失败（退出码 {exitCode}）。提交未执行或未成功。\nrun={run}\n--- 日志末尾 ---\n{tail}");
+            var stages = new[] { "contract", "build", "test", "candidate", "commit", "runtime-reload" };
+            var candidatePath = Path.Combine(repoRoot, module.FormalDirectory);
+            var files = module.Package?.Files ?? [];
+            var tests = module.Validation.Select(step => step.Description).ToList();
+            var runtimeTarget = module.Kind.Equals("module", StringComparison.OrdinalIgnoreCase)
+                ? "runtime module package (no reload in dry-run)"
+                : "host candidate (restart required; no reload in dry-run)";
+            return CommandResult.Ok(
+                $"dry-run: {moduleName}\n项目: {repoRoot}\n候选: {candidatePath}\n运行时目标: {runtimeTarget}\n"
+                + $"测试: {(tests.Count == 0 ? "无额外模块测试" : string.Join("; ", tests))}\n"
+                + $"文件摘要: {(files.Count == 0 ? "由发布输出决定" : string.Join(", ", files))}\n将执行阶段: {string.Join(", ", stages)}\n"
+                + (status.Length == 0 ? "脏树: 否\n" : $"将提交: {FileSummary(status)}\n")
+                + "不会写日志、候选、运行区、暂存区或触发热重载。",
+                new
+                {
+                    Run = Guid.NewGuid().ToString("N"),
+                    Module = moduleName,
+                    Project = repoRoot,
+                    CandidatePath = candidatePath,
+                    RuntimeTarget = runtimeTarget,
+                    Files = files,
+                    Tests = tests,
+                    Dirty = status.Length > 0,
+                    DirtyFiles = DirtyFiles(status),
+                    AllowDirty = allowDirty,
+                    DryRun = true,
+                    Stages = stages
+                });
         }
 
+        cancellation.ThrowIfCancellationRequested();
+        progress?.Report($"正在运行 {moduleName} 的门禁和提交…");
+        var completed = RunPipeline(host, module, repoRoot, !isWorktree, commitMessage, out var run);
+        if (!completed.Success)
+            return completed;
+
         var text = new StringBuilder($"cycle 完成：{moduleName} 已门禁通过并提交。\n仓库: {repoRoot}\nrun={run}");
+        if (status.Length > 0)
+            text.Append("\n已提交: ").Append(FileSummary(status));
         if (!string.Equals(module.Kind, "module", StringComparison.OrdinalIgnoreCase))
         {
             text.Append(isWorktree
@@ -476,15 +408,10 @@ internal static class ReleaseCommands
         progress?.Report("提交完成，正在调用 Vulcan 热重载当前候选…");
         var reload = await ModulePackageHotReload.InstallCurrentAsync(
             host, repoRoot, moduleName, "host:vulcan.release.cycle", CancellationToken.None).ConfigureAwait(false);
+        // 5.8.0（REQ-HOST-079）：成功只留热装核对结论一行；下一步怎么走由 vulcan.dev.submit 统一给一次。
         text.Append('\n').Append(reload.Success
-            ? reload.Message
+            ? LastLine(reload.Message)
             : "候选已提交，但 Vulcan 热重载未成功（不自动回滚）：" + reload.Message);
-        text.Append("\n测试不通过时，从主树候选或 z-Publish/history 再调同一热重载接口，不会自动恢复。");
-        if (isWorktree)
-        {
-            text.Append("\n可继续在此工作区开发，或 vulcan.worktree.merge 并回主线。");
-            text.Append("\n若对话根已在工作区内（grok 切过根），合并前先迁到宿主主树或该模块 Clio 主树再 merge；合并会删工作区目录。其他 AI 对话不在工作区里，可直接 merge。");
-        }
 
         return reload.Success
             ? CommandResult.Ok(text.ToString(), new
@@ -497,136 +424,93 @@ internal static class ReleaseCommands
             : CommandResult.Fail(text.ToString());
     }
 
-    private static async Task<(bool Finished, int ExitCode, string Tail)> WaitForRunAsync(
-        DevelopmentContext host,
-        string run,
-        IProgress<string>? progress,
-        CancellationToken cancellation)
+    /// <summary>
+    /// 复核 submit 已经写入工作区的不可变模块候选，供 finish 在合并前使用。
+    /// finish 不能再次构建同一版本：submit 在构建后提交源码，第二次构建可能因源修订元数据改变程序集，
+    /// 而不可变快照必须拒绝覆盖。
+    /// </summary>
+    internal static CommandResult VerifySubmittedCandidate(ReleaseTarget target, string repoRoot)
     {
-        var deadline = DateTime.UtcNow.AddMinutes(20);
-        while (true)
-        {
-            cancellation.ThrowIfCancellationRequested();
-            var (logPath, error) = ResolveRun(host, run);
-            if (error != null)
-            {
-                if (error.Contains("找不到运行记录", StringComparison.Ordinal)
-                    && DateTime.UtcNow < deadline)
-                {
-                    await Task.Delay(250, cancellation).ConfigureAwait(false);
-                    continue;
-                }
-
-                return (false, -1, error);
-            }
-
-            var tail = ReadTail(logPath!, 40, out var exitCode, out var finished);
-            if (finished)
-                return (true, exitCode, string.Join('\n', tail));
-            if (DateTime.UtcNow >= deadline)
-                return (false, -1, "等待超时（20 分钟）。管线可能仍在跑，用 vulcan.release.status 查看。\n" + string.Join('\n', tail));
-
-            progress?.Report($"[{run}] 仍在运行…");
-            await Task.Delay(2000, cancellation).ConfigureAwait(false);
-        }
-    }
-
-    private static string? ReadRunId(CommandResult started)
-    {
-        var run = started.Data?.GetType().GetProperty("Run")?.GetValue(started.Data) as string;
-        if (!string.IsNullOrWhiteSpace(run))
-            return run;
-        var match = Regex.Match(started.Message, @"run=([A-Za-z0-9._-]+)");
-        return match.Success ? match.Groups[1].Value : null;
-    }
-
-    internal static bool TryResolveModule(ISettingsService settings, string name, out ReleaseModule module)
-    {
-        module = default!;
-        if (name.Equals("HistoryVulcan", StringComparison.OrdinalIgnoreCase))
-        {
-            module = new ReleaseModule("HistoryVulcan", "host", "2026-023-HistoryVulcan", "z-Publish");
-            return true;
-        }
-
-        var registryPath = RegistryPath(settings);
-        if (!File.Exists(registryPath))
-            return false;
+        var version = ReleaseCatalog.ReadVersion(repoRoot, target);
+        var candidate = Path.Combine(repoRoot, target.CandidateDirectory, $"{target.Name}-v{version}");
+        if (!Directory.Exists(candidate))
+            return CommandResult.Fail($"未找到已审核候选：{candidate}。请先执行 vulcan.dev.submit。");
 
         try
         {
-            using var document = JsonDocument.Parse(File.ReadAllText(registryPath));
-            if (!document.RootElement.TryGetProperty("modules", out var modules))
-                return false;
-            foreach (var entry in modules.EnumerateArray())
-            {
-                if (!entry.TryGetProperty("name", out var value)
-                    || !string.Equals(value.GetString(), name, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                var project = entry.TryGetProperty("projectDirectory", out var dir) ? dir.GetString() ?? "" : "";
-                var formal = entry.TryGetProperty("formalDirectory", out var formalDir) ? formalDir.GetString() ?? "" : "";
-                var kind = entry.TryGetProperty("kind", out var kindEl) ? kindEl.GetString() ?? "module" : "module";
-                if (project.Length == 0 || formal.Length == 0)
-                    return false;
-                module = new ReleaseModule(name, kind, project, formal);
-                return true;
-            }
+            ProjectContract.Validate(repoRoot, target.Kind, instantiation: true, freezePath: null);
+            ModuleSnapshotBuilder.AssertSnapshot(candidate, target, version);
+            return CommandResult.Ok(
+                $"已复核 submit 候选：{target.Name} {version}\n候选: {candidate}",
+                new { Module = target.Name, Version = version, Candidate = candidate });
         }
-        catch (JsonException)
+        catch (Exception ex)
         {
-            return false;
+            return CommandResult.Fail($"已审核候选不可用于 finish：{ex.Message}");
         }
-
-        return false;
     }
 
-    internal static bool TryResolveModuleByProject(ISettingsService settings, string projectDirectory, out ReleaseModule module)
+    private static IReadOnlyList<string> DirtyFiles(string status)
+        => status.Split(['\r', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+    /// <summary>
+    /// 工作区优先、主树兜底地读模块的 publish 描述：描述跟着模块代码走，本轮改了就用本轮的；
+    /// 5.8.0 之前开出的工作区里还没有这一节，才退回主树。
+    /// </summary>
+    internal static bool TryLoadModule(
+        ISettingsService settings, string projectDirectory, string? worktreePath,
+        out ReleaseTarget module, out string error)
     {
         module = default!;
-        if (projectDirectory.Equals("2026-023-HistoryVulcan", StringComparison.OrdinalIgnoreCase))
-        {
-            module = new ReleaseModule("HistoryVulcan", "host", "2026-023-HistoryVulcan", "z-Publish");
-            return true;
-        }
-
-        var registryPath = RegistryPath(settings);
-        if (!File.Exists(registryPath))
-            return false;
-
+        error = "";
+        var mainTree = Path.Combine(ProjectLibraryRoot.Resolve(settings), projectDirectory);
         try
         {
-            using var document = JsonDocument.Parse(File.ReadAllText(registryPath));
-            if (!document.RootElement.TryGetProperty("modules", out var modules))
-                return false;
-            foreach (var entry in modules.EnumerateArray())
+            var loaded = (worktreePath != null ? ReleaseCatalog.TryLoadModule(worktreePath, projectDirectory) : null)
+                         ?? ReleaseCatalog.TryLoadModule(mainTree, projectDirectory);
+            if (loaded == null)
             {
-                if (!entry.TryGetProperty("projectDirectory", out var dir)
-                    || !string.Equals(dir.GetString(), projectDirectory, StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                var moduleName = entry.TryGetProperty("name", out var nameEl) ? nameEl.GetString() ?? "" : "";
-                var formal = entry.TryGetProperty("formalDirectory", out var formalDir) ? formalDir.GetString() ?? "" : "";
-                var kind = entry.TryGetProperty("kind", out var kindEl) ? kindEl.GetString() ?? "module" : "module";
-                if (moduleName.Length == 0 || formal.Length == 0)
-                    return false;
-                module = new ReleaseModule(moduleName, kind, projectDirectory, formal);
-                return true;
+                error = $"项目 {projectDirectory} 的 project.manifest.json 没有 publish 节。"
+                        + "模块自带发布描述，写法见模块开发手册「发布描述」。";
+                return false;
             }
+
+            module = loaded;
+            return true;
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException or IOException)
         {
+            error = $"项目 {projectDirectory} 的发布描述读不出来：{ex.Message}";
             return false;
         }
-
-        return false;
     }
 
-    internal sealed record ReleaseModule(string Name, string Kind, string ProjectDirectory, string FormalDirectory);
+    /// <summary>按模块名在项目库里找：只在工作区反查不到项目、又写了 name= 时用。</summary>
+    internal static bool TryFindModuleByName(ISettingsService settings, string name, out ReleaseTarget module)
+    {
+        module = ReleaseCatalog.Discover(ProjectLibraryRoot.Resolve(settings))
+            .FirstOrDefault(target => target.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase))!;
+        return module != null;
+    }
+
+    /// <summary>
+    /// 脏文件只报个数和前几个路径（5.8.0，REQ-HOST-079）：dev 工作区里的改动全是本轮要提交的，
+    /// 整份 git status 抄进回执对调用方没有信息量。
+    /// </summary>
+    internal static string FileSummary(string status, int shown = 5)
+    {
+        var files = status.Split('\n')
+            .Select(line => line.TrimEnd('\r'))
+            .Where(line => line.Length > 3)
+            .Select(line => line[3..].Trim())
+            .ToList();
+        var head = string.Join("、", files.Take(shown));
+        return files.Count <= shown ? $"{files.Count} 个文件（{head}）" : $"{files.Count} 个文件（{head} 等）";
+    }
+
+    private static string LastLine(string message)
+        => message.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .LastOrDefault() ?? "";
 
     private static ParameterSpec Text(string name, string description, bool required = false, int? position = null)
         => new() { Name = name, Description = description, Required = required, Position = position };

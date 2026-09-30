@@ -5,7 +5,7 @@ namespace HistoryVulcan.Services.Development.Pipeline;
 
 internal static class ProjectContract
 {
-    public static void Validate(string projectRoot, string kind, bool instantiation, string? registryPath)
+    public static void Validate(string projectRoot, string kind, bool instantiation, string? freezePath)
     {
         var errors = new List<string>();
         var manifestPath = Path.Combine(projectRoot, "project.manifest.json");
@@ -37,9 +37,10 @@ internal static class ProjectContract
         CheckPaths(projectRoot, manifest, errors);
         CheckDocuments(projectRoot, manifest, errors);
         CheckMarkdownLinks(projectRoot, manifest, contract, errors);
+        CheckRequirements(projectRoot, manifest, contract, errors);
         CheckInstantiation(projectRoot, manifest, instantiation, errors);
         if (kind.Equals("host", StringComparison.OrdinalIgnoreCase))
-            CheckHost(projectRoot, manifest, registryPath, errors);
+            CheckHost(projectRoot, manifest, freezePath, errors);
 
         if (errors.Count > 0)
             throw new InvalidOperationException(
@@ -230,6 +231,53 @@ internal static class ProjectContract
         }
     }
 
+    internal static void CheckRequirements(string root, JsonElement manifest, JsonElement contract, List<string> errors)
+    {
+        var testRoot = ReadString(contract, "requirementTestRoot");
+        if (string.IsNullOrWhiteSpace(testRoot))
+            return;
+        var tests = ResolveInside(root, testRoot, "contract.requirementTestRoot", errors);
+        if (tests == null || !manifest.TryGetProperty("documents", out var documents))
+            return;
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        var heading = new Regex(@"(?m)^#{2,6}\s+(?<id>REQ-[A-Z0-9-]+)\b[^\r\n]*");
+        var acceptance = new Regex(@"验收：\s*`(?<type>[A-Za-z0-9_]+)\.(?<method>[A-Za-z0-9_]+)`");
+        foreach (var document in documents.EnumerateObject())
+        {
+            var relative = document.Value.GetString() ?? "";
+            if (!relative.Replace('\\', '/').StartsWith("b-Office/current/", StringComparison.Ordinal))
+                continue;
+            var path = ResolveInside(root, relative, "现行需求文档", errors);
+            if (path == null || !File.Exists(path))
+                continue;
+            var content = File.ReadAllText(path);
+            var headings = heading.Matches(content);
+            for (var i = 0; i < headings.Count; i++)
+            {
+                var item = headings[i];
+                var id = item.Groups["id"].Value;
+                if (!ids.Add(id))
+                    errors.Add($"重复需求编号：{id} ({relative})");
+                var end = i + 1 < headings.Count ? headings[i + 1].Index : content.Length;
+                var references = acceptance.Matches(content[item.Index..end]);
+                if (references.Count == 0)
+                    errors.Add($"需求缺少本仓验收测试：{id}");
+                foreach (Match reference in references)
+                {
+                    var type = reference.Groups["type"].Value;
+                    var method = reference.Groups["method"].Value;
+                    var source = Path.Combine(tests, type + ".cs");
+                    var signature = @"\[(?:Fact|Theory)(?:\([^\]]*\))?\][\s\S]*?public\s+(?:async\s+)?(?:void|Task)\s+"
+                        + Regex.Escape(method) + @"\s*\(";
+                    if (!File.Exists(source) || !Regex.IsMatch(File.ReadAllText(source), signature))
+                        errors.Add($"验收测试不存在：{id} -> {type}.{method}");
+                }
+            }
+        }
+        if (ids.Count == 0)
+            errors.Add("未找到现行需求编号。");
+    }
+
     private static void CheckInstantiation(string root, JsonElement manifest, bool instantiation, List<string> errors)
     {
         var isTemplate = true;
@@ -277,7 +325,7 @@ internal static class ProjectContract
         }
     }
 
-    private static void CheckHost(string root, JsonElement manifest, string? registryPath, List<string> errors)
+    private static void CheckHost(string root, JsonElement manifest, string? freezePath, List<string> errors)
     {
         if (!manifest.TryGetProperty("contract", out var contract)
             || !contract.TryGetProperty("host", out var host))
@@ -294,19 +342,19 @@ internal static class ProjectContract
                 errors.Add($"项目身份必须是 {expectedId}/{expectedName}。");
         }
 
-        if (manifest.TryGetProperty("project", out var projectElement) && !string.IsNullOrWhiteSpace(registryPath))
+        if (manifest.TryGetProperty("project", out var projectElement) && !string.IsNullOrWhiteSpace(freezePath))
         {
             var projectName = ReadString(projectElement, "name");
             var actualFreeze = ReadString(projectElement, "freezeTag");
-            if (File.Exists(registryPath))
+            if (File.Exists(freezePath))
             {
-                using var registry = JsonDocument.Parse(File.ReadAllText(registryPath));
-                if (registry.RootElement.TryGetProperty("hosts", out var hosts))
+                using var freeze = JsonDocument.Parse(File.ReadAllText(freezePath));
+                if (freeze.RootElement.TryGetProperty("hosts", out var hosts))
                 {
                     var match = hosts.EnumerateArray()
                         .FirstOrDefault(item => ReadString(item, "name") == projectName);
                     if (match.ValueKind == JsonValueKind.Undefined)
-                        errors.Add($"发布登记表没有 {projectName} 的宿主条目。");
+                        errors.Add($"冻结标签表没有 {projectName} 的宿主条目。");
                     else
                     {
                         var expectedFreeze = ReadString(match, "freezeTag");
@@ -317,7 +365,7 @@ internal static class ProjectContract
             }
             else
             {
-                errors.Add($"找不到发布登记表，无法核对冻结标签：{registryPath}");
+                errors.Add($"找不到冻结标签表，无法核对冻结标签：{freezePath}");
             }
         }
 
