@@ -110,6 +110,13 @@
         <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Method">
             <summary>三段式命令名的末段方法名。</summary>
         </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.RequiresConfirmation">
+            <summary>执行前是否要二次确认（5.9.0，DEC-070）。网关据此决定是否拒绝远端调用，不再直接查宿主注册表；
+            确认文案按参数生成，只在执行时出现。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.AllowUnspecifiedParameters">
+            <summary>是否接受未声明的参数（5.9.0，DEC-070）。</summary>
+        </member>
         <member name="T:HistoryVulcan.Services.Commands.CommandParameterInfo">
             <summary>一条指令的单个参数说明。</summary>
             <param name="Name">参数名。</param>
@@ -610,6 +617,26 @@
         <member name="M:HistoryVulcan.Services.Development.WorktreeCommands.LastLine(System.String)">
             <summary>多行回执的最后一行——热装回执的附着核对结论就在那里。</summary>
         </member>
+        <member name="T:HistoryVulcan.Services.Modules.HostEventPublisher">
+            <summary>
+            宿主发布的四个总线主题（5.9.0，DEC-070）。消费方以前直接挂 C# 事件
+            （<c>Registry.Changed</c>、<c>Bus.Executed</c>、<c>IShellLog.EntryAdded</c>），现在一律订阅主题。
+            </summary>
+            <remarks>
+            <para>
+            <c>vulcan.catalog.changed</c> 与 <c>vulcan.module.changed</c> 去抖后发：一轮装载会登记上百条指令，
+            逐条通知只会让订阅方重拉上百次目录。模块清单按「名字 + 版本 + 是否接上 + 指令数」比对，
+            于是整轮重载、单包安装、卸载、移除都经同一条路径通知，不必在每条装卸路径上各补一次。
+            </para>
+            <para>
+            <c>vulcan.command.executed</c> 只带指令名、来源、成败与一行提要，不带指令全文与 Data：
+            全文可能含密钥参数（例如 <c>apollo.key.set</c>），Data 可能很大。
+            </para>
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.HostEventPublisher.Flush">
+            <summary>立即比对并发布（去抖到点时调用；测试也可直接调用）。</summary>
+        </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleDirectoryWatcher">
              <summary>
              模块目录的变更侦测与重载防抖(MD-01)。
@@ -696,6 +723,18 @@
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.UiContext">
             <summary>Marshals registry mutations to the consumer thread; null executes inline.</summary>
         </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.RunMode">
+            <summary>交给模块的运行方式（5.9.0，DEC-070）。组合根按入口设置。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.ModuleDataRoot">
+            <summary>
+            模块数据目录的根（5.9.0，DEC-070）：每个模块得到 <c>&lt;根&gt;/&lt;模块名&gt;</c>，独立于包槽位。
+            未设置（模块 Smoke 直接构造的宿主）时落在临时目录，不碰正式运行区。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ReleaseModuleHooks(System.String)">
+            <summary>模块被撤下时一并撤掉它登记的前端与事件订阅。</summary>
+        </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.EnableUiModules">
             <summary>Whether modules marked as UI modules may be initialized.</summary>
         </member>
@@ -780,7 +819,7 @@
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.RemovePackage(System.String)">
             <summary>Atomically removes a named manifest package from the runtime module directory.</summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Uninstall(System.String)">
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.Uninstall(System.String,System.Boolean)">
             <summary>
             Uninstalls a module package from the fixed AppData runtime directory.
             This is the persistent counterpart to <see cref="M:HistoryVulcan.Services.Modules.ModuleHost.Unload(System.String)"/>.
@@ -907,8 +946,17 @@
              因为「装上了没有」这句话在接上之前还不成立。
              </summary>
         </member>
-        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.ModuleContext.Log">
-            <summary>总线写回显、进度与结果的那一份日志（5.5.0，REQ-HOST-004）。</summary>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleHost.ModuleEnvironment">
+            <summary>
+            宿主给模块的运行环境（5.9.0，DEC-070）。数据目录在第一次取用时创建：
+            路径归宿主，内容归模块；装包、热重载、卸载都不动它。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ModuleEnvironment.#ctor(System.String,System.String,HistoryVulcan.Core.Modules.HostRunMode,System.String)">
+            <summary>
+            宿主给模块的运行环境（5.9.0，DEC-070）。数据目录在第一次取用时创建：
+            路径归宿主，内容归模块；装包、热重载、卸载都不动它。
+            </summary>
         </member>
         <member name="F:HistoryVulcan.Services.Modules.ModuleHost.ReadyHookSuffix">
             <summary>模块可选声明的就绪钩子后缀：<c>&lt;域&gt;.host.ready</c>。</summary>
@@ -1015,6 +1063,9 @@
             <summary>
             上下文注入失败的原因；非空表示本模块**没有接上宿主**，它的指令一条都不会到位。
             </summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.DataDirectory">
+            <summary>宿主给本模块的数据目录（5.9.0，DEC-070）；独立于包槽位，卸载默认保留。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.Attached">
             <summary>本模块是否真正接上了宿主。</summary>

@@ -1,13 +1,13 @@
-﻿using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
-using HistoryVulcan.Core.Modules;
 using HistoryVulcan.Core.Storage;
 using HistoryVulcan.Services.Modules;
+using HistoryVulcan.Services.Development;
 
 namespace HistoryVulcan.ServiceHost;
 
 /// <summary>服务进程的通用组合根；框架不包含任何派生应用领域对象。</summary>
-public sealed class ServiceComposition : IDisposable
+internal sealed class ServiceComposition : IDisposable
 {
     public required string ServiceName { get; init; }
 
@@ -21,17 +21,19 @@ public sealed class ServiceComposition : IDisposable
 
     public ModuleHost? Modules { get; init; }
 
+    /// <summary>宿主事件发布器（5.9.0，DEC-070），随组合一起释放。</summary>
+    internal IDisposable? HostEvents { get; set; }
+
+    internal DevelopmentContext? Development { get; init; }
 
     /// <summary>
     /// 应用数据根，脚本等相对路径以它为基准。
     ///
     /// 必须是 <c>%AppData%\HistoryVulcan</c> 本身而不是其下的 <c>service</c> 子目录：
-    /// <c>vulcan.command.run</c> 从前端搬到服务侧（REQ-A6）时，用户已有脚本的相对路径
+    /// <c>vulcan.command.run</c> 从前端搬到服务侧时，用户已有脚本的相对路径
     /// 解析基准不能改变，否则所有相对路径脚本会在升级后集体找不到文件。
     /// </summary>
     public string? DataDirectory { get; init; }
-
-    public IReadOnlyList<IDeferredStartupWork> DeferredWork { get; init; } = [];
 
     public bool RegisterAutostartOnFirstRun { get; init; }
 
@@ -55,6 +57,7 @@ public sealed class ServiceComposition : IDisposable
 
     public void Dispose()
     {
+        HostEvents?.Dispose();
         Modules?.Dispose();
         DisposeApplicationServices?.Invoke();
         if (Log is IDisposable disposable)

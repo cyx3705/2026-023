@@ -23,7 +23,6 @@ public sealed class CommandLineEntryTests
     [Theory]
     [InlineData("--instal-module", "pkg")]      // 少一个 l
     [InlineData("--Cli")]                        // 大小写对，但缺指令文本
-    [InlineData("--help")]
     [InlineData("worktree", "create")]           // 误当成子命令
     public void UnrecognizedArgumentsNeverFallThroughToStartingTheService(params string[] args)
     {
@@ -77,6 +76,40 @@ public sealed class CommandLineEntryTests
 
         Assert.Equal(HostAction.RunCommand, parsed.Action);
         Assert.Equal("vulcan.module.install path=D:\\pkg", parsed.Value);
+    }
+
+    [Fact]
+    public void HelpVersionRuntimeAndJsonFormatAreParsedBeforeAnyServiceAction()
+    {
+        Assert.Equal(HostAction.Help, HostArgumentParser.Parse(["--help"]).Action);
+        Assert.Equal(HostAction.Version, HostArgumentParser.Parse(["--version"]).Action);
+
+        var runtime = HostArgumentParser.Parse(
+            ["--runtime", "vulcan.module.reload", "--approve", "--format", "json"]);
+        Assert.Equal(HostAction.RunRuntime, runtime.Action);
+        Assert.Equal("vulcan.module.reload", runtime.Value);
+        Assert.True(runtime.Approve);
+        Assert.Equal(HostOutputFormat.Json, runtime.Format);
+    }
+
+    [Fact]
+    public void InvalidFormatIsRejectedBeforeAHostCanStart()
+    {
+        var parsed = HostArgumentParser.Parse(["--cli", "vulcan.module.list", "--format", "yaml"]);
+        Assert.Equal(HostAction.Error, parsed.Action);
+        Assert.Contains("format", parsed.Error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void JsonFormatIsRetainedForUsageErrorsAndMetaCommandsRejectUnknownArguments()
+    {
+        var missing = HostArgumentParser.Parse(["--runtime", "--format", "json"]);
+        Assert.Equal(HostAction.Error, missing.Action);
+        Assert.Equal(HostOutputFormat.Json, missing.Format);
+
+        var unknown = HostArgumentParser.Parse(["--help", "unexpected", "--format", "json"]);
+        Assert.Equal(HostAction.Error, unknown.Action);
+        Assert.Equal(HostOutputFormat.Json, unknown.Format);
     }
 
     /// <summary>
@@ -160,13 +193,18 @@ public sealed class CommandLineEntryTests
         Assert.Equal(
             new[]
             {
+                "vulcan.cli.list",
+                "vulcan.cli.show",
                 "vulcan.command.domains",
                 "vulcan.command.list",
                 "vulcan.command.show",
+                "vulcan.host.info",
                 "vulcan.module.install",
                 "vulcan.module.list",
+                "vulcan.module.ready",
                 "vulcan.module.reload",
                 "vulcan.module.remove",
+                "vulcan.module.uninstall",
                 "vulcan.module.unload",
                 "vulcan.dev.start",
                 "vulcan.dev.submit",
@@ -178,5 +216,44 @@ public sealed class CommandLineEntryTests
                 "vulcan.worktree.root",
             }.Order(StringComparer.OrdinalIgnoreCase),
             CliExposurePolicy.ExposedCommands.Order(StringComparer.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void RuntimeWhitelistIncludesModuleInstallAndCliSourcesAreLocal()
+    {
+        var pipe = File.ReadAllText(Path.Combine(
+            RepositoryPaths.Root(),
+            "b-Code-HistoryVulcan",
+            "HistoryVulcan.ServiceHost",
+            "RuntimePipeServer.cs"));
+        Assert.Contains("\"vulcan.module.install\"", pipe, StringComparison.Ordinal);
+
+        Assert.True(ServiceComposer.IsLocalModuleMutationSource("cli:runtime"));
+        Assert.True(ServiceComposer.IsLocalModuleMutationSource("cli:local"));
+        Assert.True(ServiceComposer.IsLocalModuleMutationSource("UI"));
+        Assert.False(ServiceComposer.IsLocalModuleMutationSource("mcp:agent"));
+    }
+
+    [Fact]
+    public void JsonEnvelopeCarriesCommandDataForRuntimeList()
+    {
+        var envelope = new CliResultEnvelope(
+            "run",
+            true,
+            0,
+            "runtime-host",
+            null,
+            null,
+            new { hostVersion = "5.1.2", moduleInstanceIds = new[] { "abc" } },
+            null,
+            [],
+            new[] { new { moduleName = "HistoryJanus", version = "5.4.8", instanceId = "abc", commandCount = 41 } });
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            envelope,
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+        Assert.Contains("\"data\"", json, StringComparison.Ordinal);
+        Assert.Contains("HistoryJanus", json, StringComparison.Ordinal);
+        Assert.Contains("5.4.8", json, StringComparison.Ordinal);
+        Assert.Contains("commandCount", json, StringComparison.Ordinal);
     }
 }

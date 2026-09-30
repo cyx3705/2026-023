@@ -20,7 +20,7 @@ namespace HistoryVulcan.Core.Commands;
 /// 拿本名单与真实注册表对账，缺一条就整体报错，改名后第一次用 <c>--cli</c> 就会炸出来，
 /// 而不是等到某天需要救火时才发现那条恢复指令不见了。
 /// </remarks>
-public static class CliExposurePolicy
+internal static class CliExposurePolicy
 {
     /// <summary>
     /// 命令行可执行的全部指令。
@@ -34,6 +34,13 @@ public static class CliExposurePolicy
     /// </remarks>
     public static IReadOnlyList<string> ExposedCommands { get; } =
     [
+        // CLI 自发现：只描述这张名单，不绕过名单执行其它总线指令
+        "vulcan.cli.list",
+        "vulcan.cli.show",
+
+        // 宿主自报版本、运行方式与各个根目录（5.9.0，DEC-070）：脚本与模块测试不再按固定路径猜
+        "vulcan.host.info",
+
         // 查目录：动手之前先看得见现状
         "vulcan.command.domains",
         "vulcan.command.list",
@@ -42,8 +49,12 @@ public static class CliExposurePolicy
         // 换包与装载：恢复路径本身
         "vulcan.module.install",
         "vulcan.module.list",
+        // 装载是否已经完整。5.1.3 加了这条查询却漏了本名单，于是只有 GUI 控制台和 MCP
+        // 问得到——而「模块没装齐」恰恰是 GUI 可能起不来、MCP 可能没装载的那种时刻。
+        "vulcan.module.ready",
         "vulcan.module.reload",
         "vulcan.module.remove",
+        "vulcan.module.uninstall",
         "vulcan.module.unload",
 
         // 模块开发三步：只走 --cli，不配 MCP
@@ -90,6 +101,6 @@ public static class CliExposurePolicy
     /// </remarks>
     public static string RefusalReason(string commandName)
         => $"指令 {commandName} 不在命令行面上。"
-           + $"命令行只开放开发管线与模块恢复共 {ExposedCommands.Count} 条，"
-           + "见 CliExposurePolicy.ExposedCommands。";
+           + $"命令行只开放开发管线、模块恢复和 CLI 自发现共 {ExposedCommands.Count} 条，"
+           + "见 CliExposurePolicy.ExposedCommands；请使用 --help、vulcan.cli.list，或运行宿主时使用 HistoryVulcan.Cli.exe --runtime。";
 }
