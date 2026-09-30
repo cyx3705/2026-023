@@ -24,11 +24,11 @@ internal static class MsBuildOutputResolver
             1 when string.IsNullOrWhiteSpace(configured) => frameworks[0],
             1 when configured!.Equals(frameworks[0], StringComparison.OrdinalIgnoreCase) => frameworks[0],
             1 => throw new InvalidOperationException(
-                $"发布 TFM 不一致：项目声明={frameworks[0]}；登记声明={configured}；实际输出=未查询。"),
+                $"发布 TFM 不一致：项目声明={frameworks[0]}；描述声明={configured}；实际输出=未查询。"),
             _ when string.IsNullOrWhiteSpace(configured) => throw new InvalidOperationException(
-                $"项目声明多个 TFM：{string.Join(", ", frameworks)}；登记表必须声明 publishTargetFramework。"),
+                $"项目声明多个 TFM：{string.Join(", ", frameworks)}；publish 描述必须声明 publishTargetFramework。"),
             _ when !frameworks.Contains(configured!, StringComparer.OrdinalIgnoreCase) => throw new InvalidOperationException(
-                $"发布 TFM 不一致：项目声明={string.Join(", ", frameworks)}；登记声明={configured}；实际输出=未查询。"),
+                $"发布 TFM 不一致：项目声明={string.Join(", ", frameworks)}；描述声明={configured}；实际输出=未查询。"),
             _ => configured!,
         };
 
@@ -39,7 +39,7 @@ internal static class MsBuildOutputResolver
         var targetDir = output.GetValueOrDefault("TargetDir");
         if (string.IsNullOrWhiteSpace(targetDir))
             throw new InvalidOperationException(
-                $"无法查询实际输出目录：项目声明={string.Join(", ", frameworks)}；登记声明={configured ?? "<自动>"}；实际输出=<空>。");
+                $"无法查询实际输出目录：项目声明={string.Join(", ", frameworks)}；描述声明={configured ?? "<自动>"}；实际输出=<空>。");
 
         log.WriteLine($"发布 TFM 预检通过：项目={string.Join(",", frameworks)}；选择={selected}；输出={targetDir}");
         return (selected, Path.GetFullPath(targetDir));

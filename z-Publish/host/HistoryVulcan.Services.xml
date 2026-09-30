@@ -299,12 +299,15 @@
              内部仍调用 <see cref="T:HistoryVulcan.Services.Development.WorktreeCommands"/> 与 <see cref="T:HistoryVulcan.Services.Development.ReleaseCommands"/>。
              HistoryVulcan 自身不走这三条，宿主打包用 <c>--cli vulcan.release.cycle</c>。
             
-             5.7.0 起 submit / finish 只需要 <c>worktree=</c>：模块由工作区所在项目反查发布登记表，
+             5.7.0 起 submit / finish 只需要 <c>worktree=</c>：模块由工作区所在项目的 project.manifest.json 读出（5.8.0 起不再查宿主登记表），
              提交说明缺省取工作区名里的 slug（REQ-HOST-072）。
              </remarks>
         </member>
         <member name="F:HistoryVulcan.Services.Development.DevPipelineCommands.CliExe">
             <summary>CLI 可执行文件名，回执里给出可直接复制的命令时用。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.DevPipelineCommands.IsHostTarget(System.String)">
+            <summary>宿主只认识它自己（5.8.0，DEC-069）：不再去模块登记表里查 kind。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Development.DevPipelineCommands.MovesConversationRoot(System.String)">
             <summary>
@@ -395,14 +398,40 @@
              冻结是把 Unshipped 并进 Shipped，带着这些条目冻结等于封存一本乱账。
              </summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Development.Pipeline.ReleaseCatalog.RequireHost(System.String,System.String)">
+        <member name="T:HistoryVulcan.Services.Development.Pipeline.ReleaseCatalog">
              <summary>
-             Resolves the host entry without parsing module entries.
-            
-             The module list is intentionally extensible data for the development and module
-             release pipeline. A malformed or newly added module entry must not prevent a host
-             candidate from being built or its freeze tag from being checked.
+             发布目标的来源。
              </summary>
+             <remarks>
+             5.8.0（DEC-069）起宿主不再持有模块登记表：模块的发布描述写在<strong>模块仓自己的</strong>
+             <c>project.manifest.json</c> 的 <c>publish</c> 节里，模块名取同一文件的 <c>project.name</c>。
+             新建或修改模块不需要碰宿主仓的任何文件；宿主这里只认识它自己。
+            
+             宿主冻结标签的期望值仍放在宿主仓 <c>b-Code-Eng/pipeline/host-freeze.json</c>——那是宿主自己的门，
+             与模块无关。
+             </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.Pipeline.ReleaseCatalog.IsHost(System.String)">
+            <summary>名字或项目目录是不是宿主自己。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.Pipeline.ReleaseCatalog.TryLoadModule(System.String,System.String)">
+            <summary>
+            读项目根下 <c>project.manifest.json</c> 的 <c>publish</c> 节。没有这一节返回 null；有但写坏了抛出。
+            </summary>
+            <param name="projectRoot">主树或工作区的根目录。</param>
+            <param name="projectDirectory">主树在项目库里的目录名（工作区与主树共用）。</param>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.Pipeline.ReleaseCatalog.Discover(System.String,System.Collections.Generic.List{System.String})">
+            <summary>
+            在项目库根下找出所有自带 publish 节的项目。这是发现，不是登记：宿主不保存结果。
+            写坏的描述不拦住别的项目，放进 <paramref name="errors"/>。
+            </summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Development.Pipeline.ReleaseRequest">
+            <summary>一次发布请求。<c>FreezePath</c> 是宿主冻结标签表，只有宿主发布用得到，模块传 null。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.Pipeline.ReleaseRequest.#ctor(HistoryVulcan.Services.Development.Pipeline.ReleaseTarget,System.String,System.String,System.String,System.Boolean,System.Boolean)">
+            <summary>一次发布请求。<c>FreezePath</c> 是宿主冻结标签表，只有宿主发布用得到，模块传 null。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Development.Pipeline.ReleaseEngine.AssertNotSelfReplacing(System.String,System.String)">
              <summary>
@@ -445,14 +474,11 @@
         </member>
         <member name="T:HistoryVulcan.Services.Development.ProjectLibraryRoot">
             <summary>
-            项目库根：一项目一仓的 HistoryClio。旧 Vesta 配置改写到 Clio。
+            项目库根：一项目一仓的 HistoryClio。
             </summary>
         </member>
         <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.Default">
             <summary>项目库的缺省根：一项目一仓的 HistoryClio。</summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.LegacyVesta">
-            <summary>旧库根 HistoryVesta；读到它时改写到 HistoryClio。</summary>
         </member>
         <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.KeyLibraryRoot">
             <summary>项目库根的设置键。</summary>
@@ -463,8 +489,8 @@
         <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.Resolve(HistoryVulcan.Core.Storage.ISettingsService)">
             <summary>按设置解析项目库根；未配置时取缺省值。</summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.Coerce(System.String)">
-            <summary>把旧库根改写到现行库根，其余原样返回。</summary>
+        <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.Normalize(System.String)">
+            <summary>取完整路径并去掉末尾分隔符。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.IsGitProject(System.String)">
             <summary>判断给定目录是否是一个 git 项目。</summary>
@@ -512,17 +538,40 @@
             </summary>
             <remarks>管线同步完成构建、门禁与提交后返回；status/log 从磁盘读取日志与 .exit 结果。</remarks>
         </member>
+        <member name="F:HistoryVulcan.Services.Development.ReleaseCommands.FailureLines">
+            <summary>失败回执里带的原因行数。原因就在回执里，调用方多数时候不必再去翻日志（5.8.0，REQ-HOST-079）。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.Brief(System.String,System.Int32)">
+            <summary>截到前 <paramref name="lines"/> 行；多出的只报行数。</summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.ReadTail(System.String,System.Int32,System.Int32@,System.Boolean@)">
             <summary>读日志末尾；允许被子进程同时写入，因此以共享模式打开。</summary>
         </member>
-        <member name="F:HistoryVulcan.Services.Development.ReleaseCommands.PipelineDirectory">
-            <summary>发布登记表在项目里的位置。管线实现已迁入宿主源码，不再调用 PowerShell 引擎脚本。</summary>
+        <member name="F:HistoryVulcan.Services.Development.ReleaseCommands.FreezeFile">
+            <summary>
+            宿主冻结标签表的位置。它只守宿主自己的冻结标签；模块的发布描述在模块仓的 project.manifest.json（DEC-069）。
+            </summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.VerifySubmittedCandidate(HistoryVulcan.Services.Development.DevelopmentContext,System.String,System.String)">
+        <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.VerifySubmittedCandidate(HistoryVulcan.Services.Development.Pipeline.ReleaseTarget,System.String)">
             <summary>
             复核 submit 已经写入工作区的不可变模块候选，供 finish 在合并前使用。
             finish 不能再次构建同一版本：submit 在构建后提交源码，第二次构建可能因源修订元数据改变程序集，
             而不可变快照必须拒绝覆盖。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.TryLoadModule(HistoryVulcan.Core.Storage.ISettingsService,System.String,System.String,HistoryVulcan.Services.Development.Pipeline.ReleaseTarget@,System.String@)">
+            <summary>
+            工作区优先、主树兜底地读模块的 publish 描述：描述跟着模块代码走，本轮改了就用本轮的；
+            5.8.0 之前开出的工作区里还没有这一节，才退回主树。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.TryFindModuleByName(HistoryVulcan.Core.Storage.ISettingsService,System.String,HistoryVulcan.Services.Development.Pipeline.ReleaseTarget@)">
+            <summary>按模块名在项目库里找：只在工作区反查不到项目、又写了 name= 时用。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Development.ReleaseCommands.FileSummary(System.String,System.Int32)">
+            <summary>
+            脏文件只报个数和前几个路径（5.8.0，REQ-HOST-079）：dev 工作区里的改动全是本轮要提交的，
+            整份 git status 抄进回执对调用方没有信息量。
             </summary>
         </member>
         <member name="T:HistoryVulcan.Services.Development.WorktreeCommands">

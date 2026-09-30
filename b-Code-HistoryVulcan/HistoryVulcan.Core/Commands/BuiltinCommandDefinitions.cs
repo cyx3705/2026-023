@@ -66,10 +66,8 @@ public static class BuiltinCommandDefinitions
                     Parameter("key", "配置键", required: true, position: 0),
                     Parameter("value", "配置值", required: true, position: 1),
                 ]),
-            new Definition(
-                "vulcan.app.opendata",
-                "app",
-                "在系统资源管理器中打开应用数据目录"),
+            // 没有 vulcan.app.opendata：打开数据目录是界面动作，已归 Aurora（aurora.app.opendata），
+            // 宿主从未绑定过这条共享定义。5.7.1 删除（DEC-068）。
         };
 
         return definitions.ToDictionary(definition => definition.Name, StringComparer.OrdinalIgnoreCase);

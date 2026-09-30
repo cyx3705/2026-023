@@ -49,9 +49,35 @@ public sealed class OfflineCommandRunnerTests
         Assert.Null(second.Development!.LiveHost);
     }
 
-    private static ServiceComposition Composition()
+    [Fact]
+    public void HumanOutputPrintsTheMessageWithoutRepeatingDataAsJson()
+    {
+        using var composition = Composition(registry => registry.Register(new CommandDescriptor
+        {
+            Name = "vulcan.module.list",
+            Summary = "test command",
+            Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("正文一行", new { OnlyInData = "data-value" })),
+        }));
+
+        var (exit, text) = Run("vulcan.module.list", () => composition, HostOutputFormat.Human);
+        Assert.Equal(0, exit);
+        Assert.Contains("正文一行", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("data-value", text, StringComparison.Ordinal);
+
+        using var again = Composition(registry => registry.Register(new CommandDescriptor
+        {
+            Name = "vulcan.module.list",
+            Summary = "test command",
+            Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("正文一行", new { OnlyInData = "data-value" })),
+        }));
+        var (_, json) = Run("vulcan.module.list", () => again);
+        Assert.Contains("data-value", json, StringComparison.Ordinal);
+    }
+
+    private static ServiceComposition Composition(Action<CommandRegistry>? register = null)
     {
         var registry = new CommandRegistry();
+        register?.Invoke(registry);
         var log = new NullLog();
         var settings = new MemorySettings();
         var bus = new CommandBus(registry, log);
@@ -74,14 +100,15 @@ public sealed class OfflineCommandRunnerTests
         };
     }
 
-    private static (int ExitCode, string Json) Run(string command, Func<ServiceComposition> compose)
+    private static (int ExitCode, string Json) Run(
+        string command, Func<ServiceComposition> compose, HostOutputFormat format = HostOutputFormat.Json)
     {
         var original = Console.Out;
         using var output = new StringWriter();
         try
         {
             Console.SetOut(output);
-            var exit = CommandLineRunner.Run(command, typeof(OfflineCommandRunnerTests).Assembly, HostOutputFormat.Json, compose);
+            var exit = CommandLineRunner.Run(command, typeof(OfflineCommandRunnerTests).Assembly, format, compose);
             return (exit, output.ToString());
         }
         finally { Console.SetOut(original); }

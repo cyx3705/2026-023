@@ -14,7 +14,7 @@ namespace HistoryVulcan.Services.Development;
 /// 内部仍调用 <see cref="WorktreeCommands"/> 与 <see cref="ReleaseCommands"/>。
 /// HistoryVulcan 自身不走这三条，宿主打包用 <c>--cli vulcan.release.cycle</c>。
 ///
-/// 5.7.0 起 submit / finish 只需要 <c>worktree=</c>：模块由工作区所在项目反查发布登记表，
+/// 5.7.0 起 submit / finish 只需要 <c>worktree=</c>：模块由工作区所在项目的 project.manifest.json 读出（5.8.0 起不再查宿主登记表），
 /// 提交说明缺省取工作区名里的 slug（REQ-HOST-072）。
 /// </remarks>
 internal static class DevPipelineCommands
@@ -80,7 +80,7 @@ internal static class DevPipelineCommands
             Example = "vulcan.dev.submit worktree=abc-1-grok-cachekey",
             Parameters =
             [
-                Text("name", "已登记的模块名；省略时由工作区所在项目反查，写了就必须与之一致", position: 0),
+                Text("name", "模块名（即模块仓 project.name）；省略时由工作区所在项目反查，写了就必须与之一致", position: 0),
                 Text("msg", "提交说明；省略时取工作区名里的 slug", position: 1),
                 Text("worktree", "vulcan.dev.start 返回的工作区目录名或绝对路径", required: true, position: 2),
                 Bool("allowDirty", "（5.7.0 起无作用）工作区里未提交的改动正是 submit 要提交的，不再需要授权", "false"),
@@ -106,7 +106,7 @@ internal static class DevPipelineCommands
             Example = "vulcan.dev.finish worktree=abc-1-grok-cachekey",
             Parameters =
             [
-                Text("name", "已登记的模块名；省略时由工作区所在项目反查，写了就必须与之一致", position: 0),
+                Text("name", "模块名（即模块仓 project.name）；省略时由工作区所在项目反查，写了就必须与之一致", position: 0),
                 Text("msg", "（5.7.0 起忽略）finish 是快进合并，不产生提交", position: 1),
                 Text("worktree", "工作区目录名或绝对路径", required: true, position: 2),
             ],
@@ -120,23 +120,9 @@ internal static class DevPipelineCommands
         });
     }
 
+    /// <summary>宿主只认识它自己（5.8.0，DEC-069）：不再去模块登记表里查 kind。</summary>
     internal static bool IsHostTarget(string nameOrProject)
-        => nameOrProject.Equals("HistoryVulcan", StringComparison.OrdinalIgnoreCase)
-           || nameOrProject.Equals("2026-023-HistoryVulcan", StringComparison.OrdinalIgnoreCase);
-
-    internal static bool IsHostProject(ISettingsService settings, string nameOrProject)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-        if (string.IsNullOrWhiteSpace(nameOrProject))
-            return false;
-        if (IsHostTarget(nameOrProject.Trim()))
-            return true;
-        if (ReleaseCommands.TryResolveModule(settings, nameOrProject.Trim(), out var byName)
-            && byName.Kind.Equals("host", StringComparison.OrdinalIgnoreCase))
-            return true;
-        return ReleaseCommands.TryResolveModuleByProject(settings, nameOrProject.Trim(), out var byProject)
-               && byProject.Kind.Equals("host", StringComparison.OrdinalIgnoreCase);
-    }
+        => !string.IsNullOrWhiteSpace(nameOrProject) && ReleaseCatalog.IsHost(nameOrProject);
 
     /// <summary>
     /// 迁根提示只对能切对话根的 AI 有意义（5.7.0，U4）。其他 AI 每条回执都读一整段只是噪声。
@@ -238,7 +224,7 @@ internal static class DevPipelineCommands
         worktreePath = "";
         error = "";
         var explicitName = name?.Trim() ?? "";
-        if (explicitName.Length > 0 && IsHostProject(settings, explicitName))
+        if (explicitName.Length > 0 && IsHostTarget(explicitName))
         {
             error = HostRejected;
             return false;
@@ -247,22 +233,22 @@ internal static class DevPipelineCommands
         var inferred = TryResolveWorktreeProject(settings, worktree, out var project, out var path, out var inferError);
         if (inferred)
         {
-            if (IsHostProject(settings, project))
+            if (IsHostTarget(project))
             {
                 error = HostRejected;
                 return false;
             }
 
-            if (!ReleaseCommands.TryResolveModuleByProject(settings, project, out var byProject))
+            if (!ReleaseCommands.TryLoadModule(settings, project, path, out var byProject, out var loadError))
             {
-                error = $"工作区 {worktree.Trim()} 所在项目 {project} 不在发布登记表里，见 vulcan.release.modules。";
+                error = loadError;
                 return false;
             }
 
             if (explicitName.Length > 0 && !explicitName.Equals(byProject.Name, StringComparison.OrdinalIgnoreCase))
             {
                 error = $"name={explicitName} 与工作区不一致：工作区 {worktree.Trim()} 属于项目 {project}，"
-                        + $"登记的模块是 {byProject.Name}。去掉 name=，或换成对应的工作区。";
+                        + $"它的模块名（project.name）是 {byProject.Name}。去掉 name=，或换成对应的工作区。";
                 return false;
             }
 
@@ -278,15 +264,15 @@ internal static class DevPipelineCommands
             return false;
         }
 
-        if (!ReleaseCommands.TryResolveModule(settings, explicitName, out var byName)
-            || byName.Kind.Equals("host", StringComparison.OrdinalIgnoreCase))
+        if (!ReleaseCommands.TryFindModuleByName(settings, explicitName, out var byName))
         {
-            error = $"{explicitName} 不在发布登记表里，见 vulcan.release.modules。";
+            error = $"项目库里没有 project.name={explicitName} 且带 publish 节的项目，见 vulcan.release.modules。";
             return false;
         }
 
-        module = byName;
         worktreePath = WorktreeCommands.ResolveWorktreePath(settings, byName.ProjectDirectory, worktree);
+        if (!ReleaseCommands.TryLoadModule(settings, byName.ProjectDirectory, worktreePath, out module, out error))
+            return false;
         return true;
     }
 
@@ -337,7 +323,7 @@ internal static class DevPipelineCommands
         string? root,
         bool confirm)
     {
-        if (IsHostProject(host.Settings, project))
+        if (IsHostTarget(project))
             return CommandResult.Fail(HostRejected);
 
         var created = WorktreeCommands.Create(
@@ -349,10 +335,13 @@ internal static class DevPipelineCommands
         if (MovesConversationRoot(agent))
             text.Append('\n').Append(MoveRootHint);
 
-        var formal = ReleaseCommands.TryResolveModuleByProject(host.Settings, project.Trim(), out var module)
-            ? module.FormalDirectory
-            : "z-Publish";
-        var warning = MainTreeWarning(MainProjectPath(host.Settings, project.Trim()), formal);
+        // 5.8.0（DEC-069）：发布描述在模块仓自己的 project.manifest.json。没有也照开——新模块可以在工作区里补，
+        // 但现在就说，免得到 submit 才发现。
+        var described = ReleaseCommands.TryLoadModule(host.Settings, project.Trim(), null, out var module, out var loadError);
+        if (!described)
+            text.Append("\n注意：").Append(loadError).Append("submit 前在工作区里补上。");
+        var warning = MainTreeWarning(
+            MainProjectPath(host.Settings, project.Trim()), described ? module.FormalDirectory : "z-Publish");
         if (warning.Length > 0)
             text.Append('\n').Append(warning);
 
@@ -403,7 +392,7 @@ internal static class DevPipelineCommands
         // 5.7.0（U2）：dev 工作区是 start 从干净的 HEAD 开出来的，里面的改动全是本轮要提交的，
         // 不再要求 allowDirty。主树上的 vulcan.release.cycle 仍保留这道门。
         var result = await ReleaseCommands.CycleAsync(
-            host, module.Name, commitMessage, worktreePath, allowDirty: true, dryRun, progress, cancellation)
+            host, module, commitMessage, worktreePath, allowDirty: true, dryRun, progress, cancellation)
             .ConfigureAwait(false);
 
         var text = new StringBuilder(result.Message);
@@ -414,12 +403,11 @@ internal static class DevPipelineCommands
 
         if (dryRun)
         {
-            text.Append("\ndryRun：未登记审核，也没有提交。去掉 dryRun=true 正式送审。");
+            text.Append("\ndryRun：没有提交。去掉 dryRun=true 正式送审。");
         }
         else
         {
-            text.Append("\n已登记宿主审核。未通过：改代码后再 vulcan.dev.submit。")
-                .Append($"\n通过后：{CliExe} --cli \"vulcan.dev.finish worktree={worktreeName}\"");
+            text.Append($"\n待审。未通过：继续改、再 submit；通过后：{CliExe} --cli \"vulcan.dev.finish worktree={worktreeName}\"");
             if (MovesConversationRoot(agent))
                 text.Append('\n').Append(MoveRootBeforeFinish);
         }
@@ -447,7 +435,7 @@ internal static class DevPipelineCommands
         if (status.Length > 0)
             return CommandResult.Fail($"工作树不干净，finish 只能复用已提交的 submit 候选。\n{status}");
 
-        var published = ReleaseCommands.VerifySubmittedCandidate(host, module.Name, worktreePath);
+        var published = ReleaseCommands.VerifySubmittedCandidate(module, worktreePath);
         if (!published.Success)
             return published;
 

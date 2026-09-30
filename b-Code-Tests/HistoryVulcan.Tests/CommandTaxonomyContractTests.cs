@@ -239,6 +239,16 @@ public sealed class CommandTaxonomyContractTests
     }
 
     [Fact]
+    public void OpenDataIsNotASharedBuiltin()
+    {
+        // 打开数据目录是界面动作，归 Aurora（aurora.app.opendata）；宿主从未绑定这条共享定义（DEC-068）。
+        Assert.DoesNotContain(
+            "vulcan.app.opendata",
+            BuiltinCommandDefinitions.Names,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void InteractiveManualGenerationIsNotPartOfTheFrozenHostCatalog()
     {
         var registry = new CommandRegistry();

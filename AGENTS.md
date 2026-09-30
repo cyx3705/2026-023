@@ -1,7 +1,7 @@
 # HistoryVulcan AI 工作合同
 
-本文件适用于整个仓库。**当前源码为 5.7.0，宿主冻结基线为 5.4.0**（DEC-063、DEC-064、DEC-065、DEC-066、DEC-067）。
-5.4.0 按用户批准收拢总线前端所有权并收回宿主内部公开面（DEC-063）；5.5.0 纯增量给出宿主唯一日志 `IModuleContext.Log`（DEC-064）；5.6.0 命令结果与进度按形状分级（DEC-065）；5.6.1 修开发管线打印 git 路径的八进制转义（DEC-066）；5.7.0 按使用反馈收敛开发管线参数与回执（DEC-067）；v5.3.0、v5.1.2 保留为历史基线。
+本文件适用于整个仓库。**当前源码为 5.8.0，宿主冻结基线为 5.4.0**（DEC-063、DEC-064、DEC-065、DEC-066、DEC-067、DEC-068、DEC-069）。
+5.4.0 按用户批准收拢总线前端所有权并收回宿主内部公开面（DEC-063）；5.5.0 纯增量给出宿主唯一日志 `IModuleContext.Log`（DEC-064）；5.6.0 命令结果与进度按形状分级（DEC-065）；5.6.1 修开发管线打印 git 路径的八进制转义（DEC-066）；5.7.0 按使用反馈收敛开发管线参数与回执（DEC-067）；5.7.1 删除无人绑定的 `vulcan.app.opendata` 共享定义与 HistoryVesta 库根改写（DEC-068）；5.8.0 宿主不再登记模块、模块自带发布描述，命令行回执去重（DEC-069）；v5.3.0、v5.1.2 保留为历史基线。
 冻结面只保留模块注册器、命令总线和开发/发布总线（模块走 `--cli vulcan.dev.start/submit/finish`；宿主禁止走开发管线）。进入项目后先确认现行合同和修改边界，
 再按任务读取最小必要上下文。
 
@@ -13,7 +13,7 @@
 2. 开发管线只给模块、禁止 MCP：同目录 `HistoryVulcan.Cli.exe --cli vulcan.dev.start|submit|finish`。宿主禁止走这三条。
 3. **禁止对话根还在正在 `finish` 的那条 `F:\ai工作区` 工作区时调用 finish。** grok 先迁到该模块 Clio 主树 `main`，等成功回执，再跑手册 A–D。其他 AI 不迁根。finish 会删工作区；未迁走就 finish，这一轮对话作废，不要再迁根补救。
 4. grok 按手册四步进出工作区。目录已经没了就不要再迁根。
-5. **不许停宿主。** 不要 `vulcan.svc.stop` / `restart`、`vulcan.app.quit`，不要杀 `HistoryVulcan.exe`。模块热重载不关宿主。起步示例在 `b-Code-Samples/DemoModule`。
+5. **不许停宿主。** 不要 `vulcan.svc.stop` / `restart`、`vulcan.app.quit`，不要杀 `HistoryVulcan.exe`。模块热重载不关宿主。新模块从模板仓 `0000-002-ModuleReady` 派生（`janus.proj.create base=0000-002-ModuleReady`），不要从别的模块仓复制。
 
 ## 图形查看必须先走 Diana
 
@@ -59,9 +59,9 @@
 
 ## 版本线与冻结边界
 
-- 当前开发线是 **5.7.x**，源码为 **5.7.0**，冻结基线为 **5.4.0 / `v5.4.0`**。
+- 当前开发线是 **5.8.x**，源码为 **5.8.0**，冻结基线为 **5.4.0 / `v5.4.0`**。
   5.4 经用户明确指定并授权跨模块改造（DEC-063）：宿主总线开关封口，前端改由 `IModuleContext.RegisterFrontend` 唯一登记，ServiceHost 与 Services 的内部实现收回 internal，属于明确的版本例外。
-  结转前文本保存在 5.4.0 基线的 PreFreeze 文件。5.5.0 只新增 `IModuleContext.Log`（DEC-064），登记在 Core Unshipped 与 5.5.0 批准基线；其余两份仅含 #nullable enable。5.6.0、5.6.1 与 5.7.0 公开面零变化。
+  结转前文本保存在 5.4.0 基线的 PreFreeze 文件。5.5.0 只新增 `IModuleContext.Log`（DEC-064），登记在 Core Unshipped 与 5.5.0 批准基线；其余两份仅含 #nullable enable。5.6.0、5.6.1、5.7.0、5.7.1 与 5.8.0 公开面零变化。
   后续新增公开面先推进版本；常规删除或改签走主版本并更新消费摘要，不能援引 DEC-060 或 DEC-063 的删除。
 - `v3.0.3` 是 V3 历史冻结标签，只对 3.0.x 维护分支有效：那条分支只接受致命崩溃、
   数据丢失或安全漏洞修复，且不新增公开 API。**不要把这条约束套用到 3.3.x。**

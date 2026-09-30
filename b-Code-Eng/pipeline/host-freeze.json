@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "_comment": "宿主冻结标签的期望值。刻意不以宿主自己的 project.manifest.json 为准：期望值与被守护值同处一文件时，同一次编辑会一起改动，闸口形同虚设。ProjectContract 拿 project.freezeTag 与这里比对。模块的发布描述不在这里，在各模块仓 project.manifest.json 的 publish 节（DEC-069）。",
+  "hosts": [
+    {
+      "name": "HistoryVulcan",
+      "freezeTag": "v5.4.0"
+    }
+  ]
+}

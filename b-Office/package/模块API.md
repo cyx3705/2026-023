@@ -4,7 +4,7 @@
 
 ## 1. 引用与兼容
 
-模块引用已发布的 `z-Publish/host/HistoryVulcan.*.dll`，设 `<Private>false</Private>` 并在构建前验证目标存在。源码联调须显式开关，不自动回退到宿主 ProjectReference。本仓 `b-Code-Samples/DemoModule` 是最小示例，复制到模块仓库后改为上述 HintPath 引用。
+模块引用已发布的 `z-Publish/host/HistoryVulcan.*.dll`，设 `<Private>false</Private>` 并在构建前验证目标存在。源码联调须显式开关，不自动回退到宿主 ProjectReference。起步模板是模板仓 `0000-002-ModuleReady`：已按上述方式引用，派生后运行其实例化脚本即可。
 
 现行公开面以 5.4.0 Shipped 加 5.5.0 新增的 `IModuleContext.Log` 为准。5.2、5.3.0、5.4.0 经明确批准删除或收回过期 API，不保证历史二进制兼容；后续常规删除或改签须走主版本。迁移要点：
 

@@ -160,11 +160,8 @@ internal static class CommandLineRunner
         if (!string.IsNullOrEmpty(result.Message))
             Console.WriteLine(result.Message);
 
-        // 结构化数据按 JSON 打到标准输出，供脚本消费；没有数据时不打空对象。
-        if (result.Data == null)
-            return;
-
-        Console.WriteLine(JsonSerializer.Serialize(result.Data, JsonOptions));
+        // 5.8.0（REQ-HOST-079）：人读格式只打正文。命令行面上的指令都是宿主自己的，正文已覆盖 Data；
+        // 以前再把 Data 整段打成 JSON，回执长度翻倍、同一份信息读两遍。脚本要结构化结果用 --format json。
     }
 
     private static void WriteError(string message, HostOutputFormat format, int exitCode = 2)

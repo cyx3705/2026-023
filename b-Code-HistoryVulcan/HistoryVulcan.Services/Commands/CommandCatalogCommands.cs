@@ -392,6 +392,17 @@ internal static class CommandCatalogCommands
                 text.Append($"\n示例: {descriptor.Example}");
             if (row.HiddenReason != null)
                 text.Append($"\n远端隐藏: {row.HiddenReason}");
+            // 5.8.0（REQ-HOST-079）：参数写进正文。命令行人读格式不再附 Data 的 JSON，参数不能只在 Data 里。
+            foreach (var parameter in descriptor.Parameters)
+            {
+                var required = parameter.Required ? "必填" : "可省略";
+                var def = string.IsNullOrWhiteSpace(parameter.Default) ? "" : $" 默认={parameter.Default}";
+                var allowed = parameter.AllowedValues is { Length: > 0 } values && parameter.Type != ParamType.Bool
+                    ? $" 取值={string.Join("|", values)}"
+                    : "";
+                text.Append($"\n  {parameter.Name} ({required}{def}{allowed}): {parameter.Description}");
+            }
+
             return CommandResult.Ok(text.ToString(), detail);
         }),
     };

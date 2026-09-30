@@ -5,7 +5,7 @@ namespace HistoryVulcan.Services.Development.Pipeline;
 
 internal static class ProjectContract
 {
-    public static void Validate(string projectRoot, string kind, bool instantiation, string? registryPath)
+    public static void Validate(string projectRoot, string kind, bool instantiation, string? freezePath)
     {
         var errors = new List<string>();
         var manifestPath = Path.Combine(projectRoot, "project.manifest.json");
@@ -40,7 +40,7 @@ internal static class ProjectContract
         CheckRequirements(projectRoot, manifest, contract, errors);
         CheckInstantiation(projectRoot, manifest, instantiation, errors);
         if (kind.Equals("host", StringComparison.OrdinalIgnoreCase))
-            CheckHost(projectRoot, manifest, registryPath, errors);
+            CheckHost(projectRoot, manifest, freezePath, errors);
 
         if (errors.Count > 0)
             throw new InvalidOperationException(
@@ -325,7 +325,7 @@ internal static class ProjectContract
         }
     }
 
-    private static void CheckHost(string root, JsonElement manifest, string? registryPath, List<string> errors)
+    private static void CheckHost(string root, JsonElement manifest, string? freezePath, List<string> errors)
     {
         if (!manifest.TryGetProperty("contract", out var contract)
             || !contract.TryGetProperty("host", out var host))
@@ -342,19 +342,19 @@ internal static class ProjectContract
                 errors.Add($"项目身份必须是 {expectedId}/{expectedName}。");
         }
 
-        if (manifest.TryGetProperty("project", out var projectElement) && !string.IsNullOrWhiteSpace(registryPath))
+        if (manifest.TryGetProperty("project", out var projectElement) && !string.IsNullOrWhiteSpace(freezePath))
         {
             var projectName = ReadString(projectElement, "name");
             var actualFreeze = ReadString(projectElement, "freezeTag");
-            if (File.Exists(registryPath))
+            if (File.Exists(freezePath))
             {
-                using var registry = JsonDocument.Parse(File.ReadAllText(registryPath));
-                if (registry.RootElement.TryGetProperty("hosts", out var hosts))
+                using var freeze = JsonDocument.Parse(File.ReadAllText(freezePath));
+                if (freeze.RootElement.TryGetProperty("hosts", out var hosts))
                 {
                     var match = hosts.EnumerateArray()
                         .FirstOrDefault(item => ReadString(item, "name") == projectName);
                     if (match.ValueKind == JsonValueKind.Undefined)
-                        errors.Add($"发布登记表没有 {projectName} 的宿主条目。");
+                        errors.Add($"冻结标签表没有 {projectName} 的宿主条目。");
                     else
                     {
                         var expectedFreeze = ReadString(match, "freezeTag");
@@ -365,7 +365,7 @@ internal static class ProjectContract
             }
             else
             {
-                errors.Add($"找不到发布登记表，无法核对冻结标签：{registryPath}");
+                errors.Add($"找不到冻结标签表，无法核对冻结标签：{freezePath}");
             }
         }
 

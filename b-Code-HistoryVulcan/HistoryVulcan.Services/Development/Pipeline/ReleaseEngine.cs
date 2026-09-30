@@ -1,9 +1,10 @@
 ﻿namespace HistoryVulcan.Services.Development.Pipeline;
 
+/// <summary>一次发布请求。<c>FreezePath</c> 是宿主冻结标签表，只有宿主发布用得到，模块传 null。</summary>
 internal sealed record ReleaseRequest(
-    string ModuleName,
+    ReleaseTarget Target,
     string ProjectRoot,
-    string RegistryPath,
+    string? FreezePath,
     string HostSnapshotRoot,
     bool PromoteOfficial,
     bool RequireCleanSource);
@@ -20,7 +21,7 @@ internal static class ReleaseEngine
         // 判据交由调用方持有——它才知道这次是主树还是工作区——宿主这里不再假装校验。
         // 需要重新立这道闸口时，要连同「主树路径如何认定」一起设计，而不是补一个 throw。
 
-        var target = ReleaseCatalog.Require(request.RegistryPath, request.ModuleName);
+        var target = request.Target;
         var projectRoot = Path.GetFullPath(request.ProjectRoot);
         var version = ReleaseCatalog.ReadVersion(projectRoot, target);
         var publishRoot = Path.Combine(projectRoot, target.CandidateDirectory);
@@ -35,7 +36,7 @@ internal static class ReleaseEngine
                 projectRoot,
                 target.Kind,
                 instantiation: true,
-                target.Kind == "host" ? request.RegistryPath : null);
+                target.Kind == "host" ? request.FreezePath : null);
 
             string candidate;
             if (target.Kind == "host")

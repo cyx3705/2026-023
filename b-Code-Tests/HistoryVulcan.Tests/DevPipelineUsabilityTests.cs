@@ -111,10 +111,10 @@ public sealed class DevPipelineUsabilityTests
             $"vulcan.dev.submit worktree={created.Name} dryRun=true", "Test");
 
         Assert.True(result.Success, result.Message);
-        // 首行的状态列空格不能被裁掉；清单与后一句之间要换行。
-        Assert.Contains("脏树文件:\n M README.md\n?? added.txt\n不会写日志", result.Message, StringComparison.Ordinal);
-        Assert.Contains("dryRun：未登记审核", result.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("已登记宿主审核", result.Message, StringComparison.Ordinal);
+        // 5.8.0：脏文件只报个数和前几个路径；首行的状态列不能吃掉路径首字母。
+        Assert.Contains("将提交: 2 个文件（README.md、added.txt）\n不会写日志", result.Message, StringComparison.Ordinal);
+        Assert.Contains("dryRun：没有提交", result.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("待审", result.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("迁根", result.Message, StringComparison.Ordinal);
     }
 
@@ -240,8 +240,61 @@ public sealed class DevPipelineUsabilityTests
         }
     }
 
+    [Fact]
+    public void WorktreePublishDescriptorWinsOverTheMainTree()
+    {
+        using var library = FakeLibrary.Create();
+        var created = library.Start("claude", "probe");
+        File.WriteAllText(
+            Path.Combine(created.Path, "project.manifest.json"),
+            FakeLibrary.Manifest("HistoryJanus", "Run changed tests"));
+
+        Assert.True(DevPipelineCommands.TryResolveTarget(
+            library.Settings, null, created.Name, out var target, out _, out var error), error);
+        Assert.Equal("Run changed tests", Assert.Single(target.Validation).Description);
+        Assert.Equal(Project, target.ProjectDirectory);
+    }
+
+    [Fact]
+    public void WorktreeWithoutDescriptorFallsBackToTheMainTree()
+    {
+        using var library = FakeLibrary.Create();
+        var created = library.Start("claude", "probe");
+        File.WriteAllText(Path.Combine(created.Path, "project.manifest.json"), """{"schemaVersion":1}""");
+
+        Assert.True(DevPipelineCommands.TryResolveTarget(
+            library.Settings, null, created.Name, out var target, out _, out var error), error);
+        Assert.Equal("Run module Smoke", Assert.Single(target.Validation).Description);
+    }
+
+    [Fact]
+    public async Task ProjectWithoutDescriptorIsWarnedAtStartAndRefusedAtSubmit()
+    {
+        using var library = FakeLibrary.Create();
+        File.WriteAllText(Path.Combine(library.ProjectPath, "project.manifest.json"), """{"schemaVersion":1}""");
+        FakeLibrary.Git(library.ProjectPath, "commit", "-am", "drop publish");
+
+        var start = await library.Bus.ExecuteAsync($"vulcan.dev.start project={Project} slug=probe agent=claude", "Test");
+        Assert.True(start.Success, start.Message);
+        Assert.Contains("没有 publish 节", start.Message, StringComparison.Ordinal);
+
+        var name = JsonSerializer.SerializeToElement(start.Data).GetProperty("Name").GetString();
+        var submit = await library.Bus.ExecuteAsync($"vulcan.dev.submit worktree={name} dryRun=true", "Test");
+        Assert.False(submit.Success);
+        Assert.Contains("没有 publish 节", submit.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ExplicitNameIsFoundByScanningTheLibrary()
+    {
+        using var library = FakeLibrary.Create();
+        Assert.True(ReleaseCommands.TryFindModuleByName(library.Settings, "historyjanus", out var found));
+        Assert.Equal(Project, found.ProjectDirectory);
+        Assert.False(ReleaseCommands.TryFindModuleByName(library.Settings, "HistoryNobody", out _));
+    }
+
     /// <summary>
-    /// 一个临时项目库：宿主目录里放真实的发布登记表，另有一个带 z-Publish 的 Janus 仓。
+    /// 一个临时项目库：宿主目录里只有冻结标签表，另有一个自带 publish 描述、带 z-Publish 的 Janus 仓。
     /// </summary>
     private sealed class FakeLibrary : IDisposable
     {
@@ -270,18 +323,14 @@ public sealed class DevPipelineUsabilityTests
             var workRoot = Path.Combine(Path.GetTempPath(), "aiwt-" + Guid.NewGuid().ToString("N"));
             var library = new FakeLibrary(clio, workRoot);
 
-            var pipeline = Path.Combine(clio, "2026-023-HistoryVulcan", "b-Code-Eng", "pipeline");
-            Directory.CreateDirectory(pipeline);
-            File.Copy(
-                Path.Combine(RepositoryPaths.Root(), "b-Code-Eng", "pipeline", "module-publish.manifest.json"),
-                Path.Combine(pipeline, "module-publish.manifest.json"));
-
             Directory.CreateDirectory(Path.Combine(library.ProjectPath, "z-Publish"));
             Git(library.ProjectPath, "init", "-b", "main");
             Git(library.ProjectPath, "config", "user.email", "pipeline@test");
             Git(library.ProjectPath, "config", "user.name", "pipeline");
             File.WriteAllText(Path.Combine(library.ProjectPath, "README.md"), "x");
             File.WriteAllText(Path.Combine(library.ProjectPath, "z-Publish", "x.txt"), "x");
+            File.WriteAllText(
+                Path.Combine(library.ProjectPath, "project.manifest.json"), Manifest("HistoryJanus", "Run module Smoke"));
             Git(library.ProjectPath, "add", ".");
             Git(library.ProjectPath, "commit", "-m", "init");
             return library;
@@ -302,8 +351,23 @@ public sealed class DevPipelineUsabilityTests
             TryDelete(Clio);
         }
 
-        private static void Git(string workingDirectory, params string[] arguments)
+        internal static void Git(string workingDirectory, params string[] arguments)
             => ToolProcess.Capture("git", arguments, workingDirectory);
+
+        /// <summary>模块仓自己的 project.manifest.json，只写发布描述用到的部分。</summary>
+        internal static string Manifest(string name, string validation) => $$"""
+            {
+              "schemaVersion": 1,
+              "project": { "name": "{{name}}" },
+              "publish": {
+                "versionProps": "Version.props",
+                "versionProperty": "Version",
+                "sourceManifest": "module.manifest.json",
+                "package": { "project": "Module.csproj", "files": ["{{name}}.dll", "module.manifest.json"] },
+                "validation": [{ "tool": "dotnet.exe", "arguments": ["test"], "description": "{{validation}}" }]
+              }
+            }
+            """;
 
         private static void TryDelete(string path)
         {

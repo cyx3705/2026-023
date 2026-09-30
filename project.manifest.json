@@ -15,22 +15,20 @@
       "package"
     ],
     "status": "active",
-    "version": "5.7.0",
+    "version": "5.8.0",
     "branch": "main",
     "freezeTag": "v5.4.0"
   },
   "paths": {
     "activeRoots": [
       "b-Code-HistoryVulcan",
-      "b-Code-Samples",
       "b-Code-Tests",
       "b-Code-Eng",
       "b-Office/current",
       "b-Office/package"
     ],
     "sourceRoots": [
-      "b-Code-HistoryVulcan",
-      "b-Code-Samples"
+      "b-Code-HistoryVulcan"
     ],
     "generatedRoots": [
       "z-Publish/host",
@@ -61,13 +59,12 @@
     "verification": "b-Office/current/验证合同.md",
     "freeze": "b-Office/current/冻结合同.md",
     "commandPipelineAudit": "b-Office/current/断头指令审计表.md",
-    "hostRefactoring": "b-Office/current/宿主重构说明.md",
+    "hostRefactoring": "b-Office/history/5.3.0-宿主重构说明.md",
     "uiPlan31": "b-Office/history/V3.1界面现代化方案.md",
     "classRealign332": "b-Office/history/3.3.2-vulcan-class-realign.md",
     "historyBoundary": "b-Office/history/历史资料说明.md",
     "servicePlan32": "b-Office/history/V3.2后台服务化方案.md",
     "moduleApi": "b-Office/package/模块API.md",
-    "sample": "b-Code-Samples/README.md",
     "upgradeGuideIndex": "b-Office/history/升级指南-总纲.md",
     "upgradeGuideDiana": "b-Office/history/升级指南-HistoryDiana.md",
     "upgradeGuideJanus": "b-Office/history/升级指南-HistoryJanus.md",
@@ -99,8 +96,7 @@
       "b-Code-HistoryVulcan/README.md",
       "b-Code-HistoryVulcan/PACKAGE.md",
       "b-Code-Tests/README.md",
-      "b-Code-Eng/README.md",
-      "b-Code-Samples/DemoModule/docs/README.md"
+      "b-Code-Eng/README.md"
     ],
     "host": {
       "identity": {

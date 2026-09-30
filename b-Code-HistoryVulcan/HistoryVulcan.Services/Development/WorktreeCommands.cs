@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Storage;
+using HistoryVulcan.Services.Development.Pipeline;
 using static HistoryVulcan.Services.Development.Pipeline.ToolProcess;
 
 namespace HistoryVulcan.Services.Development;
@@ -60,7 +61,7 @@ internal static class WorktreeCommands
             Handler = CommandDescriptor.Sync(context =>
             {
                 var project = context.RequireString("project");
-                if (!DevPipelineCommands.IsHostProject(host.Settings, project))
+                if (!DevPipelineCommands.IsHostTarget(project))
                     return CommandResult.Fail(DevPipelineCommands.ModuleUseStart);
                 return Create(
                     host.Settings,
@@ -101,7 +102,7 @@ internal static class WorktreeCommands
             Handler = async context =>
             {
                 var project = context.RequireString("project");
-                if (!DevPipelineCommands.IsHostProject(host.Settings, project))
+                if (!DevPipelineCommands.IsHostTarget(project))
                     return CommandResult.Fail(DevPipelineCommands.ModuleUseFinish);
                 return await MergeAsync(
                     host,
@@ -328,11 +329,8 @@ internal static class WorktreeCommands
         if (string.IsNullOrWhiteSpace(branch) || branch == "HEAD")
             return CommandResult.Fail("无法读取工作区分支名。");
 
-        var resolved = ReleaseCommands.TryResolveModuleByProject(
-            host.Settings, projectName, out var module);
-        string? moduleName = resolved ? module.Name : null;
-        if (resolved && module.Kind.Equals("host", StringComparison.OrdinalIgnoreCase)
-            && IsFormalHostRunning(host.Settings, out var hostExe))
+        var isHost = DevPipelineCommands.IsHostTarget(projectName);
+        if (isHost && IsFormalHostRunning(host.Settings, out var hostExe))
         {
             return CommandResult.Fail(
                 $"正式宿主正在运行，合并会替换 {hostExe}。"
@@ -361,14 +359,19 @@ internal static class WorktreeCommands
 
         string reloadNote;
         var reloadFailed = false;
-        if (resolved && module.Kind.Equals("host", StringComparison.OrdinalIgnoreCase))
+        // 合并后再读描述：本轮若改了 publish 节，以并回 main 的那份为准（5.8.0，DEC-069）。
+        ReleaseTarget? module = null;
+        if (!isHost)
+            ReleaseCommands.TryLoadModule(host.Settings, projectName, null, out module, out _);
+
+        if (isHost)
         {
             reloadNote = "宿主 EXE 不随模块热重载替换；新快照在下次启动正式 HistoryVulcan.exe 时生效。";
         }
-        else if (resolved)
+        else if (module != null)
         {
             var reload = await ModulePackageHotReload.InstallCurrentAsync(
-                host, projectPath, moduleName!, "host:vulcan.worktree.merge", cancellation).ConfigureAwait(false);
+                host, projectPath, module.Name, "host:vulcan.worktree.merge", cancellation).ConfigureAwait(false);
             // 5.7.0（U3）：热装回执带附着核对。没接上时合并与回收已经做完、不回滚，
             // 但整条 finish 的结论必须是失败——否则「已并回」读起来就像「已上线」。
             reloadFailed = !reload.Success;
@@ -378,7 +381,7 @@ internal static class WorktreeCommands
         }
         else
         {
-            reloadNote = "该项目不是已登记模块，不变更 Vulcan 运行区。";
+            reloadNote = "该项目没有 publish 描述，不变更 Vulcan 运行区。";
         }
 
         var text = new StringBuilder($"{mergeNote}。\n{removed.Message}\n{reloadNote}");

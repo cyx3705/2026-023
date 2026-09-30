@@ -32,81 +32,33 @@ internal sealed record ReleaseTarget(
     IReadOnlyList<ValidationStep> Validation,
     string TestProject);
 
+/// <summary>
+/// 发布目标的来源。
+/// </summary>
+/// <remarks>
+/// 5.8.0（DEC-069）起宿主不再持有模块登记表：模块的发布描述写在<strong>模块仓自己的</strong>
+/// <c>project.manifest.json</c> 的 <c>publish</c> 节里，模块名取同一文件的 <c>project.name</c>。
+/// 新建或修改模块不需要碰宿主仓的任何文件；宿主这里只认识它自己。
+///
+/// 宿主冻结标签的期望值仍放在宿主仓 <c>b-Code-Eng/pipeline/host-freeze.json</c>——那是宿主自己的门，
+/// 与模块无关。
+/// </remarks>
 internal static class ReleaseCatalog
 {
-    public static IReadOnlyList<ReleaseTarget> Load(string registryPath)
-    {
-        var targets = LoadModules(registryPath).ToDictionary(
-            target => target.Name,
-            StringComparer.OrdinalIgnoreCase);
-        Add(targets, HostTarget());
-        return targets.Values.OrderBy(target => target.Name, StringComparer.Ordinal).ToList();
-    }
+    public const string HostName = "HistoryVulcan";
+    public const string HostProjectDirectory = "2026-023-HistoryVulcan";
+    public const string ProjectManifestFile = "project.manifest.json";
+    public const string PublishSection = "publish";
 
-    public static IReadOnlyList<ReleaseTarget> LoadModules(string registryPath)
-    {
-        using var document = Open(registryPath);
-        var targets = new Dictionary<string, ReleaseTarget>(StringComparer.OrdinalIgnoreCase);
-        if (document.RootElement.TryGetProperty("modules", out var modules))
-        {
-            foreach (var entry in modules.EnumerateArray())
-                Add(targets, ReadModule(entry));
-        }
+    /// <summary>名字或项目目录是不是宿主自己。</summary>
+    public static bool IsHost(string nameOrProject)
+        => nameOrProject.Trim().Equals(HostName, StringComparison.OrdinalIgnoreCase)
+           || nameOrProject.Trim().Equals(HostProjectDirectory, StringComparison.OrdinalIgnoreCase);
 
-        return targets.Values.OrderBy(target => target.Name, StringComparer.Ordinal).ToList();
-    }
-
-    public static ReleaseTarget Require(string registryPath, string name)
-        => name.Equals("HistoryVulcan", StringComparison.OrdinalIgnoreCase)
-            ? RequireHost(registryPath, name)
-            : LoadModules(registryPath).FirstOrDefault(target =>
-                target.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-              ?? throw new InvalidOperationException($"{name} 不在发布登记表里。");
-
-    /// <summary>
-    /// Resolves the host entry without parsing module entries.
-    ///
-    /// The module list is intentionally extensible data for the development and module
-    /// release pipeline. A malformed or newly added module entry must not prevent a host
-    /// candidate from being built or its freeze tag from being checked.
-    /// </summary>
-    public static ReleaseTarget RequireHost(string registryPath, string name = "HistoryVulcan")
-    {
-        using var document = Open(registryPath);
-        if (!document.RootElement.TryGetProperty("hosts", out var hosts)
-            || hosts.ValueKind != JsonValueKind.Array
-            || !hosts.EnumerateArray().Any(entry =>
-                ReadString(entry, "name").Equals(name, StringComparison.OrdinalIgnoreCase)))
-        {
-            throw new InvalidOperationException($"发布登记表没有 {name} 的宿主条目。");
-        }
-
-        return HostTarget();
-    }
-
-
-    public static string ReadVersion(string projectRoot, ReleaseTarget target)
-    {
-        var path = Path.Combine(projectRoot, target.VersionProps);
-        var text = File.ReadAllText(path);
-        var match = Regex.Match(
-            text,
-            $"<{Regex.Escape(target.VersionProperty)}>(?<v>\\d+\\.\\d+\\.\\d+)</{Regex.Escape(target.VersionProperty)}>");
-        if (!match.Success)
-            throw new InvalidOperationException($"版本源必须声明唯一语义化版本 {target.VersionProperty}：{path}");
-        return match.Groups["v"].Value;
-    }
-
-    private static void Add(IDictionary<string, ReleaseTarget> targets, ReleaseTarget target)
-    {
-        if (!targets.TryAdd(target.Name, target))
-            throw new InvalidOperationException($"重复的发布登记：{target.Name}");
-    }
-
-    private static ReleaseTarget HostTarget() => new(
-        "HistoryVulcan",
+    public static ReleaseTarget Host() => new(
+        HostName,
         "host",
-        "2026-023-HistoryVulcan",
+        HostProjectDirectory,
         "b-Code-HistoryVulcan\\VulcanVersion.props",
         "VulcanVersion",
         "",
@@ -122,45 +74,102 @@ internal static class ReleaseCatalog
         [],
         "b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj");
 
-    private static JsonDocument Open(string registryPath)
+    /// <summary>
+    /// 读项目根下 <c>project.manifest.json</c> 的 <c>publish</c> 节。没有这一节返回 null；有但写坏了抛出。
+    /// </summary>
+    /// <param name="projectRoot">主树或工作区的根目录。</param>
+    /// <param name="projectDirectory">主树在项目库里的目录名（工作区与主树共用）。</param>
+    public static ReleaseTarget? TryLoadModule(string projectRoot, string projectDirectory)
     {
-        if (!File.Exists(registryPath))
-            throw new InvalidOperationException($"找不到发布登记表：{registryPath}");
+        var path = Path.Combine(projectRoot, ProjectManifestFile);
+        if (!File.Exists(path))
+            return null;
 
-        var document = JsonDocument.Parse(File.ReadAllText(registryPath));
-        if (!document.RootElement.TryGetProperty("schemaVersion", out var schema)
-            || schema.ValueKind != JsonValueKind.Number
-            || schema.GetInt32() != 1)
-        {
-            document.Dispose();
-            throw new InvalidOperationException("不支持的发布登记表 schema。");
-        }
+        using var document = JsonDocument.Parse(File.ReadAllText(path));
+        var root = document.RootElement;
+        if (!root.TryGetProperty(PublishSection, out var publish) || publish.ValueKind != JsonValueKind.Object)
+            return null;
+        // 模板仓带着示范模块的描述（派生时随改名生成），但它自己不是模块。
+        if (root.TryGetProperty("template", out var template)
+            && template.TryGetProperty("isTemplate", out var isTemplate)
+            && isTemplate.ValueKind == JsonValueKind.True)
+            return null;
 
-        return document;
+        var name = root.TryGetProperty("project", out var project) ? ReadString(project, "name") : "";
+        if (string.IsNullOrWhiteSpace(name))
+            throw new InvalidOperationException($"{path} 有 publish 节，但 project.name 为空。");
+        if (IsHost(name))
+            throw new InvalidOperationException($"{path}：宿主不走模块发布描述。");
+
+        var target = new ReleaseTarget(
+            name,
+            "module",
+            projectDirectory,
+            ReadString(publish, "versionProps"),
+            ReadString(publish, "versionProperty"),
+            ReadString(publish, "sourceManifest"),
+            ReadString(publish, "snapshotManifest", "module.manifest.json"),
+            ReadString(publish, "identityProperty", "name"),
+            ReadString(publish, "candidateDirectory", "z-Publish"),
+            ReadString(publish, "formalDirectory", "z-Publish"),
+            ReadString(publish, "packageDocuments", "b-Office\\package"),
+            ReadPackage(publish),
+            ReadValidation(publish),
+            "");
+
+        var missing = new List<string>();
+        if (string.IsNullOrWhiteSpace(target.VersionProps)) missing.Add("versionProps");
+        if (string.IsNullOrWhiteSpace(target.VersionProperty)) missing.Add("versionProperty");
+        if (string.IsNullOrWhiteSpace(target.SourceManifest)) missing.Add("sourceManifest");
+        if (string.IsNullOrWhiteSpace(target.Package?.Project)) missing.Add("package.project");
+        if (missing.Count > 0)
+            throw new InvalidOperationException($"{path} 的 publish 节缺少：{string.Join("、", missing)}。");
+        return target;
     }
 
-    private static ReleaseTarget ReadModule(JsonElement entry)
+    /// <summary>
+    /// 在项目库根下找出所有自带 publish 节的项目。这是发现，不是登记：宿主不保存结果。
+    /// 写坏的描述不拦住别的项目，放进 <paramref name="errors"/>。
+    /// </summary>
+    public static IReadOnlyList<ReleaseTarget> Discover(string libraryRoot, List<string>? errors = null)
     {
-        var name = ReadString(entry, "name");
-        var kind = ReadString(entry, "kind");
-        if (string.IsNullOrWhiteSpace(name) || kind != "module")
-            throw new InvalidOperationException("登记表每一项必须有非空 name 且 kind=module。");
+        var targets = new List<ReleaseTarget>();
+        if (!Directory.Exists(libraryRoot))
+            return targets;
 
-        return new ReleaseTarget(
-            name,
-            kind,
-            ReadString(entry, "projectDirectory"),
-            ReadString(entry, "versionProps"),
-            ReadString(entry, "versionProperty"),
-            ReadString(entry, "sourceManifest"),
-            ReadString(entry, "snapshotManifest", "module.manifest.json"),
-            ReadString(entry, "identityProperty", "name"),
-            ReadString(entry, "candidateDirectory", "z-Publish"),
-            ReadString(entry, "formalDirectory", "z-Publish"),
-            ReadString(entry, "packageDocuments", "b-Office\\package"),
-            ReadPackage(entry),
-            ReadValidation(entry),
-            "");
+        foreach (var directory in Directory.GetDirectories(libraryRoot).OrderBy(path => path, StringComparer.Ordinal))
+        {
+            var name = Path.GetFileName(directory);
+            if (IsHost(name))
+                continue;
+            try
+            {
+                if (TryLoadModule(directory, name) is { } target)
+                    targets.Add(target);
+            }
+            catch (Exception ex) when (ex is JsonException or InvalidOperationException or IOException)
+            {
+                errors?.Add($"{name}: {ex.Message}");
+            }
+        }
+
+        var duplicate = targets.GroupBy(target => target.Name, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicate != null)
+            errors?.Add($"模块名 {duplicate.Key} 同时出现在：{string.Join("、", duplicate.Select(target => target.ProjectDirectory))}");
+        return targets;
+    }
+
+    public static string ReadVersion(string projectRoot, ReleaseTarget target)
+    {
+        var path = Path.Combine(projectRoot, target.VersionProps);
+        var text = File.ReadAllText(path);
+        var match = Regex.Match(
+            text,
+            $"<{Regex.Escape(target.VersionProperty)}>(?<v>\\d+\\.\\d+\\.\\d+)</{Regex.Escape(target.VersionProperty)}>");
+        if (!match.Success)
+            throw new InvalidOperationException($"版本源必须声明唯一语义化版本 {target.VersionProperty}：{path}");
+        return match.Groups["v"].Value;
     }
 
     private static PackageLayout? ReadPackage(JsonElement entry)

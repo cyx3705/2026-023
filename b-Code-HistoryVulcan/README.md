@@ -6,7 +6,7 @@
 | --- | --- |
 | 命令执行、绑定与审计 | Core/Commands：CommandBus、CommandRequest、CommandArguments、SensitiveName |
 | 模块生命周期 | Services/Modules：ModuleHost 的 Discovery、Startup、Snapshot、Descriptors、LoadContext、Reload、Packages 分部 |
-| 开发与发布 | Services/Development：ReleaseCatalog 解析登记表，ToolProcess 执行工具进程 |
+| 开发与发布 | Services/Development：ReleaseCatalog 读模块仓自带的 publish 描述，ToolProcess 执行工具进程 |
 | 宿主与离线组合 | ServiceHost：ServiceComposition 持有 DevelopmentContext，CommandLineRunner 先校验再装配 |
 | 可执行入口 | App / Cli |
 
