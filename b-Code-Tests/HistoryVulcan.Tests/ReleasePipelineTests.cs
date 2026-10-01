@@ -1,3 +1,4 @@
+using HistoryVulcan.Services.Development;
 using HistoryVulcan.Services.Development.Pipeline;
 using Xunit;
 
@@ -14,24 +15,36 @@ public sealed class ReleasePipelineTests
     }
 
     [Fact]
-    public void CatalogLoadsHostAndModulesFromEngPipeline()
-    {
-        var registry = Path.Combine(RepositoryPaths.Root(), "b-Code-Eng", "pipeline", "module-publish.manifest.json");
-        var targets = ReleaseCatalog.Load(registry);
-        Assert.Contains(targets, target => target.Name == "HistoryVulcan" && target.Kind == "host");
-        var aurora = Assert.Single(targets, target => target.Name == "HistoryAurora");
-        Assert.NotNull(aurora.Package);
-        Assert.DoesNotContain(
-            aurora.Validation,
-            step => step.Tool.Contains("powershell", StringComparison.OrdinalIgnoreCase));
-    }
-
-    [Fact]
     public void HostProjectContractPassesOnThisRepository()
     {
         var root = RepositoryPaths.Root();
-        var registry = Path.Combine(root, "b-Code-Eng", "pipeline", "module-publish.manifest.json");
-        ProjectContract.Validate(root, "host", instantiation: true, registry);
+        ProjectContract.Validate(root, "host", instantiation: true, Path.Combine(root, ReleaseCommands.FreezeFile));
+    }
+
+    [Fact]
+    public void DevelopmentManualMakesDianaThePrimaryDocumentationChannel()
+    {
+        var root = RepositoryPaths.Root();
+        var agents = File.ReadAllText(Path.Combine(root, "AGENTS.md"));
+        var manual = File.ReadAllText(Path.Combine(root, "b-Office", "current", "模块开发手册.md"));
+
+        // 6.1.0（DEC-072）：说明书来自指令自描述，Diana 不可用时降级到宿主指令目录，不再有 z-Publish/docs。
+        foreach (var contract in new[] { agents, manual })
+        {
+            Assert.Contains("diana.docs.catalog", contract, StringComparison.Ordinal);
+            Assert.Contains("Diana MCP 工具未暴露或调用失败", contract, StringComparison.Ordinal);
+            Assert.Contains("vulcan.command.show", contract, StringComparison.Ordinal);
+            Assert.DoesNotContain("z-Publish/docs", contract, StringComparison.Ordinal);
+            Assert.Contains("diana.view.windows", contract, StringComparison.Ordinal);
+            Assert.Contains("diana.view.capture", contract, StringComparison.Ordinal);
+        }
+
+        Assert.Contains("禁止为只读观察调用 Computer Use", manual, StringComparison.Ordinal);
+        Assert.Contains("不移动鼠标、不切换前台", manual, StringComparison.Ordinal);
+        Assert.DoesNotContain("若本机 Cursor 已接上 Diana MCP，可以再", manual, StringComparison.Ordinal);
+        Assert.DoesNotContain("MCP 可用时再", manual, StringComparison.Ordinal);
+        Assert.DoesNotContain("`diana.docs.*` | 可选", manual, StringComparison.Ordinal);
+        Assert.DoesNotContain("HistoryAurora `b-Office/current/", manual, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -39,9 +52,7 @@ public sealed class ReleasePipelineTests
     {
         var root = RepositoryPaths.Root();
         QualityGates.AssertSourceQuality(root, TextWriter.Null);
-        var vulcan = ReleaseCatalog.Require(
-            Path.Combine(root, "b-Code-Eng", "pipeline", "module-publish.manifest.json"),
-            "HistoryVulcan");
+        var vulcan = ReleaseCatalog.Host();
         QualityGates.AssertPublicApiBaseline(root, ReleaseCatalog.ReadVersion(root, vulcan), TextWriter.Null);
     }
 

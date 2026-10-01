@@ -14,7 +14,7 @@ internal static class ModuleSnapshotBuilder
         TextWriter log)
     {
         if (target.Package is null)
-            throw new InvalidOperationException($"{target.Name} 未声明 package（project/outputDirectory/files）。");
+            throw new InvalidOperationException($"{target.Name} 未声明 package（project/publishTargetFramework/files）。");
 
         var sourceManifest = Path.Combine(projectRoot, target.SourceManifest);
         if (!File.Exists(sourceManifest))
@@ -29,17 +29,17 @@ internal static class ModuleSnapshotBuilder
 
         Environment.SetEnvironmentVariable("HISTORYVULCAN_PACKAGE_ROOT", hostSnapshotRoot);
         var project = Path.Combine(projectRoot, target.Package.Project);
+        var (targetFramework, output) = MsBuildOutputResolver.Resolve(projectRoot, target.Package, log);
         ToolProcess.Run(
             "dotnet",
-            ["build", project, "-c", "Release", "--nologo", "-p:NuGetAudit=false",
+            ["build", project, "-c", "Release", "-f", targetFramework, "--nologo", "-p:NuGetAudit=false",
                 "-p:HistoryVulcanPackageRoot=" + hostSnapshotRoot],
             projectRoot,
             log,
             "构建模块候选包");
 
-        var output = Path.Combine(projectRoot, target.Package.OutputDirectory);
         if (!Directory.Exists(output))
-            throw new InvalidOperationException($"构建输出不存在：{output}");
+            throw new InvalidOperationException($"构建后实际输出不存在：{output}");
 
         Directory.CreateDirectory(stagingRoot);
         foreach (var name in target.Package.Files)
@@ -52,17 +52,8 @@ internal static class ModuleSnapshotBuilder
             File.Copy(source, destination, overwrite: true);
         }
 
-        var docsRoot = Path.Combine(stagingRoot, "docs");
-        var documentSource = Path.Combine(projectRoot, target.PackageDocuments);
-        if (!Directory.Exists(documentSource))
-            throw new InvalidOperationException($"包文档源缺失：{documentSource}");
-        var documents = Directory.GetFiles(documentSource, "*.md");
-        if (documents.Length == 0)
-            throw new InvalidOperationException($"没有消费 Markdown 文档：{documentSource}");
-        Directory.CreateDirectory(docsRoot);
-        foreach (var document in documents)
-            File.Copy(document, Path.Combine(docsRoot, Path.GetFileName(document)), overwrite: true);
-
+        // 6.1.0（DEC-072）：模块包不再带 docs/ 消费文档。说明书只来自指令注册时的自描述，
+        // 由 Diana 现查宿主指令目录渲染；包里只剩运行需要的文件。
         SnapshotHashes.Write(stagingRoot);
         AssertSnapshot(stagingRoot, target, version);
         return stagingRoot;
