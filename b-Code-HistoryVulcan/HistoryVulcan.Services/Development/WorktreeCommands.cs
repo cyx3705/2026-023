@@ -49,7 +49,7 @@ internal static class WorktreeCommands
             Domain = "vulcan",
             CommandClass = "worktree",
             Summary = "为项目开一个 AI 工作区（git worktree + 新分支）",
-            Example = "vulcan.worktree.create project=2026-020-HistoryJanus slug=cachekey",
+            Example = "vulcan.worktree.create project=2026-020-HistoryJanus slug=cachekey agent=claude",
             Parameters =
             [
                 Text("project", "项目目录名，例如 2026-020-HistoryJanus", required: true, position: 0),

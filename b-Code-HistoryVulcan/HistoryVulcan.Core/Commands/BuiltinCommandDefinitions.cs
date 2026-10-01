@@ -63,8 +63,8 @@ public static class BuiltinCommandDefinitions
                 "写应用配置项",
                 "vulcan.app.set key=console.history value=1000",
                 [
-                    Parameter("key", "配置键", required: true, position: 0),
-                    Parameter("value", "配置值", required: true, position: 1),
+                    Parameter("key", "配置键名（点分小写），例如 console.history；不带参数执行 vulcan.app.get 可列出现有键", required: true, position: 0),
+                    Parameter("value", "要写入的值，按文本保存，例如 1000 或 true；含空格时整段加引号", required: true, position: 1),
                 ]),
             // 没有 vulcan.app.opendata：打开数据目录是界面动作，已归 Aurora（aurora.app.opendata），
             // 宿主从未绑定过这条共享定义。5.7.1 删除（DEC-068）。

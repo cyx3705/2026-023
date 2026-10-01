@@ -184,12 +184,13 @@ internal static class ServiceCommands
             Domain = "vulcan",
             CommandClass = "svc",
             Summary = "查看或设置用户级登录启动",
+            Example = "vulcan.svc.autostart on",
             Parameters =
             [
                 new ParameterSpec
                 {
                     Name = "mode",
-                    Description = "登录启动开关",
+                    Description = "on 开启、off 关闭用户级登录启动；省略则只查看当前状态",
                     Position = 0,
                     AllowedValues = ["on", "off"],
                 },
