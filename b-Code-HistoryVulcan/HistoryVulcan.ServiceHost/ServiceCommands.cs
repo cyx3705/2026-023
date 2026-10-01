@@ -1,11 +1,11 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using HistoryVulcan.Core.Commands;
 
 namespace HistoryVulcan.ServiceHost;
 
-public static class ServiceCommands
+internal static class ServiceCommands
 {
     public static void RegisterAll(
         CommandRegistry registry,
@@ -17,7 +17,7 @@ public static class ServiceCommands
     {
         serviceArguments ??= [];
 
-        // REQ-A6：从前端搬回服务侧。它逐行把脚本喂给总线，只依赖 Bus 与数据根，
+        // 从前端搬回服务侧。它逐行把脚本喂给总线，只依赖 Bus 与数据根，
         // 没有任何 UI 依赖（原实现连 RequiresUiThread 都没标）。留在前端只会让
         // 一条纯总线能力随前端一起被切出去，还得为此在 aurora 域下重新命名。
         registry.Register(new CommandDescriptor
@@ -87,7 +87,7 @@ public static class ServiceCommands
             },
         }, source);
 
-        // REQ-A6 / DEC-006：与 command.run 同类——只查注册表并拼文本，无任何 UI 依赖。
+        // 与 command.run 同类——只查注册表并拼文本，无任何 UI 依赖。
         // 留在前端会让"查指令帮助"这种基础能力依赖界面进程在线，且它与服务侧已有的
         // command.list / show / domains 本属同一族（都是注册表查询），分处两个进程没有道理。
         // 服务侧注册表含前端投影的能力目录，因此这里的输出比前端版本更完整。
@@ -145,8 +145,8 @@ public static class ServiceCommands
             ConfirmPrompt = _ => "确认退出 HistoryVulcan 前端和后台服务？",
             Handler = async ctx =>
             {
-                var frontend = composition.Bus.FrontendExecutor is { } close
-                    ? await close("vulcan.app.close", ctx.Source, ctx.Cancellation)
+                var frontend = composition.Bus.Frontend is { } ui
+                    ? await ui.ExecuteAsync("vulcan.app.close", ctx.Source, ctx.Cancellation)
                         .ConfigureAwait(false)
                     : CommandResult.Ok("界面未装载");
                 requestStop();
@@ -184,12 +184,13 @@ public static class ServiceCommands
             Domain = "vulcan",
             CommandClass = "svc",
             Summary = "查看或设置用户级登录启动",
+            Example = "vulcan.svc.autostart on",
             Parameters =
             [
                 new ParameterSpec
                 {
                     Name = "mode",
-                    Description = "登录启动开关",
+                    Description = "on 开启、off 关闭用户级登录启动；省略则只查看当前状态",
                     Position = 0,
                     AllowedValues = ["on", "off"],
                 },
@@ -307,7 +308,7 @@ public static class ServiceCommands
     /// 有前端就中继，没有就明确失败。
     ///
     /// 两个中继口都不针对具体产品：外部前端走网关，进程内界面走
-    /// <see cref="CommandBus.FrontendExecutor"/>——谁登记了自己是前端就转给谁。
+    /// <c>IModuleContext.RegisterFrontend</c> 登记的唯一前端——谁登记了自己是前端就转给谁。
     /// </summary>
     private static CommandDescriptor Lifecycle(
         ServiceComposition composition,
@@ -321,8 +322,8 @@ public static class ServiceCommands
             Summary = summary,
             Handler = async context =>
             {
-                if (composition.Bus.FrontendExecutor is { } frontend)
-                    return await frontend(name, context.Source, context.Cancellation).ConfigureAwait(false);
+                if (composition.Bus.Frontend is { } frontend)
+                    return await frontend.ExecuteAsync(name, context.Source, context.Cancellation).ConfigureAwait(false);
 
                 return CommandResult.Fail("界面未装载");
             },

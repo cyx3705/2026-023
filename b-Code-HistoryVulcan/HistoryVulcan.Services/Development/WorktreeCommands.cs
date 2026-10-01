@@ -1,9 +1,11 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Storage;
+using HistoryVulcan.Services.Development.Pipeline;
+using static HistoryVulcan.Services.Development.Pipeline.ToolProcess;
 
 namespace HistoryVulcan.Services.Development;
 
@@ -47,7 +49,7 @@ internal static class WorktreeCommands
             Domain = "vulcan",
             CommandClass = "worktree",
             Summary = "为项目开一个 AI 工作区（git worktree + 新分支）",
-            Example = "vulcan.worktree.create project=2026-020-HistoryJanus slug=cachekey",
+            Example = "vulcan.worktree.create project=2026-020-HistoryJanus slug=cachekey agent=claude",
             Parameters =
             [
                 Text("project", "项目目录名，例如 2026-020-HistoryJanus", required: true, position: 0),
@@ -59,7 +61,7 @@ internal static class WorktreeCommands
             Handler = CommandDescriptor.Sync(context =>
             {
                 var project = context.RequireString("project");
-                if (!DevPipelineCommands.IsHostProject(host.Settings, project))
+                if (!DevPipelineCommands.IsHostTarget(project))
                     return CommandResult.Fail(DevPipelineCommands.ModuleUseStart);
                 return Create(
                     host.Settings,
@@ -100,7 +102,7 @@ internal static class WorktreeCommands
             Handler = async context =>
             {
                 var project = context.RequireString("project");
-                if (!DevPipelineCommands.IsHostProject(host.Settings, project))
+                if (!DevPipelineCommands.IsHostTarget(project))
                     return CommandResult.Fail(DevPipelineCommands.ModuleUseFinish);
                 return await MergeAsync(
                     host,
@@ -149,17 +151,12 @@ internal static class WorktreeCommands
         var projectRoot = Path.Combine(root, projectName);
         Directory.CreateDirectory(projectRoot);
 
-        // 同一提交上常并行开多个尝试，序号取当前已存在的同 SHA 工作区数加一。
-        var ordinal = Directory.Exists(projectRoot)
-            ? Directory.GetDirectories(projectRoot)
-                .Count(dir => Path.GetFileName(dir).StartsWith(head + "-", StringComparison.Ordinal)) + 1
-            : 1;
-        var name = $"{head}-{ordinal}-{author}-{identifier}";
-        var worktreePath = Path.Combine(projectRoot, name);
-        var branch = $"ai/{projectName}/{name}";
-
-        if (Directory.Exists(worktreePath))
-            return CommandResult.Fail($"工作区已存在：{worktreePath}");
+        // 同一提交上常并行开多个尝试。序号跳过已有目录，也跳过 finish 留下的同名分支
+        // （分支一律保留，目录会删掉；只数目录会一直撞 -1- 的旧分支名）。
+        if (!TryAllocateName(
+                projectPath, projectRoot, projectName, head, author, identifier,
+                out var name, out var worktreePath, out var branch, out var allocateError))
+            return CommandResult.Fail(allocateError);
 
         // 克制闸门：对话窗口随时废弃，但工作区留在盘上。已经有一个"开了没干活"的工作区时，
         // 默认拒绝再开一个——那多半是上一轮对话的残留，应该接着用或先回收，而不是又堆一个。
@@ -169,7 +166,7 @@ internal static class WorktreeCommands
             if (idle != null)
             {
                 return CommandResult.Fail(
-                    $"项目已有闲置工作区 {idle}（无提交、无改动）。接着用它，或先 vulcan.worktree.merge 回收；"
+                    $"项目已有闲置工作区 {idle}（无提交、无改动）。接着用它，或先 vulcan.dev.finish 回收；"
                     + "确实需要并行再开时传 confirm=true。");
             }
         }
@@ -185,7 +182,9 @@ internal static class WorktreeCommands
         text.Append($"\n分支: {branch}（基于 {head}）");
         text.Append($"\n项目: {projectPath}");
         text.Append($"\n{overrideNote}");
-        text.Append("\ngrok 按手册四步把对话根迁进此工作区；其他 AI 不要切根，按上面的路径改文件。若对话根已在工作区内，合并前先迁走再 vulcan.worktree.merge。");
+        // 5.7.0（U4）：迁根只与能切对话根的 AI 有关，其他 AI 每次读一整段只是噪声。
+        if (DevPipelineCommands.MovesConversationRoot(author))
+            text.Append("\ngrok 按手册四步把对话根迁进此工作区；其他 AI 不要切根，按上面的路径改文件。若对话根就是此工作区，finish 前先迁走再 vulcan.dev.finish。对话根在另一条 F 盘残留目录上，finish 这条工作区不会删掉当前根。");
         return CommandResult.Ok(text.ToString(), new
         {
             Name = name,
@@ -195,7 +194,6 @@ internal static class WorktreeCommands
             Project = projectName,
         });
     }
-
 
     /// <summary>
     /// 在新工作树里写下本机覆盖点，让它一诞生就能构建。
@@ -233,6 +231,48 @@ internal static class WorktreeCommands
         }
     }
 
+    /// <summary>
+    /// 分配未被目录占用、也未被残留分支占用的工作区名。finish 后分支保留、目录删除，
+    /// 只数目录会反复撞上 <c>-1-</c> 的旧分支。
+    /// </summary>
+    internal static bool TryAllocateName(
+        string projectPath,
+        string projectRoot,
+        string projectName,
+        string head,
+        string author,
+        string identifier,
+        out string name,
+        out string worktreePath,
+        out string branch,
+        out string error)
+    {
+        name = "";
+        worktreePath = "";
+        branch = "";
+        error = "";
+        for (var ordinal = 1; ordinal <= 99; ordinal++)
+        {
+            var candidate = $"{head}-{ordinal}-{author}-{identifier}";
+            var path = Path.Combine(projectRoot, candidate);
+            var candidateBranch = $"ai/{projectName}/{candidate}";
+            if (Directory.Exists(path) || BranchExists(projectPath, candidateBranch))
+                continue;
+            name = candidate;
+            worktreePath = path;
+            branch = candidateBranch;
+            return true;
+        }
+
+        error = $"无法分配工作区名：{head}-*-{author}-{identifier} 的目录或同名分支已占满 1–99。换一个 slug 再 vulcan.dev.start。";
+        return false;
+    }
+
+    private static bool BranchExists(string projectPath, string branch)
+    {
+        var (_, error) = Git(projectPath, "show-ref", "--verify", "--quiet", "refs/heads/" + branch);
+        return error == null;
+    }
 
     /// <summary>找出"开了但没干活"的工作区：既无未提交改动，其分支也没有领先主干的提交。</summary>
     private static string? FindIdleWorktree(string projectPath, string projectRoot)
@@ -279,7 +319,7 @@ internal static class WorktreeCommands
         if (statusError != null)
             return CommandResult.Fail($"读取工作区状态失败：{statusError}");
         if (!string.IsNullOrWhiteSpace(status))
-            return CommandResult.Fail("工作区还有未提交改动，先 vulcan.release.cycle。");
+            return CommandResult.Fail("工作区还有未提交改动，先 vulcan.dev.submit。");
 
         var mainHead = ReadBranch(projectPath);
         if (!string.Equals(mainHead, "main", StringComparison.Ordinal))
@@ -289,15 +329,12 @@ internal static class WorktreeCommands
         if (string.IsNullOrWhiteSpace(branch) || branch == "HEAD")
             return CommandResult.Fail("无法读取工作区分支名。");
 
-        var resolved = ReleaseCommands.TryResolveModuleByProject(
-            host.Settings, projectName, out var module);
-        string? moduleName = resolved ? module.Name : null;
-        if (resolved && module.Kind.Equals("host", StringComparison.OrdinalIgnoreCase)
-            && IsFormalHostRunning(host.Settings, out var hostExe))
+        var isHost = DevPipelineCommands.IsHostTarget(projectName);
+        if (isHost && IsFormalHostRunning(host.Settings, out var hostExe))
         {
             return CommandResult.Fail(
                 $"正式宿主正在运行，合并会替换 {hostExe}。"
-                + "Diana 住在该进程里，不能自己停自己。先停止正式 HistoryVulcan.exe，再 vulcan.worktree.merge，合并后启动新 EXE（后台加 --service）。");
+                + "本命令不停止宿主；目标切换由另行授权的部署步骤处理。");
         }
 
         var (ffOutput, ffError) = Git(projectPath, "merge", "--ff-only", branch);
@@ -318,30 +355,37 @@ internal static class WorktreeCommands
             mergeNote = $"已合并 {branch}（非快进）";
         }
 
-        var removed = Remove(host.Settings, projectName, worktreeName, force: true, skipUnmergedGate: true);
+        var removed = RemoveMergedWorktree(host.Settings, projectName, worktreeName);
 
         string reloadNote;
-        if (resolved && module.Kind.Equals("host", StringComparison.OrdinalIgnoreCase))
+        var reloadFailed = false;
+        // 合并后再读描述：本轮若改了 publish 节，以并回 main 的那份为准（5.8.0，DEC-069）。
+        ReleaseTarget? module = null;
+        if (!isHost)
+            ReleaseCommands.TryLoadModule(host.Settings, projectName, null, out module, out _);
+
+        if (isHost)
         {
             reloadNote = "宿主 EXE 不随模块热重载替换；新快照在下次启动正式 HistoryVulcan.exe 时生效。";
         }
-        else if (resolved)
+        else if (module != null)
         {
             var reload = await ModulePackageHotReload.InstallCurrentAsync(
-                host, projectPath, moduleName!, "host:vulcan.worktree.merge", cancellation).ConfigureAwait(false);
+                host, projectPath, module.Name, "host:vulcan.worktree.merge", cancellation).ConfigureAwait(false);
+            // 5.7.0（U3）：热装回执带附着核对。没接上时合并与回收已经做完、不回滚，
+            // 但整条 finish 的结论必须是失败——否则「已并回」读起来就像「已上线」。
+            reloadFailed = !reload.Success;
             reloadNote = reload.Success
-                ? "已把合并后的版本化候选热重载到 Vulcan 运行区"
-                : $"合并后热重载未成功（{reload.Message}），请从候选或 history 再调同一热重载接口";
+                ? "已把合并后的版本化候选热重载到 Vulcan 运行区。\n" + LastLine(reload.Message)
+                : $"合并与回收已完成，但热重载未成功（不回滚）：{reload.Message}\n请从候选或 history 再调同一热重载接口。";
         }
         else
         {
-            reloadNote = "该项目不是已登记模块，不变更 Vulcan 运行区。";
+            reloadNote = "该项目没有 publish 描述，不变更 Vulcan 运行区。";
         }
 
         var text = new StringBuilder($"{mergeNote}。\n{removed.Message}\n{reloadNote}");
-        text.Append("\n工作区目录已删除。若对话根还在该路径（grok 切过根），迁到项目主树或 Diana；");
-        text.Append("迁到别的仓库后立刻 git branch --show-current，若出现其他项目的 ai/... 分支，checkout main 并删掉误建分支。");
-        if (!removed.Success)
+        if (!removed.Success || reloadFailed)
             return CommandResult.Fail(text.ToString());
         return CommandResult.Ok(text.ToString(), new
         {
@@ -350,6 +394,11 @@ internal static class WorktreeCommands
             Worktree = worktreePath,
         });
     }
+
+    /// <summary>多行回执的最后一行——热装回执的附着核对结论就在那里。</summary>
+    private static string LastLine(string message)
+        => message.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .LastOrDefault() ?? "";
 
     private static CommandResult List(ISettingsService settings, string? project)
     {
@@ -388,8 +437,8 @@ internal static class WorktreeCommands
             rows);
     }
 
-    private static CommandResult Remove(
-        ISettingsService settings, string project, string name, bool force, bool skipUnmergedGate = false)
+    // 仅在 MergeAsync 已确认干净并完成合并后调用；不提供独立的强制删除命令。
+    private static CommandResult RemoveMergedWorktree(ISettingsService settings, string project, string name)
     {
         var projectName = project.Trim();
         var worktreeName = name.Trim();
@@ -405,32 +454,14 @@ internal static class WorktreeCommands
         }
 
         var listed = FindListedWorktree(projectPath, worktreeName) ?? worktreePath;
-        var branch = Directory.Exists(worktreePath) ? ReadBranch(worktreePath) : ReadBranch(listed);
-
-        if (!skipUnmergedGate)
-        {
-            // 有未并回主干的提交时默认拒绝：工作区可再生，提交不可。force 只覆盖 git 自己的
-            // 脏工作区检查，覆盖不了"提交会失去落脚点"这件事，所以这道闸门单独判。
-            var (unmerged, _) = Git(projectPath, "rev-list", "--count", $"main..{branch}");
-            if (!force && int.TryParse(unmerged, out var pending) && pending > 0)
-            {
-                return CommandResult.Fail(
-                    $"该工作区的分支有 {pending} 个提交未并回 main。先 vulcan.worktree.merge，或确认要丢弃后由 merge 以外的 git 操作回收。");
-            }
-        }
-
         var gitPath = listed;
-        var arguments = force
-            ? new[] { "worktree", "remove", "--force", gitPath }
-            : ["worktree", "remove", gitPath];
+        var arguments = new[] { "worktree", "remove", "--force", gitPath };
         var (_, error) = Git(projectPath, arguments);
         if (error != null
             && !string.Equals(gitPath, worktreePath, StringComparison.OrdinalIgnoreCase)
             && Directory.Exists(worktreePath))
         {
-            var retryArgs = force
-                ? new[] { "worktree", "remove", "--force", worktreePath }
-                : new[] { "worktree", "remove", worktreePath };
+            var retryArgs = new[] { "worktree", "remove", "--force", worktreePath };
             var (_, retryError) = Git(projectPath, retryArgs);
             if (retryError == null)
                 error = null;
@@ -449,9 +480,7 @@ internal static class WorktreeCommands
                     new { Path = worktreePath });
             }
 
-            return CommandResult.Fail(force
-                ? $"移除失败：{error}" + (leftoverAfterFail == null ? "" : "\n" + leftoverAfterFail)
-                : $"移除失败（有未提交改动时加 force=true）：{error}");
+            return CommandResult.Fail($"移除失败：{error}" + (leftoverAfterFail == null ? "" : "\n" + leftoverAfterFail));
         }
 
         Git(projectPath, "worktree", "prune");
@@ -463,12 +492,9 @@ internal static class WorktreeCommands
         }
         var text = $"已回收工作区 {worktreeName}，分支保留未删。";
         if (leftover != null)
-            return CommandResult.Fail(text);
+            return CommandResult.Fail($"已合并，工作区未完全回收：{worktreeName}\n{leftover}");
         return CommandResult.Ok(text, new { Path = worktreePath });
     }
-
-    /// <summary>供同模块的其他命令解析工作区根，避免第二处默认值。</summary>
-    internal static string ResolveRootPublic(ISettingsService settings) => ResolveRoot(settings, null);
 
     internal static string ResolveWorktreePath(ISettingsService settings, string project, string nameOrPath)
     {
@@ -588,50 +614,12 @@ internal static class WorktreeCommands
         return false;
     }
 
-    private static string ResolveRoot(ISettingsService settings, string? rootOverride)
+    internal static string ResolveRoot(ISettingsService settings, string? rootOverride)
     {
         if (!string.IsNullOrWhiteSpace(rootOverride) && Path.IsPathFullyQualified(rootOverride.Trim()))
             return rootOverride.Trim();
         var configured = settings.Get(KeyWorktreeRoot);
         return string.IsNullOrWhiteSpace(configured) ? DefaultRoot : configured.Trim();
-    }
-
-    private static (string Output, string? Error) Git(string workingDirectory, params string[] arguments)
-    {
-        try
-        {
-            var startInfo = new ProcessStartInfo("git")
-            {
-                WorkingDirectory = workingDirectory,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                StandardOutputEncoding = new UTF8Encoding(false),
-                StandardErrorEncoding = new UTF8Encoding(false),
-            };
-            startInfo.Environment["LC_ALL"] = "C.UTF-8";
-            startInfo.ArgumentList.Add("-c");
-            startInfo.ArgumentList.Add("core.quotepath=false");
-            startInfo.ArgumentList.Add("-c");
-            startInfo.ArgumentList.Add("i18n.logOutputEncoding=utf-8");
-            foreach (var argument in arguments)
-                startInfo.ArgumentList.Add(argument);
-
-            using var process = Process.Start(startInfo);
-            if (process == null)
-                return ("", "无法启动 git");
-            var output = process.StandardOutput.ReadToEnd();
-            var error = process.StandardError.ReadToEnd();
-            process.WaitForExit(180_000);
-            return process.ExitCode == 0
-                ? (output.Trim(), null)
-                : (output.Trim(), string.IsNullOrWhiteSpace(error) ? $"git 退出码 {process.ExitCode}" : error.Trim());
-        }
-        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException)
-        {
-            return ("", ex.Message);
-        }
     }
 
     private static ParameterSpec Text(string name, string description, bool required = false, int? position = null)

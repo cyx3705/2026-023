@@ -15,24 +15,22 @@
       "package"
     ],
     "status": "active",
-    "version": "5.0.1",
+    "version": "6.1.1",
     "branch": "main",
-    "freezeTag": "v3.0.3"
+    "freezeTag": "v6.0.0"
   },
   "paths": {
     "activeRoots": [
       "b-Code-HistoryVulcan",
       "b-Code-Tests",
       "b-Code-Eng",
-      "b-Office/current",
-      "b-Office/package"
+      "b-Office/current"
     ],
     "sourceRoots": [
       "b-Code-HistoryVulcan"
     ],
     "generatedRoots": [
-      "z-Publish/host",
-      "z-Publish/docs"
+      "z-Publish/host"
     ],
     "archiveRoots": [
       "b-Office/history",
@@ -52,20 +50,18 @@
   },
   "documents": {
     "center": "b-Office/文档中心.md",
-    "package": "b-Office/package/复用说明.md",
+    "moduleDevelopment": "b-Office/current/模块开发手册.md",
     "overview": "b-Office/current/项目概览.md",
     "technicalContract": "b-Office/current/技术合同.md",
     "decisions": "b-Office/current/有效决策.md",
     "verification": "b-Office/current/验证合同.md",
     "freeze": "b-Office/current/冻结合同.md",
     "commandPipelineAudit": "b-Office/current/断头指令审计表.md",
+    "hostRefactoring": "b-Office/history/5.3.0-宿主重构说明.md",
     "uiPlan31": "b-Office/history/V3.1界面现代化方案.md",
     "classRealign332": "b-Office/history/3.3.2-vulcan-class-realign.md",
     "historyBoundary": "b-Office/history/历史资料说明.md",
     "servicePlan32": "b-Office/history/V3.2后台服务化方案.md",
-    "apiManual": "b-Office/package/HistoryVulcan_API与指令手册.md",
-    "runtimeLimits": "b-Office/package/HistoryVulcan_运行时约束与已知限制.md",
-    "consumerChanges": "b-Office/package/HistoryVulcan_消费变更摘要.md",
     "upgradeGuideIndex": "b-Office/history/升级指南-总纲.md",
     "upgradeGuideDiana": "b-Office/history/升级指南-HistoryDiana.md",
     "upgradeGuideJanus": "b-Office/history/升级指南-HistoryJanus.md",
@@ -92,6 +88,13 @@
       "freezeTag"
     ],
     "linkCheckMode": "declared",
+    "linkCheckAdditionalFiles": [
+      "AGENTS.md",
+      "b-Code-HistoryVulcan/README.md",
+      "b-Code-HistoryVulcan/PACKAGE.md",
+      "b-Code-Tests/README.md",
+      "b-Code-Eng/README.md"
+    ],
     "host": {
       "identity": {
         "id": "2026-023",
@@ -99,29 +102,26 @@
       },
       "versionProps": "b-Code-HistoryVulcan/VulcanVersion.props",
       "versionProperty": "VulcanVersion"
-    }
+    },
+    "requirementTestRoot": "b-Code-Tests/HistoryVulcan.Tests"
   },
   "commands": {
     "setup": "dotnet restore .\\HistoryVulcan.sln --locked-mode",
     "build": "dotnet build .\\HistoryVulcan.sln -c Release --no-restore",
     "test": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj -c Release --no-build --no-restore",
-    "verify": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj -c Release --filter FullyQualifiedName~ReleasePipelineTests",
+    "verify": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj -c Release --filter \"FullyQualifiedName~ReleasePipelineTests|FullyQualifiedName~ProjectContractValidationTests\"",
     "run": "dotnet run --project .\\b-Code-HistoryVulcan\\App\\App.csproj",
-    "package": "HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=package",
-    "deploy": "HistoryVulcan.exe --cli vulcan.release.cycle name=HistoryVulcan msg=deploy",
+    "package": "HistoryVulcan.Cli.exe --cli vulcan.release.cycle name=HistoryVulcan msg=package",
+    "deploy": "HistoryVulcan.Cli.exe --cli vulcan.release.cycle name=HistoryVulcan msg=deploy",
     "publicApiGate": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj --filter FullyQualifiedName~QualityGatesPassOnThisRepository",
-    "qualityGate": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj --filter FullyQualifiedName~QualityGatesPassOnThisRepository"
+    "qualityGate": "dotnet test .\\b-Code-Tests\\HistoryVulcan.Tests\\HistoryVulcan.Tests.csproj --filter FullyQualifiedName~QualityGatesPassOnThisRepository",
+    "format": "dotnet format .\\HistoryVulcan.sln --verify-no-changes --no-restore"
   },
   "externalDependencies": [
     {
       "name": ".NET SDK",
       "version": "9.0.315",
       "purpose": "构建 net8.0 与 net8.0-windows 目标"
-    },
-    {
-      "name": "Dirkster.AvalonDock",
-      "version": "4.72.1",
-      "purpose": "WPF 停靠布局实现；本仓 Core 仍暴露停靠契约，桌面封装在 HistoryAurora"
     }
   ],
   "contextExclusions": [
