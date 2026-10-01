@@ -245,7 +245,6 @@ public sealed class PipelineHardeningTests
                 IdentityProperty: "name",
                 CandidateDirectory: "z-Publish",
                 FormalDirectory: "z-Publish",
-                PackageDocuments: "",
                 Package: null,
                 Validation: [],
                 TestProject: "");
@@ -441,7 +440,6 @@ public sealed class PipelineHardeningTests
             IdentityProperty: "name",
             CandidateDirectory: "z-Publish",
             FormalDirectory: "z-Publish",
-            PackageDocuments: "",
             Package: null,
             Validation: [],
             TestProject: "");

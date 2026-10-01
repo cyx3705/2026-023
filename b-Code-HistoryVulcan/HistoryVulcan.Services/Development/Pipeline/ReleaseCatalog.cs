@@ -27,7 +27,6 @@ internal sealed record ReleaseTarget(
     string IdentityProperty,
     string CandidateDirectory,
     string FormalDirectory,
-    string PackageDocuments,
     PackageLayout? Package,
     IReadOnlyList<ValidationStep> Validation,
     string TestProject);
@@ -66,7 +65,6 @@ internal static class ReleaseCatalog
         "product",
         "z-Publish",
         "z-Publish",
-        "b-Office\\package",
         new PackageLayout(
             "b-Code-HistoryVulcan\\App\\App.csproj",
             null,
@@ -112,7 +110,7 @@ internal static class ReleaseCatalog
             ReadString(publish, "identityProperty", "name"),
             ReadString(publish, "candidateDirectory", "z-Publish"),
             ReadString(publish, "formalDirectory", "z-Publish"),
-            ReadString(publish, "packageDocuments", "b-Office\\package"),
+            // 6.1.0 起不再读 packageDocuments：消费文档退役（DEC-072），旧描述里留着这个键也只是被忽略。
             ReadPackage(publish),
             ReadValidation(publish),
             "");

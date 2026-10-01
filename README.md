@@ -33,7 +33,7 @@ HistoryVulcan 是 OneHistory 的模块宿主：负责模块发现、校验、装
 | `dev` | `start` / `submit` / `finish` | 模块开发管线（只走 Console CLI） |
 | `release` | `cycle` | 宿主自身的发布 |
 
-命令契约、模块包格式与 CLI 通道见 [模块 API](./b-Office/package/模块API.md)。
+接入契约、模块包格式与 CLI 通道见 [模块开发手册](./b-Office/current/模块开发手册.md)；指令怎么调用看注册自描述（`diana.docs.catalog` / `diana.docs.read`）。
 
 ## 入口
 
@@ -46,8 +46,7 @@ HistoryVulcan 是 OneHistory 的模块宿主：负责模块发现、校验、装
 | [技术合同](./b-Office/current/技术合同.md) | 唯一 REQ 定义与验收方法 |
 | [有效决策](./b-Office/current/有效决策.md) | 决策依据与规则索引 |
 | [验证合同](./b-Office/current/验证合同.md) | 验证命令、测试边界与交付检查 |
-| [模块 API](./b-Office/package/模块API.md) | 模块接入与消费语义 |
-| [模块开发手册](./b-Office/package/模块开发手册.md) | 工作区、submit/finish 与模块文档规范 |
+| [模块开发手册](./b-Office/current/模块开发手册.md) | 接入契约、工作区与 submit/finish、指令自描述规范、观察取证 |
 
 ## 目录
 
@@ -56,7 +55,7 @@ HistoryVulcan 是 OneHistory 的模块宿主：负责模块发现、校验、装
 | `b-Code-HistoryVulcan/` | 产品源码：Core、Services、ServiceHost、App、Cli |
 | `b-Code-Tests/` | 宿主测试 |
 | `b-Code-Eng/` | 宿主冻结标签表、public-api 基线与发布输入 |
-| `b-Office/` | 项目文档：`current/` 现行合同、`package/` 消费合同、`history/` 只读归档 |
+| `b-Office/` | 项目文档：`current/` 现行合同（含模块开发手册）、`history/` 只读归档 |
 | `z-Publish/` | 宿主快照（根部 `host/` 扁平）与 `history/` 归档，不能手改 |
 
 ## 构建与验证

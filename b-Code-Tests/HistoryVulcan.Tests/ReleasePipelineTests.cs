@@ -26,13 +26,15 @@ public sealed class ReleasePipelineTests
     {
         var root = RepositoryPaths.Root();
         var agents = File.ReadAllText(Path.Combine(root, "AGENTS.md"));
-        var manual = File.ReadAllText(Path.Combine(root, "b-Office", "package", "模块开发手册.md"));
+        var manual = File.ReadAllText(Path.Combine(root, "b-Office", "current", "模块开发手册.md"));
 
+        // 6.1.0（DEC-072）：说明书来自指令自描述，Diana 不可用时降级到宿主指令目录，不再有 z-Publish/docs。
         foreach (var contract in new[] { agents, manual })
         {
             Assert.Contains("diana.docs.catalog", contract, StringComparison.Ordinal);
             Assert.Contains("Diana MCP 工具未暴露或调用失败", contract, StringComparison.Ordinal);
-            Assert.Contains("正式 `z-Publish/docs`", contract, StringComparison.Ordinal);
+            Assert.Contains("vulcan.command.show", contract, StringComparison.Ordinal);
+            Assert.DoesNotContain("z-Publish/docs", contract, StringComparison.Ordinal);
             Assert.Contains("diana.view.windows", contract, StringComparison.Ordinal);
             Assert.Contains("diana.view.capture", contract, StringComparison.Ordinal);
         }

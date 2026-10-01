@@ -52,17 +52,8 @@ internal static class ModuleSnapshotBuilder
             File.Copy(source, destination, overwrite: true);
         }
 
-        var docsRoot = Path.Combine(stagingRoot, "docs");
-        var documentSource = Path.Combine(projectRoot, target.PackageDocuments);
-        if (!Directory.Exists(documentSource))
-            throw new InvalidOperationException($"包文档源缺失：{documentSource}");
-        var documents = Directory.GetFiles(documentSource, "*.md");
-        if (documents.Length == 0)
-            throw new InvalidOperationException($"没有消费 Markdown 文档：{documentSource}");
-        Directory.CreateDirectory(docsRoot);
-        foreach (var document in documents)
-            File.Copy(document, Path.Combine(docsRoot, Path.GetFileName(document)), overwrite: true);
-
+        // 6.1.0（DEC-072）：模块包不再带 docs/ 消费文档。说明书只来自指令注册时的自描述，
+        // 由 Diana 现查宿主指令目录渲染；包里只剩运行需要的文件。
         SnapshotHashes.Write(stagingRoot);
         AssertSnapshot(stagingRoot, target, version);
         return stagingRoot;

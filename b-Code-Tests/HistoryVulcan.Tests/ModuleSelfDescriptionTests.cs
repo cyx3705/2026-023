@@ -24,7 +24,6 @@ public sealed class ModuleSelfDescriptionTests
                 "versionProps": "b-Code\\Version.props",
                 "versionProperty": "HistorySampleVersion",
                 "sourceManifest": "b-Code\\module.manifest.json",
-                "packageDocuments": "b-Office-Sample\\package",
                 "package": { "project": "b-Code\\HistorySample.csproj", "files": ["HistorySample.dll"] },
                 "validation": [{ "tool": "dotnet.exe", "configurations": ["Debug", "Release"], "arguments": ["test"], "description": "tests" }]
               }
@@ -38,7 +37,6 @@ public sealed class ModuleSelfDescriptionTests
             Assert.Equal("HistorySample", target!.Name);
             Assert.Equal("module", target.Kind);
             Assert.Equal("2026-099-HistorySample", target.ProjectDirectory);
-            Assert.Equal("b-Office-Sample\\package", target.PackageDocuments);
             // 省略的字段取默认值：模块只写和别人不一样的部分。
             Assert.Equal("module.manifest.json", target.SnapshotManifest);
             Assert.Equal("name", target.IdentityProperty);

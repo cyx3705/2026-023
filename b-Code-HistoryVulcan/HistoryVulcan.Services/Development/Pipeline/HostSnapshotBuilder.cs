@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text;
 using System.Text.Json;
 
 namespace HistoryVulcan.Services.Development.Pipeline;
@@ -11,18 +10,15 @@ internal static class HostSnapshotBuilder
         var solution = Path.Combine(projectRoot, "HistoryVulcan.sln");
         var project = Path.Combine(projectRoot, "b-Code-HistoryVulcan", "App", "App.csproj");
         var cliProject = Path.Combine(projectRoot, "b-Code-HistoryVulcan", "Cli", "HistoryVulcan.Cli.csproj");
-        var documentRoot = Path.Combine(projectRoot, "b-Office", "package");
-        var catalogPath = Path.Combine(projectRoot, "b-Code-Eng", "release", "consumer-docs.json");
-        var documentNames = ReadDocuments(catalogPath);
+        // 6.1.0（DEC-072）：快照不再带 docs/。模块开发手册是宿主仓的现行文档，
+        // 指令说明书由 Diana 现查指令目录，两者都不随包分发。
         var expectedFileVersion = version + ".0";
 
         var transaction = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Package." + Guid.NewGuid().ToString("N"));
         var staging = Path.Combine(transaction, "candidate");
         var hostDir = Path.Combine(staging, "host");
-        var docsDir = Path.Combine(staging, "docs");
         var buildOutput = Path.Combine(transaction, "build");
         Directory.CreateDirectory(hostDir);
-        Directory.CreateDirectory(docsDir);
 
         try
         {
@@ -51,18 +47,10 @@ internal static class HostSnapshotBuilder
             if (fileVersion != expectedFileVersion)
                 throw new InvalidOperationException($"宿主可执行文件版本 {fileVersion} 与 {expectedFileVersion} 不一致。");
 
-            foreach (var name in documentNames)
-            {
-                var source = Path.Combine(documentRoot, name);
-                if (!File.Exists(source))
-                    throw new InvalidOperationException($"缺少消费文档：{source}");
-                File.Copy(source, Path.Combine(docsDir, name), overwrite: true);
-            }
-
             var commit = ToolProcess.Capture("git", ["rev-parse", "HEAD"], projectRoot);
             var dirty = ToolProcess.Capture(
                 "git",
-                ["status", "--porcelain", "--", "b-Code-HistoryVulcan", "b-Code-Eng", "b-Office/package", "project.manifest.json"],
+                ["status", "--porcelain", "--", "b-Code-HistoryVulcan", "b-Code-Eng", "project.manifest.json"],
                 projectRoot).Length > 0;
 
             var payload = SnapshotHashes.EnumeratePayload(staging);
@@ -80,10 +68,6 @@ internal static class HostSnapshotBuilder
                 writer.WriteBoolean("selfContained", false);
                 writer.WriteString("sourceCommit", commit);
                 writer.WriteBoolean("sourceDirty", dirty);
-                writer.WriteStartArray("documents");
-                foreach (var name in documentNames)
-                    writer.WriteStringValue(name);
-                writer.WriteEndArray();
                 writer.WriteStartArray("files");
                 foreach (var file in payload)
                 {
@@ -99,7 +83,7 @@ internal static class HostSnapshotBuilder
             }
 
             SnapshotHashes.Write(staging);
-            AssertSnapshot(staging, version, documentNames, expectedFileVersion);
+            AssertSnapshot(staging, version, expectedFileVersion);
 
             Directory.CreateDirectory(outputRoot);
             var incoming = Path.Combine(outputRoot, ".incoming-host-" + Guid.NewGuid().ToString("N"));
@@ -128,25 +112,9 @@ internal static class HostSnapshotBuilder
         }
     }
 
-    private static IReadOnlyList<string> ReadDocuments(string catalogPath)
-    {
-        using var document = JsonDocument.Parse(File.ReadAllText(catalogPath, new UTF8Encoding(false)));
-        if (!document.RootElement.TryGetProperty("schemaVersion", out var schema) || schema.GetInt32() != 1)
-            throw new InvalidOperationException("消费文档清单无效。");
-        var names = document.RootElement.GetProperty("documents")
-            .EnumerateArray()
-            .Select(item => item.GetProperty("file").GetString() ?? "")
-            .Where(name => name.Length > 0)
-            .ToList();
-        if (names.Count == 0 || names.Count != names.Distinct(StringComparer.OrdinalIgnoreCase).Count())
-            throw new InvalidOperationException("消费文档清单无效。");
-        return names;
-    }
-
     private static void AssertSnapshot(
         string root,
         string version,
-        IReadOnlyList<string> documentNames,
         string expectedFileVersion)
     {
         var hostExe = Path.Combine(root, "host", "HistoryVulcan.exe");
@@ -157,12 +125,6 @@ internal static class HostSnapshotBuilder
         var fileVersion = FileVersionInfo.GetVersionInfo(hostExe).FileVersion ?? "";
         if (fileVersion != expectedFileVersion)
             throw new InvalidOperationException($"宿主可执行文件版本 {fileVersion} 与 {expectedFileVersion} 不一致。");
-
-        foreach (var name in documentNames)
-        {
-            if (!File.Exists(Path.Combine(root, "docs", name)))
-                throw new InvalidOperationException($"快照缺少 docs/{name}");
-        }
 
         foreach (var required in new[] { "manifest.json", SnapshotHashes.FileName })
         {
