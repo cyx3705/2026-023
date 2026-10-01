@@ -15,7 +15,7 @@ namespace HistoryVulcan.Core.Commands;
 /// 宿主交给模块的那一条在装配完成后封口，这些开关只读，前端经
 /// <see cref="IModuleContext.RegisterFrontend"/> 登记，同一宿主只允许一个。
 /// </remarks>
-public sealed class CommandBus : ICommandBus
+internal sealed class CommandBus : ICommandBus
 {
     /// <summary>回显类别前缀;控制台按此前缀识别指令行。</summary>
     public const string EchoCategoryPrefix = "cmd:";
@@ -519,7 +519,7 @@ public sealed class CommandBus : ICommandBus
 /// 二次确认通道(§5.2 拦截器链的首个内置拦截器;T-08 / R-06 等危险操作依赖)。
 /// 界面以模态对话框实现;无 UI 场景(脚本/测试)可注入自动拒绝或自动通过的实现。
 /// </summary>
-public interface IConfirmationService
+internal interface IConfirmationService
 {
     /// <summary>返回 true 表示用户确认继续。</summary>
     bool Confirm(string prompt);

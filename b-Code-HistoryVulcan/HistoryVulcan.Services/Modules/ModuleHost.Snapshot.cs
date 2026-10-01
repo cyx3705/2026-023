@@ -5,7 +5,7 @@ using HistoryVulcan.Core.Modules;
 
 namespace HistoryVulcan.Services.Modules;
 
-public sealed partial class ModuleHost
+internal sealed partial class ModuleHost
 {
     // ---------------------------------------------------------------- 快照与加载上下文
 
@@ -163,17 +163,26 @@ public sealed partial class ModuleHost
         };
 
         private ModuleEnvironment? _environment;
+        private ModuleBus? _moduleBus;
 
-        public CommandBus Bus => bus;
+        // 6.0.0（DEC-071）：模块只见窄总线，经它的调用由宿主盖来源章。
+        public ICommandBus Bus => _moduleBus ??= new ModuleBus(bus, owner);
 
-        // 5.5.0：宿主唯一日志。进度、结果、界面操作与模块自己的诊断都写这一份。
-        public HistoryVulcan.Core.Logging.IShellLog Log => bus.Log;
+        // 5.5.0：宿主唯一日志。进度、结果、界面操作与模块自己的诊断都写这一份；6.0.0 起模块只能写。
+        public HistoryVulcan.Core.Logging.IModuleLog Log => bus.Log;
 
         public IDisposable RegisterFrontend(IFrontend frontend) => bus.ClaimFrontend(owner, frontend);
 
         public IModuleEnvironment Environment
             => _environment ??= new ModuleEnvironment(
-                owner, host.ModuleDataDirectory(owner), host.RunMode, AppIdentity.Current.Version);
+                owner, host.ModuleDataDirectory(owner), PackageDirectoryOf(owner), host.RunMode, AppIdentity.Current.Version);
+
+        private string PackageDirectoryOf(string name)
+            => snapshot.Metas
+                   .Where(meta => meta.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                   .Select(meta => meta.SourcePath)
+                   .FirstOrDefault(path => !string.IsNullOrWhiteSpace(path))
+               ?? throw new InvalidOperationException($"模块 {name} 没有登记包目录。");
 
         public IDisposable Subscribe(string topic, Action<BusEvent> handler)
             => bus.Events.Subscribe(topic, owner, handler);
@@ -192,7 +201,7 @@ public sealed partial class ModuleHost
             bus.Events.Publish(value, "module:" + owner, payload);
         }
 
-        public void RegisterCommands(Action<CommandRegistry> configure)
+        public void RegisterCommands(Action<ICommandRegistrar> configure)
         {
             ArgumentNullException.ThrowIfNull(configure);
             var staging = new CommandRegistry();
@@ -218,9 +227,12 @@ public sealed partial class ModuleHost
     /// 路径归宿主，内容归模块；装包、热重载、卸载都不动它。
     /// </summary>
     private sealed class ModuleEnvironment(
-        string moduleName, string dataDirectory, HostRunMode runMode, string hostVersion) : IModuleEnvironment
+        string moduleName, string dataDirectory, string packageDirectory, HostRunMode runMode, string hostVersion)
+        : IModuleEnvironment
     {
         public string ModuleName => moduleName;
+
+        public string PackageDirectory => packageDirectory;
 
         public string DataDirectory
         {

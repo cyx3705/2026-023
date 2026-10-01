@@ -11,9 +11,8 @@ public sealed class ModulePackageTransactionTests : IDisposable
     {
         var runtime = Path.Combine(_root, "Modules");
         var target = Path.Combine(runtime, "Sample");
-        Directory.CreateDirectory(Path.Combine(target, "data"));
+        Directory.CreateDirectory(target);
         File.WriteAllText(Path.Combine(target, "original.dll"), "old payload");
-        File.WriteAllText(Path.Combine(target, "data", "state.txt"), "old state");
         return new ModulePackageTransaction(runtime, target);
     }
 
@@ -26,7 +25,6 @@ public sealed class ModulePackageTransactionTests : IDisposable
     private static void AssertOriginal(ModulePackageTransaction transaction)
     {
         Assert.Equal("old payload", File.ReadAllText(Path.Combine(transaction.Target, "original.dll")));
-        Assert.Equal("old state", File.ReadAllText(Path.Combine(transaction.Target, "data", "state.txt")));
         Assert.False(File.Exists(Path.Combine(transaction.Target, "new.dll")));
     }
 
@@ -47,28 +45,30 @@ public sealed class ModulePackageTransactionTests : IDisposable
     }
 
     [Fact]
-    public void FailedNewPackageRestoresDataEvenAfterTheNewInstanceWritesIt()
+    public void FailedNewPackageRestoresTheOriginalEvenAfterTheNewInstanceWritesIntoTheSlot()
     {
         var transaction = Create();
         Stage(transaction);
         transaction.BackupTarget();
         transaction.InstallStaged();
-        File.WriteAllText(Path.Combine(transaction.Target, "data", "state.txt"), "new instance changed it");
+        File.WriteAllText(Path.Combine(transaction.Target, "written-by-new-instance.txt"), "stray");
         Assert.True(transaction.Rollback().Success);
         AssertOriginal(transaction);
+        Assert.False(File.Exists(Path.Combine(transaction.Target, "written-by-new-instance.txt")));
         Assert.False(Directory.Exists(transaction.Root));
     }
 
     [Fact]
-    public void DataCopyFailureRestoresTheOriginal()
+    public void InstallReplacesTheWholeSlotAndCarriesNothingForward()
     {
+        // 6.0.0：模块数据在宿主给的 ModuleData/<名>/，槽位里没有要保留的东西；旧槽里的任何文件都不跟到新包。
         var transaction = Create();
+        File.WriteAllText(Path.Combine(transaction.Target, "data-left-by-old-version.txt"), "old");
         Stage(transaction);
         transaction.BackupTarget();
-        using (File.Open(Path.Combine(transaction.Backup, "data", "state.txt"), FileMode.Open, FileAccess.Read, FileShare.None))
-            Assert.Throws<IOException>(transaction.InstallStaged);
-        Assert.True(transaction.Rollback().Success);
-        AssertOriginal(transaction);
+        transaction.InstallStaged();
+        transaction.Commit();
+        Assert.Equal("new.dll", Path.GetFileName(Assert.Single(Directory.GetFiles(transaction.Target))));
     }
 
     [Fact]
@@ -83,7 +83,6 @@ public sealed class ModulePackageTransactionTests : IDisposable
         Assert.False(rollback.Success);
         Assert.Contains(transaction.Backup, rollback.Message, StringComparison.Ordinal);
         Assert.Equal("old payload", File.ReadAllText(Path.Combine(transaction.Backup, "original.dll")));
-        Assert.Equal("old state", File.ReadAllText(Path.Combine(transaction.Backup, "data", "state.txt")));
         Assert.Equal(ModulePackageTransaction.Stage.RecoveryRequired, transaction.CurrentStage);
     }
 
@@ -99,7 +98,6 @@ public sealed class ModulePackageTransactionTests : IDisposable
         Assert.Equal(ModulePackageTransaction.Stage.Committed, transaction.CurrentStage);
         Assert.False(transaction.Rollback().Success);
         Assert.Equal("new payload", File.ReadAllText(Path.Combine(transaction.Target, "new.dll")));
-        Assert.Equal("old state", File.ReadAllText(Path.Combine(transaction.Target, "data", "state.txt")));
     }
 
     [Fact]

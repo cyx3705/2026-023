@@ -100,14 +100,17 @@ internal sealed class HostEventPublisher : IDisposable
         // 事件中枢自己的诊断不转发，否则「处理器出错 → 记日志 → 再投递」会绕圈。
         if (entry.Category.Equals(BusEventHub.LogCategory, StringComparison.Ordinal))
             return;
-        _bus.Events.Publish(LogEntry, HostSource, new
-        {
-            time = entry.Time,
-            level = entry.Level.ToString().ToLowerInvariant(),
-            category = entry.Category,
-            message = entry.Message,
-        });
+        _bus.Events.Publish(LogEntry, HostSource, ToPayload(entry));
     }
+
+    /// <summary><c>vulcan.log.entry</c> 的载荷形状；<c>vulcan.log.recent</c> 逐条用同一形状（6.0.0）。</summary>
+    internal static object ToPayload(ShellLogEntry entry) => new
+    {
+        time = entry.Time,
+        level = entry.Level.ToString().ToLowerInvariant(),
+        category = entry.Category,
+        message = entry.Message,
+    };
 
     public void Dispose()
     {

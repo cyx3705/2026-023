@@ -13,7 +13,10 @@ public enum HostRunMode
     /// <summary>正式后台服务（登录启动的 HistoryVulcan.exe）。</summary>
     Service = 0,
 
-    /// <summary>离线命令行组合（HistoryVulcan.Cli.exe --cli），执行一条指令后退出。</summary>
+    /// <summary>
+    /// 一次性离线组合：命令行 <c>HistoryVulcan.Cli.exe --cli</c> 与无头导出 <c>--export-command-manual</c>，
+    /// 做完一件事就退出。模块在这种方式下不应开端口或改写对外通告文件。
+    /// </summary>
     OfflineCli = 1,
 
     /// <summary>测试装载（HistoryVulcan.Cli.exe --probe），只装一个候选包。</summary>
@@ -31,6 +34,13 @@ public interface IModuleEnvironment
     /// <c>vulcan.module.uninstall purge=true</c> 才删除。目录由宿主创建。
     /// </summary>
     string DataDirectory { get; }
+
+    /// <summary>
+    /// 本模块的完整包目录（运行区槽位，只读）。要找随包发布的文件（如外部可执行程序）就从这里拼，
+    /// 不要从宿主数据根推运行区布局，也不要用 <c>Assembly.Location</c>——宿主从内存流装载程序集，它是空的。
+    /// 不要往里写：槽位里出现清单外的文件，下一轮发现就判为坏包。（6.0.0）
+    /// </summary>
+    string PackageDirectory { get; }
 
     /// <summary>宿主当前的运行方式。</summary>
     HostRunMode RunMode { get; }

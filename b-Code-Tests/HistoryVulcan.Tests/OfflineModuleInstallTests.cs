@@ -11,17 +11,15 @@ public sealed class OfflineModuleInstallTests : IDisposable
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void BackupAndDataCopyFailuresPreserveTheCompleteInstalledPackage(bool allowBackup)
+    public void BackupFailurePreservesTheCompleteInstalledPackage(bool allowDelete)
     {
         var runtime = Path.Combine(_root, "Modules");
         var original = RuntimeModulePackageTests.CreatePackage(runtime, "Sample", "Sample", "1.0.0");
         var incoming = RuntimeModulePackageTests.CreatePackage(_root, "incoming", "Sample", "2.0.0");
-        Directory.CreateDirectory(Path.Combine(original, "data", "nested"));
-        var data = Path.Combine(original, "data", "nested", "state");
-        File.WriteAllText(data, "original user data");
+        var payload = Path.Combine(original, "ContextFixture.dll");
         var expected = Hashes(original);
         OfflineModuleInstall.Result result;
-        using (File.Open(data, FileMode.Open, FileAccess.Read, allowBackup ? FileShare.Delete : FileShare.Read))
+        using (File.Open(payload, FileMode.Open, FileAccess.Read, allowDelete ? FileShare.Read | FileShare.Delete : FileShare.Read))
             result = OfflineModuleInstall.Install(runtime, incoming);
         Assert.Equal(1, result.ExitCode);
         Assert.Equal(expected, Hashes(original));
@@ -30,18 +28,15 @@ public sealed class OfflineModuleInstallTests : IDisposable
     }
 
     [Fact]
-    public void OfflineUpgradeCopiesNestedDataAndCommitsTheVerifiedPayload()
+    public void OfflineUpgradeCommitsTheVerifiedPayload()
     {
         var runtime = Path.Combine(_root, "Modules");
         var original = RuntimeModulePackageTests.CreatePackage(runtime, "Sample", "Sample", "1.0.0");
         var incoming = RuntimeModulePackageTests.CreatePackage(_root, "incoming", "Sample", "2.0.0");
-        Directory.CreateDirectory(Path.Combine(original, "data", "nested"));
-        File.WriteAllText(Path.Combine(original, "data", "nested", "state"), "original user data");
         var result = OfflineModuleInstall.Install(runtime, incoming);
         Assert.Equal(0, result.ExitCode);
         Assert.True(RuntimeModuleDiscoverySource.TryReadPackage(original, out var entry, out _, out var error), error);
         Assert.Equal("2.0.0", entry.Version);
-        Assert.Equal("original user data", File.ReadAllText(Path.Combine(original, "data", "nested", "state")));
         Assert.Equal(File.ReadAllBytes(Path.Combine(incoming, "ContextFixture.dll")),
             File.ReadAllBytes(Path.Combine(original, "ContextFixture.dll")));
         Assert.False(Directory.Exists(Path.Combine(_root, ".module-transactions")));

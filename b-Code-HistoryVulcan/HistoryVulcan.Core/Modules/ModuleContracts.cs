@@ -1,8 +1,8 @@
 // 模块契约：注册器装载模块时给什么、模块回给注册器什么。
 //
-// 5.0 起宿主不再向模块注入设置、日志、数据根或界面抽象。
-// 模块只拿到命令总线、把指令暂存进当前快照的登记口，以及（5.4 起）登记唯一前端的入口。
-// 5.5 起另给宿主那唯一一份日志：控制台只显示它，界面不再自建第二份。
+// 6.0.0（DEC-071）起宿主给模块的只有「一条总线 + 一个上下文」：
+// 窄总线 ICommandBus、只加不删的登记口 ICommandRegistrar、只写日志 IModuleLog、
+// 运行环境、总线事件，以及登记唯一前端的入口。总线、注册表与日志的具体类都在宿主内部。
 // 身份仍是 BaseVariable.ModuleInfoBase 的全名鸭子类型（MD-02）。
 
 using HistoryVulcan.Core.Commands;
@@ -10,30 +10,33 @@ using HistoryVulcan.Core.Logging;
 
 namespace HistoryVulcan.Core.Modules;
 
-/// <summary>注册器在装载时交给模块的唯一运行时入口：总线、指令登记与前端登记。</summary>
+/// <summary>注册器在装载时交给模块的唯一运行时入口：总线、指令登记、日志、环境、事件与前端登记。</summary>
 public interface IModuleContext
 {
-    /// <summary>当前宿主进程拥有的那一条命令总线。宿主装配的开关在其上只读。</summary>
-    CommandBus Bus { get; }
+    /// <summary>
+    /// 宿主那一条命令总线的模块视图（6.0.0 起为窄接口）。经它执行的调用由宿主盖来源章
+    /// <c>module:&lt;模块名&gt;</c>。
+    /// </summary>
+    ICommandBus Bus { get; }
 
     /// <summary>
-    /// 宿主那唯一一份日志（5.5.0）：<see cref="Bus"/> 上每条指令的回显、进度与结果都写在这里，并落宿主日志文件。
+    /// 宿主那唯一一份日志（5.5.0；6.0.0 起只写）：总线上每条指令的回显、进度与结果都写在这里，并落宿主日志文件。
     /// </summary>
     /// <remarks>
-    /// 控制台应当显示这一份，而不是在界面里另建日志：经总线执行的指令——不论来自界面、CLI、MCP
-    /// 还是模块的嵌套调用——过程只会出现在这里。模块自己的运行日志也可以写进来，与指令日志同处可查。
+    /// 模块自己的运行日志也写进来，与指令日志同处可查。要读日志（控制台），订阅
+    /// <c>vulcan.log.entry</c>，补历史执行 <c>vulcan.log.recent</c>。
     ///
-    /// 带默认实现是刻意的：模块 Smoke 里自写的 IModuleContext 测试替身不必为此改动，
+    /// 带默认实现是刻意的：模块测试里自写的 IModuleContext 替身不必为此改动，
     /// 未覆盖本成员的替身被读取时抛 <see cref="NotSupportedException"/>。宿主提供的上下文总是覆盖它。
     /// </remarks>
-    IShellLog Log
+    IModuleLog Log
         => throw new NotSupportedException("当前 IModuleContext 实现不提供宿主日志；只有宿主提供的上下文提供。");
 
     /// <summary>
-    /// 把本模块指令暂存进当前快照。传入的注册表与活注册表隔离；
-    /// 宿主在提交快照时一并登记，随模块卸载一并撤销。
+    /// 把本模块指令暂存进当前快照。登记口与活注册表隔离；
+    /// 宿主在提交快照时一并登记（来源盖章为本模块），随模块卸载一并撤销。
     /// </summary>
-    void RegisterCommands(Action<CommandRegistry> configure);
+    void RegisterCommands(Action<ICommandRegistrar> configure);
 
     /// <summary>
     /// 把本模块登记为宿主唯一的前端：接管二次确认、界面线程编组与界面生命周期命令中继。

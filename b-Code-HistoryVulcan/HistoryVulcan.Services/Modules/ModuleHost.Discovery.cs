@@ -5,7 +5,7 @@ using HistoryVulcan.Core.Logging;
 
 namespace HistoryVulcan.Services.Modules;
 
-public sealed partial class ModuleHost
+internal sealed partial class ModuleHost
 {
     // ---------------------------------------------------------------- 快照构建
 

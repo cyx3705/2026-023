@@ -34,7 +34,6 @@ internal sealed class ModulePackageTransaction
             throw new InvalidOperationException("模块事务必须先备份再替换。");
         Directory.Move(Staging, Target);
         CurrentStage = Stage.Installed;
-        RuntimeModulePackageStore.PreserveMutableData(Backup, Target);
     }
 
     internal string Commit()

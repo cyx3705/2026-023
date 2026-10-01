@@ -6,12 +6,10 @@ namespace HistoryVulcan.Services.Modules;
 /// <summary>
 /// Discovers manifest packages from the direct children of a fixed runtime module directory.
 /// </summary>
-public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
+internal sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
 {
     /// <summary>The integrity manifest required at the root of every module package.</summary>
     internal const string ChecksumFileName = "SHA256SUMS";
-    /// <summary>Runtime-owned state is kept beside the immutable package payload.</summary>
-    internal const string MutableDataDirectoryName = "data";
 
     private readonly string _root;
 
@@ -111,27 +109,27 @@ public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
             return false;
         }
 
-        if (IsMutablePath(Path.GetRelativePath(package, entry.ArtifactPath)))
+        if (IsArchivePath(Path.GetRelativePath(package, entry.ArtifactPath)))
         {
             entry = null!;
             code = "invalid-artifact";
-            error = "artifact 不得位于模块运行态 data/ 目录。";
+            error = "artifact 不得位于包内发布归档 history/ 目录。";
             return false;
         }
 
-        if (entry.DocsPath != null && IsMutablePath(Path.GetRelativePath(package, entry.DocsPath)))
+        if (entry.DocsPath != null && IsArchivePath(Path.GetRelativePath(package, entry.DocsPath)))
         {
             entry = null!;
             code = "invalid-docs";
-            error = "docs 不得位于模块运行态 data/ 目录。";
+            error = "docs 不得位于包内发布归档 history/ 目录。";
             return false;
         }
 
-        if (entry.DependencyPaths.Any(path => IsMutablePath(Path.GetRelativePath(package, path))))
+        if (entry.DependencyPaths.Any(path => IsArchivePath(Path.GetRelativePath(package, path))))
         {
             entry = null!;
             code = "invalid-dependency";
-            error = "依赖不得位于模块运行态 data/ 目录。";
+            error = "依赖不得位于包内发布归档 history/ 目录。";
             return false;
         }
 
@@ -188,10 +186,10 @@ public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
 
                 var relative = match.Groups[2].Value.Replace('\\', '/');
                 if (relative.Equals(ChecksumFileName, StringComparison.OrdinalIgnoreCase)
-                    || IsMutablePath(relative)
+                    || IsArchivePath(relative)
                     || Path.IsPathRooted(relative))
                 {
-                    error = $"SHA256SUMS 包含保留、运行态或绝对路径: {relative}";
+                    error = $"SHA256SUMS 包含保留、归档或绝对路径: {relative}";
                     return false;
                 }
 
@@ -208,7 +206,7 @@ public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
             if (declared.Count != expected.Count
                 || expected.Keys.Any(path => !declared.ContainsKey(path)))
             {
-                error = "SHA256SUMS 未完整覆盖候选包内容（history/、data/ 与自身除外）。";
+                error = "SHA256SUMS 未完整覆盖候选包内容（history/ 与自身除外）。";
                 return false;
             }
 
@@ -237,7 +235,7 @@ public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
         {
             var relative = NormalizeRelative(root, path);
             if (relative.Equals(ChecksumFileName, StringComparison.OrdinalIgnoreCase)
-                || IsMutablePath(relative))
+                || IsArchivePath(relative))
                 continue;
             yield return path;
         }
@@ -250,11 +248,9 @@ public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
         => relative.Equals("history", StringComparison.OrdinalIgnoreCase)
            || relative.StartsWith("history/", StringComparison.OrdinalIgnoreCase);
 
-    internal static bool IsMutablePath(string relative)
+    internal static bool IsArchivePath(string relative)
     {
         var normalized = relative.Replace('\\', '/');
-        return IsHistoryPath(normalized)
-               || normalized.Equals(MutableDataDirectoryName, StringComparison.OrdinalIgnoreCase)
-               || normalized.StartsWith(MutableDataDirectoryName + "/", StringComparison.OrdinalIgnoreCase);
+        return IsHistoryPath(normalized);
     }
 }

@@ -3,7 +3,7 @@ using System.Runtime.Loader;
 
 namespace HistoryVulcan.Services.Modules;
 
-public sealed partial class ModuleHost
+internal sealed partial class ModuleHost
 {
     /// <summary>文件可能正在拷贝中,重试读取。</summary>
     internal static byte[] ReadFileWithRetry(string path)

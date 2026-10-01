@@ -4,7 +4,7 @@
   "hosts": [
     {
       "name": "HistoryVulcan",
-      "freezeTag": "v5.4.0"
+      "freezeTag": "v6.0.0"
     }
   ]
 }

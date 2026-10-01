@@ -26,7 +26,7 @@ namespace HistoryVulcan.Services.Modules;
 /// <c>ui</c> / <c>pinned</c> 同一模式由宿主直读：<see cref="ModuleDiscoveryEntry"/>
 /// 是已定版记录，为一个可选字段改它的构造函数是破坏性变更。
 /// </summary>
-public sealed partial class ModuleHost
+internal sealed partial class ModuleHost
 {
     /// <summary>模块可选声明的就绪钩子后缀：<c>&lt;域&gt;.host.ready</c>。</summary>
     internal const string ReadyHookSuffix = ".host.ready";

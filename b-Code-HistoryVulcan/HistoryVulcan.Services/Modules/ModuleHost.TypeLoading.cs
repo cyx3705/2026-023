@@ -4,7 +4,7 @@ using HistoryVulcan.Core.Modules;
 
 namespace HistoryVulcan.Services.Modules;
 
-public sealed partial class ModuleHost
+internal sealed partial class ModuleHost
 {
     /// <summary>取程序集的类型表;缺失依赖只丢掉受影响的类型,不让整个模块下线(MD-06)。</summary>
     private static Type[] LoadTypes(Assembly assembly)

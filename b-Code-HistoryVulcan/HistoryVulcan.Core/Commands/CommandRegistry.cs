@@ -4,7 +4,7 @@ namespace HistoryVulcan.Core.Commands;
 /// 指令注册表(§5.3):框架内置组与派生应用自定义指令并入同一张表,
 /// help 自动收录;名称冲突在注册时立即报错,禁止静默覆盖(P0)。
 /// </summary>
-public sealed class CommandRegistry : ICommandRegistrar
+internal sealed class CommandRegistry : ICommandRegistrar
 {
     private readonly Dictionary<string, CommandDescriptor> _commands = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _sources = new(StringComparer.OrdinalIgnoreCase);

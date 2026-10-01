@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
-using Microsoft.Win32;
 using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
@@ -35,6 +34,10 @@ internal static partial class ServiceComposer
         {
             var executable = Environment.ProcessPath ?? identityAssembly.Location;
             composition = Build(executable, identityAssembly);
+
+            // 导出是一次性的离线组合，不是服务：模块据 RunMode 决定不开端口、不写对外通告（6.0.0，DEC-071）。
+            if (composition.Modules != null)
+                composition.Modules.RunMode = HistoryVulcan.Core.Modules.HostRunMode.OfflineCli;
 
             // 使用运行时注册表导出；模块自身的启动行为由模块合同约束。
             composition.Modules?.Start();
@@ -81,7 +84,7 @@ internal static partial class ServiceComposer
         AppIdentity.Use(identityAssembly);
         var identity = AppIdentity.Current;
         var paths = new AppPaths(identity.Name);
-        var servicePaths = new AppPaths(identity.Name, Path.Combine(paths.Root, "service"));
+        var servicePaths = new AppPaths(identity.Name, Path.Combine(paths.Root, "service"), createModulesDirectory: false);
         var log = new ShellLog(servicePaths);
         var settings = new SettingsService(servicePaths);
         var registry = new CommandRegistry();
@@ -125,6 +128,7 @@ internal static partial class ServiceComposer
             HostEvents = hostEvents,
         };
         RegisterHostInfoCommand(registry, composition, executablePath, settings);
+        RegisterLogRecentCommand(registry, log);
 
         // 服务指令（vulcan.svc.* / vulcan.app.*）在这里注册而不是在 Run 里（4.5.0）。
         //
@@ -150,14 +154,13 @@ internal static partial class ServiceComposer
             var identity = AppIdentity.Current;
             var paths = new AppPaths(identity.Name);
             var settings = new SettingsService(
-                new AppPaths(identity.Name, Path.Combine(paths.Root, "service")));
+                new AppPaths(identity.Name, Path.Combine(paths.Root, "service"), createModulesDirectory: false));
             var manager = new WindowsRunAutostartManager();
             var enabled = settings.Get(ServiceAutostartSettingKey) is not { } value
                           || !bool.TryParse(value, out var parsed)
                           || parsed;
             var serviceName = identity.Name + ".Backend";
             manager.SetEnabled(serviceName, executablePath, ["--service"], enabled);
-            RemoveLegacyAutostartAlias();
             Console.WriteLine($"HistoryVulcan 登录启动已{(enabled ? "修复" : "关闭")}: {serviceName}");
             return 0;
         }
@@ -166,13 +169,6 @@ internal static partial class ServiceComposer
             Console.Error.WriteLine($"修复登录启动失败: {ex.Message}");
             return 1;
         }
-    }
-
-    private static void RemoveLegacyAutostartAlias()
-    {
-        using var key = Registry.CurrentUser.OpenSubKey(
-            @"Software\Microsoft\Windows\CurrentVersion\Run", writable: true);
-        key?.DeleteValue("AppShell.Backend", throwOnMissingValue: false);
     }
 
     internal static void RegisterSettingCommands(
@@ -257,7 +253,47 @@ internal static partial class ServiceComposer
                     + $"项目库: {info.libraryRoot}\n工作区根: {info.worktreeRoot}\n"
                     + $"模块运行区: {info.modulesRoot}\n模块数据: {info.moduleDataRoot}\n"
                     + $"宿主数据: {info.dataRoot}\n宿主可执行文件: {info.hostExecutable}",
-                    info);
+                    BusJson.ToElement(info));
+            }),
+        }, "framework:service");
+    }
+
+    /// <summary>
+    /// <c>vulcan.log.recent</c>（6.0.0，DEC-071）：宿主日志缓冲里最近的若干条。
+    /// 控制台装上时补历史用；此后的新纪录订阅 <c>vulcan.log.entry</c>。形状与该事件的载荷相同。
+    /// </summary>
+    internal static void RegisterLogRecentCommand(CommandRegistry registry, IShellLog log)
+    {
+        registry.Register(new CommandDescriptor
+        {
+            Name = "vulcan.log.recent",
+            HiddenReason = "前端补控制台历史用，经总线调用；AI 读日志请用 diana.log.read。",
+            Domain = "vulcan",
+            CommandClass = "log",
+            Summary = "宿主日志缓冲里最近的若干条（与 vulcan.log.entry 事件同形），供控制台补历史",
+            Example = "vulcan.log.recent count=500",
+            Readonly = true,
+            Parameters =
+            [
+                new ParameterSpec
+                {
+                    Name = "count",
+                    Description = "最多返回多少条（取最新的）",
+                    Type = ParamType.Int,
+                    Default = "500",
+                    Position = 0,
+                },
+            ],
+            Handler = CommandDescriptor.Sync(ctx =>
+            {
+                var count = Math.Max(0, ctx.GetInt("count", 500));
+                var snapshot = log.Snapshot();
+                var entries = snapshot
+                    .Skip(Math.Max(0, snapshot.Count - count))
+                    .Where(entry => !entry.Category.Equals(BusEventHub.LogCategory, StringComparison.Ordinal))
+                    .Select(HostEventPublisher.ToPayload)
+                    .ToList();
+                return CommandResult.Ok($"最近 {entries.Count} 条日志", BusJson.ToElement(entries));
             }),
         }, "framework:service");
     }
@@ -276,14 +312,15 @@ internal static partial class ServiceComposer
             Handler = CommandDescriptor.Sync(_ =>
                 CommandResult.Ok(
                     host.Modules.Count == 0
-                        ? "当前无已加载模块。请检查 vulcan.module.roots 与发现诊断。"
+                        ? "当前无已加载模块。请检查运行区目录（vulcan.module.open）与发现诊断。"
                         : string.Join('\n', host.Modules.Select(module =>
                             module.Attached
                                 ? $"{module.ModuleName} {module.Version} ({module.CommandCount} 条指令)"
                                 : $"{module.ModuleName} {module.Version} ✗ 未接上宿主，指令未注册"
                                   + Environment.NewLine + "    "
                                   + string.Join(Environment.NewLine + "    ", module.AttachFailures))),
-                    host.Modules)),
+                    // 6.0.0（DEC-071）：交 JSON，不交宿主内部的 ModuleMeta。
+                    BusJson.ToElement(host.Modules))),
         }, "framework:service");
 
         registry.Register(new CommandDescriptor
@@ -449,28 +486,6 @@ internal static partial class ServiceComposer
 
         registry.Register(new CommandDescriptor
         {
-            Name = "vulcan.module.roots",
-            Domain = "vulcan",
-            CommandClass = "module",
-            Summary = "查看固定的后台运行时模块目录（兼容查询）",
-            Parameters = [new ParameterSpec
-            {
-                Name = "paths",
-                Description = "兼容参数；3.12.0 起拒绝修改",
-                Position = 0,
-            }],
-            Handler = CommandDescriptor.Sync(ctx =>
-            {
-                var paths = ctx.GetString("paths");
-                if (string.IsNullOrWhiteSpace(paths))
-                    return CommandResult.Ok($"固定运行时模块目录: {host.ModulesDirectory}");
-                return CommandResult.Fail(
-                    $"3.12.0 起模块目录固定为 {host.ModulesDirectory}；module.roots 设置不再生效。");
-            }),
-        }, "framework:service");
-
-        registry.Register(new CommandDescriptor
-        {
             Name = "vulcan.module.open",
             Domain = "vulcan",
             CommandClass = "module",
@@ -492,15 +507,31 @@ internal static partial class ServiceComposer
         }, "framework:service");
     }
 
+    /// <summary>
+    /// 运行包变更是否来自本机可信通道。
+    /// </summary>
+    /// <remarks>
+    /// 6.0.0（DEC-071）起模块调用由宿主盖章 <c>module:&lt;名&gt;[:&lt;内层&gt;]</c>：没有内层即模块自己发起，可信；
+    /// 有内层就按最里面那一层判——网关转进来的远端请求因此不会因为外面套了模块章就变成可信。
+    /// 5.9.0 的 <c>diana.</c> 前缀兼容已删除。
+    /// </remarks>
     internal static bool IsLocalModuleMutationSource(string source)
-        => source.StartsWith("Shell:", StringComparison.OrdinalIgnoreCase)
-           || source.Equals("UI", StringComparison.OrdinalIgnoreCase)
-           || source.Equals("手动", StringComparison.OrdinalIgnoreCase)
-           || source.StartsWith("脚本:", StringComparison.OrdinalIgnoreCase)
-           || source.StartsWith("host:", StringComparison.OrdinalIgnoreCase)
-           || source.StartsWith("module:", StringComparison.OrdinalIgnoreCase)
-           // 5.9.0 前 Diana 用自己的指令名当来源；6.0.0 起来源由宿主盖章，届时删除这条兼容（DEC-070）。
-           || source.StartsWith("diana.", StringComparison.OrdinalIgnoreCase)
-           || source.Equals("cli:runtime", StringComparison.OrdinalIgnoreCase)
-           || source.Equals("cli:local", StringComparison.OrdinalIgnoreCase);
+    {
+        var value = source ?? "";
+        if (value.StartsWith(ModuleSource.Prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var inner = ModuleSource.Innermost(value);
+            if (inner.Length == 0)
+                return true;
+            value = inner;
+        }
+
+        return value.StartsWith("Shell:", StringComparison.OrdinalIgnoreCase)
+               || value.Equals("UI", StringComparison.OrdinalIgnoreCase)
+               || value.Equals("手动", StringComparison.OrdinalIgnoreCase)
+               || value.StartsWith("脚本:", StringComparison.OrdinalIgnoreCase)
+               || value.StartsWith("host:", StringComparison.OrdinalIgnoreCase)
+               || value.Equals("cli:runtime", StringComparison.OrdinalIgnoreCase)
+               || value.Equals("cli:local", StringComparison.OrdinalIgnoreCase);
+    }
 }

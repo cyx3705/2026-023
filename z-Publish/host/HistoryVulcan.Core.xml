@@ -88,6 +88,19 @@
         <member name="M:HistoryVulcan.Core.Commands.BusEventHub.RemoveOwner(System.String)">
             <summary>模块卸载时撤掉它的全部订阅。</summary>
         </member>
+        <member name="T:HistoryVulcan.Core.Commands.BusJson">
+            <summary>
+            宿主指令的 Data 一律交出 JSON（6.0.0，DEC-071，判据 G4）。
+            </summary>
+            <remarks>
+            5.9.0 之前 <c>vulcan.module.list</c>、<c>vulcan.command.list/show</c> 交出的是宿主内部的 C# 记录，
+            消费方只能引用宿主实现程序集再强转，宿主一改记录就连带改模块。现在交出 <see cref="T:System.Text.Json.JsonElement"/>：
+            契约是写在模块API里的 JSON 形状（驼峰字段名），字段只增不减，宿主内部类怎么改都不影响消费方。
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.BusJson.ToElement(System.Object)">
+            <summary>按契约序列化（驼峰字段名）并交出独立的 JSON 值。</summary>
+        </member>
         <member name="T:HistoryVulcan.Core.Commands.CliExposurePolicy">
              <summary>
              决定一条指令能否经命令行入口执行。
@@ -363,9 +376,20 @@
         </member>
         <member name="T:HistoryVulcan.Core.Commands.ICommandBus">
             <summary>模块看得到的总线：执行指令与中途请求确认。目录、校验、补全一律走只读指令。</summary>
+            <remarks>
+            模块经上下文拿到的总线由宿主给来源盖章：模块传入的 <c>source</c> 变成
+            <c>module:&lt;模块名&gt;:&lt;source&gt;</c>（空串时为 <c>module:&lt;模块名&gt;</c>）。
+            处理器看到的 <see cref="P:HistoryVulcan.Core.Commands.CommandContext.Source"/> 就是盖章后的值。
+            </remarks>
         </member>
         <member name="M:HistoryVulcan.Core.Commands.ICommandBus.ExecuteAsync(System.String,System.String,System.Threading.CancellationToken)">
-            <summary>执行一条指令文本。</summary>
+            <summary>执行一条指令文本：回显、确认、结果进宿主日志，并发布 <c>vulcan.command.executed</c>。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.ICommandBus.InvokeAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            安静执行（6.0.0）：不回显、不记结果、不发布 <c>vulcan.command.executed</c>；确认闸口照旧。
+            用于取数这类「不是操作」的调用，例如界面刷新时读 <c>*.ui.data</c>。
+            </summary>
         </member>
         <member name="M:HistoryVulcan.Core.Commands.ICommandBus.RequestConfirmation(System.String)">
             <summary>处理器执行中途请求确认；没有前端时宿主按拒绝处理。</summary>
@@ -800,6 +824,32 @@
         <member name="M:HistoryVulcan.Core.Commands.CommandResult.Fail(System.String)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
+        <member name="T:HistoryVulcan.Core.Commands.ModuleSource">
+            <summary>
+            模块调用的来源章（6.0.0，DEC-071）。
+            </summary>
+            <remarks>
+            <para>
+            5.9.0 之前模块经总线调用时自己填来源，Diana 填的是自己的指令名，宿主只好写死信任
+            <c>diana.</c> 前缀。现在由宿主盖章：模块给的来源放进章里当「内层」，
+            <c>module:&lt;模块名&gt;</c> 或 <c>module:&lt;模块名&gt;:&lt;内层&gt;</c>。
+            </para>
+            <para>
+            内层保留而不是覆盖，是因为模块里有转手的调用方：网关把远端请求转进总线时，
+            内层是它给远端的标签；只看外层会把远端请求当成本机模块自己的调用。
+            判断可信时要把章一层层剥开，看最里面那一层（见 <see cref="M:HistoryVulcan.Core.Commands.ModuleSource.Innermost(System.String)"/>）。
+            </para>
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.ModuleSource.Stamp(System.String,System.String)">
+            <summary>给一个模块的调用盖章。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Commands.ModuleSource.Innermost(System.String)">
+            <summary>
+            剥掉全部模块章，返回最里面那一层；整条都是模块章（没有内层）时返回空串。
+            不是模块章的来源原样返回。
+            </summary>
+        </member>
         <member name="T:HistoryVulcan.Core.Commands.SensitiveName">
             <summary>命令参数、命令名与配置键共用的敏感名称规则。</summary>
         </member>
@@ -807,78 +857,94 @@
             <summary>日志级别(C-03 六级)。</summary>
         </member>
         <member name="F:HistoryVulcan.Core.Logging.ShellLogLevel.Trace">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>最细的跟踪。</summary>
         </member>
         <member name="F:HistoryVulcan.Core.Logging.ShellLogLevel.Debug">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>调试；大段结果正文落在这一级。</summary>
         </member>
         <member name="F:HistoryVulcan.Core.Logging.ShellLogLevel.Info">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>常规信息。</summary>
         </member>
         <member name="F:HistoryVulcan.Core.Logging.ShellLogLevel.Warn">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>警告。</summary>
         </member>
         <member name="F:HistoryVulcan.Core.Logging.ShellLogLevel.Error">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>错误。</summary>
         </member>
         <member name="F:HistoryVulcan.Core.Logging.ShellLogLevel.Fatal">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>致命错误。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Logging.IModuleLog">
+            <summary>
+            宿主交给模块的那一份日志（6.0.0，DEC-071）：只写。
+            </summary>
+            <remarks>
+            5.5.0 起模块拿到的是宿主内部的 <c>IShellLog</c>，连缓冲快照与新纪录事件一起。
+            控制台要读日志，改为订阅总线主题 <c>vulcan.log.entry</c> 并按需执行 <c>vulcan.log.recent</c>；
+            写日志只需要这一个方法。
+            </remarks>
+        </member>
+        <member name="M:HistoryVulcan.Core.Logging.IModuleLog.Log(HistoryVulcan.Core.Logging.ShellLogLevel,System.String,System.String)">
+            <summary>写一条日志。类别是自由文本，约定以模块指令域开头（如 <c>janus.git</c>）。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Logging.ModuleLogExtensions">
+            <summary><see cref="T:HistoryVulcan.Core.Logging.IModuleLog"/> 的按级别便捷写法。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Logging.ModuleLogExtensions.Debug(HistoryVulcan.Core.Logging.IModuleLog,System.String,System.String)">
+            <summary>写一条调试日志。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Logging.ModuleLogExtensions.Info(HistoryVulcan.Core.Logging.IModuleLog,System.String,System.String)">
+            <summary>写一条信息日志。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Logging.ModuleLogExtensions.Warn(HistoryVulcan.Core.Logging.IModuleLog,System.String,System.String)">
+            <summary>写一条警告日志。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Core.Logging.ModuleLogExtensions.Error(HistoryVulcan.Core.Logging.IModuleLog,System.String,System.String)">
+            <summary>写一条错误日志。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Logging.ShellLogEntry">
-            <summary>一条日志/指令回显记录。</summary>
+            <summary>一条日志/指令回显记录（宿主内部）。</summary>
         </member>
         <member name="M:HistoryVulcan.Core.Logging.ShellLogEntry.#ctor(System.DateTime,HistoryVulcan.Core.Logging.ShellLogLevel,System.String,System.String)">
-            <summary>一条日志/指令回显记录。</summary>
+            <summary>一条日志/指令回显记录（宿主内部）。</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Logging.IShellLog">
             <summary>
-            M1 阶段的最小日志汇聚点:内存环形缓冲 + 事件推送 + 文件落盘。
-            M2 的正式日志服务(§6.2)将实现/替换本接口,控制台窗口从这里补读历史。
+            宿主内部的日志汇聚点：内存环形缓冲 + 事件推送 + 文件落盘。
+            6.0.0 起不再是契约：模块只见 <see cref="T:HistoryVulcan.Core.Logging.IModuleLog"/>。
             </summary>
         </member>
-        <member name="M:HistoryVulcan.Core.Logging.IShellLog.Log(HistoryVulcan.Core.Logging.ShellLogLevel,System.String,System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
         <member name="E:HistoryVulcan.Core.Logging.IShellLog.EntryAdded">
-            <summary>新纪录到达事件(控制台窗口 / 占位页订阅)。</summary>
+            <summary>新纪录到达事件。</summary>
         </member>
         <member name="M:HistoryVulcan.Core.Logging.IShellLog.Snapshot">
             <summary>当前缓冲内容快照。</summary>
         </member>
-        <member name="T:HistoryVulcan.Core.Logging.ShellLogExtensions">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Logging.ShellLogExtensions.Info(HistoryVulcan.Core.Logging.IShellLog,System.String,System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Logging.ShellLogExtensions.Warn(HistoryVulcan.Core.Logging.IShellLog,System.String,System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Core.Logging.ShellLogExtensions.Error(HistoryVulcan.Core.Logging.IShellLog,System.String,System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
         <member name="T:HistoryVulcan.Core.Modules.IModuleContext">
-            <summary>注册器在装载时交给模块的唯一运行时入口：总线、指令登记与前端登记。</summary>
+            <summary>注册器在装载时交给模块的唯一运行时入口：总线、指令登记、日志、环境、事件与前端登记。</summary>
         </member>
         <member name="P:HistoryVulcan.Core.Modules.IModuleContext.Bus">
-            <summary>当前宿主进程拥有的那一条命令总线。宿主装配的开关在其上只读。</summary>
+            <summary>
+            宿主那一条命令总线的模块视图（6.0.0 起为窄接口）。经它执行的调用由宿主盖来源章
+            <c>module:&lt;模块名&gt;</c>。
+            </summary>
         </member>
         <member name="P:HistoryVulcan.Core.Modules.IModuleContext.Log">
              <summary>
-             宿主那唯一一份日志（5.5.0）：<see cref="P:HistoryVulcan.Core.Modules.IModuleContext.Bus"/> 上每条指令的回显、进度与结果都写在这里，并落宿主日志文件。
+             宿主那唯一一份日志（5.5.0；6.0.0 起只写）：总线上每条指令的回显、进度与结果都写在这里，并落宿主日志文件。
              </summary>
              <remarks>
-             控制台应当显示这一份，而不是在界面里另建日志：经总线执行的指令——不论来自界面、CLI、MCP
-             还是模块的嵌套调用——过程只会出现在这里。模块自己的运行日志也可以写进来，与指令日志同处可查。
+             模块自己的运行日志也写进来，与指令日志同处可查。要读日志（控制台），订阅
+             <c>vulcan.log.entry</c>，补历史执行 <c>vulcan.log.recent</c>。
             
-             带默认实现是刻意的：模块 Smoke 里自写的 IModuleContext 测试替身不必为此改动，
+             带默认实现是刻意的：模块测试里自写的 IModuleContext 替身不必为此改动，
              未覆盖本成员的替身被读取时抛 <see cref="T:System.NotSupportedException"/>。宿主提供的上下文总是覆盖它。
              </remarks>
         </member>
-        <member name="M:HistoryVulcan.Core.Modules.IModuleContext.RegisterCommands(System.Action{HistoryVulcan.Core.Commands.CommandRegistry})">
+        <member name="M:HistoryVulcan.Core.Modules.IModuleContext.RegisterCommands(System.Action{HistoryVulcan.Core.Commands.ICommandRegistrar})">
             <summary>
-            把本模块指令暂存进当前快照。传入的注册表与活注册表隔离；
-            宿主在提交快照时一并登记，随模块卸载一并撤销。
+            把本模块指令暂存进当前快照。登记口与活注册表隔离；
+            宿主在提交快照时一并登记（来源盖章为本模块），随模块卸载一并撤销。
             </summary>
         </member>
         <member name="M:HistoryVulcan.Core.Modules.IModuleContext.RegisterFrontend(HistoryVulcan.Core.Modules.IFrontend)">
@@ -966,7 +1032,10 @@
             <summary>正式后台服务（登录启动的 HistoryVulcan.exe）。</summary>
         </member>
         <member name="F:HistoryVulcan.Core.Modules.HostRunMode.OfflineCli">
-            <summary>离线命令行组合（HistoryVulcan.Cli.exe --cli），执行一条指令后退出。</summary>
+            <summary>
+            一次性离线组合：命令行 <c>HistoryVulcan.Cli.exe --cli</c> 与无头导出 <c>--export-command-manual</c>，
+            做完一件事就退出。模块在这种方式下不应开端口或改写对外通告文件。
+            </summary>
         </member>
         <member name="F:HistoryVulcan.Core.Modules.HostRunMode.Probe">
             <summary>测试装载（HistoryVulcan.Cli.exe --probe），只装一个候选包。</summary>
@@ -981,6 +1050,13 @@
             <summary>
             本模块的可写数据目录。独立于包槽位：装包、热重载、卸载都不动它，只有
             <c>vulcan.module.uninstall purge=true</c> 才删除。目录由宿主创建。
+            </summary>
+        </member>
+        <member name="P:HistoryVulcan.Core.Modules.IModuleEnvironment.PackageDirectory">
+            <summary>
+            本模块的完整包目录（运行区槽位，只读）。要找随包发布的文件（如外部可执行程序）就从这里拼，
+            不要从宿主数据根推运行区布局，也不要用 <c>Assembly.Location</c>——宿主从内存流装载程序集，它是空的。
+            不要往里写：槽位里出现清单外的文件，下一轮发现就判为坏包。（6.0.0）
             </summary>
         </member>
         <member name="P:HistoryVulcan.Core.Modules.IModuleEnvironment.RunMode">

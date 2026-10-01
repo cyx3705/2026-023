@@ -19,6 +19,7 @@ internal sealed class SettingsService : ISettingsService
     public SettingsService(AppPaths paths)
     {
         _filePath = Path.Combine(paths.Root, "settings.json");
+        Directory.CreateDirectory(paths.Root);
         try
         {
             if (File.Exists(_filePath))

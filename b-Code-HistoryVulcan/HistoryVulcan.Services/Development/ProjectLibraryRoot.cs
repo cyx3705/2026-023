@@ -12,8 +12,6 @@ internal static class ProjectLibraryRoot
     internal const string Default = @"C:\OneHistory\HistoryClio";
     /// <summary>项目库根的设置键。</summary>
     public const string KeyLibraryRoot = "proj.libraryroot";
-    /// <summary>旧的工作区根设置键，仅作兼容读取。</summary>
-    public const string KeyWorktreeRoot = "proj.worktreeroot";
 
     /// <summary>按设置解析项目库根；未配置时取缺省值。</summary>
     public static string Resolve(ISettingsService settings)
@@ -22,9 +20,6 @@ internal static class ProjectLibraryRoot
         var current = settings.Get(KeyLibraryRoot);
         if (!string.IsNullOrWhiteSpace(current))
             return Normalize(current);
-        var legacy = settings.Get(KeyWorktreeRoot);
-        if (!string.IsNullOrWhiteSpace(legacy))
-            return Normalize(legacy);
         return Default;
     }
 

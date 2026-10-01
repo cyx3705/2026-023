@@ -60,35 +60,6 @@ internal static class RuntimeModulePackageStore
         }
     }
 
-    /// <summary>Copies runtime state while keeping the original available for rollback.</summary>
-    internal static void PreserveMutableData(string backup, string target)
-    {
-        var source = Path.Combine(backup, RuntimeModuleDiscoverySource.MutableDataDirectoryName);
-        if (!Directory.Exists(source))
-            return;
-
-        var destination = Path.Combine(target, RuntimeModuleDiscoverySource.MutableDataDirectoryName);
-        if (Directory.Exists(destination))
-            throw new IOException($"运行态目录已存在，无法保留旧数据: {destination}");
-
-        CopyData(source, destination);
-    }
-
-    private static void CopyData(string source, string destination)
-    {
-        if ((File.GetAttributes(source) & FileAttributes.ReparsePoint) != 0)
-            throw new IOException($"运行数据目录不能是重解析点: {source}");
-        Directory.CreateDirectory(destination);
-        foreach (var file in Directory.GetFiles(source))
-        {
-            if ((File.GetAttributes(file) & FileAttributes.ReparsePoint) != 0)
-                throw new IOException($"运行数据文件不能是重解析点: {file}");
-            File.Copy(file, Path.Combine(destination, Path.GetFileName(file)));
-        }
-        foreach (var directory in Directory.GetDirectories(source))
-            CopyData(directory, Path.Combine(destination, Path.GetFileName(directory)));
-    }
-
     internal static bool ChecksumsEqual(string first, string second)
     {
         var left = File.ReadAllText(Path.Combine(first, RuntimeModuleDiscoverySource.ChecksumFileName));

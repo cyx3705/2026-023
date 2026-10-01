@@ -1,7 +1,7 @@
 namespace HistoryVulcan.Services.Modules;
 
 /// <summary>Provides this HistoryVulcan public contract member.</summary>
-public sealed record ModuleMeta(
+internal sealed record ModuleMeta(
     string ModuleName, string Description, string Author, string Version,
     bool Open, string AssemblyFile, int CommandCount, string Slot = "", bool Ui = false)
 {

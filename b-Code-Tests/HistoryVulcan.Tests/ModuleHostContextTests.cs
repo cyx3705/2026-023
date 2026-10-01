@@ -526,7 +526,8 @@ namespace HistoryVulcan.Tests
                     {
                         var environment = context.Environment;
                         return CommandResult.Ok(string.Join("|",
-                            environment.ModuleName, environment.DataDirectory, environment.RunMode, environment.HostVersion));
+                            environment.ModuleName, environment.DataDirectory, environment.RunMode, environment.HostVersion,
+                            environment.PackageDirectory));
                     }),
                 });
                 registry.Register(new CommandDescriptor

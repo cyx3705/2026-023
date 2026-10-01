@@ -419,7 +419,8 @@ namespace HistoryVulcan.Tests
             if (!OrderFixtureScope.IsEnabled || marker == null)
                 return;
 
-            var visible = context.Bus.Registry.TryGet("zetafixture.ping", out _);
+            // 6.0.0 起模块看不到注册表，按契约执行被依赖方的指令来判断它在不在。
+            var visible = context.Bus.InvokeAsync("zetafixture.ping", "").GetAwaiter().GetResult().Success;
             File.AppendAllLines(marker, [visible ? "true" : "false"]);
         }
     }

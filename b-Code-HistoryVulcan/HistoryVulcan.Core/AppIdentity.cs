@@ -3,7 +3,7 @@ using System.Reflection;
 namespace HistoryVulcan.Core;
 
 /// <summary>应用名称与版本的运行时单一真值，由入口程序集的元数据生成。</summary>
-public sealed record ApplicationIdentity(
+internal sealed record ApplicationIdentity(
     string Name,
     string Version,
     string InformationalVersion,
@@ -14,7 +14,7 @@ public sealed record ApplicationIdentity(
 /// 派生应用无需自建身份类：Shell 装配时默认取入口程序集，
 /// 也可用 <see cref="From"/> 指定程序集。
 /// </summary>
-public static class AppIdentity
+internal static class AppIdentity
 {
     private static ApplicationIdentity? _current;
 

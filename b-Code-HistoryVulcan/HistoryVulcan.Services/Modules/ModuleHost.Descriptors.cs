@@ -8,7 +8,7 @@ using HistoryVulcan.Core.Modules;
 
 namespace HistoryVulcan.Services.Modules;
 
-public sealed partial class ModuleHost
+internal sealed partial class ModuleHost
 {
 
     private static CommandDescriptor BuildDescriptor(

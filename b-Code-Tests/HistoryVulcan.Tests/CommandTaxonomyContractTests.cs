@@ -151,6 +151,7 @@ public sealed class CommandTaxonomyContractTests
                 "vulcan.command.revision",
                 "vulcan.command.suggest",
                 "vulcan.command.validate",
+                "vulcan.log.recent",
                 "vulcan.module.install",
                 "vulcan.module.remove",
                 "vulcan.module.uninstall",
@@ -193,7 +194,7 @@ public sealed class CommandTaxonomyContractTests
             "HistoryVulcan.ServiceHost",
             "ServiceComposer.cs"));
         var start = source.IndexOf("Name = \"vulcan.module.uninstall\"", StringComparison.Ordinal);
-        var end = source.IndexOf("Name = \"vulcan.module.roots\"", start, StringComparison.Ordinal);
+        var end = source.IndexOf("Name = \"vulcan.module.open\"", start, StringComparison.Ordinal);
 
         Assert.True(start >= 0 && end > start, "未找到模块卸载命令声明。");
         var declaration = source[start..end];

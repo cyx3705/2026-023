@@ -8,7 +8,7 @@ using HistoryVulcan.Core.Modules;
 namespace HistoryVulcan.Services.Modules;
 
 /// <summary>Loads validated runtime packages and owns module commands, instances and reloads.</summary>
-public sealed partial class ModuleHost : IDisposable
+internal sealed partial class ModuleHost : IDisposable
 {
     private readonly IShellLog _log;
     private readonly object _reloadLock = new();

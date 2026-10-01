@@ -32,6 +32,7 @@ internal sealed class ShellLog : IShellLog, IDisposable
     public ShellLog(AppPaths paths, int retainDays = 30)
     {
         _logsDir = paths.LogsDir;
+        Directory.CreateDirectory(_logsDir);
         _retainDays = Math.Max(1, retainDays);
 
         CleanupOldFiles();

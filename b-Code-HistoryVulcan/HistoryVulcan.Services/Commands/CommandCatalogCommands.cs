@@ -18,7 +18,7 @@ namespace HistoryVulcan.Services.Commands;
 /// <param name="RequiresUiThread">是否必须在 UI 线程执行。</param>
 /// <param name="Readonly">是否声明为只读。</param>
 /// <param name="HiddenReason">远端隐藏原因；未隐藏为 null。</param>
-public sealed record CommandCatalogRow(
+internal sealed record CommandCatalogRow(
     string CommandName,
     string Domain,
     string Summary,
@@ -43,6 +43,13 @@ public sealed record CommandCatalogRow(
 
     /// <summary>是否接受未声明的参数（5.9.0，DEC-070）。</summary>
     public bool AllowUnspecifiedParameters { get; init; }
+
+    /// <summary>参数表（6.0.0，DEC-071）：目录一次拉全，消费方不必逐条再 show。</summary>
+    public IReadOnlyList<CommandParameterInfo> Parameters { get; init; } = [];
+
+    /// <summary>注册方提供、由具体消费方解释的注解（6.0.0，DEC-071）。</summary>
+    public IReadOnlyDictionary<string, string> Annotations { get; init; }
+        = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 }
 
 /// <summary>一条指令的单个参数说明。</summary>
@@ -53,7 +60,7 @@ public sealed record CommandCatalogRow(
 /// <param name="Position">位置参数序号；仅具名时为 null。</param>
 /// <param name="AllowedValues">允许值枚举；不限时为空。</param>
 /// <param name="Description">参数说明。</param>
-public sealed record CommandParameterInfo(
+internal sealed record CommandParameterInfo(
     string Name,
     string Type,
     bool Required,
@@ -65,7 +72,7 @@ public sealed record CommandParameterInfo(
 /// <summary>单条指令的完整详情：目录行与参数表。</summary>
 /// <param name="Command">该指令的目录行。</param>
 /// <param name="Parameters">参数表。</param>
-public sealed record CommandCatalogDetail(
+internal sealed record CommandCatalogDetail(
     CommandCatalogRow Command,
     IReadOnlyList<CommandParameterInfo> Parameters)
 {
@@ -77,7 +84,7 @@ public sealed record CommandCatalogDetail(
 /// <summary>一个指令域及其注册数量。</summary>
 /// <param name="Domain">域名。</param>
 /// <param name="Count">该域下的指令数。</param>
-public sealed record CommandDomainInfo(string Domain, int Count);
+internal sealed record CommandDomainInfo(string Domain, int Count);
 
 /// <summary>V2.1.3 全指令结构化目录，注册表是唯一上游。</summary>
 internal static class CommandCatalogCommands
@@ -126,8 +133,8 @@ internal static class CommandCatalogCommands
                 error = CommandArguments.Bind(request.Descriptor!, request.Parsed!, out _);
             var usage = request.Descriptor is { } known ? CommandBus.FormatUsage(known) : null;
             return error == null
-                ? CommandResult.Ok("可以执行。", new { ok = true, name = request.Name, usage })
-                : CommandResult.Ok(error, new { ok = false, name = request.Name, usage, error });
+                ? CommandResult.Ok("可以执行。", BusJson.ToElement(new { ok = true, name = request.Name, usage }))
+                : CommandResult.Ok(error, BusJson.ToElement(new { ok = false, name = request.Name, usage, error }));
         }),
     };
 
@@ -146,7 +153,7 @@ internal static class CommandCatalogCommands
             var names = registry.Suggest(ctx.RequireString("name").Trim());
             return CommandResult.Ok(
                 names.Count == 0 ? "没有相近的指令。" : "相近的指令: " + string.Join("、", names),
-                names);
+                BusJson.ToElement(names));
         }),
     };
 
@@ -162,7 +169,7 @@ internal static class CommandCatalogCommands
         Handler = CommandDescriptor.Sync(_ =>
         {
             var revision = registry.Revision;
-            return CommandResult.Ok($"目录版本 {revision}", new { revision });
+            return CommandResult.Ok($"目录版本 {revision}", BusJson.ToElement(new { revision }));
         }),
     };
 
@@ -190,7 +197,7 @@ internal static class CommandCatalogCommands
                 ExitCodes = "0=success,1=execution-failure,2=usage/refused,3=runtime-unreachable",
             }).ToList();
             return CommandResult.Ok($"CLI 白名单: {rows.Count} 条\n"
-                + string.Join("\n", rows.Select(row => $"  {row.Name} [{row.Mode}/{row.SideEffect}]")), rows);
+                + string.Join("\n", rows.Select(row => $"  {row.Name} [{row.Mode}/{row.SideEffect}]")), BusJson.ToElement(rows));
         }),
     };
 
@@ -219,7 +226,7 @@ internal static class CommandCatalogCommands
                     $"{exposed}\n执行目标: {mode}\n"
                     + "副作用: 由命令描述符确认级别决定；runtime 动作必须显式 --approve。\n"
                     + "当前注册表尚未装入该指令，无法列出参数。",
-                    new { Name = exposed, Mode = mode, Approval = approval, Parameters = Array.Empty<object>() });
+                    BusJson.ToElement(new { Name = exposed, Mode = mode, Approval = approval, Parameters = Array.Empty<object>() }));
             }
 
             var parameters = descriptor.Parameters.Select(parameter => new
@@ -245,7 +252,7 @@ internal static class CommandCatalogCommands
 
             return CommandResult.Ok(
                 text.ToString(),
-                new
+                BusJson.ToElement(new
                 {
                     Name = exposed,
                     Mode = mode,
@@ -253,7 +260,7 @@ internal static class CommandCatalogCommands
                     descriptor.Summary,
                     descriptor.Example,
                     Parameters = parameters,
-                });
+                }));
         }),
     };
 
@@ -368,8 +375,20 @@ internal static class CommandCatalogCommands
             Method = CommandRegistry.GetMethod(descriptor.Name),
             RequiresConfirmation = descriptor.ConfirmPrompt != null,
             AllowUnspecifiedParameters = descriptor.AllowUnspecifiedParameters,
+            Parameters = ToParameters(descriptor),
+            Annotations = descriptor.Annotations,
         };
     }
+
+    private static IReadOnlyList<CommandParameterInfo> ToParameters(CommandDescriptor descriptor)
+        => descriptor.Parameters.Select(parameter => new CommandParameterInfo(
+            parameter.Name,
+            parameter.Type.ToString().ToLowerInvariant(),
+            parameter.Required,
+            parameter.Default,
+            parameter.Position,
+            parameter.AllowedValues ?? [],
+            parameter.Description)).ToList();
 
     private static string Flag(CommandCatalogRow row)
     {
@@ -425,7 +444,7 @@ internal static class CommandCatalogCommands
                 text.Append($"\n  {row.CommandName,-28} "
                             + $"[{row.Domain}/{CommandClassLabels.Display(row.CommandClass)}/{Flag(row)}] "
                             + row.Summary);
-            return CommandResult.Ok(text.ToString(), list);
+            return CommandResult.Ok(text.ToString(), BusJson.ToElement(list));
         }),
     };
 
@@ -445,15 +464,7 @@ internal static class CommandCatalogCommands
                 return CommandResult.Fail($"指令不存在: {name}");
 
             var row = ToRow(registry, descriptor);
-            var parameters = descriptor.Parameters.Select(parameter => new CommandParameterInfo(
-                parameter.Name,
-                parameter.Type.ToString().ToLowerInvariant(),
-                parameter.Required,
-                parameter.Default,
-                parameter.Position,
-                parameter.AllowedValues ?? [],
-                parameter.Description)).ToList();
-            var detail = new CommandCatalogDetail(row, parameters)
+            var detail = new CommandCatalogDetail(row, row.Parameters)
             {
                 Annotations = descriptor.Annotations,
             };
@@ -477,7 +488,7 @@ internal static class CommandCatalogCommands
                 text.Append($"\n  {parameter.Name} ({required}{def}{allowed}): {parameter.Description}");
             }
 
-            return CommandResult.Ok(text.ToString(), detail);
+            return CommandResult.Ok(text.ToString(), BusJson.ToElement(detail));
         }),
     };
 
@@ -497,7 +508,7 @@ internal static class CommandCatalogCommands
                 .OrderBy(item => item.Domain, StringComparer.Ordinal)
                 .ToList();
             return CommandResult.Ok(
-                "指令域:" + string.Concat(rows.Select(item => $"\n  {item.Domain,-16} {item.Count}")), rows);
+                "指令域:" + string.Concat(rows.Select(item => $"\n  {item.Domain,-16} {item.Count}")), BusJson.ToElement(rows));
         }),
     };
 

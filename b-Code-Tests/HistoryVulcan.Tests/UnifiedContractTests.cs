@@ -172,6 +172,8 @@ public sealed class UnifiedContractTests
             Assert.False(parts[1].StartsWith(Path.Combine(temp.Path, "modules"), StringComparison.OrdinalIgnoreCase));
             Assert.Equal(nameof(HostRunMode.Probe), parts[2]);
             Assert.Equal(parts[1], Assert.Single(host.Modules).DataDirectory);
+            // 6.0.0：模块从这里找随包文件，不必猜运行区布局。
+            Assert.Equal(Path.GetFullPath(Path.Combine(temp.Path, "modules", "contextfixture")), Path.GetFullPath(parts[4]));
         }
     }
 
@@ -196,7 +198,7 @@ public sealed class UnifiedContractTests
 
             var file = (await bus.ExecuteAsync("contextfixture.context-subscribe vulcan.probe.tick", "test")).Message;
             bus.Events.Publish("vulcan.probe.tick", "host", new { n = 1 });
-            Assert.True(SpinWait.SpinUntil(() => File.Exists(file) && File.ReadAllText(file).Contains("\"n\":1"), Wait));
+            Assert.True(SpinWait.SpinUntil(() => ReadShared(file).Contains("\"n\":1"), Wait));
 
             Assert.True(host.Unload("contextfixture").Success);
             File.Delete(file);
@@ -260,7 +262,8 @@ public sealed class UnifiedContractTests
         Assert.Contains("未知指令", unknown.Message, StringComparison.Ordinal);
 
         var suggest = await bus.ExecuteAsync("vulcan.command.suggest probe.thing.dorp", "test");
-        Assert.Contains("probe.thing.drop", Assert.IsAssignableFrom<IReadOnlyList<string>>(suggest.Data));
+        Assert.Contains("probe.thing.drop",
+            Assert.IsType<JsonElement>(suggest.Data).EnumerateArray().Select(item => item.GetString()));
 
         var before = registry.Revision;
         var revision = await bus.ExecuteAsync("vulcan.command.revision", "test");
@@ -292,10 +295,8 @@ public sealed class UnifiedContractTests
         });
 
         var listed = await bus.ExecuteAsync("vulcan.command.list domain=probe", "test");
-        var row = Assert.Single(Assert.IsAssignableFrom<IEnumerable<CommandCatalogRow>>(listed.Data));
-        Assert.True(row.RequiresConfirmation);
-        Assert.True(JsonSerializer.SerializeToElement(row, new JsonSerializerOptions(JsonSerializerDefaults.Web))
-            .GetProperty("requiresConfirmation").GetBoolean());
+        var row = Assert.Single(Assert.IsType<JsonElement>(listed.Data).EnumerateArray());
+        Assert.True(row.GetProperty("requiresConfirmation").GetBoolean());
     }
 
     [Fact]
@@ -304,7 +305,12 @@ public sealed class UnifiedContractTests
 
     [Theory]
     [InlineData("module:HistoryDiana", true)]
-    [InlineData("diana.host.observe", true)]
+    [InlineData("module:HistoryAurora:UI", true)]
+    [InlineData("module:HistoryJanus:module:HistoryAurora:手动", true)]
+    // 6.0.0（DEC-071）：diana. 兼容删除；网关转进来的远端请求套了模块章也不可信。
+    [InlineData("diana.host.observe", false)]
+    [InlineData("module:HistoryPortunus:mcp:client", false)]
+    [InlineData("module:HistoryDiana:diana.relay.call", false)]
     [InlineData("janus.proj.list", false)]
     [InlineData("mcp:client", false)]
     public void ModuleSourcesAreTrustedByPrefixNotByModuleName(string source, bool trusted)
@@ -327,6 +333,19 @@ public sealed class UnifiedContractTests
 
         Assert.Equal(HostAction.Error, HostArgumentParser.Parse(["--probe"]).Action);
         Assert.Equal(HostAction.Error, HostArgumentParser.Parse(["--probe", "--cli", "x"]).Action);
+    }
+
+    /// <summary>夹具的处理器在线程池上追加写文件；读的一侧撞上写锁就当作「还没写到」再等一拍。</summary>
+    private static string ReadShared(string path)
+    {
+        try
+        {
+            return File.Exists(path) ? File.ReadAllText(path) : "";
+        }
+        catch (IOException)
+        {
+            return "";
+        }
     }
 
     private static (ModuleHost Host, CommandBus Bus) StartFixture(string root, HostRunMode mode)

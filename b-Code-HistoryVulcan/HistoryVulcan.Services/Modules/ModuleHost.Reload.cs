@@ -5,7 +5,7 @@ using HistoryVulcan.Core.Logging;
 
 namespace HistoryVulcan.Services.Modules;
 
-public sealed partial class ModuleHost
+internal sealed partial class ModuleHost
 {
     /// <summary>
     /// 整体重载：先拆旧界面并卸载可回收 ALC，再装新包。

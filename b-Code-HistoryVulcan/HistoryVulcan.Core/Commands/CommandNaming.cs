@@ -41,7 +41,7 @@ public static class ModuleDomainNaming
 /// 5.2 删掉了 <c>IsNone</c>：它是 <c>string.IsNullOrWhiteSpace</c> 换了个名字，
 /// 全仓与七个已部署模块无人调用，只有两条测试在维持它活着。
 /// </remarks>
-public static class CommandClassLabels
+internal static class CommandClassLabels
 {
     /// <summary>无类直接方法在界面上的类名。</summary>
     public const string None = "无类";
@@ -70,7 +70,7 @@ public static class CommandClassLabels
 /// 只为回答「刚才那次拼没拼前缀」——而 <c>Resolve</c> 的返回值与输入是否相等就是答案。
 /// 同一条规则写在两处，改一处漏一处只是时间问题；全仓与七个已部署模块无人调用它。
 /// </remarks>
-public static class DomainFocus
+internal static class DomainFocus
 {
     /// <summary>域筛选下拉里代表「不聚焦」的值。</summary>
     public const string All = "全部";

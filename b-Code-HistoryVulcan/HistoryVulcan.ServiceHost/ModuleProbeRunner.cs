@@ -57,7 +57,7 @@ internal static class ModuleProbeRunner
         try
         {
             CopyDirectory(package, Path.Combine(modulesDirectory, name));
-            var runtime = new AppPaths(AppIdentity.From(identityAssembly).Name, createBusinessDirectories: false).ModulesDir;
+            var runtime = new AppPaths(AppIdentity.From(identityAssembly).Name, createModulesDirectory: false).ModulesDir;
             foreach (var dependency in dependsOn)
             {
                 var source = Path.Combine(runtime, dependency);

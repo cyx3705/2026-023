@@ -11,10 +11,11 @@ public sealed class QualityRemediationTests
     public void CorruptedSettingsArePreservedAndSubsequentWritesAreAtomic()
     {
         var appName = "HistoryVulcan.Tests." + Guid.NewGuid().ToString("N");
-        var paths = new AppPaths(appName, createBusinessDirectories: false);
+        var paths = new AppPaths(appName, createModulesDirectory: false);
         var settingsPath = Path.Combine(paths.Root, "settings.json");
         try
         {
+            Directory.CreateDirectory(paths.Root);
             File.WriteAllText(settingsPath, "{broken-json");
 
             var settings = new SettingsService(paths);

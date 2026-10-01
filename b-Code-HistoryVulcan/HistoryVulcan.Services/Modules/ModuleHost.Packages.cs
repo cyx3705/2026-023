@@ -2,7 +2,7 @@
 
 namespace HistoryVulcan.Services.Modules;
 
-public sealed partial class ModuleHost
+internal sealed partial class ModuleHost
 {
     /// <summary>
     /// Validates and atomically installs a manifest package into the fixed runtime module directory.

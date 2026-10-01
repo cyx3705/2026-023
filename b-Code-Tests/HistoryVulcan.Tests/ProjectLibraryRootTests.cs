@@ -19,12 +19,10 @@ public sealed class ProjectLibraryRootTests
     }
 
     [Fact]
-    public void LegacyWorktreeKeyIsOnlyAFallbackAndDefaultIsClio()
+    public void OldWorktreeKeyIsIgnoredAndDefaultIsClio()
     {
-        var legacyOnly = new MemorySettings();
-        legacyOnly.Set(ProjectLibraryRoot.KeyWorktreeRoot, @"D:\Library");
-        Assert.Equal(@"D:\Library", ProjectLibraryRoot.Resolve(legacyOnly));
-
-        Assert.Equal(ProjectLibraryRoot.Default, ProjectLibraryRoot.Resolve(new MemorySettings()));
+        var oldKeyOnly = new MemorySettings();
+        oldKeyOnly.Set("proj.worktreeroot", @"D:\Library");
+        Assert.Equal(ProjectLibraryRoot.Default, ProjectLibraryRoot.Resolve(oldKeyOnly));
     }
 }

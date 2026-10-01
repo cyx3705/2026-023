@@ -45,8 +45,9 @@ public sealed class RuntimeModulePackageTests
     }
 
     [Fact]
-    public void RuntimeDataDoesNotInvalidateAnInstalledPackage()
+    public void FilesWrittenIntoTheSlotInvalidateThePackage()
     {
+        // 6.0.0：槽位 data/ 不再是运行态豁免区。模块数据只能写宿主给的 ModuleData/<名>/，写进槽位就是包被改过。
         using var temp = new TemporaryDirectory();
         var root = Directory.CreateDirectory(Path.Combine(temp.Path, "Modules")).FullName;
         var package = CreatePackage(root, "HistoryJanus", "HistoryJanus", "v5.4.8");
@@ -56,26 +57,8 @@ public sealed class RuntimeModulePackageTests
 
         var snapshot = new RuntimeModuleDiscoverySource(root).Discover();
 
-        Assert.Equal("HistoryJanus", Assert.Single(snapshot.Modules).Name);
-        Assert.DoesNotContain(snapshot.Diagnostics, item => item.Code == "invalid-checksum");
-    }
-
-    [Fact]
-    public void RuntimeDataCannotContainAnUnverifiedArtifact()
-    {
-        using var temp = new TemporaryDirectory();
-        var root = Directory.CreateDirectory(Path.Combine(temp.Path, "Modules")).FullName;
-        var package = Directory.CreateDirectory(Path.Combine(root, "HistoryJanus")).FullName;
-        Directory.CreateDirectory(Path.Combine(package, "data"));
-        File.Copy(typeof(ContextFixtureModuleInfo).Assembly.Location,
-            Path.Combine(package, "data", "HistoryJanus.dll"));
-        WriteManifest(package, "HistoryJanus", "v5.4.8", "data/HistoryJanus.dll");
-        WriteChecksums(package);
-
-        var snapshot = new RuntimeModuleDiscoverySource(root).Discover();
-
         Assert.Empty(snapshot.Modules);
-        Assert.Contains(snapshot.Diagnostics, item => item.Code == "invalid-artifact");
+        Assert.Contains(snapshot.Diagnostics, item => item.Code == "invalid-checksum");
     }
 
     [Fact]
@@ -122,10 +105,6 @@ public sealed class RuntimeModulePackageTests
             Assert.Equal("v1.0.0", Assert.Single(host.Modules).Version);
             Assert.False(Directory.Exists(Path.Combine(runtime, "contextfixture", "history")));
 
-            var state = Path.Combine(runtime, "contextfixture", "data", "state");
-            Directory.CreateDirectory(state);
-            File.WriteAllText(Path.Combine(state, "push-history.jsonl"), "keep me");
-
             var idempotent = host.InstallPackage(first);
             Assert.True(idempotent.Success, idempotent.Message);
             Assert.Contains("无需替换", idempotent.Message, StringComparison.Ordinal);
@@ -134,8 +113,6 @@ public sealed class RuntimeModulePackageTests
             var upgraded = host.InstallPackage(second);
             Assert.True(upgraded.Success, upgraded.Message);
             Assert.Equal("v2.0.0", Assert.Single(host.Modules).Version);
-            Assert.Equal("keep me",
-                File.ReadAllText(Path.Combine(runtime, "contextfixture", "data", "state", "push-history.jsonl")));
 
             var removed = host.Uninstall("contextfixture");
             Assert.True(removed.Success, removed.Message);
@@ -266,13 +243,9 @@ public sealed class RuntimeModulePackageTests
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.VersionVariable, "v1.0.0");
             Assert.True(host.InstallPackage(good).Success);
 
-            var data = Path.Combine(runtime, "contextfixture", "data", "state.txt");
-            Directory.CreateDirectory(Path.GetDirectoryName(data)!);
-            File.WriteAllText(data, "keep original state");
             var failed = host.InstallPackage(broken);
             Assert.False(failed.Success);
             Assert.Contains("旧包已恢复", failed.Message, StringComparison.Ordinal);
-            Assert.Equal("keep original state", File.ReadAllText(data));
             Assert.Equal("v1.0.0", Assert.Single(host.Modules).Version);
             Assert.Equal(1, host.CurrentContextCount);
             Assert.True(registry.TryGet("contextfixture.Probe", out _));
@@ -528,7 +501,7 @@ public sealed class RuntimeModulePackageTests
         using var host = new ModuleHost(new RuntimeModuleDiscoverySource(runtime), log) { EnableFileWatching = false };
         var previous = Environment.GetEnvironmentVariable(ContextAwareFixture.FailureVariable);
         var previousData = Environment.GetEnvironmentVariable(ContextAwareFixture.DataVariable);
-        var data = Path.Combine(runtime, "contextfixture", "data");
+        var data = Path.Combine(temp.Path, "ModuleData", "contextfixture");
         try
         {
             Environment.SetEnvironmentVariable(ContextAwareFixture.DataVariable, data);
@@ -541,7 +514,7 @@ public sealed class RuntimeModulePackageTests
             var failed = host.InstallPackage(second);
             Assert.False(failed.Success);
             Assert.Contains("接入失败", failed.Message, StringComparison.Ordinal);
-            Assert.Equal("original data", File.ReadAllText(Path.Combine(data, "state.txt")));
+            // 模块数据归模块：宿主只回滚包，不替模块回滚 ModuleData 里的内容（6.0.0 起没有槽位 data/）。
             Assert.True(RuntimeModuleDiscoverySource.TryReadPackage(
                 Path.Combine(runtime, "contextfixture"), out _, out _, out var validationError), validationError);
             Assert.True(RuntimeModulePackageStore.ChecksumsEqual(first, Path.Combine(runtime, "contextfixture")));
