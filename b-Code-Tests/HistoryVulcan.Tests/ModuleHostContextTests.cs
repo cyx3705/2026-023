@@ -1,4 +1,4 @@
-﻿using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 using HistoryVulcan.Core.Modules;
 using HistoryVulcan.Core.Storage;
@@ -7,9 +7,97 @@ using Xunit;
 
 namespace HistoryVulcan.Tests
 {
-
+    // 与 RuntimeModulePackageTests 共用同一串行集合：本类同样把测试程序集复制进模块槽，
+    // 并用进程级环境变量控制夹具身份。此前它不在任何集合里，靠「只有它开这些开关」侥幸成立；
+    // 5.1.3 加入第二组夹具后这条侥幸不再成立，装载结果开始随并行调度漂移。
+    [Collection(RuntimeModulePackageCollection.Name)]
     public sealed class ModuleHostContextTests
     {
+        [Fact]
+        public void UnloadedContextCanBeCollectedWhileTheHostRemainsAlive()
+        {
+            using var temp = new TemporaryDirectory();
+            var (host, unloaded) = UnloadAndObserve(temp.Path);
+            using (host)
+            {
+                for (var attempt = 0; attempt < 10 && unloaded.IsAlive; attempt++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+                Assert.False(unloaded.IsAlive);
+                GC.KeepAlive(host);
+            }
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static (ModuleHost Host, WeakReference Context) UnloadAndObserve(string root)
+        {
+            RuntimeModulePackageTests.CreatePackage(root, "contextfixture", "contextfixture", "v1.0.0");
+            var before = System.Runtime.Loader.AssemblyLoadContext.All.ToHashSet();
+            var host = new ModuleHost(new RuntimeModuleDiscoverySource(root), new NullLog()) { EnableFileWatching = false };
+            var registry = new CommandRegistry();
+            host.Attach(registry, new CommandBus(registry, new NullLog()));
+            host.Start();
+            var loaded = System.Runtime.Loader.AssemblyLoadContext.All.Single(context => context.IsCollectible && !before.Contains(context));
+            var reference = new WeakReference(loaded);
+            Assert.True(host.Unload("contextfixture").Success);
+            return (host, reference);
+        }
+
+        [Fact]
+        public void ModuleMetadataIsConstructedOncePerScan()
+        {
+            using var temp = new TemporaryDirectory();
+            var marker = Path.Combine(temp.Path, "metadata-constructions.txt");
+            var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.ConstructionVariable);
+            try
+            {
+                Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.ConstructionVariable, marker);
+                RuntimeModulePackageTests.CreatePackage(temp.Path, "contextfixture", "contextfixture", "v1.0.0");
+                using var host = new ModuleHost(new RuntimeModuleDiscoverySource(temp.Path), new NullLog())
+                {
+                    EnableFileWatching = false,
+                };
+                var registry = new CommandRegistry();
+                host.Attach(registry, new CommandBus(registry, new NullLog()));
+                host.Start();
+                Assert.Single(host.Modules);
+                Assert.Single(File.ReadAllLines(marker));
+            }
+            finally { Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.ConstructionVariable, previous); }
+        }
+
+        [Fact]
+        public void EmptyRuntimeDirectoryStartsWithoutModules()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));
+            var modulesDirectory = Path.Combine(root, "modules");
+            Directory.CreateDirectory(modulesDirectory);
+            var registry = new CommandRegistry();
+            var log = new RecordingLog();
+            var bus = new CommandBus(registry, log);
+            using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
+            {
+                EnableFileWatching = false,
+            };
+
+            host.Attach(registry, bus);
+            host.Start();
+
+            try
+            {
+                Assert.Empty(host.Modules);
+                Assert.Equal(0, host.CurrentContextCount);
+            }
+            finally
+            {
+                host.Dispose();
+                if (Directory.Exists(root))
+                    Directory.Delete(root, recursive: true);
+            }
+        }
+
         [Fact]
         public async Task ContextAwareModuleRegistersCommandsOnlyThroughTheBus()
         {
@@ -20,21 +108,20 @@ namespace HistoryVulcan.Tests
             Directory.CreateDirectory(slotDirectory);
             Directory.CreateDirectory(dataDirectory);
 
-            var modulePath = Path.Combine(slotDirectory, "ContextFixture.dll");
-            File.Copy(typeof(ContextFixtureModuleInfo).Assembly.Location, modulePath);
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var registry = new CommandRegistry();
-            var log = new TestLog();
+            var log = new RecordingLog();
             var settings = new MemorySettings();
             var bus = new CommandBus(registry, log);
-            var host = new ModuleHost(modulesDirectory, log)
+            var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
 
             try
             {
-                host.Attach(registry, bus, settings, dataDirectory);
+                host.Attach(registry, bus);
                 host.Start();
 
                 Assert.True(registry.TryGet("contextfixture.context-probe", out var direct));
@@ -53,7 +140,7 @@ namespace HistoryVulcan.Tests
                 // Attach 与 Dispose 都是生命周期契约的实现，不得成为指令——
                 // 尤其是 Dispose：远端调用它等于拆掉半个模块。
                 Assert.False(registry.TryGet("contextfixture.Dispose", out _));
-                Assert.Equal(2, Assert.Single(host.Modules).CommandCount);
+                Assert.Equal(ContextFixtureModuleInfo.CommandCount, Assert.Single(host.Modules).CommandCount);
             }
             finally
             {
@@ -64,6 +151,30 @@ namespace HistoryVulcan.Tests
             }
         }
 
+        /// <summary>
+        /// DEC-064：模块拿到的日志就是总线写回显、进度与结果的那一份。
+        /// 宿主与总线故意用两份不同的日志，写到宿主那份不算数。
+        /// </summary>
+        [Fact]
+        public void HostContextExposesTheBusLog()
+        {
+            using var temp = new TemporaryDirectory();
+            RuntimeModulePackageTests.CreatePackage(temp.Path, "contextfixture", "contextfixture", "v1.0.0");
+            var registry = new CommandRegistry();
+            var busLog = new RecordingLog();
+            using var host = new ModuleHost(new RuntimeModuleDiscoverySource(temp.Path), new NullLog())
+            {
+                EnableFileWatching = false,
+            };
+
+            host.Attach(registry, new CommandBus(registry, busLog));
+            host.Start();
+
+            Assert.Contains(
+                busLog.Entries,
+                entry => entry.Category == "contextfixture" && entry.Message == ContextAwareFixture.LogProbe);
+        }
+
         [Fact]
         public async Task UiCommandsFailClearlyWhenNoUiModuleIsLoaded()
         {
@@ -71,13 +182,13 @@ namespace HistoryVulcan.Tests
             var modulesDirectory = Path.Combine(root, "modules");
             Directory.CreateDirectory(modulesDirectory);
             var registry = new CommandRegistry();
-            var log = new TestLog();
+            var log = new RecordingLog();
             var bus = new CommandBus(registry, log);
-            using var host = new ModuleHost(modulesDirectory, log)
+            using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
-            host.Attach(registry, bus, new MemorySettings(), Path.Combine(root, "data"));
+            host.Attach(registry, bus);
             host.Start();
 
             try
@@ -124,14 +235,12 @@ namespace HistoryVulcan.Tests
             var dataDirectory = Path.Combine(root, "data");
             Directory.CreateDirectory(slotDirectory);
             Directory.CreateDirectory(dataDirectory);
-            File.Copy(
-                typeof(ContextFixtureModuleInfo).Assembly.Location,
-                Path.Combine(slotDirectory, "ContextFixture.dll"));
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var marker = Path.Combine(Path.GetFullPath(dataDirectory), ContextAwareFixture.DisposeMarker);
             var registry = new CommandRegistry();
-            var log = new TestLog();
-            var host = new ModuleHost(modulesDirectory, log)
+            var log = new RecordingLog();
+            var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
@@ -139,7 +248,7 @@ namespace HistoryVulcan.Tests
             try
             {
                 Environment.SetEnvironmentVariable(ContextAwareFixture.DataVariable, Path.GetFullPath(dataDirectory));
-                host.Attach(registry, new CommandBus(registry, log), new MemorySettings(), dataDirectory);
+                host.Attach(registry, new CommandBus(registry, log));
                 host.Start();
                 Assert.False(File.Exists(marker), "装载阶段不应触发拆除");
 
@@ -174,24 +283,22 @@ namespace HistoryVulcan.Tests
             var modulesDirectory = Path.Combine(root, "modules");
             var slotDirectory = Path.Combine(modulesDirectory, "context-fixture");
             Directory.CreateDirectory(slotDirectory);
-            File.Copy(
-                typeof(ContextFixtureModuleInfo).Assembly.Location,
-                Path.Combine(slotDirectory, "ContextFixture.dll"));
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var previous = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.EnabledVariable);
             Environment.SetEnvironmentVariable(ContextFixtureModuleInfo.EnabledVariable, "0");
             var registry = new CommandRegistry();
-            var log = new TestLog();
+            var log = new RecordingLog();
             var settings = new MemorySettings();
             var bus = new CommandBus(registry, log);
-            using var host = new ModuleHost(modulesDirectory, log)
+            using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
 
             try
             {
-                host.Attach(registry, bus, settings, Path.Combine(root, "data"));
+                host.Attach(registry, bus);
                 host.Start();
 
                 Assert.Empty(host.Modules);
@@ -213,28 +320,25 @@ namespace HistoryVulcan.Tests
             var modulesDirectory = Path.Combine(root, "modules");
             var activeDirectory = Path.Combine(modulesDirectory, "context-fixture");
             var rollbackDirectory = Path.Combine(modulesDirectory, "context-fixture-rollback-20260808-000000");
-            Directory.CreateDirectory(activeDirectory);
-            Directory.CreateDirectory(rollbackDirectory);
-            File.Copy(typeof(ContextFixtureModuleInfo).Assembly.Location,
-                Path.Combine(activeDirectory, "ContextFixture.dll"));
-            File.Copy(typeof(ContextFixtureModuleInfo).Assembly.Location,
-                Path.Combine(rollbackDirectory, "ContextFixture.dll"));
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, Path.GetFileName(activeDirectory), "contextfixture", "v1.0.0");
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, Path.GetFileName(rollbackDirectory), "contextfixture", "v1.0.0");
 
             var registry = new CommandRegistry();
-            var log = new TestLog();
-            using var host = new ModuleHost(modulesDirectory, log)
+            var log = new RecordingLog();
+            using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
 
             try
             {
-                host.Attach(registry);
+                host.Attach(registry, new CommandBus(registry, log));
                 host.Start();
 
                 var module = Assert.Single(host.Modules);
                 Assert.Equal("contextfixture", module.ModuleName);
-                Assert.Single(registry.All());
+                // 回滚槽若被发现，同名指令撞名被拒、计数对不上；接入后登记的上下文指令也计入。
+                Assert.Equal(module.CommandCount, registry.All().Count);
             }
             finally
             {
@@ -250,22 +354,20 @@ namespace HistoryVulcan.Tests
             var modulesDirectory = Path.Combine(root, "modules");
             var slotDirectory = Path.Combine(modulesDirectory, "context-fixture");
             Directory.CreateDirectory(slotDirectory);
-            File.Copy(
-                typeof(ContextFixtureModuleInfo).Assembly.Location,
-                Path.Combine(slotDirectory, "ContextFixture.dll"));
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var registry = new CommandRegistry();
-            var log = new TestLog();
+            var log = new RecordingLog();
             var settings = new MemorySettings();
             var bus = new CommandBus(registry, log);
-            using var host = new ModuleHost(modulesDirectory, log)
+            using var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
 
             try
             {
-                host.Attach(registry, bus, settings, Path.Combine(root, "data"));
+                host.Attach(registry, bus);
                 host.Start();
                 Assert.Equal("contextfixture", Assert.Single(host.Modules).ModuleName);
                 Assert.True(registry.TryGet("contextfixture.Probe", out _));
@@ -298,22 +400,20 @@ namespace HistoryVulcan.Tests
             var modulesDirectory = Path.Combine(root, "modules");
             var slotDirectory = Path.Combine(modulesDirectory, "context-fixture");
             Directory.CreateDirectory(slotDirectory);
-            File.Copy(
-                typeof(ContextFixtureModuleInfo).Assembly.Location,
-                Path.Combine(slotDirectory, "ContextFixture.dll"));
+            RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var registry = new CommandRegistry();
-            var log = new TestLog();
+            var log = new RecordingLog();
             var settings = new MemorySettings();
             var bus = new CommandBus(registry, log);
-            var host = new ModuleHost(modulesDirectory, log)
+            var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
             {
                 EnableFileWatching = false,
             };
 
             try
             {
-                host.Attach(registry, bus, settings, Path.Combine(root, "data"));
+                host.Attach(registry, bus);
                 host.Start();
                 Assert.True(registry.TryGet("contextfixture.context-probe", out _));
 
@@ -331,37 +431,6 @@ namespace HistoryVulcan.Tests
             }
         }
 
-
-        private sealed class MemorySettings : ISettingsService
-        {
-            private readonly Dictionary<string, string> _values = new(StringComparer.OrdinalIgnoreCase);
-
-            public string? Get(string key) => _values.GetValueOrDefault(key);
-
-            public int GetInt(string key, int fallback)
-                => int.TryParse(Get(key), out var value) ? value : fallback;
-
-            public void Set(string key, string value) => _values[key] = value;
-
-            public IReadOnlyList<KeyValuePair<string, string>> All() => [.. _values];
-        }
-
-        private sealed class TestLog : IShellLog
-        {
-            public List<ShellLogEntry> Entries { get; } = [];
-
-            public void Log(ShellLogLevel level, string category, string message)
-                => Entries.Add(new ShellLogEntry(DateTime.Now, level, category, message));
-
-            public event EventHandler<ShellLogEntry>? EntryAdded
-            {
-                add { }
-                remove { }
-            }
-
-            public IReadOnlyList<ShellLogEntry> Snapshot() => Entries;
-        }
-
     }
 
     /// <summary>宿主拆除模块的路径。整快照重载走 Reload，另两条见此。</summary>
@@ -373,16 +442,32 @@ namespace HistoryVulcan.Tests
         /// <summary>按模块卸载：vulcan.module.unload / install / remove 的必经之路。</summary>
         PerModuleUnload,
 
-        /// <summary>整快照热重载：装包与 vulcan.module.reload 的公共尾段。</summary>
+        /// <summary>整快照热重载：vulcan.module.reload。装包走 LoadOne，不走这条。</summary>
         FullReload,
     }
 
     public sealed class ContextFixtureModuleInfo : BaseVariable.ModuleInfoBase
     {
+        /// <summary>
+        /// 夹具的指令数：Attach 里显式登记 4 条（context-probe，以及 5.9.0 为统一契约加的 context-env /
+        /// context-publish / context-subscribe），再加反射投影的 Probe。
+        /// </summary>
+        public const int CommandCount = 5;
+
+        public const string ConstructionVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_CONSTRUCTION";
+
+        public ContextFixtureModuleInfo()
+        {
+            if (Environment.GetEnvironmentVariable(ConstructionVariable) is { Length: > 0 } path)
+                File.AppendAllText(path, "constructed" + Environment.NewLine);
+        }
+
         public const string EnabledVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_ENABLED";
         public const string VersionVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_VERSION";
+        public const string NameVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_NAME";
 
-        public override string ModuleName => "contextfixture";
+        public override string ModuleName
+            => Environment.GetEnvironmentVariable(NameVariable) ?? "contextfixture";
 
         public override string Version
             => Environment.GetEnvironmentVariable(VersionVariable) ?? "v1.0.0";
@@ -403,21 +488,92 @@ namespace HistoryVulcan.Tests
         public const string DisposeMarker = "fixture-disposed.marker";
 
         public const string DataVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_DATA";
+        public const string FailureVariable = "HISTORYVULCAN_CONTEXT_FIXTURE_FAILURE";
+
+        /// <summary>接入时写进 <see cref="IModuleContext.Log"/> 的一行；测试据此确认它就是总线的日志。</summary>
+        public const string LogProbe = "context-log-probe";
 
         private string? _dataDirectory;
 
         public void Attach(IModuleContext context)
         {
+            context.Log.Info("contextfixture", LogProbe);
             _dataDirectory = Environment.GetEnvironmentVariable(DataVariable);
-            context.RegisterCommands(registry => registry.Register(new CommandDescriptor
+            var failure = Environment.GetEnvironmentVariable(FailureVariable);
+            if (failure == "before")
+                throw new InvalidOperationException("fixture attach failed before registration");
+            var prefix = Environment.GetEnvironmentVariable(ContextFixtureModuleInfo.NameVariable) ?? "contextfixture";
+            context.RegisterCommands(registry =>
             {
-                Name = "contextfixture.context-probe",
-                Domain = "spoofed-domain",
-                CommandClass = "context",
-                Summary = "Proves RegisterCommands staged a command owned by this module.",
-                Readonly = true,
-                Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("registered")),
-            }));
+                registry.Register(new CommandDescriptor
+                {
+                    Name = prefix + ".context-probe",
+                    Domain = "spoofed-domain",
+                    CommandClass = "context",
+                    Summary = "Proves RegisterCommands staged a command owned by this module.",
+                    Readonly = true,
+                    Handler = CommandDescriptor.Sync(_ => CommandResult.Ok("registered")),
+                });
+
+                // 5.9.0（DEC-070）：经总线暴露上下文，测试进程才看得见夹具拿到了什么（静态字段跨加载上下文不可见）。
+                registry.Register(new CommandDescriptor
+                {
+                    Name = prefix + ".context-env",
+                    CommandClass = "context",
+                    Summary = "Reports the environment the host handed to this module.",
+                    Readonly = true,
+                    Handler = CommandDescriptor.Sync(_ =>
+                    {
+                        var environment = context.Environment;
+                        return CommandResult.Ok(string.Join("|",
+                            environment.ModuleName, environment.DataDirectory, environment.RunMode, environment.HostVersion,
+                            environment.PackageDirectory));
+                    }),
+                });
+                registry.Register(new CommandDescriptor
+                {
+                    Name = prefix + ".context-publish",
+                    CommandClass = "context",
+                    Summary = "Publishes an event under the given topic.",
+                    Parameters = [new ParameterSpec { Name = "topic", Description = "topic", Required = true, Position = 0 }],
+                    Handler = CommandDescriptor.Sync(ctx =>
+                    {
+                        try
+                        {
+                            context.Publish(ctx.RequireString("topic"), new { from = "fixture" });
+                            return CommandResult.Ok("published");
+                        }
+                        catch (ArgumentException ex)
+                        {
+                            return CommandResult.Fail(ex.Message);
+                        }
+                    }),
+                });
+                registry.Register(new CommandDescriptor
+                {
+                    Name = prefix + ".context-subscribe",
+                    CommandClass = "context",
+                    Summary = "Subscribes to a topic and appends every event to a file in the data directory.",
+                    Parameters = [new ParameterSpec { Name = "topic", Description = "topic", Required = true, Position = 0 }],
+                    Handler = CommandDescriptor.Sync(ctx =>
+                    {
+                        var file = Path.Combine(context.Environment.DataDirectory, "events.txt");
+                        context.Subscribe(ctx.RequireString("topic"), evt =>
+                            File.AppendAllText(file, $"{evt.Topic} {evt.Source} {evt.Payload.GetRawText()}{Environment.NewLine}"));
+                        return CommandResult.Ok(file);
+                    }),
+                });
+            });
+            if (failure is "after" or "after-once")
+            {
+                if (failure == "after-once")
+                {
+                    Environment.SetEnvironmentVariable(FailureVariable, null);
+                    if (_dataDirectory != null)
+                        File.WriteAllText(Path.Combine(_dataDirectory, "state.txt"), "new instance changed data");
+                }
+                throw new InvalidOperationException("fixture attach failed after registration");
+            }
         }
 
         [ModuleCommand(CommandClass = "probe")]

@@ -6,42 +6,21 @@
     <members>
         <member name="T:HistoryVulcan.Services.AppPaths">
             <summary>
-            应用数据目录约定(F-02,Q9 已定):%AppData%/&lt;应用名&gt;/,
-            布局 / 设置 / 历史 / data / modules / panels / logs 均置于其下。
+            宿主数据目录：%AppData%/&lt;应用名&gt;/。宿主自己只用日志与设置，外加运行区 Modules/；
+            布局、面板等界面数据归前端模块，模块数据在宿主给的 ModuleData/&lt;模块名&gt;/（6.0.0 起不再预建这些目录）。
             </summary>
         </member>
-        <member name="M:HistoryVulcan.Services.AppPaths.#ctor(System.String,System.Boolean)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
         <member name="M:HistoryVulcan.Services.AppPaths.#ctor(System.String,System.String,System.Boolean)">
-            <summary>Creates an isolated runtime root for a cooperating host process.</summary>
+            <summary>以指定目录为根（正式服务的设置与日志在 <c>service/</c> 子根下）。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.AppPaths.Root">
-            <summary>%AppData%/&lt;应用名&gt;/</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.AppPaths.LayoutDir">
-            <summary>布局文件目录(W-07 / W-08)。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.AppPaths.DataDir">
-            <summary>应用自有业务数据目录。</summary>
+            <summary>数据根。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.AppPaths.LogsDir">
-            <summary>滚动日志目录(L-02,M2 正式接管)。</summary>
+            <summary>滚动日志目录（由日志自己创建）。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.AppPaths.ModulesDir">
-            <summary>模块 DLL 与模块槽目录。</summary>
-        </member>
-        <member name="P:HistoryVulcan.Services.AppPaths.PanelsDir">
-            <summary>JSON 控制面板目录。</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.AppPaths.GetDataDir(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.AppPaths.GetModulesDir(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
-        </member>
-        <member name="M:HistoryVulcan.Services.AppPaths.GetPanelsDir(System.String)">
-            <summary>Provides this HistoryVulcan public contract member.</summary>
+            <summary>运行区：模块完整包的槽位目录。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Commands.CommandCatalogRow">
             <summary>目录中的一行：一条指令的注册事实与总线安全标志。</summary>
@@ -116,6 +95,12 @@
         </member>
         <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.AllowUnspecifiedParameters">
             <summary>是否接受未声明的参数（5.9.0，DEC-070）。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Parameters">
+            <summary>参数表（6.0.0，DEC-071）：目录一次拉全，消费方不必逐条再 show。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Commands.CommandCatalogRow.Annotations">
+            <summary>注册方提供、由具体消费方解释的注解（6.0.0，DEC-071）。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Commands.CommandParameterInfo">
             <summary>一条指令的单个参数说明。</summary>
@@ -490,9 +475,6 @@
         <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.KeyLibraryRoot">
             <summary>项目库根的设置键。</summary>
         </member>
-        <member name="F:HistoryVulcan.Services.Development.ProjectLibraryRoot.KeyWorktreeRoot">
-            <summary>旧的工作区根设置键，仅作兼容读取。</summary>
-        </member>
         <member name="M:HistoryVulcan.Services.Development.ProjectLibraryRoot.Resolve(HistoryVulcan.Core.Storage.ISettingsService)">
             <summary>按设置解析项目库根；未配置时取缺省值。</summary>
         </member>
@@ -636,6 +618,19 @@
         </member>
         <member name="M:HistoryVulcan.Services.Modules.HostEventPublisher.Flush">
             <summary>立即比对并发布（去抖到点时调用；测试也可直接调用）。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.HostEventPublisher.ToPayload(HistoryVulcan.Core.Logging.ShellLogEntry)">
+            <summary><c>vulcan.log.entry</c> 的载荷形状；<c>vulcan.log.recent</c> 逐条用同一形状（6.0.0）。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleBus">
+            <summary>
+            宿主总线的模块视图（6.0.0，DEC-071）：只有执行、安静执行与中途确认三件事，来源由宿主盖章。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleBus.#ctor(HistoryVulcan.Core.Commands.CommandBus,System.String)">
+            <summary>
+            宿主总线的模块视图（6.0.0，DEC-071）：只有执行、安静执行与中途确认三件事，来源由宿主盖章。
+            </summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleDirectoryWatcher">
              <summary>
@@ -952,7 +947,7 @@
             路径归宿主，内容归模块；装包、热重载、卸载都不动它。
             </summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ModuleEnvironment.#ctor(System.String,System.String,HistoryVulcan.Core.Modules.HostRunMode,System.String)">
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ModuleEnvironment.#ctor(System.String,System.String,System.String,HistoryVulcan.Core.Modules.HostRunMode,System.String)">
             <summary>
             宿主给模块的运行环境（5.9.0，DEC-070）。数据目录在第一次取用时创建：
             路径归宿主，内容归模块；装包、热重载、卸载都不动它。
@@ -1127,9 +1122,6 @@
         <member name="F:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.ChecksumFileName">
             <summary>The integrity manifest required at the root of every module package.</summary>
         </member>
-        <member name="F:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.MutableDataDirectoryName">
-            <summary>Runtime-owned state is kept beside the immutable package payload.</summary>
-        </member>
         <member name="M:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.#ctor(System.String)">
             <summary>Creates a scanner for one absolute runtime module directory.</summary>
         </member>
@@ -1160,9 +1152,6 @@
              两条编排不同，但**校验、拷贝与回滚必须是同一份**——这几步一旦分叉，
              代价是用户的模块目录。编排各自保留，原语共用。
              </remarks>
-        </member>
-        <member name="M:HistoryVulcan.Services.Modules.RuntimeModulePackageStore.PreserveMutableData(System.String,System.String)">
-            <summary>Copies runtime state while keeping the original available for rollback.</summary>
         </member>
         <member name="T:HistoryVulcan.Services.SettingsService">
             <summary>

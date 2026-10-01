@@ -18,7 +18,7 @@ namespace HistoryVulcan.Services.Commands;
 /// <param name="RequiresUiThread">是否必须在 UI 线程执行。</param>
 /// <param name="Readonly">是否声明为只读。</param>
 /// <param name="HiddenReason">远端隐藏原因；未隐藏为 null。</param>
-public sealed record CommandCatalogRow(
+internal sealed record CommandCatalogRow(
     string CommandName,
     string Domain,
     string Summary,
@@ -36,6 +36,20 @@ public sealed record CommandCatalogRow(
 
     /// <summary>三段式命令名的末段方法名。</summary>
     public string Method { get; init; } = "";
+
+    /// <summary>执行前是否要二次确认（5.9.0，DEC-070）。网关据此决定是否拒绝远端调用，不再直接查宿主注册表；
+    /// 确认文案按参数生成，只在执行时出现。</summary>
+    public bool RequiresConfirmation { get; init; }
+
+    /// <summary>是否接受未声明的参数（5.9.0，DEC-070）。</summary>
+    public bool AllowUnspecifiedParameters { get; init; }
+
+    /// <summary>参数表（6.0.0，DEC-071）：目录一次拉全，消费方不必逐条再 show。</summary>
+    public IReadOnlyList<CommandParameterInfo> Parameters { get; init; } = [];
+
+    /// <summary>注册方提供、由具体消费方解释的注解（6.0.0，DEC-071）。</summary>
+    public IReadOnlyDictionary<string, string> Annotations { get; init; }
+        = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 }
 
 /// <summary>一条指令的单个参数说明。</summary>
@@ -46,7 +60,7 @@ public sealed record CommandCatalogRow(
 /// <param name="Position">位置参数序号；仅具名时为 null。</param>
 /// <param name="AllowedValues">允许值枚举；不限时为空。</param>
 /// <param name="Description">参数说明。</param>
-public sealed record CommandParameterInfo(
+internal sealed record CommandParameterInfo(
     string Name,
     string Type,
     bool Required,
@@ -58,7 +72,7 @@ public sealed record CommandParameterInfo(
 /// <summary>单条指令的完整详情：目录行与参数表。</summary>
 /// <param name="Command">该指令的目录行。</param>
 /// <param name="Parameters">参数表。</param>
-public sealed record CommandCatalogDetail(
+internal sealed record CommandCatalogDetail(
     CommandCatalogRow Command,
     IReadOnlyList<CommandParameterInfo> Parameters)
 {
@@ -70,18 +84,10 @@ public sealed record CommandCatalogDetail(
 /// <summary>一个指令域及其注册数量。</summary>
 /// <param name="Domain">域名。</param>
 /// <param name="Count">该域下的指令数。</param>
-public sealed record CommandDomainInfo(string Domain, int Count);
-
-/// <summary>命令手册预览：路径、条数、哈希与是否已写入。</summary>
-internal sealed record CommandManualPreview(
-    string Path,
-    int CommandCount,
-    string Sha256,
-    string Markdown,
-    bool Applied);
+internal sealed record CommandDomainInfo(string Domain, int Count);
 
 /// <summary>V2.1.3 全指令结构化目录，注册表是唯一上游。</summary>
-public static class CommandCatalogCommands
+internal static class CommandCatalogCommands
 {
     /// <summary>
     /// 注册核心目录指令。4.0.0 从 internal 提为 public：调用方在独立程序集，
@@ -93,11 +99,170 @@ public static class CommandCatalogCommands
     /// <summary>把目录查询指令注册进指定注册表。</summary>
     public static void RegisterAll(CommandRegistry registry, string source = "app")
     {
+        registry.Register(BuildCliList(), source);
+        registry.Register(BuildCliShow(registry), source);
         registry.Register(BuildList(registry), source);
         registry.Register(BuildShow(registry), source);
         registry.Register(BuildDomains(registry), source);
-        registry.Register(BuildManual(registry), source);
+        registry.Register(BuildValidate(registry), source);
+        registry.Register(BuildSuggest(registry), source);
+        registry.Register(BuildRevision(registry), source);
     }
+
+    // 5.9.0（DEC-070）：以下三条是前端、网关用的目录查询，取代直接调宿主总线与注册表的内部成员。
+    // 隐藏理由写字面值：CommandTaxonomyContractTests 逐行核对隐藏声明。
+
+    private static CommandDescriptor BuildValidate(CommandRegistry registry) => new()
+    {
+        Name = "vulcan.command.validate",
+        HiddenReason = "前端与网关用的目录查询，经总线调用；不对 MCP 暴露。",
+        Domain = "vulcan",
+        CommandClass = "command",
+        Summary = "校验一行指令文本：语法、指令是否存在、参数能否绑定；不执行",
+        Readonly = true,
+        Example = "vulcan.command.validate text=\"vulcan.module.list\"",
+        Parameters = [StringParam("text", "要校验的指令文本", required: true, position: 0)],
+        Handler = CommandDescriptor.Sync(ctx =>
+        {
+            var text = ctx.RequireString("text");
+            var request = CommandRequest.Create(text, registry);
+            string? error = request.SyntaxError;
+            if (error == null && request.Descriptor is not { } descriptor)
+                error = $"未知指令: {request.Name}";
+            else if (error == null)
+                error = CommandArguments.Bind(request.Descriptor!, request.Parsed!, out _);
+            var usage = request.Descriptor is { } known ? CommandBus.FormatUsage(known) : null;
+            return error == null
+                ? CommandResult.Ok("可以执行。", BusJson.ToElement(new { ok = true, name = request.Name, usage }))
+                : CommandResult.Ok(error, BusJson.ToElement(new { ok = false, name = request.Name, usage, error }));
+        }),
+    };
+
+    private static CommandDescriptor BuildSuggest(CommandRegistry registry) => new()
+    {
+        Name = "vulcan.command.suggest",
+        HiddenReason = "前端与网关用的目录查询，经总线调用；不对 MCP 暴露。",
+        Domain = "vulcan",
+        CommandClass = "command",
+        Summary = "按名字给出最接近的已登记指令，用于未知指令提示与补全",
+        Readonly = true,
+        Example = "vulcan.command.suggest name=vulcan.modle.list",
+        Parameters = [StringParam("name", "（可能拼错的）指令名", required: true, position: 0)],
+        Handler = CommandDescriptor.Sync(ctx =>
+        {
+            var names = registry.Suggest(ctx.RequireString("name").Trim());
+            return CommandResult.Ok(
+                names.Count == 0 ? "没有相近的指令。" : "相近的指令: " + string.Join("、", names),
+                BusJson.ToElement(names));
+        }),
+    };
+
+    private static CommandDescriptor BuildRevision(CommandRegistry registry) => new()
+    {
+        Name = "vulcan.command.revision",
+        HiddenReason = "前端与网关用的目录查询，经总线调用；不对 MCP 暴露。",
+        Domain = "vulcan",
+        CommandClass = "command",
+        Summary = "当前指令目录的版本号；每次登记或注销加一，用来判断要不要重拉目录",
+        Readonly = true,
+        Example = "vulcan.command.revision",
+        Handler = CommandDescriptor.Sync(_ =>
+        {
+            var revision = registry.Revision;
+            return CommandResult.Ok($"目录版本 {revision}", BusJson.ToElement(new { revision }));
+        }),
+    };
+
+    private static CommandDescriptor BuildCliList() => new()
+    {
+        Name = "vulcan.cli.list",
+        Domain = "vulcan",
+        CommandClass = "cli",
+        Summary = "列出 CLI 白名单、执行目标和副作用等级",
+        Readonly = true,
+        Example = "vulcan.cli.list",
+        Handler = CommandDescriptor.Sync(_ =>
+        {
+            var rows = CliExposurePolicy.ExposedCommands.Select(name => new
+            {
+                Name = name,
+                // 白名单只含离线指令；5.9.0 删掉按模块前缀判 runtime-only 的死分支（DEC-070）。
+                Mode = "offline",
+                SideEffect = name.EndsWith("list", StringComparison.OrdinalIgnoreCase)
+                    || name.EndsWith("show", StringComparison.OrdinalIgnoreCase)
+                    || name.Contains("status", StringComparison.OrdinalIgnoreCase)
+                    || name.Contains("domains", StringComparison.OrdinalIgnoreCase)
+                    ? "read"
+                    : "write",
+                ExitCodes = "0=success,1=execution-failure,2=usage/refused,3=runtime-unreachable",
+            }).ToList();
+            return CommandResult.Ok($"CLI 白名单: {rows.Count} 条\n"
+                + string.Join("\n", rows.Select(row => $"  {row.Name} [{row.Mode}/{row.SideEffect}]")), BusJson.ToElement(rows));
+        }),
+    };
+
+    private static CommandDescriptor BuildCliShow(CommandRegistry registry) => new()
+    {
+        Name = "vulcan.cli.show",
+        Domain = "vulcan",
+        CommandClass = "cli",
+        Summary = "查看一条 CLI 指令的参数和执行边界",
+        Readonly = true,
+        Example = "vulcan.cli.show name=vulcan.dev.submit",
+        Parameters = [StringParam("name", "CLI 指令名", required: true, position: 0)],
+        Handler = CommandDescriptor.Sync(context =>
+        {
+            var name = context.RequireString("name").Trim();
+            var exposed = CliExposurePolicy.ExposedCommands.FirstOrDefault(item =>
+                item.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (exposed == null)
+                return CommandResult.Fail($"指令 {name} 不在 CLI 白名单中；请使用 vulcan.cli.list。\n"
+                    + "运行中的宿主请改用 HistoryVulcan.Cli.exe --runtime。");
+            const string mode = "offline";
+            const string approval = "none";
+            if (!registry.TryGet(exposed, out var descriptor))
+            {
+                return CommandResult.Ok(
+                    $"{exposed}\n执行目标: {mode}\n"
+                    + "副作用: 由命令描述符确认级别决定；runtime 动作必须显式 --approve。\n"
+                    + "当前注册表尚未装入该指令，无法列出参数。",
+                    BusJson.ToElement(new { Name = exposed, Mode = mode, Approval = approval, Parameters = Array.Empty<object>() }));
+            }
+
+            var parameters = descriptor.Parameters.Select(parameter => new
+            {
+                parameter.Name,
+                Type = parameter.Type.ToString().ToLowerInvariant(),
+                parameter.Required,
+                parameter.Default,
+                parameter.Position,
+                parameter.Description,
+            }).ToList();
+            var text = new StringBuilder($"{exposed}\n执行目标: {mode}\n")
+                .Append("副作用: 由命令描述符确认级别决定；runtime 动作必须显式 --approve。\n")
+                .Append(descriptor.Summary);
+            if (!string.IsNullOrWhiteSpace(descriptor.Example))
+                text.Append($"\n示例: {descriptor.Example}");
+            foreach (var parameter in descriptor.Parameters)
+            {
+                var required = parameter.Required ? "必填" : "可省略";
+                var def = string.IsNullOrWhiteSpace(parameter.Default) ? "" : $" 默认={parameter.Default}";
+                text.Append($"\n  {parameter.Name} ({required}{def}): {parameter.Description}");
+            }
+
+            return CommandResult.Ok(
+                text.ToString(),
+                BusJson.ToElement(new
+                {
+                    Name = exposed,
+                    Mode = mode,
+                    Approval = approval,
+                    descriptor.Summary,
+                    descriptor.Example,
+                    Parameters = parameters,
+                }));
+        }),
+    };
 
     /// <summary>按当前注册表生成目录快照。</summary>
     public static IReadOnlyList<CommandCatalogRow> Snapshot(CommandRegistry registry)
@@ -112,7 +277,7 @@ public static class CommandCatalogCommands
         builder.AppendLine();
         builder.AppendLine("> [!IMPORTANT]");
         builder.AppendLine("> 本文件由运行时指令注册表自动生成。禁止手工增删或改写下方指令条目；");
-        builder.AppendLine("> 需要更新时，请在程序控制台执行 `vulcan.command.manual file=<相对 Markdown 路径> apply=true`。");
+        builder.AppendLine("> 需要更新时，请从宿主外执行 `HistoryVulcan.exe --export-command-manual <Markdown 路径>`。");
         builder.AppendLine();
         builder.AppendLine($"> 版本：{AppIdentity.Current.Version}");
         builder.AppendLine("> 来源：运行时 `CommandRegistry` 自动生成；请勿手工维护指令条目。");
@@ -208,8 +373,22 @@ public static class CommandCatalogCommands
         {
             CommandClass = registry.GetCommandClass(descriptor.Name),
             Method = CommandRegistry.GetMethod(descriptor.Name),
+            RequiresConfirmation = descriptor.ConfirmPrompt != null,
+            AllowUnspecifiedParameters = descriptor.AllowUnspecifiedParameters,
+            Parameters = ToParameters(descriptor),
+            Annotations = descriptor.Annotations,
         };
     }
+
+    private static IReadOnlyList<CommandParameterInfo> ToParameters(CommandDescriptor descriptor)
+        => descriptor.Parameters.Select(parameter => new CommandParameterInfo(
+            parameter.Name,
+            parameter.Type.ToString().ToLowerInvariant(),
+            parameter.Required,
+            parameter.Default,
+            parameter.Position,
+            parameter.AllowedValues ?? [],
+            parameter.Description)).ToList();
 
     private static string Flag(CommandCatalogRow row)
     {
@@ -265,7 +444,7 @@ public static class CommandCatalogCommands
                 text.Append($"\n  {row.CommandName,-28} "
                             + $"[{row.Domain}/{CommandClassLabels.Display(row.CommandClass)}/{Flag(row)}] "
                             + row.Summary);
-            return CommandResult.Ok(text.ToString(), list);
+            return CommandResult.Ok(text.ToString(), BusJson.ToElement(list));
         }),
     };
 
@@ -285,15 +464,7 @@ public static class CommandCatalogCommands
                 return CommandResult.Fail($"指令不存在: {name}");
 
             var row = ToRow(registry, descriptor);
-            var parameters = descriptor.Parameters.Select(parameter => new CommandParameterInfo(
-                parameter.Name,
-                parameter.Type.ToString().ToLowerInvariant(),
-                parameter.Required,
-                parameter.Default,
-                parameter.Position,
-                parameter.AllowedValues ?? [],
-                parameter.Description)).ToList();
-            var detail = new CommandCatalogDetail(row, parameters)
+            var detail = new CommandCatalogDetail(row, row.Parameters)
             {
                 Annotations = descriptor.Annotations,
             };
@@ -306,7 +477,18 @@ public static class CommandCatalogCommands
                 text.Append($"\n示例: {descriptor.Example}");
             if (row.HiddenReason != null)
                 text.Append($"\n远端隐藏: {row.HiddenReason}");
-            return CommandResult.Ok(text.ToString(), detail);
+            // 5.8.0（REQ-HOST-079）：参数写进正文。命令行人读格式不再附 Data 的 JSON，参数不能只在 Data 里。
+            foreach (var parameter in descriptor.Parameters)
+            {
+                var required = parameter.Required ? "必填" : "可省略";
+                var def = string.IsNullOrWhiteSpace(parameter.Default) ? "" : $" 默认={parameter.Default}";
+                var allowed = parameter.AllowedValues is { Length: > 0 } values && parameter.Type != ParamType.Bool
+                    ? $" 取值={string.Join("|", values)}"
+                    : "";
+                text.Append($"\n  {parameter.Name} ({required}{def}{allowed}): {parameter.Description}");
+            }
+
+            return CommandResult.Ok(text.ToString(), BusJson.ToElement(detail));
         }),
     };
 
@@ -326,75 +508,7 @@ public static class CommandCatalogCommands
                 .OrderBy(item => item.Domain, StringComparer.Ordinal)
                 .ToList();
             return CommandResult.Ok(
-                "指令域:" + string.Concat(rows.Select(item => $"\n  {item.Domain,-16} {item.Count}")), rows);
-        }),
-    };
-
-    private static CommandDescriptor BuildManual(CommandRegistry registry) => new()
-    {
-        Name = "vulcan.command.manual",
-        Domain = "vulcan",
-        CommandClass = "command",
-        Summary = "从运行时注册表预览或生成 Markdown 命令手册",
-        Example = "vulcan.command.manual file=command-manual.md apply=false",
-        Parameters =
-        [
-            new ParameterSpec
-            {
-                Name = "file",
-                Description = "相对当前工作目录的 Markdown 输出路径",
-                Required = true,
-                Position = 0,
-            },
-            new ParameterSpec
-            {
-                Name = "apply",
-                Description = "false 仅预览；true 经本地确认后原子写入",
-                Type = ParamType.Bool,
-                Default = "false",
-            },
-        ],
-        Level = CommandLevel.Ask,
-        ConfirmPrompt = context => context.GetBool("apply")
-            ? $"确认生成命令手册 {context.GetString("file")}？只允许写入当前工作目录边界内的 .md 文件。"
-            : null,
-        Handler = CommandDescriptor.Sync(context =>
-        {
-            var relative = context.RequireString("file").Trim();
-            if (Path.IsPathRooted(relative) || !relative.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
-                return CommandResult.Fail("file 必须是当前工作目录内的相对 .md 路径");
-
-            var root = Path.GetFullPath(Environment.CurrentDirectory);
-            var target = Path.GetFullPath(Path.Combine(root, relative));
-            var rootPrefix = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                             + Path.DirectorySeparatorChar;
-            if (!target.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase))
-                return CommandResult.Fail("命令手册路径越出当前工作目录");
-
-            var markdown = RenderManual(registry);
-            var preview = new CommandManualPreview(
-                target, registry.All().Count, Sha256(markdown),
-                markdown, context.GetBool("apply"));
-            if (!context.GetBool("apply"))
-                return CommandResult.Ok(
-                    $"命令手册预览: {preview.CommandCount} 条，SHA-256 {preview.Sha256}，尚未写入\n{target}",
-                    preview);
-
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            var temp = target + $".tmp-{Guid.NewGuid():N}";
-            try
-            {
-                File.WriteAllText(temp, markdown, new UTF8Encoding(false));
-                File.Move(temp, target, overwrite: true);
-            }
-            finally
-            {
-                if (File.Exists(temp))
-                    File.Delete(temp);
-            }
-            return CommandResult.Ok(
-                $"命令手册已生成: {preview.CommandCount} 条，SHA-256 {preview.Sha256}\n{target}",
-                preview);
+                "指令域:" + string.Concat(rows.Select(item => $"\n  {item.Domain,-16} {item.Count}")), BusJson.ToElement(rows));
         }),
     };
 

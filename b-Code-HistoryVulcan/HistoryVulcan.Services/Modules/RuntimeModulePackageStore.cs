@@ -68,23 +68,7 @@ internal static class RuntimeModulePackageStore
             .Equals(right.Replace("\r\n", "\n", StringComparison.Ordinal), StringComparison.OrdinalIgnoreCase);
     }
 
-    internal static string RestorePackage(string target, string backup)
-    {
-        try
-        {
-            if (Directory.Exists(target))
-                Directory.Delete(target, recursive: true);
-            if (Directory.Exists(backup))
-                Directory.Move(backup, target);
-            return Directory.Exists(target) ? "；旧包已恢复" : "";
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return $"；回滚失败: {ex.Message}";
-        }
-    }
-
-    internal static void DeleteTransactionRoot(string root)
+    internal static string DeleteTransactionRoot(string root)
     {
         try
         {
@@ -94,14 +78,11 @@ internal static class RuntimeModulePackageStore
             if (parent != null && Directory.Exists(parent)
                                && !Directory.EnumerateFileSystemEntries(parent).Any())
                 Directory.Delete(parent);
+            return "";
         }
-        catch (IOException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // Transaction residue is outside the watched directory and can be cleaned on a later run.
-        }
-        catch (UnauthorizedAccessException)
-        {
-            // Transaction residue is outside the watched directory and can be cleaned on a later run.
+            return $"；清理未完成，残留目录 {root}: {ex.Message}";
         }
     }
 }

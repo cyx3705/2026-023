@@ -1,17 +1,18 @@
 ﻿using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Services.Commands;
 using Xunit;
 
 namespace HistoryVulcan.Tests;
 
 /// <summary>
-/// DEC-023 / REQ-CMD-010 / REQ-CMD-011:三段式九类分类法与模块域去品牌前缀。
+/// DEC-023 / REQ-CMD-010 / REQ-CMD-011:三段式十类分类法与模块域去品牌前缀。
 /// </summary>
 public sealed class CommandTaxonomyContractTests
 {
-    /// <summary>3.3.2 认可的九个内置类，见技术合同 REQ-CMD-010。</summary>
+    /// <summary>5.1.1 认可的十个内置类，见技术合同 REQ-CMD-010。</summary>
     private static readonly HashSet<string> BuiltinClasses = new(StringComparer.Ordinal)
     {
-        "app", "command", "ui", "log", "mcp", "module", "prompt", "svc", "web",
+        "app", "cli", "command", "ui", "log", "mcp", "module", "prompt", "svc", "web",
     };
 
     [Theory]
@@ -147,8 +148,13 @@ public sealed class CommandTaxonomyContractTests
             {
                 "vulcan.app.quit",
                 "vulcan.command.run",
+                "vulcan.command.revision",
+                "vulcan.command.suggest",
+                "vulcan.command.validate",
+                "vulcan.log.recent",
                 "vulcan.module.install",
                 "vulcan.module.remove",
+                "vulcan.module.uninstall",
                 "vulcan.dev.start",
                 "vulcan.dev.submit",
                 "vulcan.dev.finish",
@@ -162,6 +168,40 @@ public sealed class CommandTaxonomyContractTests
                 "vulcan.worktree.root",
             }.Order(StringComparer.OrdinalIgnoreCase),
             declared.Order(StringComparer.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void ModuleInstallDoesNotRequireASecondConfirmation()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            RepositoryPaths.Root(),
+            "b-Code-HistoryVulcan",
+            "HistoryVulcan.ServiceHost",
+            "ServiceComposer.cs"));
+        var start = source.IndexOf("Name = \"vulcan.module.install\"", StringComparison.Ordinal);
+        var end = source.IndexOf("Name = \"vulcan.module.remove\"", start, StringComparison.Ordinal);
+
+        Assert.True(start >= 0 && end > start, "未找到模块安装命令声明。");
+        Assert.DoesNotContain("Level = CommandLevel.Ask", source[start..end], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ModuleUninstallRegistersTheModuleManagementButton()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            RepositoryPaths.Root(),
+            "b-Code-HistoryVulcan",
+            "HistoryVulcan.ServiceHost",
+            "ServiceComposer.cs"));
+        var start = source.IndexOf("Name = \"vulcan.module.uninstall\"", StringComparison.Ordinal);
+        var end = source.IndexOf("Name = \"vulcan.module.open\"", start, StringComparison.Ordinal);
+
+        Assert.True(start >= 0 && end > start, "未找到模块卸载命令声明。");
+        var declaration = source[start..end];
+        Assert.Contains("[\"ui.button\"] = \"true\"", declaration, StringComparison.Ordinal);
+        Assert.Contains("[\"ui.button.label\"] = \"卸载模块\"", declaration, StringComparison.Ordinal);
+        Assert.Contains("[\"ui.button.command\"] = \"vulcan.module.uninstall\"", declaration, StringComparison.Ordinal);
+        Assert.Contains("[\"ui.button.confirm\"]", declaration, StringComparison.Ordinal);
     }
 
     /// <summary>隐藏是描述符自己的声明，不再由指令名推导。</summary>
@@ -203,13 +243,40 @@ public sealed class CommandTaxonomyContractTests
     }
 
     [Fact]
+    public void OpenDataIsNotASharedBuiltin()
+    {
+        // 打开数据目录是界面动作，归 Aurora（aurora.app.opendata）；宿主从未绑定这条共享定义（DEC-068）。
+        Assert.DoesNotContain(
+            "vulcan.app.opendata",
+            BuiltinCommandDefinitions.Names,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void InteractiveManualGenerationIsNotPartOfTheFrozenHostCatalog()
+    {
+        var registry = new CommandRegistry();
+
+        CommandCatalogCommands.RegisterAll(registry);
+
+        Assert.DoesNotContain(
+            registry.All(),
+            descriptor => descriptor.Name.Equals("vulcan.command.manual", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void TwoSegmentNamesAreClasslessDirectMethods()
     {
         // DEC-025：两段名是「域.方法」，判为无类；首段是域而不是类。
-        Assert.Equal(string.Empty, CommandRegistry.LegacyClass("mercury.go"));
-        Assert.Equal(string.Empty, CommandRegistry.LegacyClass("fixture.cell"));
-        Assert.Equal("core", CommandRegistry.LegacyClass("ping"));
-        Assert.Equal("ui", CommandRegistry.LegacyClass("vulcan.ui.dock"));
+        //
+        // 5.2 起从公开入口 GetCommandClass 问：未注册名走的正是那条按名推导，
+        // 而它才是消费方真正会调用的东西。此前这里直接点 CommandRegistry.LegacyClass，
+        // 那是实现细节——它公开着的唯一理由就是这几条断言。
+        var registry = new CommandRegistry();
+        Assert.Equal(string.Empty, registry.GetCommandClass("mercury.go"));
+        Assert.Equal(string.Empty, registry.GetCommandClass("fixture.cell"));
+        Assert.Equal("core", registry.GetCommandClass("ping"));
+        Assert.Equal("ui", registry.GetCommandClass("vulcan.ui.dock"));
         Assert.Equal("dock", CommandRegistry.GetMethod("vulcan.ui.dock"));
     }
 
@@ -229,7 +296,6 @@ public sealed class CommandTaxonomyContractTests
             "module:FixtureModule");
 
         Assert.Equal(string.Empty, registry.GetCommandClass("fixture.go"));
-        Assert.True(CommandClassLabels.IsNone(registry.GetCommandClass("fixture.go")));
         Assert.Equal(
             CommandClassLabels.None,
             CommandClassLabels.Display(registry.GetCommandClass("fixture.go")));
@@ -244,7 +310,7 @@ public sealed class CommandTaxonomyContractTests
         Assert.Equal("ui", CommandClassLabels.Display("ui"));
         Assert.Equal(string.Empty, CommandClassLabels.ToKey(CommandClassLabels.None));
         Assert.Equal("ui", CommandClassLabels.ToKey("ui"));
-        Assert.True(CommandClassLabels.IsNone(CommandRegistry.LegacyClass("mercury.go")));
+        Assert.Equal(string.Empty, new CommandRegistry().GetCommandClass("mercury.go"));
     }
 
     [Fact]
@@ -296,8 +362,10 @@ public sealed class CommandTaxonomyContractTests
         var registered = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "janus", "vulcan" };
         Assert.Equal("", DomainFocus.Resolve("", "janus", registered.Contains));
         Assert.Equal("   ", DomainFocus.Resolve("   ", "janus", registered.Contains));
-        Assert.False(DomainFocus.WouldPrefix("", "janus", registered.Contains));
-        Assert.True(DomainFocus.WouldPrefix("proj.list", "janus", registered.Contains));
-        Assert.False(DomainFocus.WouldPrefix("vulcan.ui.reset", "janus", registered.Contains));
+
+        // 「拼没拼前缀」不需要单独的判定函数：Resolve 的返回值与输入不等即为拼了。
+        // 5.2 据此删掉 WouldPrefix，这三条断言改问同一个函数。
+        Assert.Equal("janus.proj.list", DomainFocus.Resolve("proj.list", "janus", registered.Contains));
+        Assert.Equal("vulcan.ui.reset", DomainFocus.Resolve("vulcan.ui.reset", "janus", registered.Contains));
     }
 }

@@ -2,12 +2,12 @@
 
 namespace HistoryVulcan.Services.Modules;
 
-public sealed partial class ModuleHost
+internal sealed partial class ModuleHost
 {
     /// <summary>
     /// Validates and atomically installs a manifest package into the fixed runtime module directory.
     /// </summary>
-    public CommandResult InstallPackage(string path)
+    internal CommandResult InstallPackage(string path)
     {
         if (!TryGetRuntimeRoot(out var runtimeRoot, out var rootError))
             return CommandResult.Fail(rootError);
@@ -47,68 +47,98 @@ public sealed partial class ModuleHost
                 && installed.Version.Equals(package.Version, StringComparison.OrdinalIgnoreCase)
                 && RuntimeModulePackageStore.ChecksumsEqual(source, target))
             {
-                Reload();
-                return CommandResult.Ok($"{package.Name} {package.Version} 已安装，内容一致，无需替换。");
+                var loaded = _current.Modules.FirstOrDefault(module =>
+                    module.ModuleName.Equals(package.Name, StringComparison.OrdinalIgnoreCase));
+                if (loaded is { Attached: true } || !EnableUiModules)
+                    return CommandResult.Ok($"{package.Name} {package.Version} 已安装，内容一致，无需替换。", loaded);
             }
 
-            var transactionRoot = RuntimeModulePackageStore.CreateTransactionRoot(runtimeRoot);
-            var staging = Path.Combine(transactionRoot, "staging");
-            var backup = Path.Combine(transactionRoot, "backup");
+            var transaction = new ModulePackageTransaction(runtimeRoot, target);
+            var unloaded = false;
+            var wasReady = _ready;
             try
             {
-                RuntimeModulePackageStore.CopyPackagePayload(source, staging);
+                RuntimeModulePackageStore.CopyPackagePayload(source, transaction.Staging);
                 if (!RuntimeModuleDiscoverySource.TryReadPackage(
-                        staging, out var staged, out _, out validationError))
+                        transaction.Staging, out var staged, out _, out validationError))
                 {
-                    return CommandResult.Fail($"暂存包复核失败: {validationError}");
+                    throw new InvalidOperationException($"暂存包复核失败: {validationError}");
                 }
                 if (!staged.Name.Equals(package.Name, StringComparison.OrdinalIgnoreCase)
                     || !staged.Version.Equals(package.Version, StringComparison.OrdinalIgnoreCase))
                 {
-                    return CommandResult.Fail("暂存包身份在复制过程中发生变化。");
+                    throw new InvalidOperationException("暂存包身份在复制过程中发生变化。");
                 }
 
                 _watcher.Stop();
-                if (_current.Modules.Any(module =>
+                _ready = false;
+                if (EnableUiModules
+                    && _current.Modules.Any(module =>
                         module.ModuleName.Equals(package.Name, StringComparison.OrdinalIgnoreCase)))
-                    UnloadFromSnapshot(package.Name);
-                if (Directory.Exists(target))
-                    Directory.Move(target, backup);
-                Directory.Move(staging, target);
+                {
+                    MarshalToUi(() => UnloadFromSnapshot(package.Name));
+                    unloaded = true;
+                }
+                transaction.BackupTarget();
+                transaction.InstallStaged();
 
-                Reload();
+                if (!EnableUiModules)
+                {
+                    if (!RuntimeModuleDiscoverySource.TryReadPackage(
+                            target, out var onDisk, out _, out var diskError)
+                        || !onDisk.Name.Equals(package.Name, StringComparison.OrdinalIgnoreCase)
+                        || !onDisk.Version.Equals(package.Version, StringComparison.OrdinalIgnoreCase)
+                        || !string.Equals(onDisk.PackagePath, target, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException(
+                            $"离线组合不装载 UI 模块，且磁盘包未就位：{diskError ?? onDisk?.Version ?? "(空)"}");
+                    }
+
+                    return CommandResult.Ok(
+                        $"已写入运行区 {package.Name} {package.Version}: {target}"
+                        + "。这是磁盘恢复，不是活宿主热重载。" + transaction.Commit(),
+                        onDisk);
+                }
+
+                LoadOne(target);
                 var loaded = _current.Modules.FirstOrDefault(module =>
                     module.ModuleName.Equals(package.Name, StringComparison.OrdinalIgnoreCase));
-                if (loaded == null
+                if (loaded == null || !loaded.Attached
                     || !loaded.Version.Equals(package.Version, StringComparison.OrdinalIgnoreCase)
                     || !string.Equals(loaded.SourcePath, target, StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new InvalidOperationException("新包未形成后台确认的运行快照。");
+                    throw new InvalidOperationException(
+                        "新包未形成后台确认的运行快照。"
+                        + $" 期望 {package.Name} {package.Version} @ {target}；"
+                        + $" 实际 {(loaded == null ? "未装载" : $"{loaded.Version} @ {loaded.SourcePath}")}。");
                 }
 
-                if (Directory.Exists(backup))
-                    Directory.Delete(backup, recursive: true);
                 return CommandResult.Ok(
-                    $"已安装并重载 {package.Name} {package.Version}: {target}", loaded);
+                    $"已安装并重载 {package.Name} {package.Version}: {target}{transaction.Commit()}", loaded);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
-                                       or InvalidOperationException)
+                                       or InvalidOperationException or ArgumentException)
             {
-                var rollback = RuntimeModulePackageStore.RestorePackage(target, backup);
-                try { Reload(); }
-                catch (Exception reloadEx) { rollback += $"；恢复后重载失败: {reloadEx.Message}"; }
-                return CommandResult.Fail($"安装失败: {ex.Message}{rollback}");
+                var rollback = transaction.Rollback();
+                var recovery = rollback.Message;
+                try
+                {
+                    if (rollback.Success && unloaded && Directory.Exists(target))
+                        LoadOne(target);
+                }
+                catch (Exception reloadEx) { recovery += $"；恢复后重载失败: {reloadEx.Message}"; }
+                return CommandResult.Fail($"安装失败: {ex.Message}{recovery}");
             }
             finally
             {
-                RuntimeModulePackageStore.DeleteTransactionRoot(transactionRoot);
+                _ready = wasReady;
                 SyncFileWatching();
             }
         }
     }
 
     /// <summary>Atomically removes a named manifest package from the runtime module directory.</summary>
-    public CommandResult RemovePackage(string name)
+    internal CommandResult RemovePackage(string name)
     {
         if (!TryGetRuntimeRoot(out var runtimeRoot, out var rootError))
             return CommandResult.Fail(rootError);
@@ -126,38 +156,77 @@ public sealed partial class ModuleHost
                 return CommandResult.Fail($"运行区存在多个 {moduleName} 包，拒绝不确定移除。");
 
             var target = packages[0];
-            var transactionRoot = RuntimeModulePackageStore.CreateTransactionRoot(runtimeRoot);
-            var backup = Path.Combine(transactionRoot, "backup");
+            var transaction = new ModulePackageTransaction(runtimeRoot, target);
+            var unloaded = false;
+            var wasReady = _ready;
             try
             {
                 _watcher.Stop();
+                _ready = false;
                 if (_current.Modules.Any(module =>
                         module.ModuleName.Equals(moduleName, StringComparison.OrdinalIgnoreCase)))
-                    UnloadFromSnapshot(moduleName);
-                Directory.Move(target, backup);
-                Reload();
+                {
+                    MarshalToUi(() => UnloadFromSnapshot(moduleName));
+                    unloaded = true;
+                }
+                transaction.BackupTarget();
                 if (_current.Modules.Any(module =>
                         module.ModuleName.Equals(moduleName, StringComparison.OrdinalIgnoreCase)))
                 {
                     throw new InvalidOperationException("刷新后模块仍在运行快照中。");
                 }
 
-                Directory.Delete(backup, recursive: true);
-                return CommandResult.Ok($"已从运行区移除模块: {moduleName}");
+                return CommandResult.Ok($"已从运行区移除模块: {moduleName}{transaction.Commit()}");
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
                                        or InvalidOperationException)
             {
-                var rollback = RuntimeModulePackageStore.RestorePackage(target, backup);
-                try { Reload(); }
-                catch (Exception reloadEx) { rollback += $"；恢复后重载失败: {reloadEx.Message}"; }
-                return CommandResult.Fail($"移除失败: {ex.Message}{rollback}");
+                var rollback = transaction.Rollback();
+                var recovery = rollback.Message;
+                try
+                {
+                    if (rollback.Success && unloaded && Directory.Exists(target))
+                        LoadOne(target);
+                }
+                catch (Exception reloadEx) { recovery += $"；恢复后重载失败: {reloadEx.Message}"; }
+                return CommandResult.Fail($"移除失败: {ex.Message}{recovery}");
             }
             finally
             {
-                RuntimeModulePackageStore.DeleteTransactionRoot(transactionRoot);
+                _ready = wasReady;
                 SyncFileWatching();
             }
+        }
+    }
+
+    /// <summary>
+    /// Uninstalls a module package from the fixed AppData runtime directory.
+    /// This is the persistent counterpart to <see cref="Unload"/>.
+    /// </summary>
+    internal CommandResult Uninstall(string name, bool purge = false)
+    {
+        var removed = RemovePackage(name);
+        var dataDirectory = ModuleDataDirectory(name?.Trim() ?? "");
+        if (!removed.Success || !RuntimeModulePackageStore.IsSafeModuleName(name?.Trim() ?? ""))
+            return removed;
+
+        // 5.9.0（DEC-070）：数据目录独立于包槽位，卸载默认保留，只有 purge 才删。
+        if (!purge)
+        {
+            return Directory.Exists(dataDirectory)
+                ? CommandResult.Ok($"{removed.Message}\n数据目录已保留：{dataDirectory}（purge=true 才删除）", removed.Data)
+                : removed;
+        }
+
+        try
+        {
+            if (Directory.Exists(dataDirectory))
+                Directory.Delete(dataDirectory, recursive: true);
+            return CommandResult.Ok($"{removed.Message}\n已删除数据目录：{dataDirectory}", removed.Data);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return CommandResult.Fail($"{removed.Message}\n模块包已移除，但数据目录删除失败：{dataDirectory}：{ex.Message}");
         }
     }
 

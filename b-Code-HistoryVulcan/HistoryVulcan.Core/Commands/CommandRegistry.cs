@@ -4,11 +4,18 @@ namespace HistoryVulcan.Core.Commands;
 /// 指令注册表(§5.3):框架内置组与派生应用自定义指令并入同一张表,
 /// help 自动收录;名称冲突在注册时立即报错,禁止静默覆盖(P0)。
 /// </summary>
-public sealed class CommandRegistry
+internal sealed class CommandRegistry : ICommandRegistrar
 {
     private readonly Dictionary<string, CommandDescriptor> _commands = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, string> _sources = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _gate = new();
+    private long _revision;
+
+    /// <summary>目录版本：每次登记或注销加一。消费方据此判断要不要重拉目录（5.9.0，DEC-070）。</summary>
+    internal long Revision => Interlocked.Read(ref _revision);
+
+    /// <summary>窄登记口：来源用缺省值，模块的来源由宿主暂存表提交时盖章。</summary>
+    void ICommandRegistrar.Register(CommandDescriptor descriptor) => Register(descriptor);
 
     /// <summary>Provides this HistoryVulcan public contract member.</summary>
     public event Action? Changed;
@@ -41,6 +48,7 @@ public sealed class CommandRegistry
             if (!_commands.TryAdd(descriptor.Name, descriptor))
                 throw new InvalidOperationException($"指令名冲突: {descriptor.Name} 已注册,禁止覆盖(§5.3)");
             _sources[descriptor.Name] = source.Trim();
+            _revision++;
         }
         Changed?.Invoke();
     }
@@ -57,6 +65,8 @@ public sealed class CommandRegistry
         {
             _sources.Remove(name);
             removed = _commands.Remove(name);
+            if (removed)
+                _revision++;
         }
         if (removed)
             Changed?.Invoke();
@@ -68,6 +78,14 @@ public sealed class CommandRegistry
     {
         lock (_gate)
             return _commands.TryGetValue(name, out descriptor!);
+    }
+
+    internal (CommandDescriptor? Descriptor, string Domain, string CommandClass) ResolveRequest(string name)
+    {
+        lock (_gate)
+            return _commands.TryGetValue(name, out var descriptor)
+                ? (descriptor, ResolveDomain(descriptor, _sources[name]), ResolveCommandClass(descriptor))
+                : (null, LegacyDomain(name), "core");
     }
 
     /// <summary>返回注册来源：framework / app / module:&lt;name&gt;。</summary>
@@ -95,7 +113,7 @@ public sealed class CommandRegistry
         {
             if (!_commands.TryGetValue(name, out var descriptor))
                 return LegacyClass(name);
-            return ResolveCommandClass(descriptor, _sources.GetValueOrDefault(name, "framework"));
+            return ResolveCommandClass(descriptor);
         }
     }
 
@@ -145,27 +163,6 @@ public sealed class CommandRegistry
             ? ResolveDomain(descriptor, _sources.GetValueOrDefault(name, "framework"))
             : LegacyDomain(name);
 
-    /// <summary>
-    /// 从完整命令名提取一级域。无点号命令本身也是保留域，避免模块以
-    /// <c>help.foo</c> 或 <c>future.list</c> 的形式绕过根命令/现有域冲突检查。
-    /// </summary>
-    public static IReadOnlySet<string> DomainsOf(IEnumerable<string> commandNames)
-    {
-        ArgumentNullException.ThrowIfNull(commandNames);
-        var domains = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var name in commandNames)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                continue;
-
-            var trimmed = name.Trim();
-            var dot = trimmed.IndexOf('.');
-            domains.Add(dot > 0 ? trimmed[..dot] : trimmed);
-        }
-
-        return domains;
-    }
-
     internal static string ResolveDomain(CommandDescriptor descriptor, string source)
     {
         if (source.StartsWith("module:", StringComparison.OrdinalIgnoreCase))
@@ -180,7 +177,7 @@ public sealed class CommandRegistry
             : descriptor.Domain.Trim();
     }
 
-    internal static string ResolveCommandClass(CommandDescriptor descriptor, string source)
+    internal static string ResolveCommandClass(CommandDescriptor descriptor)
     {
         if (!string.IsNullOrWhiteSpace(descriptor.CommandClass))
             return descriptor.CommandClass.Trim().ToLowerInvariant();
@@ -188,7 +185,7 @@ public sealed class CommandRegistry
     }
 
     /// <summary>从命令名推导域：首段；无点则 <c>core</c>。</summary>
-    public static string LegacyDomain(string name)
+    internal static string LegacyDomain(string name)
     {
         var trimmed = name.Trim();
         var dot = trimmed.IndexOf('.');
@@ -205,7 +202,7 @@ public sealed class CommandRegistry
     /// 把它当类会让 <c>mercury.go</c> 这类指令既占一个域又凭空多出一个同名类。
     /// 空串即「无类」，由显示层翻译成标签，不参与任何类推导。
     /// </remarks>
-    public static string LegacyClass(string name)
+    internal static string LegacyClass(string name)
     {
         var parts = name.Trim().Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (parts.Length >= 3)
@@ -216,15 +213,12 @@ public sealed class CommandRegistry
     }
 
     /// <summary>从命令名推导方法段：末段；无点则整名。</summary>
-    public static string LegacyMethod(string name)
+    public static string GetMethod(string name)
     {
         var trimmed = name.Trim();
         var dot = trimmed.LastIndexOf('.');
         return (dot >= 0 ? trimmed[(dot + 1)..] : trimmed).ToLowerInvariant();
     }
-
-    /// <summary>同 <see cref="LegacyMethod"/>。</summary>
-    public static string GetMethod(string name) => LegacyMethod(name);
 
     private static bool IsValidCommandClass(string value)
     {

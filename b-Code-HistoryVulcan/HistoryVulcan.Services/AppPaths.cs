@@ -1,24 +1,23 @@
 namespace HistoryVulcan.Services;
 
 /// <summary>
-/// 应用数据目录约定(F-02,Q9 已定):%AppData%/&lt;应用名&gt;/,
-/// 布局 / 设置 / 历史 / data / modules / panels / logs 均置于其下。
+/// 宿主数据目录：%AppData%/&lt;应用名&gt;/。宿主自己只用日志与设置，外加运行区 Modules/；
+/// 布局、面板等界面数据归前端模块，模块数据在宿主给的 ModuleData/&lt;模块名&gt;/（6.0.0 起不再预建这些目录）。
 /// </summary>
-public sealed class AppPaths
+internal sealed class AppPaths
 {
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public AppPaths(string appName, bool createBusinessDirectories = true)
+    public AppPaths(string appName, bool createModulesDirectory = true)
         : this(
             appName,
             Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 appName),
-            createBusinessDirectories)
+            createModulesDirectory)
     {
     }
 
-    /// <summary>Creates an isolated runtime root for a cooperating host process.</summary>
-    public AppPaths(string appName, string rootDirectory, bool createBusinessDirectories = true)
+    /// <summary>以指定目录为根（正式服务的设置与日志在 <c>service/</c> 子根下）。</summary>
+    public AppPaths(string appName, string rootDirectory, bool createModulesDirectory = true)
     {
         if (string.IsNullOrWhiteSpace(appName))
             throw new ArgumentException("应用名不能为空", nameof(appName));
@@ -26,47 +25,19 @@ public sealed class AppPaths
             throw new ArgumentException("数据根目录不能为空", nameof(rootDirectory));
 
         Root = Path.GetFullPath(rootDirectory);
-
-        LayoutDir = Path.Combine(Root, "layout");
-        DataDir = GetDataDir(Root);
         LogsDir = Path.Combine(Root, "logs");
-        ModulesDir = GetModulesDir(Root);
-        PanelsDir = GetPanelsDir(Root);
+        ModulesDir = Path.Combine(Root, "Modules");
 
-        Directory.CreateDirectory(LayoutDir);
-        Directory.CreateDirectory(LogsDir);
-        Directory.CreateDirectory(PanelsDir);
-        if (createBusinessDirectories)
-        {
-            Directory.CreateDirectory(DataDir);
+        if (createModulesDirectory)
             Directory.CreateDirectory(ModulesDir);
-        }
     }
 
-    /// <summary>%AppData%/&lt;应用名&gt;/</summary>
+    /// <summary>数据根。</summary>
     public string Root { get; }
 
-    /// <summary>布局文件目录(W-07 / W-08)。</summary>
-    public string LayoutDir { get; }
-
-    /// <summary>应用自有业务数据目录。</summary>
-    public string DataDir { get; }
-
-    /// <summary>滚动日志目录(L-02,M2 正式接管)。</summary>
+    /// <summary>滚动日志目录（由日志自己创建）。</summary>
     public string LogsDir { get; }
 
-    /// <summary>模块 DLL 与模块槽目录。</summary>
+    /// <summary>运行区：模块完整包的槽位目录。</summary>
     public string ModulesDir { get; }
-
-    /// <summary>JSON 控制面板目录。</summary>
-    public string PanelsDir { get; }
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public static string GetDataDir(string root) => Path.Combine(root, "data");
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public static string GetModulesDir(string root) => Path.Combine(root, "Modules");
-
-    /// <summary>Provides this HistoryVulcan public contract member.</summary>
-    public static string GetPanelsDir(string root) => Path.Combine(root, "panels");
 }

@@ -4,7 +4,7 @@ using HistoryVulcan.Core.Modules;
 
 namespace HistoryVulcan.Services.Modules;
 
-public sealed partial class ModuleHost
+internal sealed partial class ModuleHost
 {
     /// <summary>取程序集的类型表;缺失依赖只丢掉受影响的类型,不让整个模块下线(MD-06)。</summary>
     private static Type[] LoadTypes(Assembly assembly)
@@ -35,7 +35,8 @@ public sealed partial class ModuleHost
     private void AttachModuleContexts(
         Snapshot snap,
         IReadOnlyList<Type> types,
-        string owner)
+        string owner,
+        string commandPrefix)
     {
         var contextTypes = types.Where(type =>
             type.IsPublic && !type.IsAbstract
@@ -53,11 +54,19 @@ public sealed partial class ModuleHost
             try
             {
                 var module = (IModuleContextAware)snap.GetInstance(contextType);
-                module.Attach(new ModuleContext(snap, owner, _bus));
+                module.Attach(new ModuleContext(this, snap, owner, commandPrefix, _bus));
             }
             catch (Exception ex)
             {
-                _log.Warn("module", $"注入模块上下文失败 ({contextType.FullName}): {ex.Message}");
+                // 记进快照而不只是打条日志：接不上宿主的模块不能被报成装载成功，
+                // 判定要能被 vulcan.module.list 读到，而不是只留在日志里。
+                // 接入失败的模块若已登记前端，登记不能留下：确认与生命周期中继会打到半初始化的界面。
+                ReleaseModuleHooks(owner);
+                var reason = $"{contextType.FullName}: {ex.GetType().Name}: {ex.Message}";
+                _log.Error("module", $"注入模块上下文失败 ({owner}) {reason}");
+                if (!snap.AttachFailures.TryGetValue(owner, out var failures))
+                    snap.AttachFailures[owner] = failures = [];
+                failures.Add(reason);
             }
         }
     }

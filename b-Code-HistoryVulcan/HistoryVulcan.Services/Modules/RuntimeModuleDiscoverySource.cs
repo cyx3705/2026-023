@@ -6,7 +6,7 @@ namespace HistoryVulcan.Services.Modules;
 /// <summary>
 /// Discovers manifest packages from the direct children of a fixed runtime module directory.
 /// </summary>
-public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
+internal sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
 {
     /// <summary>The integrity manifest required at the root of every module package.</summary>
     internal const string ChecksumFileName = "SHA256SUMS";
@@ -49,9 +49,13 @@ public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
 
         foreach (var package in packages)
         {
+            // Recovery residues must not compete with the active package's identity.
+            if (IsTransientPackageDirectory(Path.GetFileName(package)))
+                continue;
+
             if (TryReadPackage(package, out var entry, out var code, out var error))
                 candidates.Add(entry);
-            else if (File.Exists(Path.Combine(package, ZModuleDiscoverySource.ManifestFileName)))
+            else if (File.Exists(Path.Combine(package, ModuleManifestReader.ManifestFileName)))
                 diagnostics.Add(new ModuleDiscoveryDiagnostic(package, code, error));
         }
 
@@ -80,15 +84,52 @@ public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
             diagnostics);
     }
 
+    /// <summary>
+    /// 运行区里由发布/回滚工具留下的暂存目录。它们不是活动模块，
+    /// 不能被扫描成第二个同名包。
+    /// </summary>
+    internal static bool IsTransientPackageDirectory(string name)
+        => name.StartsWith(".", StringComparison.Ordinal)
+           || name.Contains("-rollback-", StringComparison.OrdinalIgnoreCase)
+           || name.Contains("-backup-", StringComparison.OrdinalIgnoreCase)
+           || name.Contains("-staging-", StringComparison.OrdinalIgnoreCase)
+           || name.EndsWith("-rollback", StringComparison.OrdinalIgnoreCase)
+           || name.EndsWith("-backup", StringComparison.OrdinalIgnoreCase)
+           || name.EndsWith("-staging", StringComparison.OrdinalIgnoreCase);
+
     internal static bool TryReadPackage(
         string package,
         out ModuleDiscoveryEntry entry,
         out string code,
         out string error)
     {
-        if (!ZModuleDiscoverySource.TryReadPackage(package, out entry, out error))
+        if (!ModuleManifestReader.TryReadPackage(package, out entry, out error))
         {
             code = "invalid-manifest";
+            return false;
+        }
+
+        if (IsArchivePath(Path.GetRelativePath(package, entry.ArtifactPath)))
+        {
+            entry = null!;
+            code = "invalid-artifact";
+            error = "artifact 不得位于包内发布归档 history/ 目录。";
+            return false;
+        }
+
+        if (entry.DocsPath != null && IsArchivePath(Path.GetRelativePath(package, entry.DocsPath)))
+        {
+            entry = null!;
+            code = "invalid-docs";
+            error = "docs 不得位于包内发布归档 history/ 目录。";
+            return false;
+        }
+
+        if (entry.DependencyPaths.Any(path => IsArchivePath(Path.GetRelativePath(package, path))))
+        {
+            entry = null!;
+            code = "invalid-dependency";
+            error = "依赖不得位于包内发布归档 history/ 目录。";
             return false;
         }
 
@@ -145,10 +186,10 @@ public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
 
                 var relative = match.Groups[2].Value.Replace('\\', '/');
                 if (relative.Equals(ChecksumFileName, StringComparison.OrdinalIgnoreCase)
-                    || IsHistoryPath(relative)
+                    || IsArchivePath(relative)
                     || Path.IsPathRooted(relative))
                 {
-                    error = $"SHA256SUMS 包含保留或绝对路径: {relative}";
+                    error = $"SHA256SUMS 包含保留、归档或绝对路径: {relative}";
                     return false;
                 }
 
@@ -194,7 +235,7 @@ public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
         {
             var relative = NormalizeRelative(root, path);
             if (relative.Equals(ChecksumFileName, StringComparison.OrdinalIgnoreCase)
-                || IsHistoryPath(relative))
+                || IsArchivePath(relative))
                 continue;
             yield return path;
         }
@@ -206,4 +247,10 @@ public sealed class RuntimeModuleDiscoverySource : IModuleDiscoverySource
     private static bool IsHistoryPath(string relative)
         => relative.Equals("history", StringComparison.OrdinalIgnoreCase)
            || relative.StartsWith("history/", StringComparison.OrdinalIgnoreCase);
+
+    internal static bool IsArchivePath(string relative)
+    {
+        var normalized = relative.Replace('\\', '/');
+        return IsHistoryPath(normalized);
+    }
 }

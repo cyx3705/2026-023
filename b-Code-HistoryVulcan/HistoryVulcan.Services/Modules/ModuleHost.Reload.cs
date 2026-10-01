@@ -1,10 +1,11 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.Loader;
+using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
 
 namespace HistoryVulcan.Services.Modules;
 
-public sealed partial class ModuleHost
+internal sealed partial class ModuleHost
 {
     /// <summary>
     /// 整体重载：先拆旧界面并卸载可回收 ALC，再装新包。
@@ -18,17 +19,127 @@ public sealed partial class ModuleHost
             if (_disposed)
                 return;
 
+            // 装载期间指令面是不完整的，就绪标志必须先落下：这是
+            // vulcan.module.ready 的唯一真值，模块据此判断现在看到的目录算不算数。
+            _ready = false;
+
             var old = _current;
             TeardownSnapshot(old);
             _current = Snapshot.Empty;
             PublishXamlContexts();
 
-            var next = Build();
-            CommitSnapshot(old, next);
+            Snapshot next;
+            try
+            {
+                next = Build();
+            }
+            catch (Exception ex)
+            {
+                // 拆旧在前是硬约束（同名程序集共存会打断 WPF 的 XAML 解析），所以这里
+                // 没有「回滚到旧快照」这个选项——旧的已经卸了。能做的是把宿主停在一个
+                // **说得清楚**的状态上：_current 已是 Empty，指令面为空，并且说破原因。
+                // 此前这条路径什么都不说，使用者看到的只是所有模块指令一起消失。
+                _log.Error("module",
+                    $"热重载失败，宿主当前没有装载任何模块；修好模块目录后再执行 vulcan.module.reload。原因: {ex.Message}");
+                SyncFileWatching();
+                throw;
+            }
+
+            CommitSnapshot(next);
             SyncFileWatching();
+            _ready = true;
         }
 
         ReloadCompleted?.Invoke();
+        AnnounceReady();
+    }
+
+    /// <summary>
+    /// 只把刚换上的那一个包装进当前快照。不要走 <see cref="Reload"/>：
+    /// 整仓拆除会拆掉 Aurora 等其它模块的界面与指令。
+    /// 调用方必须已持有 <c>_reloadLock</c>。
+    /// </summary>
+    private void LoadOne(string packagePath)
+    {
+        if (!RuntimeModuleDiscoverySource.TryReadPackage(
+                packagePath, out var entry, out _, out var error))
+        {
+            throw new InvalidOperationException($"无法装载刚安装的包: {error}");
+        }
+
+        if (ReferenceEquals(_current, Snapshot.Empty))
+            _current = new Snapshot();
+
+        var snap = _current;
+        var pendingBefore = snap.PendingCommands.Count;
+        var registeredBefore = snap.RegisteredNames.Count;
+        var contextsBefore = snap.Contexts.ToHashSet();
+        _building = snap;
+        try
+        {
+            PublishXamlContexts();
+            LoadDiscoveredModule(snap, entry);
+            if (!snap.Metas.Any(meta =>
+                    meta.Name.Equals(entry.Name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException($"模块 {entry.Name} 未形成可用加载快照。");
+            }
+
+            // 5.1.3：装载不再顺带接入，单包热装也走同一条接入阶段——它已经包含
+            // 「接上宿主 → 登记该模块的指令 → 刷新元信息」三步，因此这里不再另做一次
+            // 登记；再做一次只会把同名指令撞进重名分支，报一串「被拒绝注册」。
+            AttachPhase(snap, onlyOwner: entry.Name);
+            if (snap.AttachFailures.GetValueOrDefault(entry.Name) is { Count: > 0 } failures)
+                throw new InvalidOperationException($"模块 {entry.Name} 接入失败: {string.Join("；", failures)}");
+            _log.Info("module", $"已装入模块 {entry.Name}，未拆除其它模块");
+        }
+        catch
+        {
+            TeardownAddedModule(snap, entry.Name, pendingBefore, registeredBefore, contextsBefore);
+            throw;
+        }
+        finally
+        {
+            _building = null;
+            PublishXamlContexts();
+        }
+    }
+
+    private void TeardownAddedModule(
+        Snapshot snap,
+        string moduleName,
+        int pendingBefore,
+        int registeredBefore,
+        IReadOnlySet<AssemblyLoadContext> contextsBefore)
+    {
+        ReleaseModuleHooks(moduleName);
+        MarshalToUi(() =>
+        {
+            if (_registry != null)
+            {
+                foreach (var name in snap.RegisteredNames.Skip(registeredBefore).ToList())
+                    _registry.Unregister(name);
+            }
+            snap.Modules.RemoveAll(module => module.ModuleName.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
+        });
+        if (snap.RegisteredNames.Count > registeredBefore)
+            snap.RegisteredNames.RemoveRange(
+                registeredBefore, snap.RegisteredNames.Count - registeredBefore);
+        if (snap.PendingCommands.Count > pendingBefore)
+            snap.PendingCommands.RemoveRange(pendingBefore, snap.PendingCommands.Count - pendingBefore);
+        snap.ForgetModule(moduleName);
+
+        foreach (var alc in snap.Contexts.Where(context => !contextsBefore.Contains(context)).ToList())
+        {
+            if (snap.ContextsByOwner.Values.Any(remaining => ReferenceEquals(remaining, alc))
+                || ReferenceEquals(alc, AssemblyLoadContext.Default))
+                continue;
+
+            DisposeInstances(snap.InstancesFrom(alc));
+            snap.DropInstancesFrom(alc);
+            snap.Contexts.Remove(alc);
+            alc.Unload();
+        }
     }
 
     private void TeardownSnapshot(Snapshot old)
@@ -36,10 +147,55 @@ public sealed partial class ModuleHost
         if (old.Modules.Count > 0 || old.Contexts.Count > 0)
             _log.Info("module", "热重载：先拆除旧界面并卸载可回收上下文，再装新包");
 
+        // 必须在 Build / Attach 之前把旧模块指令从活登记表拿掉。
+        // HistoryAurora 的 RegisterCommands 看见 live.TryGet 为真就会跳过；
+        // 若拆实例后仍留着旧指令，重载后界面命令数会变成 0，且 attachFailures 为空。
+        foreach (var owner in old.ContextsByOwner.Keys.Concat(old.Modules.Select(module => module.ModuleName)))
+            ReleaseModuleHooks(owner);
+        UnregisterCommands(old);
         DisposeInstances(old.Instances);
 
         foreach (var alc in old.Contexts)
             alc.Unload();
+    }
+
+    /// <summary>卸载全部模块、停止文件监听并摘除程序集解析钩子；重复调用无副作用。</summary>
+    public void Dispose()
+    {
+        lock (_reloadLock)
+        {
+            if (_disposed)
+                return;
+
+            _disposed = true;
+            _ready = false;
+        }
+
+        _watcher.Dispose();
+        TeardownSnapshot(_current);
+        _current = Snapshot.Empty;
+        PublishXamlContexts();
+        if (_xamlResolverInstalled)
+        {
+            AssemblyLoadContext.Default.Resolving -= ResolveFromModuleContexts;
+            _xamlResolverInstalled = false;
+        }
+
+        if (_pinnedResolverInstalled)
+        {
+            AssemblyLoadContext.Default.Resolving -= ResolvePinnedDependency;
+            _pinnedResolverInstalled = false;
+        }
+    }
+
+    private void UnregisterCommands(Snapshot snapshot)
+    {
+        if (_registry == null)
+            return;
+
+        foreach (var name in snapshot.RegisteredNames.ToArray())
+            _registry.Unregister(name);
+        snapshot.RegisteredNames.Clear();
     }
 
     /// <summary>
@@ -69,20 +225,24 @@ public sealed partial class ModuleHost
         }
     }
 
-    private void CommitSnapshot(Snapshot old, Snapshot next)
+    /// <summary>
+    /// 换上新快照，然后按依赖序逐个接入模块。
+    ///
+    /// 拆旧登记、切换 <c>_current</c>、发布 XAML 上下文三件事必须先整体做完：
+    /// 模块 <c>Attach</c> 里开窗、解析 XAML、调用别的模块都是正常写法，
+    /// 那时它必须看到的是**新**快照。接入本身留在重载线程上跑，只把登记表写入
+    /// 编组过去——5.1.2 的线程边界不因这次改动而移动。
+    /// </summary>
+    private void CommitSnapshot(Snapshot next)
     {
-        void Commit()
+        MarshalToUi(() =>
         {
-            SwapRegistrations(old, next);
             _current = next;
             PublishXamlContexts();
-        }
+            next.FinalizeMetas();
+        });
 
-        var ui = UiContext;
-        if (ui == null)
-            Commit();
-        else
-            ui.Send(_ => Commit(), null);
+        AttachPhase(next);
 
         _log.Info("module",
             $"模块装载完成: {next.Modules.Count} 个模块,{next.RegisteredNames.Count} 条指令");
@@ -98,7 +258,7 @@ public sealed partial class ModuleHost
 
     private void PublishXamlContexts()
     {
-        var building = _building;
+        var building = ReferenceEquals(_building, _current) ? null : _building;
         var count = _current.Contexts.Count + (building?.Contexts.Count ?? 0);
         var list = new AssemblyLoadContext[count];
         var index = 0;
@@ -162,7 +322,15 @@ public sealed partial class ModuleHost
     {
         if (string.IsNullOrEmpty(name.Name))
             return null;
-        foreach (var package in _pinnedPackages)
+
+        // 读的是不可变快照，不是可变集合本身。
+        //
+        // 本回调挂在 AssemblyLoadContext.Default.Resolving 上，会在**任意**触发程序集
+        // 解析的线程上执行，而且按 ResolveFromModuleContexts 的注释所述不得取 _reloadLock。
+        // 装第二个 pinned 模块时 LoadPinned 正在写这份名单，若此处直接遍历一个普通
+        // HashSet，就是典型的并发读写：抛「集合已修改」或读到撕裂状态，
+        // 表现为随机的依赖解析失败——而失败点离真正的原因很远。
+        foreach (var package in Volatile.Read(ref _pinnedPackages))
         {
             var path = Path.Combine(package, name.Name + ".dll");
             if (File.Exists(path))
@@ -174,8 +342,13 @@ public sealed partial class ModuleHost
 
     private Assembly LoadPinned(ModuleDiscoveryEntry module)
     {
-        if (_pinnedPackages.Add(module.PackagePath))
+        var known = Volatile.Read(ref _pinnedPackages);
+        if (!known.Contains(module.PackagePath, StringComparer.OrdinalIgnoreCase))
         {
+            // 整体替换而不是就地追加：读方拿到的永远是一份完整、此后不再变化的数组。
+            // 本方法只在 _reloadLock 内被调用，因此写方之间不会互相竞争。
+            Volatile.Write(ref _pinnedPackages, [.. known, module.PackagePath]);
+
             if (!_pinnedResolverInstalled)
             {
                 _pinnedResolverInstalled = true;

@@ -1,7 +1,1 @@
 #nullable enable
-HistoryVulcan.Services.Commands.CommandCatalogRow.AllowUnspecifiedParameters.get -> bool
-HistoryVulcan.Services.Commands.CommandCatalogRow.AllowUnspecifiedParameters.init -> void
-HistoryVulcan.Services.Commands.CommandCatalogRow.RequiresConfirmation.get -> bool
-HistoryVulcan.Services.Commands.CommandCatalogRow.RequiresConfirmation.init -> void
-HistoryVulcan.Services.Modules.ModuleMeta.DataDirectory.get -> string!
-HistoryVulcan.Services.Modules.ModuleMeta.DataDirectory.init -> void
