@@ -91,18 +91,16 @@ internal static class QualityGates
         log.WriteLine("质量门禁通过：抑制标记 0；无超限热点。");
     }
 
-    public static void AssertPublicApiBaseline(string projectRoot, string version, TextWriter log)
+    public static void AssertPublicApiConsistency(string projectRoot, TextWriter log)
     {
         var projects = new[] { "HistoryVulcan.Core", "HistoryVulcan.Services", "HistoryVulcan.ServiceHost" };
         var component = Path.Combine(projectRoot, "b-Code-HistoryVulcan");
-        var baselineDir = Path.Combine(projectRoot, "b-Code-Eng", "public-api-baselines", version);
-        if (!Directory.Exists(baselineDir))
-            throw new InvalidOperationException($"缺少 {version} 的已批准 Unshipped 基线目录：{baselineDir}");
-
         var violations = new List<string>();
         foreach (var project in projects)
         {
-            var approved = ReadApi(Path.Combine(baselineDir, project + ".Unshipped.txt"));
+            var shippedPath = Path.Combine(component, project, "PublicAPI.Shipped.txt");
+            if (!File.Exists(shippedPath))
+                violations.Add($"{project}：缺少 PublicAPI.Shipped.txt");
             var actualPath = Path.Combine(component, project, "PublicAPI.Unshipped.txt");
             if (!File.Exists(actualPath))
             {
@@ -111,12 +109,7 @@ internal static class QualityGates
             }
 
             var actual = ReadApi(actualPath);
-            if (!approved.SequenceEqual(actual, StringComparer.Ordinal))
-            {
-                violations.Add($"{project}：Unshipped API 与已批准的 {version} 基线不一致。");
-            }
-
-            var orphans = OrphanRemovals(Path.Combine(component, project, "PublicAPI.Shipped.txt"), actual);
+            var orphans = OrphanRemovals(shippedPath, actual);
             if (orphans.Count > 0)
             {
                 violations.Add(
@@ -127,9 +120,9 @@ internal static class QualityGates
         }
 
         if (violations.Count > 0)
-            throw new InvalidOperationException("公开 API 冻结门禁失败：\n  " + string.Join("\n  ", violations));
+            throw new InvalidOperationException("公开 API 一致性门禁失败：\n  " + string.Join("\n  ", violations));
 
-        log.WriteLine($"公开 API 基线门禁通过：{projects.Length} 份 Unshipped 与已批准的 {version} 基线一致。");
+        log.WriteLine($"公开 API 一致性门禁通过：{projects.Length} 组声明文件齐全，无孤立移除记录。");
     }
 
     /// <summary>

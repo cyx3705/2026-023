@@ -3,6 +3,7 @@ using System.Text.Json;
 using HistoryVulcan.Core;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Services;
+using HistoryVulcan.Services.Modules;
 
 namespace HistoryVulcan.ServiceHost;
 
@@ -28,27 +29,13 @@ internal static class ModuleProbeRunner
     public static int Run(string packagePath, string command, Assembly identityAssembly, HostOutputFormat format)
     {
         var package = Path.GetFullPath(packagePath);
-        var manifestPath = Path.Combine(package, "module.manifest.json");
-        if (!File.Exists(manifestPath))
-            return Usage($"{package} 不是模块包：缺少 module.manifest.json。", format);
+        if (!ModuleNupkg.TryResolveFile(package, out var nupkg, out var resolveError))
+            return Usage(resolveError, format);
+        if (!ModuleNupkg.TryRead(nupkg, out var entry, out _, out var readError))
+            return Usage(readError, format);
 
-        string name;
-        string[] dependsOn;
-        try
-        {
-            using var manifest = JsonDocument.Parse(File.ReadAllText(manifestPath));
-            name = manifest.RootElement.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
-            dependsOn = manifest.RootElement.TryGetProperty("dependsOn", out var deps) && deps.ValueKind == JsonValueKind.Array
-                ? deps.EnumerateArray().Select(item => item.GetString() ?? "").Where(item => item.Length > 0).ToArray()
-                : [];
-        }
-        catch (JsonException ex)
-        {
-            return Usage($"module.manifest.json 不是合法 JSON：{ex.Message}", format);
-        }
-
-        if (name.Length == 0)
-            return Usage("module.manifest.json 缺少 name。", format);
+        var name = entry.Name;
+        var dependsOn = entry.DependsOn;
 
         var root = Path.Combine(Path.GetTempPath(), "vulcan-probe-" + Guid.NewGuid().ToString("N"));
         var modulesDirectory = Path.Combine(root, "Modules");
@@ -56,13 +43,14 @@ internal static class ModuleProbeRunner
         ServiceComposition? composition = null;
         try
         {
-            CopyDirectory(package, Path.Combine(modulesDirectory, name));
+            Directory.CreateDirectory(modulesDirectory);
+            File.Copy(nupkg, Path.Combine(modulesDirectory, ModuleNupkg.RuntimeFileName(name)), overwrite: true);
             var runtime = new AppPaths(AppIdentity.From(identityAssembly).Name, createModulesDirectory: false).ModulesDir;
             foreach (var dependency in dependsOn)
             {
-                var source = Path.Combine(runtime, dependency);
-                if (Directory.Exists(source))
-                    CopyDirectory(source, Path.Combine(modulesDirectory, dependency));
+                var source = Path.Combine(runtime, ModuleNupkg.RuntimeFileName(dependency));
+                if (File.Exists(source))
+                    File.Copy(source, Path.Combine(modulesDirectory, ModuleNupkg.RuntimeFileName(dependency)), overwrite: true);
                 else
                     notes.Add($"依赖 {dependency} 不在正式运行区，未复制。");
             }
@@ -162,16 +150,5 @@ internal static class ModuleProbeRunner
         }
 
         return exitCode;
-    }
-
-    private static void CopyDirectory(string source, string destination)
-    {
-        Directory.CreateDirectory(destination);
-        foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
-        {
-            var target = Path.Combine(destination, Path.GetRelativePath(source, file));
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            File.Copy(file, target, overwrite: true);
-        }
     }
 }

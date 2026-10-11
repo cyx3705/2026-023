@@ -36,9 +36,10 @@ internal static class OfflineModuleInstall
     public static Result Install(string runtimeRoot, string sourcePath)
     {
         if (string.IsNullOrWhiteSpace(sourcePath) || !Path.IsPathFullyQualified(sourcePath))
-            return new Result(2, "安装路径必须是绝对的模块包目录。");
+            return new Result(2, "安装路径必须是绝对的 NuGet 包。");
 
-        var source = Path.GetFullPath(sourcePath.Trim());
+        if (!ModuleNupkg.TryResolveFile(sourcePath, out var source, out var resolveError))
+            return new Result(2, resolveError);
         if (!RuntimeModuleDiscoverySource.TryReadPackage(
                 source, out var package, out _, out var validationError))
         {
@@ -51,16 +52,18 @@ internal static class OfflineModuleInstall
         Directory.CreateDirectory(runtimeRoot);
         var existing = RuntimeModulePackageStore.FindRuntimePackages(runtimeRoot, package.Name);
         if (existing.Count > 1)
-            return new Result(2, $"运行区存在多个 {package.Name} 包，请先人工排除重复目录。");
+            return new Result(2, $"运行区存在多个 {package.Name} 包，请先人工排除重复包。");
 
-        var target = Path.Combine(runtimeRoot, package.Name);
+        var target = Path.Combine(runtimeRoot, ModuleNupkg.RuntimeFileName(package.Name));
+        if (!RuntimeModulePackageStore.TryValidateTargetOwner(target, package.Name, out var targetError))
+            return new Result(2, targetError);
         if (existing.Count == 1
             && !existing[0].Equals(target, StringComparison.OrdinalIgnoreCase))
         {
-            return new Result(2, $"{package.Name} 已位于非规范目录 {existing[0]}，拒绝隐式覆盖。");
+            return new Result(2, $"{package.Name} 已位于非规范路径 {existing[0]}，拒绝隐式覆盖。");
         }
 
-        if (Directory.Exists(target)
+        if (File.Exists(target)
             && RuntimeModuleDiscoverySource.TryReadPackage(target, out var installed, out _, out _)
             && installed.Version.Equals(package.Version, StringComparison.OrdinalIgnoreCase)
             && RuntimeModulePackageStore.ChecksumsEqual(source, target))

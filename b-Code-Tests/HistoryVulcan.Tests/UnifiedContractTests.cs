@@ -172,8 +172,13 @@ public sealed class UnifiedContractTests
             Assert.False(parts[1].StartsWith(Path.Combine(temp.Path, "modules"), StringComparison.OrdinalIgnoreCase));
             Assert.Equal(nameof(HostRunMode.Probe), parts[2]);
             Assert.Equal(parts[1], Assert.Single(host.Modules).DataDirectory);
-            // 6.0.0：模块从这里找随包文件，不必猜运行区布局。
-            Assert.Equal(Path.GetFullPath(Path.Combine(temp.Path, "modules", "contextfixture")), Path.GetFullPath(parts[4]));
+            // 模块从这里找随包文件；内容快照以包哈希隔离，不必猜运行区布局。
+            var contentRoot = Path.GetFullPath(Path.Combine(temp.Path, "ModuleContent", "contextfixture"))
+                + Path.DirectorySeparatorChar;
+            Assert.StartsWith(contentRoot, Path.GetFullPath(parts[4]), StringComparison.OrdinalIgnoreCase);
+            Assert.Matches("^[0-9A-F]{64}$", Path.GetFileName(parts[4]));
+            Assert.Equal(File.ReadAllBytes(typeof(ContextFixtureModuleInfo).Assembly.Location),
+                File.ReadAllBytes(Path.Combine(parts[4], "ContextFixture.dll")));
         }
     }
 

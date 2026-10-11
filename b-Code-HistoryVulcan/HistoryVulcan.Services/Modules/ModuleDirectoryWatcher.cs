@@ -66,7 +66,7 @@ internal sealed class ModuleDirectoryWatcher : IDisposable
                 {
                     NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName
                                    | NotifyFilters.Size | NotifyFilters.CreationTime,
-                    IncludeSubdirectories = true,
+                    IncludeSubdirectories = false,
                 };
                 watcher.Created += (_, e) => OnFileEvent(e.Name);
                 watcher.Changed += (_, e) => OnFileEvent(e.Name);
@@ -93,19 +93,17 @@ internal sealed class ModuleDirectoryWatcher : IDisposable
         }
     }
 
-    /// <summary>是否值得为这个文件触发重载(模块本体、XML 注释、清单与模块旁面板)。</summary>
+    /// <summary>包文件替换才重载。内容根里的文件变化不属于安装单元。</summary>
     internal static bool IsRelevant(string? file)
     {
         if (string.IsNullOrWhiteSpace(file))
             return false;
 
         var name = Path.GetFileName(file);
-        if (name.Equals("module.manifest.json", StringComparison.OrdinalIgnoreCase))
+        if (name.EndsWith(ModuleNupkg.Extension, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        var extension = Path.GetExtension(name).ToLowerInvariant();
-        return extension is ".dll" or ".xml"
-            || name.EndsWith(".panel.json", StringComparison.OrdinalIgnoreCase);
+        return false;
     }
 
     private void DisposeWatchers()

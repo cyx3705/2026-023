@@ -1,10 +1,9 @@
 ﻿namespace HistoryVulcan.Services.Development.Pipeline;
 
-/// <summary>一次发布请求。<c>FreezePath</c> 是宿主冻结标签表，只有宿主发布用得到，模块传 null。</summary>
+/// <summary>一次宿主或模块发布请求。</summary>
 internal sealed record ReleaseRequest(
     ReleaseTarget Target,
     string ProjectRoot,
-    string? FreezePath,
     string HostSnapshotRoot,
     bool PromoteOfficial,
     bool RequireCleanSource);
@@ -35,14 +34,13 @@ internal static class ReleaseEngine
             ProjectContract.Validate(
                 projectRoot,
                 target.Kind,
-                instantiation: true,
-                target.Kind == "host" ? request.FreezePath : null);
+                instantiation: true);
 
             string candidate;
             if (target.Kind == "host")
             {
                 QualityGates.AssertSourceQuality(projectRoot, log);
-                QualityGates.AssertPublicApiBaseline(projectRoot, version, log);
+                QualityGates.AssertPublicApiConsistency(projectRoot, log);
                 ToolProcess.Run(
                     "dotnet",
                     ["restore", Path.Combine(projectRoot, "HistoryVulcan.sln"), "--locked-mode", "--nologo",

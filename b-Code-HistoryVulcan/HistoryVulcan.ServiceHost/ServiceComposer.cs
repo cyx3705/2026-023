@@ -395,11 +395,11 @@ internal static partial class ServiceComposer
             Domain = "vulcan",
             CommandClass = "module",
             Summary = "从已校验候选包原子安装并重载运行时模块",
-            Example = "vulcan.module.install path=C:\\candidate\\HistoryJanus",
+            Example = "vulcan.module.install path=C:\\candidate\\HistoryJanus.nupkg",
             Parameters = [new ParameterSpec
             {
                 Name = "path",
-                Description = "含 module.manifest.json 与完整 SHA256SUMS 的绝对包目录",
+                Description = "nupkg 的绝对路径，或只含一个 nupkg 的绝对目录",
                 Required = true,
                 Position = 0,
             }],

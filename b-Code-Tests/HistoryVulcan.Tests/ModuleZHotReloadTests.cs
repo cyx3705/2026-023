@@ -19,7 +19,6 @@ public sealed class ModuleZHotReloadTests
         var package = RuntimeModulePackageTests.CreatePackage(
             modules, "contextfixture", "contextfixture", "v1.0.0");
 
-        var dllPath = Path.Combine(package, "ContextFixture.dll");
         var registry = new CommandRegistry();
         var log = new RecordingLog();
         var settings = new MemorySettings();
@@ -44,7 +43,7 @@ public sealed class ModuleZHotReloadTests
                 if (Interlocked.Increment(ref reloads) == 1)
                     pending.TrySetResult(true);
             };
-            File.WriteAllBytes(dllPath, File.ReadAllBytes(dllPath));
+            File.WriteAllBytes(package, File.ReadAllBytes(package));
 
             var completed = await Task.WhenAny(pending.Task, Task.Delay(TimeSpan.FromSeconds(10)));
             Assert.True(completed == pending.Task, "Runtime package change should hot-reload without restarting the host.");

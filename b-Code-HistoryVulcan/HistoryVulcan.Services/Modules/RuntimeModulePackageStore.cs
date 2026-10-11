@@ -23,11 +23,13 @@ internal static class RuntimeModulePackageStore
         if (!Directory.Exists(root))
             return [];
         var matches = new List<string>();
-        foreach (var directory in Directory.GetDirectories(root, "*", SearchOption.TopDirectoryOnly))
+        foreach (var package in Directory.GetFiles(root, "*" + ModuleNupkg.Extension, SearchOption.TopDirectoryOnly))
         {
-            if (RuntimeModuleDiscoverySource.TryReadPackage(directory, out var entry, out _, out _)
+            if (RuntimeModuleDiscoverySource.IsTransientPackageDirectory(Path.GetFileName(package)))
+                continue;
+            if (RuntimeModuleDiscoverySource.TryReadPackage(package, out var entry, out _, out _)
                 && entry.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase))
-                matches.Add(directory);
+                matches.Add(package);
         }
         return matches;
     }
@@ -37,6 +39,21 @@ internal static class RuntimeModulePackageStore
            && name is not "." and not ".."
            && name.Equals(Path.GetFileName(name), StringComparison.Ordinal)
            && name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0;
+
+    internal static bool TryValidateTargetOwner(string target, string moduleName, out string error)
+    {
+        error = "";
+        // 损坏的目标仍允许恢复；有效的邻居包不能因为文件名碰巧相同而被覆盖。
+        if (File.Exists(target)
+            && RuntimeModuleDiscoverySource.TryReadPackage(target, out var installed, out _, out _)
+            && !installed.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase))
+        {
+            error = $"目标文件 {target} 属于模块 {installed.Name}，拒绝用 {moduleName} 覆盖。";
+            return false;
+        }
+
+        return true;
+    }
 
     internal static string CreateTransactionRoot(string runtimeRoot)
     {
@@ -49,24 +66,12 @@ internal static class RuntimeModulePackageStore
 
     internal static void CopyPackagePayload(string source, string destination)
     {
-        Directory.CreateDirectory(destination);
-        foreach (var file in RuntimeModuleDiscoverySource.EnumeratePayloadFiles(source)
-                     .Append(Path.Combine(source, RuntimeModuleDiscoverySource.ChecksumFileName)))
-        {
-            var relative = Path.GetRelativePath(source, file);
-            var target = Path.Combine(destination, relative);
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            File.Copy(file, target, overwrite: false);
-        }
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(destination))!);
+        File.Copy(source, destination, overwrite: false);
     }
 
     internal static bool ChecksumsEqual(string first, string second)
-    {
-        var left = File.ReadAllText(Path.Combine(first, RuntimeModuleDiscoverySource.ChecksumFileName));
-        var right = File.ReadAllText(Path.Combine(second, RuntimeModuleDiscoverySource.ChecksumFileName));
-        return left.Replace("\r\n", "\n", StringComparison.Ordinal)
-            .Equals(right.Replace("\r\n", "\n", StringComparison.Ordinal), StringComparison.OrdinalIgnoreCase);
-    }
+        => ModuleNupkg.SameContent(first, second);
 
     internal static string DeleteTransactionRoot(string root)
     {

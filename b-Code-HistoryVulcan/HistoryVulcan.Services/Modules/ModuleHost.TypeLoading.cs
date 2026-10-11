@@ -19,19 +19,6 @@ internal sealed partial class ModuleHost
         }
     }
 
-    private static Assembly LoadAssembly(ModuleLoadContext alc, string dll)
-    {
-        // 按程序集名加载可命中 ALC 缓存,避免同名程序集(被其他模块作为依赖引用过)二次加载
-        try
-        {
-            return alc.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(dll)));
-        }
-        catch
-        {
-            return alc.LoadFromStream(new MemoryStream(ReadFileWithRetry(dll)));
-        }
-    }
-
     private void AttachModuleContexts(
         Snapshot snap,
         IReadOnlyList<Type> types,

@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Text.Json;
+using HistoryVulcan.Services.Modules;
 
 namespace HistoryVulcan.Services.Development;
 
@@ -156,6 +157,24 @@ internal static class PublishPackages
     public static bool TryRead(string path, out PublishedPackage package)
     {
         package = default!;
+        if (Directory.Exists(path))
+        {
+            var nupkgs = Directory.GetFiles(path, "*" + ModuleNupkg.Extension, SearchOption.TopDirectoryOnly);
+            if (nupkgs.Length == 1
+                && ModuleNupkg.TryRead(nupkgs[0], out var entry, out _, out _))
+            {
+                var expectedDirectory = PackageDirectoryName(entry.Name, entry.Version);
+                if (!Path.GetFileName(path).Equals(expectedDirectory, StringComparison.OrdinalIgnoreCase))
+                    return false;
+                package = new PublishedPackage(
+                    entry.Name,
+                    entry.Version,
+                    Path.GetFullPath(path),
+                    Path.GetFullPath(nupkgs[0]));
+                return true;
+            }
+        }
+
         var moduleManifest = Path.Combine(path, "module.manifest.json");
         var hostManifest = Path.Combine(path, "manifest.json");
         var manifest = File.Exists(moduleManifest)

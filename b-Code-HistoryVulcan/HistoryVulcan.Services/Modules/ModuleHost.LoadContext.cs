@@ -5,40 +5,19 @@ namespace HistoryVulcan.Services.Modules;
 
 internal sealed partial class ModuleHost
 {
-    /// <summary>文件可能正在拷贝中,重试读取。</summary>
-    internal static byte[] ReadFileWithRetry(string path)
-    {
-        for (var i = 0; ; i++)
-        {
-            try
-            {
-                return File.ReadAllBytes(path);
-            }
-            catch (IOException) when (i < 5)
-            {
-                Thread.Sleep(300);
-            }
-        }
-    }
-
-    /// <summary>可回收的加载上下文:模块及其依赖全部从内存流加载,不锁磁盘文件。</summary>
+    /// <summary>可回收的加载上下文：模块及其依赖从 nupkg 的字节装入，不锁包文件。</summary>
     private sealed class ModuleLoadContext : AssemblyLoadContext
     {
-        private readonly string _dir;
+        private readonly IReadOnlyDictionary<string, byte[]> _assemblies;
 
-        public ModuleLoadContext(string dir)
+        public ModuleLoadContext(IReadOnlyDictionary<string, byte[]> assemblies)
             : base("Modules-" + DateTime.Now.ToString("HHmmssfff"), isCollectible: true)
-            => _dir = dir;
+            => _assemblies = assemblies;
 
         protected override Assembly? Load(AssemblyName name)
-        {
-            // 模块目录里有同名 DLL 就从内存加载;否则返回 null 回落到默认上下文(框架程序集)
-            return TryLoadFromPackage(name, out var loaded) ? loaded : null;
-        }
+            => TryLoadFromPackage(name, out var loaded) ? loaded : null;
 
-        /// <summary>
-        /// 只从本包目录装载。找不到就返回 false，绝不回落到 Default。
-        /// </summary>
+        /// <summary>只从本包装载。找不到就返回 false，绝不回落到 Default。</summary>
         internal bool TryLoadFromPackage(AssemblyName name, out Assembly? assembly)
         {
             assembly = null;
@@ -54,11 +33,10 @@ internal sealed partial class ModuleHost
                 }
             }
 
-            var path = Path.Combine(_dir, name.Name + ".dll");
-            if (!File.Exists(path))
+            if (!_assemblies.TryGetValue(name.Name, out var bytes))
                 return false;
 
-            assembly = LoadFromStream(new MemoryStream(ReadFileWithRetry(path)));
+            assembly = LoadFromStream(new MemoryStream(bytes));
             return true;
         }
     }

@@ -330,34 +330,12 @@ internal sealed partial class ModuleHost
         // 装第二个 pinned 模块时 LoadPinned 正在写这份名单，若此处直接遍历一个普通
         // HashSet，就是典型的并发读写：抛「集合已修改」或读到撕裂状态，
         // 表现为随机的依赖解析失败——而失败点离真正的原因很远。
-        foreach (var package in Volatile.Read(ref _pinnedPackages))
+        foreach (var package in Volatile.Read(ref _pinnedAssemblies))
         {
-            var path = Path.Combine(package, name.Name + ".dll");
-            if (File.Exists(path))
-                return context.LoadFromAssemblyPath(path);
+            if (package.Assemblies.TryGetValue(name.Name, out var bytes))
+                return context.LoadFromStream(new MemoryStream(bytes));
         }
 
         return null;
-    }
-
-    private Assembly LoadPinned(ModuleDiscoveryEntry module)
-    {
-        var known = Volatile.Read(ref _pinnedPackages);
-        if (!known.Contains(module.PackagePath, StringComparer.OrdinalIgnoreCase))
-        {
-            // 整体替换而不是就地追加：读方拿到的永远是一份完整、此后不再变化的数组。
-            // 本方法只在 _reloadLock 内被调用，因此写方之间不会互相竞争。
-            Volatile.Write(ref _pinnedPackages, [.. known, module.PackagePath]);
-
-            if (!_pinnedResolverInstalled)
-            {
-                _pinnedResolverInstalled = true;
-                AssemblyLoadContext.Default.Resolving += ResolvePinnedDependency;
-            }
-
-            _log.Info("module", $"钉住模块 {module.Name}：装入默认上下文，重载不卸载");
-        }
-
-        return AssemblyLoadContext.Default.LoadFromAssemblyPath(module.ArtifactPath);
     }
 }

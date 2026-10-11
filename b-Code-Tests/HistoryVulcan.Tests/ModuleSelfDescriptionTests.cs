@@ -71,6 +71,29 @@ public sealed class ModuleSelfDescriptionTests
         }
     }
 
+    [Theory]
+    [InlineData("1.2.3")]
+    [InlineData("v1.2.3")]
+    [InlineData("V1.2.3")]
+    [InlineData("1.2.3-rc.1")]
+    [InlineData("v1.2.3-rc.1")]
+    public void ReadVersionPreservesTheDeclaredPrefixAndPrereleaseSuffix(string version)
+    {
+        var root = TempProject(Descriptor("HistorySample"));
+        try
+        {
+            var target = ReleaseCatalog.TryLoadModule(root, "2026-099-HistorySample")!;
+            File.WriteAllText(Path.Combine(root, target.VersionProps),
+                $"<Project><PropertyGroup><{target.VersionProperty}>{version}</{target.VersionProperty}></PropertyGroup></Project>");
+
+            Assert.Equal(version, ReleaseCatalog.ReadVersion(root, target));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     [Fact]
     public void DiscoveryScansTheLibraryWithoutAHostRegistry()
     {
@@ -102,13 +125,6 @@ public sealed class ModuleSelfDescriptionTests
     {
         var root = RepositoryPaths.Root();
         Assert.False(File.Exists(Path.Combine(root, "b-Code-Eng", "pipeline", "module-publish.manifest.json")));
-
-        // 冻结标签表只守宿主自己：除了 hosts 不许再长出别的清单。
-        using var freeze = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, ReleaseCommands.FreezeFile)));
-        var keys = freeze.RootElement.EnumerateObject().Select(property => property.Name).Order(StringComparer.Ordinal);
-        Assert.Equal(["_comment", "hosts", "schemaVersion"], keys);
-        var host = Assert.Single(freeze.RootElement.GetProperty("hosts").EnumerateArray());
-        Assert.Equal(ReleaseCatalog.HostName, host.GetProperty("name").GetString());
 
         // 管线源码里不出现任何具体模块名（History 开头、不是宿主自己的标识符）。
         var pipeline = Path.Combine(root, "b-Code-HistoryVulcan", "HistoryVulcan.Services", "Development", "Pipeline");

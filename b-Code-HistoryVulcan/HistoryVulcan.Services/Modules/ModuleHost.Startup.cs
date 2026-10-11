@@ -61,7 +61,19 @@ internal sealed partial class ModuleHost
 
         try
         {
-            using var document = JsonDocument.Parse(File.ReadAllText(manifestPath));
+            return ReadDependsOnJson(File.ReadAllText(manifestPath));
+        }
+        catch (Exception ex) when (ex is IOException or JsonException)
+        {
+            return [];
+        }
+    }
+
+    internal static IReadOnlyList<string> ReadDependsOnJson(string json)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
             if (!document.RootElement.TryGetProperty(DependsOnField, out var value)
                 || value.ValueKind != JsonValueKind.Array)
             {
@@ -75,7 +87,7 @@ internal sealed partial class ModuleHost
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
-        catch (Exception ex) when (ex is IOException or JsonException)
+        catch (JsonException)
         {
             return [];
         }
@@ -165,7 +177,7 @@ internal sealed partial class ModuleHost
     {
         var declared = modules.ToDictionary(
             module => module.Name,
-            module => ReadDependsOn(module.ManifestPath),
+            module => module.DependsOn,
             StringComparer.OrdinalIgnoreCase);
 
         var ordered = OrderByDependencies(

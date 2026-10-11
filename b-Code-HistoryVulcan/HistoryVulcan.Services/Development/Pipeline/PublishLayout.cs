@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using HistoryVulcan.Services.Modules;
 
 namespace HistoryVulcan.Services.Development.Pipeline;
 
@@ -136,6 +138,25 @@ internal static class PublishLayout
         if (!Directory.Exists(destination))
             return;
 
+        var sourcePackage = SingleModulePackage(source);
+        var destinationPackage = SingleModulePackage(destination);
+        if (sourcePackage != null || destinationPackage != null)
+        {
+            if (sourcePackage == null || destinationPackage == null)
+            {
+                throw new InvalidOperationException(
+                    $"历史包残缺（缺少 nupkg），无法判定是否可覆盖：{destination}");
+            }
+
+            if (!ModuleNupkg.SameContent(sourcePackage, destinationPackage))
+            {
+                throw new InvalidOperationException(
+                    $"历史包已存在且内容不同。请升版本而不是覆盖：{destination}");
+            }
+
+            return;
+        }
+
         // 缺 SHA256SUMS 的目标目录是上一轮中断留下的残包。直接 ReadAllText 会抛
         // FileNotFoundException，把使用者引向一个与真实处境无关的栈。
         if (!TryReadSums(source, out var sourceSums) || !TryReadSums(destination, out var destinationSums))
@@ -154,7 +175,21 @@ internal static class PublishLayout
     private static void Archive(string package, string historyRoot)
     {
         var identity = ReadIdentity(package);
-        var archive = Path.Combine(historyRoot, $"{identity.Name}-v{identity.Version}");
+        var archiveName = $"{identity.Name}-v{identity.Version}";
+        var archive = Path.Combine(historyRoot, archiveName);
+        var sourcePackage = SingleModulePackage(package);
+        if (sourcePackage != null && Directory.Exists(historyRoot))
+        {
+            foreach (var previous in Directory.GetDirectories(historyRoot).Where(path =>
+                         Path.GetFileName(path).Equals(archiveName, StringComparison.OrdinalIgnoreCase)
+                         || Path.GetFileName(path).StartsWith(archiveName + "-", StringComparison.OrdinalIgnoreCase)))
+            {
+                var previousPackage = SingleModulePackage(previous);
+                if (previousPackage != null && ModuleNupkg.SameContent(sourcePackage, previousPackage))
+                    return;
+            }
+        }
+
         if (Directory.Exists(archive))
         {
             if (TryReadSums(package, out var sourceSums)
@@ -178,6 +213,14 @@ internal static class PublishLayout
         SnapshotHashes.CopyDirectory(package, archive);
     }
 
+    private static string? SingleModulePackage(string root)
+    {
+        if (!Directory.Exists(root))
+            return null;
+        var packages = Directory.GetFiles(root, "*" + ModuleNupkg.Extension, SearchOption.TopDirectoryOnly);
+        return packages.Length == 1 ? packages[0] : null;
+    }
+
     private static bool TryReadSums(string root, out string sums)
     {
         var path = Path.Combine(root, SnapshotHashes.FileName);
@@ -193,6 +236,14 @@ internal static class PublishLayout
 
     private static (string Name, string Version) ReadIdentity(string root)
     {
+        var package = SingleModulePackage(root);
+        if (package != null
+            && ModuleNupkg.TryRead(package, out var entry, out _, out _)
+            && IsPackageVersion(entry.Version))
+        {
+            return (entry.Name, entry.Version);
+        }
+
         foreach (var pair in new[] { ("module.manifest.json", "name"), ("manifest.json", "product") })
         {
             var path = Path.Combine(root, pair.Item1);
@@ -204,11 +255,13 @@ internal static class PublishLayout
             // 预发布后缀必须放行：宿主自己的构建脚本一直接受 5.1.0-rc1 这种形状，
             // 而这里拒了它之后抛的却是「包身份清单缺失或无效」——清单明明是好的，
             // 使用者会照提示去找一个不存在的清单问题。
-            if (name.Length > 0 && System.Text.RegularExpressions.Regex.IsMatch(
-                    version, @"^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$"))
+            if (name.Length > 0 && IsPackageVersion(version))
                 return (name, version);
         }
 
         throw new InvalidOperationException($"包身份清单缺失或无效：{root}");
     }
+
+    private static bool IsPackageVersion(string version)
+        => Regex.IsMatch(version, @"^[vV]?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$", RegexOptions.CultureInvariant);
 }

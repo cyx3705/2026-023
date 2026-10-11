@@ -1,4 +1,4 @@
-name: HistoryVulcan Freeze Gate
+name: HistoryVulcan Quality Gate
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   gate:
-    name: Build and test frozen contract
+    name: Build and test current contract
     runs-on: windows-latest
     timeout-minutes: 30
 
@@ -50,7 +50,7 @@ jobs:
       - name: Verify formatting
         run: dotnet format .\HistoryVulcan.sln --verify-no-changes --no-restore
 
-      - name: Verify frozen public API and quality gates
+      - name: Verify public API consistency and quality gates
         run: >-
           dotnet test .\b-Code-Tests\HistoryVulcan.Tests\HistoryVulcan.Tests.csproj
           -c Release --no-build --no-restore

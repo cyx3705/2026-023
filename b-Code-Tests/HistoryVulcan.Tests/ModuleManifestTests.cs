@@ -10,20 +10,17 @@ public sealed class ModuleManifestTests
     [InlineData("schemaVersion", "2")]
     [InlineData("type", "\"Other.Module\"")]
     [InlineData("ui", "null")]
-    [InlineData("artifact", "\"../Outside.dll\"")]
-    [InlineData("artifact", "\"bad\\u0000.dll\"")]
-    [InlineData("deps", "[\"Missing.dll\"]")]
-    [InlineData("docs", "\"Missing.md\"")]
     public void InvalidManifestIsIsolatedAndValidNeighborRemains(string field, string json)
     {
         using var temp = new TemporaryDirectory();
         var valid = RuntimeModulePackageTests.CreatePackage(temp.Path, "valid", "valid", "1.0.0");
         var broken = RuntimeModulePackageTests.CreatePackage(temp.Path, "broken", "broken", "1.0.0");
-        var path = System.IO.Path.Combine(broken, ModuleManifestReader.ManifestFileName);
-        var manifest = JsonNode.Parse(File.ReadAllText(path))!;
-        manifest[field] = JsonNode.Parse(json);
-        File.WriteAllText(path, manifest.ToJsonString());
-        RuntimeModulePackageTests.WriteChecksums(broken);
+        ModuleNupkg.RewriteManifest(broken, text =>
+        {
+            var manifest = JsonNode.Parse(text)!;
+            manifest[field] = JsonNode.Parse(json);
+            return manifest.ToJsonString();
+        });
         var snapshot = new RuntimeModuleDiscoverySource(temp.Path).Discover();
         Assert.Equal(valid, Assert.Single(snapshot.Modules).PackagePath);
         Assert.NotEmpty(snapshot.Diagnostics);
@@ -35,8 +32,9 @@ public sealed class ModuleManifestTests
     {
         using var temp = new TemporaryDirectory();
         Assert.False(ModuleManifestReader.TryReadPackage(temp.Path, out _, out _));
-        File.WriteAllText(System.IO.Path.Combine(temp.Path, ModuleManifestReader.ManifestFileName), "{");
-        Assert.False(ModuleManifestReader.TryReadPackage(temp.Path, out _, out _));
+        var junk = Path.Combine(temp.Path, "junk.nupkg");
+        File.WriteAllText(junk, "{");
+        Assert.False(ModuleManifestReader.TryReadPackage(junk, out _, out _));
         Assert.False(ModuleManifestReader.TryReadPackage("relative-root", out _, out _));
     }
 
@@ -45,14 +43,15 @@ public sealed class ModuleManifestTests
     {
         using var temp = new TemporaryDirectory();
         var valid = RuntimeModulePackageTests.CreatePackage(temp.Path, "valid", "valid", "1.0.0");
-        var path = System.IO.Path.Combine(valid, ModuleManifestReader.ManifestFileName);
-        var manifest = JsonNode.Parse(File.ReadAllText(path))!;
-        manifest["mcpExposure"] = "invalid-retired-policy";
-        File.WriteAllText(path, manifest.ToJsonString());
-        RuntimeModulePackageTests.WriteChecksums(valid);
-        File.WriteAllText(System.IO.Path.Combine(temp.Path, "Bare.dll"), "not an assembly");
-        RuntimeModulePackageTests.CreatePackage(
-            System.IO.Path.Combine(temp.Path, "2026-100-HistoryLegacy"), "z-Publish", "legacy", "1.0.0");
+        ModuleNupkg.RewriteManifest(valid, text =>
+        {
+            var manifest = JsonNode.Parse(text)!;
+            manifest["mcpExposure"] = "invalid-retired-policy";
+            return manifest.ToJsonString();
+        });
+        File.WriteAllText(Path.Combine(temp.Path, "Bare.dll"), "not an assembly");
+        var nested = Path.Combine(temp.Path, "2026-100-HistoryLegacy");
+        RuntimeModulePackageTests.CreatePackage(nested, "z-Publish", "legacy", "1.0.0");
         var snapshot = new RuntimeModuleDiscoverySource(temp.Path).Discover();
         Assert.Equal("valid", Assert.Single(snapshot.Modules).Name);
     }

@@ -4,6 +4,7 @@ using HistoryVulcan.Core.Storage;
 using HistoryVulcan.Services.Commands;
 using HistoryVulcan.Services.Development;
 using HistoryVulcan.Services.Development.Pipeline;
+using HistoryVulcan.Services.Modules;
 using Xunit;
 
 namespace HistoryVulcan.Tests;
@@ -261,26 +262,25 @@ public sealed class PipelineHardeningTests
         }
     }
 
-    /// <summary>宿主的项目目录名常量必须与磁盘上的真实目录名一致。</summary>
+    /// <summary>项目库中的宿主目录名必须与 manifest 身份一致，不取 CI 检出目录名。</summary>
     /// <remarks>
     /// 宿主的 projectDirectory 不来自任何描述文件，只能靠 ReleaseCatalog.HostProjectDirectory
     /// 这个常量（5.8.0 前叫 ReleaseCommands.PipelineProjectName）。目录名带编号前缀
-    /// （2026-023-HistoryVulcan），常量一旦与真实目录脱节，发布第一步就会抛
+    /// （编号加项目名），常量一旦与项目身份脱节，发布第一步就会抛
     /// DirectoryNotFoundException 说找不到 VulcanVersion.props——一个与真实原因
     /// 毫无关系的报错。5.1.0 部署时正是这样卡住的：projectRoot 漏用了这个常量，
     /// 退回默认的 moduleName，算出不存在的 HistoryClio/HistoryVulcan。
     /// </remarks>
     [Fact]
-    public void HostProjectDirectoryConstantMatchesTheRealDirectoryName()
+    public void HostProjectDirectoryMatchesManifestIdentity()
     {
         var declared = HistoryVulcan.Services.Development.Pipeline.ReleaseCatalog.HostProjectDirectory;
 
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory != null && !File.Exists(Path.Combine(directory.FullName, "HistoryVulcan.sln")))
-            directory = directory.Parent;
-
-        Assert.NotNull(directory);
-        Assert.Equal(directory!.Name, declared);
+        using var manifest = System.Text.Json.JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(RepositoryPaths.Root(), "project.manifest.json")));
+        var project = manifest.RootElement.GetProperty("project");
+        var expected = project.GetProperty("id").GetString() + "-" + project.GetProperty("name").GetString();
+        Assert.Equal(expected, declared);
     }
 
     [Fact]
@@ -306,7 +306,11 @@ public sealed class PipelineHardeningTests
             var replaced = PublishLayout.PromoteVersioned(
                 stagingB, publish, target, "1.0.0", replaceCurrent: true);
             Assert.Equal(Path.Combine(publish, "HistorySample-v1.0.0"), replaced);
-            Assert.Contains("second", File.ReadAllText(Path.Combine(replaced, "HistorySample.dll")), StringComparison.Ordinal);
+            using var archive = System.IO.Compression.ZipFile.OpenRead(Path.Combine(replaced, "HistorySample.nupkg"));
+            var dll = archive.GetEntry("HistorySample.dll") ?? throw new InvalidOperationException("包内没有程序集。");
+            using var stream = dll.Open();
+            using var reader = new StreamReader(stream);
+            Assert.Contains("second", reader.ReadToEnd(), StringComparison.Ordinal);
         }
         finally
         {
@@ -317,6 +321,35 @@ public sealed class PipelineHardeningTests
             if (Directory.Exists(publish))
                 Directory.Delete(publish, recursive: true);
         }
+    }
+
+    [Fact]
+    public void RepeatedNupkgArchivesReuseBothCanonicalAndAlternateHistory()
+    {
+        using var temp = new TemporaryDirectory();
+        var first = Path.Combine(temp.Path, "first");
+        var changed = Path.Combine(temp.Path, "changed");
+        var history = Path.Combine(temp.Path, "history");
+        WriteMiniPackage(first, "HistorySample", "1.0.0", "first");
+        WriteMiniPackage(changed, "HistorySample", "1.0.0", "changed");
+        var archive = typeof(PublishLayout).GetMethod(
+            "Archive", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+
+        archive.Invoke(null, [first, history]);
+        archive.Invoke(null, [first, history]);
+        Assert.Single(Directory.GetDirectories(history));
+        var firstHistory = Path.Combine(history, "HistorySample-v1.0.0", "HistorySample.nupkg");
+        var firstBytes = File.ReadAllBytes(firstHistory);
+
+        archive.Invoke(null, [changed, history]);
+        archive.Invoke(null, [changed, history]);
+        var archives = Directory.GetDirectories(history);
+        Assert.Equal(2, archives.Length);
+        Assert.Equal(firstBytes, File.ReadAllBytes(firstHistory));
+        var changedHistory = Assert.Single(archives, path =>
+            !Path.GetFileName(path).Equals("HistorySample-v1.0.0", StringComparison.Ordinal));
+        Assert.Equal(File.ReadAllBytes(Path.Combine(changed, "HistorySample.nupkg")),
+            File.ReadAllBytes(Path.Combine(changedHistory, "HistorySample.nupkg")));
     }
 
     [Fact]
@@ -447,13 +480,18 @@ public sealed class PipelineHardeningTests
     private static void WriteMiniPackage(string root, string name, string version, string payload)
     {
         Directory.CreateDirectory(root);
-        File.WriteAllText(
-            Path.Combine(root, "module.manifest.json"),
-            $$"""
-            {"schemaVersion":1,"type":"HistoryVulcan.Module","name":"{{name}}","version":"{{version}}","artifact":"{{name}}.dll"}
-            """);
-        File.WriteAllText(Path.Combine(root, name + ".dll"), payload);
-        SnapshotHashes.Write(root);
+        var manifest = $$"""
+            {"schemaVersion":1,"type":"HistoryVulcan.Module","name":"{{name}}","version":"{{version}}","ui":false,"artifact":"{{name}}.dll"}
+            """;
+        ModuleNupkg.PackBytes(
+            Path.Combine(root, name + ".nupkg"),
+            name,
+            version,
+            new Dictionary<string, byte[]>
+            {
+                ["module.manifest.json"] = System.Text.Encoding.UTF8.GetBytes(manifest),
+                [name + ".dll"] = System.Text.Encoding.UTF8.GetBytes(payload),
+            });
     }
 
     private sealed class MemorySettings : ISettingsService

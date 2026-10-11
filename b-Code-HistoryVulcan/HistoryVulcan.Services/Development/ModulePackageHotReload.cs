@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using HistoryVulcan.Core.Commands;
+using HistoryVulcan.Services.Modules;
 
 namespace HistoryVulcan.Services.Development;
 
@@ -26,8 +27,8 @@ internal static class ModulePackageHotReload
             return CommandResult.Fail($"发布包路径无效：{ex.Message}");
         }
 
-        if (!Directory.Exists(packagePath))
-            return CommandResult.Fail($"发布包目录不存在：{packagePath}");
+        if (!Directory.Exists(packagePath) && !File.Exists(packagePath))
+            return CommandResult.Fail($"发布包不存在：{packagePath}");
 
         var command = $"vulcan.module.install path={CommandParser.QuoteArg(packagePath)}";
         try
@@ -186,7 +187,18 @@ internal static class ModulePackageHotReload
         version = "";
         try
         {
-            using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(packagePath, "module.manifest.json")));
+            if (ModuleNupkg.TryResolveFile(packagePath, out var nupkg, out _)
+                && ModuleNupkg.TryRead(nupkg, out var entry, out _, out _))
+            {
+                name = entry.Name;
+                version = entry.Version;
+                return true;
+            }
+
+            var manifestPath = Directory.Exists(packagePath)
+                ? Path.Combine(packagePath, "module.manifest.json")
+                : packagePath;
+            using var document = JsonDocument.Parse(File.ReadAllText(manifestPath));
             name = document.RootElement.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
             version = document.RootElement.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "";
             return name.Length > 0 && version.Length > 0;

@@ -13,8 +13,8 @@ internal sealed class ModulePackageTransaction
 
     internal string Root { get; }
     internal string Target { get; }
-    internal string Staging => Path.Combine(Root, "staging");
-    internal string Backup => Path.Combine(Root, "backup");
+    internal string Staging => Path.Combine(Root, "staging.nupkg");
+    internal string Backup => Path.Combine(Root, "backup.nupkg");
     internal Stage CurrentStage { get; private set; }
     private bool _hadPackage;
 
@@ -22,9 +22,9 @@ internal sealed class ModulePackageTransaction
     {
         if (CurrentStage != Stage.Preparing)
             throw new InvalidOperationException("模块事务不能重复备份。");
-        _hadPackage = Directory.Exists(Target);
+        _hadPackage = File.Exists(Target);
         if (_hadPackage)
-            Directory.Move(Target, Backup);
+            File.Move(Target, Backup);
         CurrentStage = Stage.BackedUp;
     }
 
@@ -32,7 +32,7 @@ internal sealed class ModulePackageTransaction
     {
         if (CurrentStage != Stage.BackedUp)
             throw new InvalidOperationException("模块事务必须先备份再替换。");
-        Directory.Move(Staging, Target);
+        File.Move(Staging, Target);
         CurrentStage = Stage.Installed;
     }
 
@@ -54,12 +54,12 @@ internal sealed class ModulePackageTransaction
         {
             if (CurrentStage is Stage.Installed or Stage.BackedUp)
             {
-                if (_hadPackage && !Directory.Exists(Backup))
+                if (_hadPackage && !File.Exists(Backup))
                     throw new IOException("旧包备份丢失，拒绝删除当前包。");
-                if (CurrentStage == Stage.Installed && Directory.Exists(Target))
-                    Directory.Delete(Target, recursive: true);
+                if (CurrentStage == Stage.Installed && File.Exists(Target))
+                    File.Delete(Target);
                 if (_hadPackage)
-                    Directory.Move(Backup, Target);
+                    File.Move(Backup, Target);
             }
             var restored = _hadPackage && CurrentStage is Stage.Installed or Stage.BackedUp;
             CurrentStage = Stage.RolledBack;

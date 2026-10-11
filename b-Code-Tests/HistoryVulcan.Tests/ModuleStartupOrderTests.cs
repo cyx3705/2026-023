@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text.Json;
 using HistoryVulcan.Core.Commands;
 using HistoryVulcan.Core.Logging;
@@ -278,30 +277,23 @@ namespace HistoryVulcan.Tests
         /// <summary>建一个带 <c>dependsOn</c> 声明的运行区模块包。</summary>
         private static void CreateOrderPackage(string parent, string name, string[] dependsOn)
         {
-            var package = Directory.CreateDirectory(Path.Combine(parent, name)).FullName;
-            File.Copy(
-                typeof(ZetaFixtureModuleInfo).Assembly.Location,
-                Path.Combine(package, "OrderFixture.dll"));
-            File.WriteAllText(
-                Path.Combine(package, "module.manifest.json"),
-                JsonSerializer.Serialize(new
-                {
-                    schemaVersion = 1,
-                    type = "HistoryVulcan.Module",
-                    name,
-                    version = "v1.0.0",
-                    artifact = "OrderFixture.dll",
-                    dependsOn,
-                    ui = false,
-                    pinned = false,
-                }));
-
-            var lines = Directory.GetFiles(package, "*", SearchOption.AllDirectories)
-                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-                .Select(path =>
-                    $"{Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)))}  "
-                    + Path.GetRelativePath(package, path).Replace('\\', '/'));
-            File.WriteAllLines(Path.Combine(package, "SHA256SUMS"), lines);
+            var nupkg = Path.Combine(parent, name + ".nupkg");
+            var manifest = JsonSerializer.Serialize(new
+            {
+                schemaVersion = 1,
+                type = "HistoryVulcan.Module",
+                name,
+                version = "v1.0.0",
+                artifact = "OrderFixture.dll",
+                dependsOn,
+                ui = false,
+                pinned = false,
+            });
+            ModuleNupkg.PackBytes(nupkg, name, "v1.0.0", new Dictionary<string, byte[]>
+            {
+                ["OrderFixture.dll"] = File.ReadAllBytes(typeof(ZetaFixtureModuleInfo).Assembly.Location),
+                ["module.manifest.json"] = System.Text.Encoding.UTF8.GetBytes(manifest),
+            });
         }
 
     }

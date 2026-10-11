@@ -135,7 +135,6 @@ internal static class ReleaseCommands
                 var hostSnapshot = PublishPackages.ResolveHostSnapshot(PipelineProjectRoot(host.Settings));
                 ReleaseEngine.Execute(
                     new ReleaseRequest(target, projectRoot,
-                        target.Kind == "host" ? FreezePath(host.Settings) : null,
                         hostSnapshot, publish, RequireCleanSource: false), log);
                 CommitAfterPipeline(projectRoot, commitMessage, log);
                 exit = 0;
@@ -290,16 +289,8 @@ internal static class ReleaseCommands
         return tail.ToList();
     }
 
-    /// <summary>
-    /// 宿主冻结标签表的位置。它只守宿主自己的冻结标签；模块的发布描述在模块仓的 project.manifest.json（DEC-069）。
-    /// </summary>
-    internal const string FreezeFile = "b-Code-Eng/pipeline/host-freeze.json";
-
     private static string PipelineProjectRoot(ISettingsService settings)
         => Path.Combine(ProjectLibraryRoot.Resolve(settings), ReleaseCatalog.HostProjectDirectory);
-
-    private static string FreezePath(ISettingsService settings)
-        => Path.Combine(PipelineProjectRoot(settings), FreezeFile);
 
     private static string LogDirectory(DevelopmentContext host)
         => Path.Combine(host.DataDirectory, "release");
@@ -438,7 +429,7 @@ internal static class ReleaseCommands
 
         try
         {
-            ProjectContract.Validate(repoRoot, target.Kind, instantiation: true, freezePath: null);
+            ProjectContract.Validate(repoRoot, target.Kind, instantiation: true);
             ModuleSnapshotBuilder.AssertSnapshot(candidate, target, version);
             return CommandResult.Ok(
                 $"已复核 submit 候选：{target.Name} {version}\n候选: {candidate}",

@@ -659,13 +659,19 @@
             <summary>停止监听;已排期的重载不再触发。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleDirectoryWatcher.IsRelevant(System.String)">
-            <summary>是否值得为这个文件触发重载(模块本体、XML 注释、清单与模块旁面板)。</summary>
+            <summary>包文件替换才重载。内容根里的文件变化不属于安装单元。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry">
             <summary>A validated module artifact discovered from a validated runtime manifest.</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.#ctor(System.String,System.String,System.String,System.String,System.String,System.Boolean,System.String,System.Collections.Generic.IReadOnlyList{System.String})">
             <summary>A validated module artifact discovered from a validated runtime manifest.</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.Pinned">
+            <summary>包内 <c>pinned</c>。装进默认上下文，不热卸载。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry.DependsOn">
+            <summary>包内 <c>dependsOn</c>。只决定接入次序。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleDiscoveryDiagnostic">
             <summary>A non-fatal diagnostic produced while discovering runtime module manifests.</summary>
@@ -777,7 +783,7 @@
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.IsModuleInfo(System.Type)">
             <summary>按基类全名判断,模块编译时引用哪个版本的 BaseVariable.dll 都能识别。</summary>
         </member>
-        <member name="F:HistoryVulcan.Services.Modules.ModuleHost._pinnedPackages">
+        <member name="T:HistoryVulcan.Services.Modules.ModuleHost.PinnedBytes">
              <summary>
              钉住模块的包目录。
             
@@ -787,24 +793,21 @@
              后一条才能让 XAML 的 <c>assembly=AvalonDock.Themes.VS2013</c> 解析成功，同时允许 Unload。
              </summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ReadPinnedFlag(System.String)">
+        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.PinnedBytes.#ctor(System.String,System.Collections.Generic.IReadOnlyDictionary{System.String,System.Byte[]})">
              <summary>
-             读 manifest 的 <c>pinned</c> 标志：声明本模块**不可热重载**。
+             钉住模块的包目录。
             
-             不走 <see cref="T:HistoryVulcan.Services.Modules.ModuleDiscoveryEntry"/>：那是已冻结的公开记录，为一个标志改它的
-             构造函数是破坏性变更；宿主直接读取包声明。
+             <c>pinned: true</c> 仍装进 <see cref="P:System.Runtime.Loader.AssemblyLoadContext.Default"/>，不可卸载。
+             可热重载的 WPF 模块走另一条路：装进可回收 ALC，默认上下文的 Resolving 只
+             返回该 ALC 里已经装好的程序集，绝不 <c>LoadFromAssemblyPath</c> 进 Default。
+             后一条才能让 XAML 的 <c>assembly=AvalonDock.Themes.VS2013</c> 解析成功，同时允许 Unload。
              </summary>
         </member>
-        <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ReadFileWithRetry(System.String)">
-            <summary>文件可能正在拷贝中,重试读取。</summary>
-        </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleHost.ModuleLoadContext">
-            <summary>可回收的加载上下文:模块及其依赖全部从内存流加载,不锁磁盘文件。</summary>
+            <summary>可回收的加载上下文：模块及其依赖从 nupkg 的字节装入，不锁包文件。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.ModuleLoadContext.TryLoadFromPackage(System.Reflection.AssemblyName,System.Reflection.Assembly@)">
-            <summary>
-            只从本包目录装载。找不到就返回 false，绝不回落到 Default。
-            </summary>
+            <summary>只从本包装载。找不到就返回 false，绝不回落到 Default。</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.ModuleHost.InstallPackage(System.String)">
             <summary>
@@ -904,6 +907,9 @@
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Metas">
             <summary>模块元信息(vulcan.module.list);CommandCount 在注册完成后定稿。</summary>
+        </member>
+        <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.ContentDirectories">
+            <summary>模块名 → 从 nupkg 展开的只读内容根。不参与发现。</summary>
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleHost.Snapshot.Instances">
              <summary>
@@ -1037,7 +1043,7 @@
             </summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleManifestReader">
-            <summary>Reads package identity and contained paths independently of directory discovery.</summary>
+            <summary>模块包身份。7.0.0 起包是 nupkg，清单在包内。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModuleMeta">
             <summary>Provides this HistoryVulcan public contract member.</summary>
@@ -1064,6 +1070,16 @@
         </member>
         <member name="P:HistoryVulcan.Services.Modules.ModuleMeta.Attached">
             <summary>本模块是否真正接上了宿主。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Modules.ModuleNupkg">
+            <summary>
+            模块包就是一个 nupkg（7.0.0）。发布归档、本机安装、宿主装载读的是同一个文件。
+            身份在 nuspec 的 id / version；<c>ui</c>、<c>dependsOn</c>、<c>pinned</c> 仍在包内的
+            <c>module.manifest.json</c>。程序集由宿主扫描，不再点名 <c>artifact</c> / <c>deps</c>。
+            </summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Modules.ModuleNupkg.ExtractContent(System.String,System.String)">
+            <summary>打开包后的只读内容根。安装单元仍是 nupkg，这个目录不参与发现。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Modules.ModulePackageTransaction">
             <summary>Tracks completed filesystem moves so recovery never deletes an untouched package.</summary>
@@ -1116,11 +1132,8 @@
         </member>
         <member name="T:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource">
             <summary>
-            Discovers manifest packages from the direct children of a fixed runtime module directory.
+            从固定运行区的直属 nupkg 发现模块。不扫描子目录，也不把裸 DLL 当成模块。
             </summary>
-        </member>
-        <member name="F:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.ChecksumFileName">
-            <summary>The integrity manifest required at the root of every module package.</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.#ctor(System.String)">
             <summary>Creates a scanner for one absolute runtime module directory.</summary>
@@ -1133,7 +1146,7 @@
         </member>
         <member name="M:HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource.IsTransientPackageDirectory(System.String)">
             <summary>
-            运行区里由发布/回滚工具留下的暂存目录。它们不是活动模块，
+            运行区里由发布/回滚工具留下的暂存文件。它们不是活动模块，
             不能被扫描成第二个同名包。
             </summary>
         </member>

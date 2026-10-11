@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Text.Json;
 using HistoryVulcan.Core.Logging;
 
 namespace HistoryVulcan.Services.Modules;
@@ -51,7 +50,9 @@ internal sealed partial class ModuleHost
     /// 返回该 ALC 里已经装好的程序集，绝不 <c>LoadFromAssemblyPath</c> 进 Default。
     /// 后一条才能让 XAML 的 <c>assembly=AvalonDock.Themes.VS2013</c> 解析成功，同时允许 Unload。
     /// </summary>
-    private string[] _pinnedPackages = [];
+    private sealed record PinnedBytes(string Content, IReadOnlyDictionary<string, byte[]> Assemblies);
+
+    private PinnedBytes[] _pinnedAssemblies = [];
 
     private bool _pinnedResolverInstalled;
 
@@ -63,35 +64,66 @@ internal sealed partial class ModuleHost
             return;
         }
 
-        AssemblyLoadContext alc;
-        Assembly assembly;
+        string content;
+        IReadOnlyDictionary<string, byte[]> assemblies;
         try
         {
-            if (ReadPinnedFlag(module.ManifestPath))
+            content = ModuleNupkg.ExtractContent(module.PackagePath, module.Name);
+            assemblies = ModuleNupkg.ReadAssemblies(module.PackagePath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            _discoveryDiagnostics =
+            [
+                .. _discoveryDiagnostics,
+                new ModuleDiscoveryDiagnostic(module.PackagePath, "load-failed", ex.Message),
+            ];
+            _log.Warn("module.discovery", $"跳过 {module.Name}: {ex.Message}");
+            return;
+        }
+
+        if (assemblies.Count == 0)
+        {
+            _discoveryDiagnostics =
+            [
+                .. _discoveryDiagnostics,
+                new ModuleDiscoveryDiagnostic(module.PackagePath, "load-failed", "包内没有程序集。"),
+            ];
+            _log.Warn("module.discovery", $"跳过 {module.Name}: 包内没有程序集。");
+            return;
+        }
+
+        snap.ContentDirectories[module.Name] = content;
+        AssemblyLoadContext alc;
+        try
+        {
+            if (module.Pinned)
             {
                 alc = AssemblyLoadContext.Default;
-                assembly = LoadPinned(module);
+                RememberPinned(module.Name, content, assemblies);
             }
             else
             {
-                var owned = new ModuleLoadContext(module.PackagePath);
+                var owned = new ModuleLoadContext(assemblies);
                 TrackContext(snap, owned);
                 alc = owned;
-                // XAML 的 assembly= 简单名走默认上下文。必须先把包内依赖装进
-                // 这个可回收 ALC，Resolving 才能交回已装载的程序集。
-                foreach (var dependency in module.DependencyPaths)
-                    LoadAssembly(owned, dependency);
-                assembly = LoadAssembly(owned, module.ArtifactPath);
             }
 
-            ScanAssembly(
-                snap,
-                assembly,
-                module.ArtifactPath,
-                module.PackagePath,
-                module.Ui,
-                module,
-                alc);
+            foreach (var (simpleName, bytes) in assemblies)
+            {
+                var assembly = LoadPackageAssembly(alc, simpleName, bytes, module.Pinned);
+                var dllPath = Directory.Exists(content)
+                    ? Directory.EnumerateFiles(content, simpleName + ".dll", SearchOption.AllDirectories).FirstOrDefault()
+                    : null;
+                ScanAssembly(
+                    snap,
+                    assembly,
+                    dllPath ?? module.PackagePath,
+                    content,
+                    module.Ui,
+                    module,
+                    alc);
+            }
         }
         catch (Exception ex)
         {
@@ -208,26 +240,43 @@ internal sealed partial class ModuleHost
         }
     }
 
-    /// <summary>
-    /// 读 manifest 的 <c>pinned</c> 标志：声明本模块**不可热重载**。
-    ///
-    /// 不走 <see cref="ModuleDiscoveryEntry"/>：那是已冻结的公开记录，为一个标志改它的
-    /// 构造函数是破坏性变更；宿主直接读取包声明。
-    /// </summary>
-    private static bool ReadPinnedFlag(string manifestPath)
+    private void RememberPinned(string moduleName, string content, IReadOnlyDictionary<string, byte[]> assemblies)
     {
-        if (!File.Exists(manifestPath))
-            return false;
-        try
+        var known = Volatile.Read(ref _pinnedAssemblies);
+        if (known.Any(item => item.Content.Equals(content, StringComparison.OrdinalIgnoreCase)))
+            return;
+
+        Volatile.Write(ref _pinnedAssemblies, [.. known, new PinnedBytes(content, assemblies)]);
+        if (!_pinnedResolverInstalled)
         {
-            using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
-            return doc.RootElement.TryGetProperty("pinned", out var value)
-                   && value.ValueKind == JsonValueKind.True;
+            _pinnedResolverInstalled = true;
+            AssemblyLoadContext.Default.Resolving += ResolvePinnedDependency;
         }
-        catch (Exception)
-        {
-            return false;
-        }
+
+        _log.Info("module", $"钉住模块 {moduleName}：装入默认上下文，重载不卸载");
     }
 
+    private static Assembly LoadPackageAssembly(
+        AssemblyLoadContext alc,
+        string simpleName,
+        byte[] bytes,
+        bool pinned)
+    {
+        if (pinned)
+        {
+            var already = AssemblyLoadContext.Default.Assemblies.FirstOrDefault(assembly =>
+                string.Equals(assembly.GetName().Name, simpleName, StringComparison.OrdinalIgnoreCase));
+            if (already != null)
+                return already;
+        }
+
+        if (alc is ModuleLoadContext local
+            && local.TryLoadFromPackage(new AssemblyName(simpleName), out var loaded)
+            && loaded != null)
+        {
+            return loaded;
+        }
+
+        return alc.LoadFromStream(new MemoryStream(bytes));
+    }
 }

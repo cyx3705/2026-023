@@ -12,9 +12,10 @@ internal sealed partial class ModuleHost
         if (!TryGetRuntimeRoot(out var runtimeRoot, out var rootError))
             return CommandResult.Fail(rootError);
         if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path))
-            return CommandResult.Fail("安装路径必须是绝对的模块包目录。");
+            return CommandResult.Fail("安装路径必须是绝对的 NuGet 包。");
 
-        var source = Path.GetFullPath(path.Trim());
+        if (!ModuleNupkg.TryResolveFile(path, out var source, out var resolveError))
+            return CommandResult.Fail(resolveError);
         if (!RuntimeModuleDiscoverySource.TryReadPackage(
                 source, out var package, out _, out var validationError))
         {
@@ -31,17 +32,19 @@ internal sealed partial class ModuleHost
             Directory.CreateDirectory(runtimeRoot);
             var existing = RuntimeModulePackageStore.FindRuntimePackages(runtimeRoot, package.Name);
             if (existing.Count > 1)
-                return CommandResult.Fail($"运行区存在多个 {package.Name} 包，请先人工排除重复目录。");
+                return CommandResult.Fail($"运行区存在多个 {package.Name} 包，请先人工排除重复包。");
 
-            var target = Path.Combine(runtimeRoot, package.Name);
+            var target = Path.Combine(runtimeRoot, ModuleNupkg.RuntimeFileName(package.Name));
+            if (!RuntimeModulePackageStore.TryValidateTargetOwner(target, package.Name, out var targetError))
+                return CommandResult.Fail(targetError);
             if (existing.Count == 1
                 && !existing[0].Equals(target, StringComparison.OrdinalIgnoreCase))
             {
                 return CommandResult.Fail(
-                    $"{package.Name} 已位于非规范目录 {existing[0]}，拒绝隐式覆盖。");
+                    $"{package.Name} 已位于非规范路径 {existing[0]}，拒绝隐式覆盖。");
             }
 
-            if (Directory.Exists(target)
+            if (File.Exists(target)
                 && RuntimeModuleDiscoverySource.TryReadPackage(
                     target, out var installed, out _, out _)
                 && installed.Version.Equals(package.Version, StringComparison.OrdinalIgnoreCase)
@@ -123,7 +126,7 @@ internal sealed partial class ModuleHost
                 var recovery = rollback.Message;
                 try
                 {
-                    if (rollback.Success && unloaded && Directory.Exists(target))
+                    if (rollback.Success && unloaded && File.Exists(target))
                         LoadOne(target);
                 }
                 catch (Exception reloadEx) { recovery += $"；恢复后重载失败: {reloadEx.Message}"; }
@@ -185,7 +188,7 @@ internal sealed partial class ModuleHost
                 var recovery = rollback.Message;
                 try
                 {
-                    if (rollback.Success && unloaded && Directory.Exists(target))
+                    if (rollback.Success && unloaded && File.Exists(target))
                         LoadOne(target);
                 }
                 catch (Exception reloadEx) { recovery += $"；恢复后重载失败: {reloadEx.Message}"; }

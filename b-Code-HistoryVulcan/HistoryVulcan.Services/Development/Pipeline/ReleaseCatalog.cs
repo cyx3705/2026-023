@@ -38,9 +38,6 @@ internal sealed record ReleaseTarget(
 /// 5.8.0（DEC-069）起宿主不再持有模块登记表：模块的发布描述写在<strong>模块仓自己的</strong>
 /// <c>project.manifest.json</c> 的 <c>publish</c> 节里，模块名取同一文件的 <c>project.name</c>。
 /// 新建或修改模块不需要碰宿主仓的任何文件；宿主这里只认识它自己。
-///
-/// 宿主冻结标签的期望值仍放在宿主仓 <c>b-Code-Eng/pipeline/host-freeze.json</c>——那是宿主自己的门，
-/// 与模块无关。
 /// </remarks>
 internal static class ReleaseCatalog
 {
@@ -164,7 +161,8 @@ internal static class ReleaseCatalog
         var text = File.ReadAllText(path);
         var match = Regex.Match(
             text,
-            $"<{Regex.Escape(target.VersionProperty)}>(?<v>\\d+\\.\\d+\\.\\d+)</{Regex.Escape(target.VersionProperty)}>");
+            $"<{Regex.Escape(target.VersionProperty)}>(?<v>[vV]?\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?)</{Regex.Escape(target.VersionProperty)}>",
+            RegexOptions.CultureInvariant);
         if (!match.Success)
             throw new InvalidOperationException($"版本源必须声明唯一语义化版本 {target.VersionProperty}：{path}");
         return match.Groups["v"].Value;

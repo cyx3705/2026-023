@@ -33,7 +33,7 @@ public sealed class ConsumerDocsRetiredTests
         var root = RepositoryPaths.Root();
         Assert.False(Directory.Exists(Path.Combine(root, "b-Office", "package")), "b-Office/package 已退役");
         Assert.False(File.Exists(Path.Combine(root, "b-Code-Eng", "release", "consumer-docs.json")), "consumer-docs.json 已退役");
-        Assert.True(File.Exists(Path.Combine(root, "b-Office", "current", "模块开发手册.md")), "模块开发手册是现行文档");
+        Assert.True(File.Exists(Path.Combine(root, "b-Office", "模块开发手册.md")), "模块开发手册是现行文档");
     }
 
     [Fact]

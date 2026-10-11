@@ -15,9 +15,8 @@
       "package"
     ],
     "status": "active",
-    "version": "6.1.1",
-    "branch": "main",
-    "freezeTag": "v6.0.0"
+    "version": "7.0.0",
+    "branch": "main"
   },
   "paths": {
     "activeRoots": [
@@ -50,14 +49,13 @@
   },
   "documents": {
     "center": "b-Office/文档中心.md",
-    "moduleDevelopment": "b-Office/current/模块开发手册.md",
+    "moduleDevelopment": "b-Office/模块开发手册.md",
     "overview": "b-Office/current/项目概览.md",
     "technicalContract": "b-Office/current/技术合同.md",
     "decisions": "b-Office/current/有效决策.md",
     "verification": "b-Office/current/验证合同.md",
     "freeze": "b-Office/current/冻结合同.md",
     "commandPipelineAudit": "b-Office/current/断头指令审计表.md",
-    "hostRefactoring": "b-Office/history/5.3.0-宿主重构说明.md",
     "uiPlan31": "b-Office/history/V3.1界面现代化方案.md",
     "classRealign332": "b-Office/history/3.3.2-vulcan-class-realign.md",
     "historyBoundary": "b-Office/history/历史资料说明.md",
@@ -66,7 +64,9 @@
     "upgradeGuideDiana": "b-Office/history/升级指南-HistoryDiana.md",
     "upgradeGuideJanus": "b-Office/history/升级指南-HistoryJanus.md",
     "upgradeGuideMercury": "b-Office/history/升级指南-HistoryMercury.md",
-    "upgradeGuideMinerva": "b-Office/history/升级指南-HistoryMinerva.md"
+    "upgradeGuideMinerva": "b-Office/history/升级指南-HistoryMinerva.md",
+    "modulePackage70": "b-Office/history/7.0.0-模块改为NuGet包.md",
+    "hostUpgrade80Draft": "b-Office/current/V8.0-宿主升级书.md"
   },
   "contract": {
     "requiredFiles": [
@@ -75,7 +75,7 @@
       ".ignore",
       "project.manifest.json",
       "b-Code-HistoryVulcan/README.md",
-      ".github/workflows/historyvulcan-freeze-gate.yml"
+      ".github/workflows/historyvulcan-quality-gate.yml"
     ],
     "requiredProjectFields": [
       "id",
@@ -84,8 +84,7 @@
       "kind",
       "status",
       "version",
-      "branch",
-      "freezeTag"
+      "branch"
     ],
     "linkCheckMode": "declared",
     "linkCheckAdditionalFiles": [

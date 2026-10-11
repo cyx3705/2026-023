@@ -43,6 +43,9 @@ internal sealed partial class ModuleHost
             string Slot, bool Ui, string? SourcePath, string? ManifestPath)> Metas
         { get; } = new();
 
+        /// <summary>模块名 → 从 nupkg 展开的只读内容根。不参与发现。</summary>
+        public Dictionary<string, string> ContentDirectories { get; } = new(StringComparer.OrdinalIgnoreCase);
+
         public List<ModuleMeta> Modules { get; } = new();
 
         private readonly Dictionary<string, int> _commandCounts = new(StringComparer.OrdinalIgnoreCase);
@@ -178,11 +181,9 @@ internal sealed partial class ModuleHost
                 owner, host.ModuleDataDirectory(owner), PackageDirectoryOf(owner), host.RunMode, AppIdentity.Current.Version);
 
         private string PackageDirectoryOf(string name)
-            => snapshot.Metas
-                   .Where(meta => meta.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-                   .Select(meta => meta.SourcePath)
-                   .FirstOrDefault(path => !string.IsNullOrWhiteSpace(path))
-               ?? throw new InvalidOperationException($"模块 {name} 没有登记包目录。");
+            => snapshot.ContentDirectories.TryGetValue(name, out var content) && content.Length > 0
+                ? content
+                : throw new InvalidOperationException($"模块 {name} 没有登记包内容根。");
 
         public IDisposable Subscribe(string topic, Action<BusEvent> handler)
             => bus.Events.Subscribe(topic, owner, handler);

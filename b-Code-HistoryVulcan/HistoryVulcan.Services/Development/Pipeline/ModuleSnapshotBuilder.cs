@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using HistoryVulcan.Services.Modules;
 
 namespace HistoryVulcan.Services.Development.Pipeline;
 
@@ -42,39 +43,37 @@ internal static class ModuleSnapshotBuilder
             throw new InvalidOperationException($"构建后实际输出不存在：{output}");
 
         Directory.CreateDirectory(stagingRoot);
+        var files = new List<(string Relative, string SourcePath)>();
         foreach (var name in target.Package.Files)
         {
             var source = Path.Combine(output, name);
             if (!File.Exists(source))
                 throw new InvalidOperationException($"缺少预期产物：{source}");
-            var destination = Path.Combine(stagingRoot, name);
-            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-            File.Copy(source, destination, overwrite: true);
+            files.Add((name.Replace('\\', '/'), source));
         }
 
-        // 6.1.0（DEC-072）：模块包不再带 docs/ 消费文档。说明书只来自指令注册时的自描述，
-        // 由 Diana 现查宿主指令目录渲染；包里只剩运行需要的文件。
-        SnapshotHashes.Write(stagingRoot);
+        // 7.0.0：候选就是 nupkg。本机安装和发布归档用的是这一个文件，不再另抄目录并写 SHA256SUMS。
+        var nupkg = Path.Combine(stagingRoot, target.Name + ModuleNupkg.Extension);
+        ModuleNupkg.Pack(nupkg, target.Name, version, files);
         AssertSnapshot(stagingRoot, target, version);
         return stagingRoot;
     }
 
     public static void AssertSnapshot(string root, ReleaseTarget target, string version)
     {
-        var manifestName = string.IsNullOrWhiteSpace(target.SnapshotManifest)
-            ? "module.manifest.json"
-            : target.SnapshotManifest;
-        var manifestPath = Path.Combine(root, manifestName);
-        if (!File.Exists(manifestPath) || !File.Exists(Path.Combine(root, SnapshotHashes.FileName)))
+        var packages = Directory.Exists(root)
+            ? Directory.GetFiles(root, "*" + ModuleNupkg.Extension, SearchOption.TopDirectoryOnly)
+            : [];
+        if (packages.Length != 1)
             throw new InvalidOperationException($"模块快照不完整：{root}");
 
-        using var document = JsonDocument.Parse(File.ReadAllText(manifestPath, new UTF8Encoding(false)));
-        var identity = document.RootElement.GetProperty(target.IdentityProperty).GetString();
-        var manifestVersion = document.RootElement.GetProperty("version").GetString();
-        if (identity != target.Name || manifestVersion != version)
+        if (!ModuleNupkg.TryRead(packages[0], out var entry, out _, out var error))
+            throw new InvalidOperationException($"模块快照无法读取：{error}");
+        if (!entry.Name.Equals(target.Name, StringComparison.OrdinalIgnoreCase)
+            || !entry.Version.Equals(version, StringComparison.Ordinal))
+        {
             throw new InvalidOperationException($"模块快照身份不匹配：期望 {target.Name} {version}");
-
-        SnapshotHashes.Assert(root, skipHistory: true);
+        }
     }
 
     public static void RunValidation(

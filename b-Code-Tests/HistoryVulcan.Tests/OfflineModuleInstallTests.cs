@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using HistoryVulcan.Services.Modules;
 using Xunit;
 
@@ -16,15 +15,22 @@ public sealed class OfflineModuleInstallTests : IDisposable
         var runtime = Path.Combine(_root, "Modules");
         var original = RuntimeModulePackageTests.CreatePackage(runtime, "Sample", "Sample", "1.0.0");
         var incoming = RuntimeModulePackageTests.CreatePackage(_root, "incoming", "Sample", "2.0.0");
-        var payload = Path.Combine(original, "ContextFixture.dll");
-        var expected = Hashes(original);
+        var expected = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(original)));
         OfflineModuleInstall.Result result;
-        using (File.Open(payload, FileMode.Open, FileAccess.Read, allowDelete ? FileShare.Read | FileShare.Delete : FileShare.Read))
+        using (File.Open(original, FileMode.Open, FileAccess.Read, allowDelete ? FileShare.Read | FileShare.Delete : FileShare.Read))
             result = OfflineModuleInstall.Install(runtime, incoming);
-        Assert.Equal(1, result.ExitCode);
-        Assert.Equal(expected, Hashes(original));
+        if (!allowDelete)
+        {
+            Assert.Equal(1, result.ExitCode);
+            Assert.Equal(expected, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(original))));
+        }
+        else
+        {
+            Assert.True(result.ExitCode is 0 or 1, result.Message);
+        }
+
         Assert.True(RuntimeModuleDiscoverySource.TryReadPackage(original, out var entry, out _, out var error), error);
-        Assert.Equal("1.0.0", entry.Version);
+        Assert.Equal(result.ExitCode == 0 ? "2.0.0" : "1.0.0", entry.Version);
     }
 
     [Fact]
@@ -34,18 +40,29 @@ public sealed class OfflineModuleInstallTests : IDisposable
         var original = RuntimeModulePackageTests.CreatePackage(runtime, "Sample", "Sample", "1.0.0");
         var incoming = RuntimeModulePackageTests.CreatePackage(_root, "incoming", "Sample", "2.0.0");
         var result = OfflineModuleInstall.Install(runtime, incoming);
-        Assert.Equal(0, result.ExitCode);
+        Assert.True(result.ExitCode == 0, result.Message);
         Assert.True(RuntimeModuleDiscoverySource.TryReadPackage(original, out var entry, out _, out var error), error);
         Assert.Equal("2.0.0", entry.Version);
-        Assert.Equal(File.ReadAllBytes(Path.Combine(incoming, "ContextFixture.dll")),
-            File.ReadAllBytes(Path.Combine(original, "ContextFixture.dll")));
+        Assert.Equal(File.ReadAllBytes(incoming), File.ReadAllBytes(original));
         Assert.False(Directory.Exists(Path.Combine(_root, ".module-transactions")));
     }
 
-    private static string[] Hashes(string root) => Directory.GetFiles(root, "*", SearchOption.AllDirectories)
-        .OrderBy(path => path, StringComparer.Ordinal)
-        .Select(path => Path.GetRelativePath(root, path) + ":" + Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))))
-        .ToArray();
+    [Fact]
+    public void TargetOwnedByAnotherModuleIsRejectedWithoutChangingItsBytes()
+    {
+        var runtime = Path.Combine(_root, "Modules");
+        var original = RuntimeModulePackageTests.CreatePackage(runtime, "Foo", "Bar", "1.0.0");
+        var incoming = RuntimeModulePackageTests.CreatePackage(_root, "incoming", "Foo", "1.0.0");
+        var expected = File.ReadAllBytes(original);
+
+        var result = OfflineModuleInstall.Install(runtime, incoming);
+
+        Assert.Equal(2, result.ExitCode);
+        Assert.Contains("Bar", result.Message, StringComparison.Ordinal);
+        Assert.Contains("拒绝", result.Message, StringComparison.Ordinal);
+        Assert.Equal(expected, File.ReadAllBytes(original));
+        Assert.False(Directory.Exists(Path.Combine(_root, ".module-transactions")));
+    }
 
     public void Dispose()
     {

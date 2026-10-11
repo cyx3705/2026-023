@@ -18,7 +18,7 @@ public sealed class ReleasePipelineTests
     public void HostProjectContractPassesOnThisRepository()
     {
         var root = RepositoryPaths.Root();
-        ProjectContract.Validate(root, "host", instantiation: true, Path.Combine(root, ReleaseCommands.FreezeFile));
+        ProjectContract.Validate(root, "host", instantiation: true);
     }
 
     [Fact]
@@ -26,7 +26,7 @@ public sealed class ReleasePipelineTests
     {
         var root = RepositoryPaths.Root();
         var agents = File.ReadAllText(Path.Combine(root, "AGENTS.md"));
-        var manual = File.ReadAllText(Path.Combine(root, "b-Office", "current", "模块开发手册.md"));
+        var manual = File.ReadAllText(Path.Combine(root, "b-Office", "模块开发手册.md"));
 
         // 6.1.0（DEC-072）：说明书来自指令自描述，Diana 不可用时降级到宿主指令目录，不再有 z-Publish/docs。
         foreach (var contract in new[] { agents, manual })
@@ -52,8 +52,7 @@ public sealed class ReleasePipelineTests
     {
         var root = RepositoryPaths.Root();
         QualityGates.AssertSourceQuality(root, TextWriter.Null);
-        var vulcan = ReleaseCatalog.Host();
-        QualityGates.AssertPublicApiBaseline(root, ReleaseCatalog.ReadVersion(root, vulcan), TextWriter.Null);
+        QualityGates.AssertPublicApiConsistency(root, TextWriter.Null);
     }
 
     [Fact]

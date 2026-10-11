@@ -19,7 +19,7 @@ HistoryVulcan 是 OneHistory 的模块宿主：负责模块发现、校验、装
 | 指令域 | `vulcan` |
 | 界面 | 无自有界面，由 HistoryAurora 提供 |
 | 对外消费面 | 代码面：`HistoryVulcan.Core` 公开合同 + 命令总线 |
-| 版本 | [`VulcanVersion.props`](./b-Code-HistoryVulcan/VulcanVersion.props)；冻结基线见 [冻结合同](./b-Office/current/冻结合同.md) |
+| 版本 | [`VulcanVersion.props`](./b-Code-HistoryVulcan/VulcanVersion.props)；API 变更纪律见 [公开 API 合同](./b-Office/current/冻结合同.md) |
 
 ## 能力
 
@@ -33,7 +33,7 @@ HistoryVulcan 是 OneHistory 的模块宿主：负责模块发现、校验、装
 | `dev` | `start` / `submit` / `finish` | 模块开发管线（只走 Console CLI） |
 | `release` | `cycle` | 宿主自身的发布 |
 
-接入契约、模块包格式与 CLI 通道见 [模块开发手册](./b-Office/current/模块开发手册.md)；指令怎么调用看注册自描述（`diana.docs.catalog` / `diana.docs.read`）。
+接入契约、模块包格式与 CLI 通道见 [模块开发手册](./b-Office/模块开发手册.md)；指令怎么调用看注册自描述（`diana.docs.catalog` / `diana.docs.read`）。
 
 ## 入口
 
@@ -46,7 +46,7 @@ HistoryVulcan 是 OneHistory 的模块宿主：负责模块发现、校验、装
 | [技术合同](./b-Office/current/技术合同.md) | 唯一 REQ 定义与验收方法 |
 | [有效决策](./b-Office/current/有效决策.md) | 决策依据与规则索引 |
 | [验证合同](./b-Office/current/验证合同.md) | 验证命令、测试边界与交付检查 |
-| [模块开发手册](./b-Office/current/模块开发手册.md) | 接入契约、工作区与 submit/finish、指令自描述规范、观察取证 |
+| [模块开发手册](./b-Office/模块开发手册.md) | 接入契约、工作区与 submit/finish、指令自描述规范、观察取证 |
 
 ## 目录
 
@@ -54,7 +54,7 @@ HistoryVulcan 是 OneHistory 的模块宿主：负责模块发现、校验、装
 | --- | --- |
 | `b-Code-HistoryVulcan/` | 产品源码：Core、Services、ServiceHost、App、Cli |
 | `b-Code-Tests/` | 宿主测试 |
-| `b-Code-Eng/` | 宿主冻结标签表、public-api 基线与发布输入 |
+| `b-Code-Eng/` | 历史 public-api 记录与发布输入 |
 | `b-Office/` | 项目文档：`current/` 现行合同（含模块开发手册）、`history/` 只读归档 |
 | `z-Publish/` | 宿主快照（根部 `host/` 扁平）与 `history/` 归档，不能手改 |
 
@@ -67,7 +67,7 @@ dotnet test .\b-Code-Tests\HistoryVulcan.Tests\HistoryVulcan.Tests.csproj -c Rel
 ```
 
 根 `HistoryVulcan.sln` 是唯一解决方案，SDK 由 `global.json` 固定。其余门禁命令见 [验证合同](./b-Office/current/验证合同.md)；
-推送时 [`historyvulcan-freeze-gate.yml`](./.github/workflows/historyvulcan-freeze-gate.yml) 在 GitHub Actions 上复验。
+推送时 [`historyvulcan-quality-gate.yml`](./.github/workflows/historyvulcan-quality-gate.yml) 在 GitHub Actions 上复验。
 
 ## 开发与发布
 
@@ -76,9 +76,9 @@ dotnet test .\b-Code-Tests\HistoryVulcan.Tests\HistoryVulcan.Tests.csproj -c Rel
 
 ## 要点
 
-- 运行区固定为 `%AppData%\HistoryVulcan\Modules\<模块名>`，只发现直属完整包，不扫描裸 DLL。
+- 运行区固定为 `%AppData%\HistoryVulcan\Modules\<模块名>.nupkg`，只发现直属完整包，不扫描裸 DLL；随包文件通过 `PackageDirectory` 读取对应包哈希的只读内容快照。
 - `--cli` 离线组合执行；`--runtime` 只连接活宿主，仅放行 `vulcan.module.list/ready/reload/install`。
-- 宿主不登记模块：模块的发布描述在各模块仓 `project.manifest.json` 的 `publish` 节；本仓只有宿主冻结标签表 [`host-freeze.json`](./b-Code-Eng/pipeline/host-freeze.json)。
+- 宿主不登记模块：模块的发布描述在各模块仓 `project.manifest.json` 的 `publish` 节；宿主身份与版本由本仓 manifest 和版本源校验。
 
 ## 保留内容
 - 本模板项目介绍：此为最初的准备的项目模板

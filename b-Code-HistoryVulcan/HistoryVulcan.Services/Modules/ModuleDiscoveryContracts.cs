@@ -9,7 +9,14 @@ internal sealed record ModuleDiscoveryEntry(
     string ArtifactPath,
     bool Ui,
     string? DocsPath,
-    IReadOnlyList<string> DependencyPaths);
+    IReadOnlyList<string> DependencyPaths)
+{
+    /// <summary>包内 <c>pinned</c>。装进默认上下文，不热卸载。</summary>
+    public bool Pinned { get; init; }
+
+    /// <summary>包内 <c>dependsOn</c>。只决定接入次序。</summary>
+    public IReadOnlyList<string> DependsOn { get; init; } = [];
+}
 
 /// <summary>A non-fatal diagnostic produced while discovering runtime module manifests.</summary>
 internal sealed record ModuleDiscoveryDiagnostic(string Path, string Code, string Message);
