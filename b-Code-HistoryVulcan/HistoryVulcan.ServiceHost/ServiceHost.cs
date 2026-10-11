@@ -18,7 +18,7 @@ internal static class ServiceHost
         IReadOnlyList<string>? serviceArguments = null)
     {
         ArgumentNullException.ThrowIfNull(composition);
-        var mutexName = $"Local\\{Sanitize(composition.ServiceName)}.ServiceHost";
+        var mutexName = $"Local\\{Sanitize(composition.ServiceName)}.{RuntimePipeProtocol.IsolationKey}.ServiceHost";
         using var mutex = new Mutex(initiallyOwned: false, mutexName);
         if (!WaitForSingleInstance(mutex, RestartMutexWait))
             return 2;
@@ -43,6 +43,7 @@ internal static class ServiceHost
         // Complete initial module discovery before exposing the runtime CLI.
         try
         {
+            composition.Nodes?.Start();
             composition.Modules?.Start();
         }
         catch (Exception ex)

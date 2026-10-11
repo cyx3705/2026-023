@@ -303,7 +303,8 @@ internal static class WorktreeCommands
         DevelopmentContext host,
         string project,
         string name,
-        CancellationToken cancellation)
+        CancellationToken cancellation,
+        Func<Task<CommandResult>>? finishDelivery = null)
     {
         var projectName = project.Trim();
         var worktreeName = name.Trim();
@@ -345,14 +346,7 @@ internal static class WorktreeCommands
         }
         else
         {
-            var (mergeOutput, mergeError) = Git(projectPath, "merge", "--no-edit", branch);
-            if (mergeError != null)
-            {
-                return CommandResult.Fail(
-                    $"无法把 {branch} 并入 main：{mergeError}\n{mergeOutput}\n{ffOutput}");
-            }
-
-            mergeNote = $"已合并 {branch}（非快进）";
+            return CommandResult.Fail($"无法快进合并 {branch}，未尝试普通合并；请更新工作区并重新 submit 审核。\n{ffError}\n{ffOutput}");
         }
 
         var removed = RemoveMergedWorktree(host.Settings, projectName, worktreeName);
@@ -367,6 +361,12 @@ internal static class WorktreeCommands
         if (isHost)
         {
             reloadNote = "宿主 EXE 不随模块热重载替换；新快照在下次启动正式 HistoryVulcan.exe 时生效。";
+        }
+        else if (finishDelivery != null)
+        {
+            var delivery = await finishDelivery().ConfigureAwait(false);
+            reloadFailed = !delivery.Success;
+            reloadNote = delivery.Message;
         }
         else if (module != null)
         {
@@ -386,12 +386,15 @@ internal static class WorktreeCommands
 
         var text = new StringBuilder($"{mergeNote}。\n{removed.Message}\n{reloadNote}");
         if (!removed.Success || reloadFailed)
-            return CommandResult.Fail(text.ToString());
+            return new CommandResult { Success = false, Message = text.ToString(), Data = new { Merged = true, WorktreeRemoved = removed.Success, DeliveryVerified = !reloadFailed } };
         return CommandResult.Ok(text.ToString(), new
         {
             Project = projectName,
             Branch = branch,
             Worktree = worktreePath,
+            Merged = true,
+            WorktreeRemoved = true,
+            DeliveryVerified = true,
         });
     }
 

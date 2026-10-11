@@ -35,6 +35,13 @@ internal sealed class CommandBus : ICommandBus
     private Func<string, string, bool>? _shouldUseRemoteCommand;
     private FrontendRegistration? _frontend;
     private volatile bool _hostSealed;
+    internal Func<string, bool>? NodeRoute { get; set; }
+    internal Func<string, bool>? NodeLocalAllowed { get; set; }
+    internal Func<string, string, bool, CancellationToken, Task<CommandResult>>? NodeExecutor { get; set; }
+    internal string? FrontendOwner
+    {
+        get { lock (_frontendGate) return _frontend?.Owner; }
+    }
 
     /// <summary>创建一条绑定到指定注册表的总线；解析、校验与执行都以该注册表为准。</summary>
     /// <param name="registry">命令注册表。</param>
@@ -168,7 +175,7 @@ internal sealed class CommandBus : ICommandBus
         var request = CommandRequest.Create(text, _registry);
         try
         {
-            return await ExecuteCoreAsync(request, source, cancellation).ConfigureAwait(false);
+            return await ExecuteCoreAsync(request, source, cancellation, quiet: true).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -372,10 +379,12 @@ internal sealed class CommandBus : ICommandBus
     private bool RoutesToRemote(CommandRequest request, string source)
         => _remoteExecutor != null && (_shouldUseRemoteCommand?.Invoke(request.Text, source) ?? true);
 
-    private bool HasConfirmationChannel => Frontend != null || _confirmation != null;
+    private bool HasConfirmationChannel => NodeExecutionScope.Current != null || Frontend != null || _confirmation != null;
 
     private bool Confirm(string prompt)
     {
+        if (NodeExecutionScope.Current is { } request)
+            return request.Confirm(prompt);
         var frontend = Frontend;
         return frontend != null
             ? frontend.Confirm(prompt)
@@ -395,8 +404,13 @@ internal sealed class CommandBus : ICommandBus
     private async Task<CommandResult> ExecuteCoreAsync(
         CommandRequest request,
         string source,
-        CancellationToken cancellation)
+        CancellationToken cancellation,
+        bool quiet = false)
     {
+        if (NodeRoute?.Invoke(request.Name) == true && NodeExecutor != null)
+            return await NodeExecutor(request.Text, source, quiet, cancellation).ConfigureAwait(false);
+        if (NodeLocalAllowed?.Invoke(request.Name) == false)
+            return CommandResult.Fail("模块不具备本节点执行归属，或归属存在冲突。");
         if (RoutesToRemote(request, source))
             return await _remoteExecutor!(request.Text, source, cancellation).ConfigureAwait(false);
 
@@ -419,12 +433,14 @@ internal sealed class CommandBus : ICommandBus
             return CommandResult.Fail($"{bindError}\n{FormatUsage(descriptor)}");
 
         var progressCategory = $"{ProgressCategory}:{request.Domain}:{request.CommandClass}";
+        var nodeRequest = NodeExecutionScope.Current;
         var progress = new Progress<string>(line =>
         {
             // 进度行与结果同一把尺子：一句一行的进度留在 Info（git 传输、Apollo 逐轮过程
             // 都靠它），而整块贴上来的那种降到 Debug。
             var masked = request.Mask(line);
             _log.Log(IsBulk(masked) ? ShellLogLevel.Debug : ShellLogLevel.Info, progressCategory, masked);
+            nodeRequest?.Progress?.Invoke(masked);
         });
         var context = new CommandContext(descriptor, values, source, progress, cancellation);
 
@@ -477,9 +493,11 @@ internal sealed class CommandBus : ICommandBus
         Func<Task<CommandResult>> action)
     {
         var tcs = new TaskCompletionSource<CommandResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var node = NodeExecutionScope.Current;
         ui.Post(
             async _ =>
             {
+                using var scope = node == null ? null : new NodeExecutionScope(node.Confirm, node.Progress);
                 try
                 {
                     tcs.SetResult(await action().ConfigureAwait(true));

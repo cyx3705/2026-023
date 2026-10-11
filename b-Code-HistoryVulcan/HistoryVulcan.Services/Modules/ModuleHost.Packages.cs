@@ -23,6 +23,8 @@ internal sealed partial class ModuleHost
         }
         if (!RuntimeModulePackageStore.IsSafeModuleName(package.Name))
             return CommandResult.Fail($"模块名不能安全映射为运行目录: {package.Name}");
+        if (CanLoad != null && !CanLoad(package))
+            return CommandResult.Fail("模块未归属本节点或归属存在冲突；缓存包不授予装载权。");
 
         lock (_reloadLock)
         {
@@ -52,7 +54,10 @@ internal sealed partial class ModuleHost
             {
                 var loaded = _current.Modules.FirstOrDefault(module =>
                     module.ModuleName.Equals(package.Name, StringComparison.OrdinalIgnoreCase));
-                if (loaded is { Attached: true } || !EnableUiModules)
+                var sameInstance = loaded is { Attached: true }
+                    && loaded.Version.Equals(package.Version, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(loaded.PackageHash, ModuleNupkg.Hash(source), StringComparison.OrdinalIgnoreCase);
+                if (sameInstance || !EnableUiModules)
                     return CommandResult.Ok($"{package.Name} {package.Version} 已安装，内容一致，无需替换。", loaded);
             }
 

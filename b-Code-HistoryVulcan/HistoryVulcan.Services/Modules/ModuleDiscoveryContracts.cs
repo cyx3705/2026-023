@@ -13,6 +13,7 @@ internal sealed record ModuleDiscoveryEntry(
 {
     /// <summary>包内 <c>pinned</c>。装进默认上下文，不热卸载。</summary>
     public bool Pinned { get; init; }
+    internal bool FrontendRole { get; init; }
 
     /// <summary>包内 <c>dependsOn</c>。只决定接入次序。</summary>
     public IReadOnlyList<string> DependsOn { get; init; } = [];

@@ -27,6 +27,7 @@ internal sealed partial class BusEventHub
     private readonly IShellLog _log;
     private readonly object _gate = new();
     private readonly List<Subscription> _subscriptions = [];
+    internal event Action<BusEvent>? Published;
 
     public BusEventHub(IShellLog log) => _log = log;
 
@@ -65,13 +66,14 @@ internal sealed partial class BusEventHub
         Subscription[] targets;
         lock (_gate)
             targets = _subscriptions.Where(item => item.Matches(topic)).ToArray();
-        if (targets.Length == 0)
+        if (targets.Length == 0 && Published == null)
             return;
 
         var element = payload is JsonElement json
             ? json.Clone()
             : JsonSerializer.SerializeToElement(payload ?? new { }, JsonOptions);
         var evt = new BusEvent(topic, source, DateTimeOffset.Now, element);
+        Published?.Invoke(evt);
         foreach (var target in targets)
             target.Enqueue(evt);
     }
@@ -105,7 +107,7 @@ internal sealed partial class BusEventHub
     private sealed class Subscription(
         BusEventHub hub, string topic, bool prefix, string owner, Action<BusEvent> handler) : IDisposable
     {
-        private readonly ConcurrentQueue<BusEvent> _queue = new();
+        private readonly ConcurrentQueue<(BusEvent Event, NodeExecutionScope? Origin)> _queue = new();
         private int _draining;
         private volatile bool _disposed;
 
@@ -118,17 +120,19 @@ internal sealed partial class BusEventHub
 
         public void Enqueue(BusEvent evt)
         {
-            _queue.Enqueue(evt);
+            _queue.Enqueue((evt, NodeExecutionScope.Current));
             if (Interlocked.CompareExchange(ref _draining, 1, 0) == 0)
-                ThreadPool.QueueUserWorkItem(_ => Drain());
+                ThreadPool.UnsafeQueueUserWorkItem(_ => Drain(), null);
         }
 
         private void Drain()
         {
             while (true)
             {
-                while (!_disposed && _queue.TryDequeue(out var evt))
+                while (!_disposed && _queue.TryDequeue(out var queued))
                 {
+                    var evt = queued.Event;
+                    using var scope = queued.Origin == null ? null : new NodeExecutionScope(queued.Origin.Confirm, queued.Origin.Progress);
                     try
                     {
                         handler(evt);

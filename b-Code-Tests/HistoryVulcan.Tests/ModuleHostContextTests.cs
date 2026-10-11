@@ -238,6 +238,7 @@ namespace HistoryVulcan.Tests
             RuntimeModulePackageTests.CreatePackage(modulesDirectory, "context-fixture", "contextfixture", "v1.0.0");
 
             var marker = Path.Combine(Path.GetFullPath(dataDirectory), ContextAwareFixture.DisposeMarker);
+            var previousData = Environment.GetEnvironmentVariable(ContextAwareFixture.DataVariable);
             var registry = new CommandRegistry();
             var log = new RecordingLog();
             var host = new ModuleHost(new RuntimeModuleDiscoverySource(modulesDirectory), log)
@@ -271,6 +272,7 @@ namespace HistoryVulcan.Tests
             finally
             {
                 host.Dispose();
+                Environment.SetEnvironmentVariable(ContextAwareFixture.DataVariable, previousData);
                 try { Directory.Delete(root, recursive: true); }
                 catch (IOException) { }
             }

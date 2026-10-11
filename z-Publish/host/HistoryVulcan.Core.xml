@@ -824,6 +824,9 @@
         <member name="M:HistoryVulcan.Core.Commands.CommandResult.Fail(System.String)">
             <summary>Provides this HistoryVulcan public contract member.</summary>
         </member>
+        <member name="T:HistoryVulcan.Core.Commands.LocalActionApproval">
+            <summary>Approval from the current-user pipe handshake, never inferred from a source label.</summary>
+        </member>
         <member name="T:HistoryVulcan.Core.Commands.ModuleSource">
             <summary>
             模块调用的来源章（6.0.0，DEC-071）。
@@ -849,6 +852,9 @@
             剥掉全部模块章，返回最里面那一层；整条都是模块章（没有内层）时返回空串。
             不是模块章的来源原样返回。
             </summary>
+        </member>
+        <member name="T:HistoryVulcan.Core.Commands.NodeExecutionScope">
+            <summary>Authenticated request context, carried through nested module calls independently of source labels.</summary>
         </member>
         <member name="T:HistoryVulcan.Core.Commands.SensitiveName">
             <summary>命令参数、命令名与配置键共用的敏感名称规则。</summary>

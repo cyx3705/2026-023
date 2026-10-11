@@ -222,6 +222,9 @@ internal sealed partial class ModuleHost
             }
 
             AttachModuleContexts(snap, module.Types, module.Owner, module.CommandPrefix);
+            if (RequireDeclaredFrontendRole && snap.DeclaredFrontends.Contains(module.Owner)
+                && _bus?.FrontendOwner?.Equals(module.Owner, StringComparison.OrdinalIgnoreCase) != true)
+                snap.AttachFailures[module.Owner] = ["清单声明前端角色，但没有成功登记前端。"];
             MarshalToUi(() =>
             {
                 if (!snap.AttachFailures.ContainsKey(module.Owner))

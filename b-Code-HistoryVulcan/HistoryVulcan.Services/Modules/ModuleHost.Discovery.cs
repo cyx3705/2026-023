@@ -58,6 +58,14 @@ internal sealed partial class ModuleHost
 
     private void LoadDiscoveredModule(Snapshot snap, ModuleDiscoveryEntry module)
     {
+        if (CanLoad != null && !CanLoad(module))
+        {
+            _discoveryDiagnostics = [.. _discoveryDiagnostics,
+                new ModuleDiscoveryDiagnostic(module.PackagePath, "ownership-blocked", "模块未归属本节点或归属存在冲突。")];
+            return;
+        }
+        if (module.FrontendRole)
+            snap.DeclaredFrontends.Add(module.Name);
         if (module.Ui && !EnableUiModules)
         {
             _log.Info("module.discovery", $"离线组合跳过 UI 模块 {module.Name}: 当前执行目标不提供桌面运行时");

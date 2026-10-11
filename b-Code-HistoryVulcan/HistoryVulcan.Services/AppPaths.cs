@@ -9,7 +9,7 @@ internal sealed class AppPaths
     public AppPaths(string appName, bool createModulesDirectory = true)
         : this(
             appName,
-            Path.Combine(
+            Environment.GetEnvironmentVariable("HISTORYVULCAN_LAB_ROOT") ?? Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 appName),
             createModulesDirectory)

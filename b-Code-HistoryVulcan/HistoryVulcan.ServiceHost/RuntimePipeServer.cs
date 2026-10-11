@@ -17,6 +17,16 @@ internal sealed class RuntimePipeServer : IDisposable
         "vulcan.module.ready",
         "vulcan.module.reload",
         "vulcan.module.install",
+        "vulcan.node.identity",
+        "vulcan.node.status",
+        "vulcan.node.configure",
+        "vulcan.node.own",
+        "vulcan.node.frontend",
+        "vulcan.node.invoke",
+        "vulcan.node.deliver",
+        "vulcan.node.receipt",
+        "vulcan.node.verify",
+        "vulcan.node.finalize",
     };
 
     internal static IReadOnlyCollection<string> AllowedCommands => Allowed;
@@ -141,7 +151,9 @@ internal sealed class RuntimePipeServer : IDisposable
         }
 
         var action = name.Equals("vulcan.module.reload", StringComparison.OrdinalIgnoreCase)
-            || name.Equals("vulcan.module.install", StringComparison.OrdinalIgnoreCase);
+            || name.Equals("vulcan.module.install", StringComparison.OrdinalIgnoreCase)
+            || (name.StartsWith("vulcan.node.", StringComparison.OrdinalIgnoreCase)
+                && name is not ("vulcan.node.identity" or "vulcan.node.status" or "vulcan.node.receipt" or "vulcan.node.verify"));
         if (action && !request.Approve)
         {
             await WriteAsync(writer, new RuntimeResponse(false,
@@ -160,6 +172,7 @@ internal sealed class RuntimePipeServer : IDisposable
 
         try
         {
+            using var approval = new LocalActionApproval(request.Approve);
             var result = await _composition.Bus.ExecuteAsync(command, "cli:runtime")
                 .ConfigureAwait(false);
             await WriteAsync(writer, new RuntimeResponse(

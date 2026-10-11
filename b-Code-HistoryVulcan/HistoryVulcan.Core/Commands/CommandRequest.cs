@@ -78,7 +78,7 @@ internal sealed class CommandRequest
         parts.AddRange(parsed.Positionals.Select((value, index) =>
             CommandParser.QuoteArg(_sensitivePositions.Contains(index) ? Redacted : value)));
         parts.AddRange(parsed.Named.Select(pair =>
-            $"{pair.Key}={CommandParser.QuoteArg(SensitiveParameter(pair.Key) ? Redacted : pair.Value)}"));
+            $"{pair.Key}={CommandParser.QuoteArg(SensitiveParameter(pair.Key) || MaskInput(pair.Key) ? Redacted : pair.Value)}"));
         return string.Join(' ', parts);
     }
 
@@ -102,5 +102,11 @@ internal sealed class CommandRequest
 
     private bool SensitiveParameter(string name)
         => SensitiveName.IsSensitive(name)
+           || (Descriptor?.Annotations.TryGetValue("sensitiveParameters", out var declared) == true
+               && declared.Split(',').Any(value => value.Trim().Equals(name, StringComparison.OrdinalIgnoreCase)))
            || (_secretSetting && name.Equals("value", StringComparison.OrdinalIgnoreCase));
+
+    private bool MaskInput(string name)
+        => Descriptor?.Annotations.TryGetValue("maskedInputParameters", out var declared) == true
+           && declared.Split(',').Any(value => value.Trim().Equals(name, StringComparison.OrdinalIgnoreCase));
 }

@@ -108,7 +108,7 @@ internal static class ModuleNupkg
 
             using var reader = new StreamReader(manifest.Open(), Encoding.UTF8);
             var json = reader.ReadToEnd();
-            if (!TryReadManifest(json, name, version, out var moduleVersion, out var ui, out var pinned, out var dependsOn, out error))
+            if (!TryReadManifest(json, name, version, out var moduleVersion, out var ui, out var pinned, out var frontend, out var dependsOn, out error))
             {
                 code = "invalid-manifest";
                 return false;
@@ -125,6 +125,7 @@ internal static class ModuleNupkg
                 [])
             {
                 Pinned = pinned,
+                FrontendRole = frontend,
                 DependsOn = dependsOn,
             };
             return true;
@@ -384,12 +385,14 @@ internal static class ModuleNupkg
         out string moduleVersion,
         out bool ui,
         out bool pinned,
+        out bool frontend,
         out IReadOnlyList<string> dependsOn,
         out string error)
     {
         moduleVersion = packageVersion;
         ui = false;
         pinned = false;
+        frontend = false;
         dependsOn = [];
         error = "";
         JsonDocument document;
@@ -436,6 +439,15 @@ internal static class ModuleNupkg
             }
 
             ui = uiValue.GetBoolean();
+            if (root.TryGetProperty("role", out var role))
+            {
+                if (role.ValueKind != JsonValueKind.String || role.GetString() != "frontend" || !ui)
+                {
+                    error = "role 只接受 frontend，且前端必须声明 ui=true。";
+                    return false;
+                }
+                frontend = true;
+            }
             pinned = root.TryGetProperty("pinned", out var pinnedValue) && pinnedValue.ValueKind == JsonValueKind.True;
             if (root.TryGetProperty("name", out var name)
                 && name.ValueKind == JsonValueKind.String

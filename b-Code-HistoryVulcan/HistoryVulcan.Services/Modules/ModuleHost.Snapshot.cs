@@ -45,6 +45,7 @@ internal sealed partial class ModuleHost
 
         /// <summary>模块名 → 从 nupkg 展开的只读内容根。不参与发现。</summary>
         public Dictionary<string, string> ContentDirectories { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> DeclaredFrontends { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public List<ModuleMeta> Modules { get; } = new();
 
@@ -93,6 +94,8 @@ internal sealed partial class ModuleHost
             Metas.RemoveAll(meta =>
                 meta.Name.Equals(moduleName, StringComparison.OrdinalIgnoreCase));
             AttachFailures.Remove(moduleName);
+            ContentDirectories.Remove(moduleName);
+            DeclaredFrontends.Remove(moduleName);
             _commandCounts.Remove(moduleName);
             ContextsByOwner.Remove(moduleName, out var alc);
             return alc;
@@ -120,6 +123,7 @@ internal sealed partial class ModuleHost
                 group.Any(meta => meta.Ui))
             {
                 InstanceId = Guid.NewGuid().ToString("N"),
+                PackageHash = ContentDirectories.TryGetValue(first.Name, out var content) ? Path.GetFileName(content) : "",
                 SourcePath = first.SourcePath,
                 ManifestPath = first.ManifestPath,
                 AttachFailures = AttachFailures.GetValueOrDefault(first.Name) is { } reasons
@@ -174,7 +178,12 @@ internal sealed partial class ModuleHost
         // 5.5.0：宿主唯一日志。进度、结果、界面操作与模块自己的诊断都写这一份；6.0.0 起模块只能写。
         public HistoryVulcan.Core.Logging.IModuleLog Log => bus.Log;
 
-        public IDisposable RegisterFrontend(IFrontend frontend) => bus.ClaimFrontend(owner, frontend);
+        public IDisposable RegisterFrontend(IFrontend frontend)
+        {
+            if (host.RequireDeclaredFrontendRole && !snapshot.DeclaredFrontends.Contains(owner))
+                throw new InvalidOperationException("逻辑宿主的前端必须在包清单声明 role=frontend。");
+            return bus.ClaimFrontend(owner, frontend);
+        }
 
         public IModuleEnvironment Environment
             => _environment ??= new ModuleEnvironment(

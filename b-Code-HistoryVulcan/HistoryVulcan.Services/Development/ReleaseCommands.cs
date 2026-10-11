@@ -303,7 +303,8 @@ internal static class ReleaseCommands
         bool allowDirty,
         bool dryRun,
         IProgress<string>? progress,
-        CancellationToken cancellation)
+        CancellationToken cancellation,
+        string? target = null)
     {
         var moduleName = module.Name;
         var commitMessage = message.Trim();
@@ -397,22 +398,26 @@ internal static class ReleaseCommands
         }
 
         progress?.Report("提交完成，正在调用 Vulcan 热重载当前候选…");
-        var reload = await ModulePackageHotReload.InstallCurrentAsync(
-            host, repoRoot, moduleName, "host:vulcan.release.cycle", CancellationToken.None).ConfigureAwait(false);
+        var reload = await PipelineDelivery.SubmitAsync(
+            host, repoRoot, moduleName, target, CancellationToken.None).ConfigureAwait(false);
         // 5.8.0（REQ-HOST-079）：成功只留热装核对结论一行；下一步怎么走由 vulcan.dev.submit 统一给一次。
         text.Append('\n').Append(reload.Success
             ? LastLine(reload.Message)
             : "候选已提交，但 Vulcan 热重载未成功（不自动回滚）：" + reload.Message);
 
-        return reload.Success
-            ? CommandResult.Ok(text.ToString(), new
+        return new CommandResult
+        {
+            Success = reload.Success,
+            Message = text.ToString(),
+            Data = new
             {
                 Module = moduleName,
                 Worktree = isWorktree ? repoRoot : null,
                 Run = run,
                 Committed = true,
-            })
-            : CommandResult.Fail(text.ToString());
+                Delivery = reload.Data,
+            }
+        };
     }
 
     /// <summary>

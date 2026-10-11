@@ -83,7 +83,7 @@ internal static partial class ServiceComposer
     {
         AppIdentity.Use(identityAssembly);
         var identity = AppIdentity.Current;
-        var paths = new AppPaths(identity.Name);
+        var paths = probe == null ? new AppPaths(identity.Name) : new AppPaths(identity.Name, probe.ModuleDataRoot);
         var servicePaths = new AppPaths(identity.Name, Path.Combine(paths.Root, "service"), createModulesDirectory: false);
         var log = new ShellLog(servicePaths);
         var settings = new SettingsService(servicePaths);
@@ -112,6 +112,8 @@ internal static partial class ServiceComposer
             source: "framework:service");
 
         var hostEvents = new HistoryVulcan.Services.Modules.HostEventPublisher(registry, bus, log, modules);
+        var nodes = new HistoryVulcan.Services.Nodes.NodeService(probe == null ? paths.Root : probe.ModuleDataRoot, bus, modules);
+        HistoryVulcan.Services.Nodes.NodeCommands.Register(registry, bus, modules, nodes, probe == null ? paths.Root : probe.ModuleDataRoot);
         var composition = new ServiceComposition
         {
             ServiceName = identity.Name + ".Backend",
@@ -123,9 +125,10 @@ internal static partial class ServiceComposer
             Development = development,
             // 与前端此前的 DataDirectory 同值：脚本相对路径基准不变。
             DataDirectory = paths.Root,
-            RegisterAutostartOnFirstRun = true,
+            RegisterAutostartOnFirstRun = probe == null && Environment.GetEnvironmentVariable("HISTORYVULCAN_LAB_ROOT") == null,
             Autostart = new WindowsRunAutostartManager(),
             HostEvents = hostEvents,
+            Nodes = nodes,
         };
         RegisterHostInfoCommand(registry, composition, executablePath, settings);
         RegisterLogRecentCommand(registry, log);
@@ -517,6 +520,8 @@ internal static partial class ServiceComposer
     /// </remarks>
     internal static bool IsLocalModuleMutationSource(string source)
     {
+        if (NodeExecutionScope.Current != null)
+            return false;
         var value = source ?? "";
         if (value.StartsWith(ModuleSource.Prefix, StringComparison.OrdinalIgnoreCase))
         {

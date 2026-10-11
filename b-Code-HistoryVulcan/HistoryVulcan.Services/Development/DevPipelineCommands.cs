@@ -85,6 +85,7 @@ internal static class DevPipelineCommands
                 Text("worktree", "vulcan.dev.start 返回的工作区目录名或绝对路径", required: true, position: 2),
                 Bool("allowDirty", "（5.7.0 起无作用）工作区里未提交的改动正是 submit 要提交的，不再需要授权", "false"),
                 Bool("dryRun", "只预检，不写文件、不构建、不提交、不热重载", "false"),
+                Text("target", "交付节点 GUID、local 或 preload；省略沿用当前归属，首次默认本机"),
             ],
             Handler = async context => await SubmitAsync(
                 host,
@@ -93,7 +94,7 @@ internal static class DevPipelineCommands
                 context.RequireString("worktree"),
                 context.GetBool("dryRun"),
                 context.Progress,
-                context.Cancellation).ConfigureAwait(false),
+                context.Cancellation, context.GetString("target")).ConfigureAwait(false),
         });
 
         registry.Register(new CommandDescriptor
@@ -376,7 +377,8 @@ internal static class DevPipelineCommands
         string worktree,
         bool dryRun,
         IProgress<string>? progress,
-        CancellationToken cancellation)
+        CancellationToken cancellation,
+        string? target = null)
     {
         if (!TryResolveTarget(host.Settings, name, worktree, out var module, out var worktreePath, out var error))
             return CommandResult.Fail(error);
@@ -392,14 +394,14 @@ internal static class DevPipelineCommands
         // 5.7.0（U2）：dev 工作区是 start 从干净的 HEAD 开出来的，里面的改动全是本轮要提交的，
         // 不再要求 allowDirty。主树上的 vulcan.release.cycle 仍保留这道门。
         var result = await ReleaseCommands.CycleAsync(
-            host, module, commitMessage, worktreePath, allowDirty: true, dryRun, progress, cancellation)
+            host, module, commitMessage, worktreePath, allowDirty: true, dryRun, progress, cancellation, target)
             .ConfigureAwait(false);
 
         var text = new StringBuilder(result.Message);
         if (warning.Length > 0)
             text.Append('\n').Append(warning);
         if (!result.Success)
-            return CommandResult.Fail(text.ToString());
+            return new CommandResult { Success = false, Message = text.ToString(), Data = result.Data };
 
         if (dryRun)
         {
@@ -439,8 +441,21 @@ internal static class DevPipelineCommands
         if (!published.Success)
             return published;
 
+        PipelineDeliveryRecord reviewed;
+        try
+        {
+            reviewed = await PipelineDelivery.RequireReviewedAsync(host, worktreePath, module.Name, cancellation).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            return CommandResult.Fail("finish 审核依据失效：" + ex.Message);
+        }
+
         var merged = await WorktreeCommands.MergeAsync(
-            host, module.ProjectDirectory, worktreeName, cancellation).ConfigureAwait(false);
+            host, module.ProjectDirectory, worktreeName, cancellation,
+            () => PipelineDelivery.ExecuteAsync(host, "vulcan.node.finalize id=" + reviewed.Delivery.Id, CancellationToken.None)).ConfigureAwait(false);
+        var closed = reviewed with { Stage = merged.Success ? "finished" : "finish-incomplete", Merge = merged.Data };
+        Nodes.NodeStateFile.Update(PipelineDelivery.RecordPath(host, worktreePath), () => closed, _ => closed);
 
         var text = new StringBuilder(published.Message + "\n" + merged.Message);
         if (!string.IsNullOrWhiteSpace(message))
@@ -449,7 +464,7 @@ internal static class DevPipelineCommands
             text.Append('\n').Append(MoveRootBeforeFinish);
         return merged.Success
             ? CommandResult.Ok(text.ToString(), new { Submit = published.Data, Merge = merged.Data })
-            : CommandResult.Fail(text.ToString());
+            : new CommandResult { Success = false, Message = text.ToString(), Data = merged.Data };
     }
 
     private static ParameterSpec Text(string name, string description, bool required = false, int? position = null)

@@ -13,6 +13,11 @@
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
   <ItemGroup>
+    <!--
+      probe 在本进程里装载模块。界面模块要 PresentationFramework，
+      而模块带不走这份共享框架；与服务进程一样只加框架引用，不开 UseWPF。
+    -->
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WPF" />
     <ProjectReference Include="..\HistoryVulcan.ServiceHost\HistoryVulcan.ServiceHost.csproj" />
   </ItemGroup>
 </Project>

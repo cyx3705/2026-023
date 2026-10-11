@@ -25,6 +25,7 @@ internal sealed class ServiceComposition : IDisposable
     internal IDisposable? HostEvents { get; set; }
 
     internal DevelopmentContext? Development { get; init; }
+    internal HistoryVulcan.Services.Nodes.NodeService? Nodes { get; init; }
 
     /// <summary>
     /// 应用数据根，脚本等相对路径以它为基准。
@@ -57,6 +58,7 @@ internal sealed class ServiceComposition : IDisposable
 
     public void Dispose()
     {
+        Nodes?.DisposeAsync().AsTask().GetAwaiter().GetResult();
         HostEvents?.Dispose();
         Modules?.Dispose();
         DisposeApplicationServices?.Invoke();

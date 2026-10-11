@@ -40,6 +40,8 @@ internal sealed partial class ModuleHost : IDisposable
 
     /// <summary>交给模块的运行方式（5.9.0，DEC-070）。组合根按入口设置。</summary>
     internal HostRunMode RunMode { get; set; } = HostRunMode.Service;
+    internal Func<ModuleDiscoveryEntry, bool>? CanLoad { get; set; }
+    internal bool RequireDeclaredFrontendRole { get; set; }
 
     /// <summary>
     /// 模块数据目录的根（5.9.0，DEC-070）：每个模块得到 <c>&lt;根&gt;/&lt;模块名&gt;</c>，独立于包槽位。
@@ -67,6 +69,13 @@ internal sealed partial class ModuleHost : IDisposable
 
     /// <summary>固定运行区根目录；发现源不是运行区时为空串。</summary>
     public string ModulesDirectory => _dir;
+
+    internal bool CanRetire(string module)
+    {
+        lock (_reloadLock)
+            return !_current.ContextsByOwner.TryGetValue(module, out var context)
+                || context.IsCollectible;
+    }
 
     /// <summary>Configured runtime package roots.</summary>
     public IReadOnlyList<string> DiscoveryRoots => _discoverySource.Roots;
@@ -136,6 +145,7 @@ internal sealed partial class ModuleHost : IDisposable
         }
 
         var owner = match.ModuleName;
+        var retired = true;
 
         // 先撤前端再拆实例：拆到一半的界面不能再接到确认或生命周期中继。
         ReleaseModuleHooks(owner);
@@ -177,7 +187,7 @@ internal sealed partial class ModuleHost : IDisposable
                 // 本路径（按模块卸载）是 vulcan.module.install / remove 的必经之路，
                 // 漏掉这一步的后果与整快照重载漏掉时完全一样——每装一次包，
                 // 就多一个仍在监听、仍持有活总线引用的旧网关。
-                DisposeInstances(snap.InstancesFrom(alc));
+                retired = DisposeInstances(snap.InstancesFrom(alc));
                 snap.DropInstancesFrom(alc);
                 snap.Contexts.Remove(alc);
                 alc.Unload();
@@ -188,6 +198,7 @@ internal sealed partial class ModuleHost : IDisposable
             module.ModuleName.Equals(owner, StringComparison.OrdinalIgnoreCase));
         PublishXamlContexts();
         _log.Info("module", $"已卸载模块: {owner}");
+        if (!retired) return CommandResult.Fail($"{owner} 已撤销指令，但实例资源释放失败；不能证明迁移前已停止。");
         return CommandResult.Ok($"已卸载模块: {owner}");
     }
 

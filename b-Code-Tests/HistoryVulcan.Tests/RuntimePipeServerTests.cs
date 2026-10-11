@@ -112,7 +112,9 @@ public sealed class RuntimePipeServerTests
             Log = log,
         };
         Assert.Equal(
-            new[] { "vulcan.module.install", "vulcan.module.list", "vulcan.module.ready", "vulcan.module.reload" },
+            new[] { "vulcan.module.install", "vulcan.module.list", "vulcan.module.ready", "vulcan.module.reload",
+                "vulcan.node.configure", "vulcan.node.deliver", "vulcan.node.finalize", "vulcan.node.frontend",
+                "vulcan.node.identity", "vulcan.node.invoke", "vulcan.node.own", "vulcan.node.receipt", "vulcan.node.status", "vulcan.node.verify" },
             RuntimePipeServer.AllowedCommands.OrderBy(value => value, StringComparer.Ordinal));
         var identity = "RuntimePipeTests-" + Guid.NewGuid().ToString("N");
         using var server = RuntimePipeServer.Start(composition, identity, "test");

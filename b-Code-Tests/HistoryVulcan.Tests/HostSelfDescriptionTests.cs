@@ -34,6 +34,11 @@ public sealed class HostSelfDescriptionTests
         var development = new DevelopmentContext(bus, settings, Path.GetTempPath());
         WorktreeCommands.Register(registry, development);
         DevPipelineCommands.Register(registry, development);
+        using var temp = new TemporaryDirectory();
+        using var modules = new HistoryVulcan.Services.Modules.ModuleHost(
+            new HistoryVulcan.Services.Modules.RuntimeModuleDiscoverySource(Path.Combine(temp.Path, "Modules")), log);
+        var nodes = new HistoryVulcan.Services.Nodes.NodeService(temp.Path, bus, modules);
+        HistoryVulcan.Services.Nodes.NodeCommands.Register(registry, bus, modules, nodes, temp.Path);
 
         // 共享内置定义（vulcan.app.* 等）由前端与服务端各自 Bind，这里直接逐条 Bind 一份核对元数据。
         var descriptors = registry.All()

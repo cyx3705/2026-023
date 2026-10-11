@@ -91,7 +91,7 @@ internal static class ModulePackageHotReload
         CancellationToken cancellation)
     {
         if (!TryReadIdentity(packagePath, out var name, out var version))
-            return CommandResult.Ok("附着状态未核对：读不出候选包 module.manifest.json 的 name/version。");
+            return CommandResult.Fail("附着状态未核对：读不出候选包 module.manifest.json 的 name/version。");
 
         ModuleAttachState? state = null;
         string? queryError = null;
@@ -120,9 +120,9 @@ internal static class ModulePackageHotReload
         }
 
         if (queryError is not null)
-            return CommandResult.Ok($"附着状态未核对：vulcan.module.list 失败（{queryError}）。");
+            return CommandResult.Fail($"附着状态未核对：vulcan.module.list 失败（{queryError}）。");
         if (!recognized)
-            return CommandResult.Ok("附着状态未核对：vulcan.module.list 没有返回可识别的模块列表。");
+            return CommandResult.Fail("附着状态未核对：vulcan.module.list 没有返回可识别的模块列表。");
         if (state is null)
         {
             return CommandResult.Fail(
@@ -254,7 +254,7 @@ internal sealed record ModuleAttachState(
                 : [];
             var attached = Property(item, "attached") is { } flag && flag.ValueKind is JsonValueKind.True or JsonValueKind.False
                 ? flag.GetBoolean()
-                : failures.Count == 0;
+                : false;
             var count = Property(item, "commandCount") is { ValueKind: JsonValueKind.Number } number
                         && number.TryGetInt32(out var parsed)
                 ? parsed

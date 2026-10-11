@@ -61,6 +61,7 @@ internal sealed partial class ModuleHost
     /// </summary>
     private void LoadOne(string packagePath)
     {
+        _discoveryDiagnostics = [];
         if (!RuntimeModuleDiscoverySource.TryReadPackage(
                 packagePath, out var entry, out _, out var error))
         {
@@ -82,7 +83,9 @@ internal sealed partial class ModuleHost
             if (!snap.Metas.Any(meta =>
                     meta.Name.Equals(entry.Name, StringComparison.OrdinalIgnoreCase)))
             {
-                throw new InvalidOperationException($"模块 {entry.Name} 未形成可用加载快照。");
+                throw new InvalidOperationException(
+                    $"模块 {entry.Name} 未形成可用加载快照。"
+                    + string.Join("", _discoveryDiagnostics.Select(item => $" {item.Code}: {item.Message}")));
             }
 
             // 5.1.3：装载不再顺带接入，单包热装也走同一条接入阶段——它已经包含
@@ -207,8 +210,9 @@ internal sealed partial class ModuleHost
     /// 任何一个实例抛出都只记警告：一个模块拆不干净，不能连累整轮重载——
     /// 那会让宿主停在一个既没有旧快照也没有新快照的状态上。
     /// </summary>
-    internal void DisposeInstances(IReadOnlyList<object> instances)
+    internal bool DisposeInstances(IReadOnlyList<object> instances)
     {
+        var success = true;
         foreach (var instance in instances)
         {
             if (instance is not IDisposable disposable)
@@ -220,9 +224,11 @@ internal sealed partial class ModuleHost
             }
             catch (Exception ex)
             {
+                success = false;
                 _log.Warn("module", $"回收模块实例 {instance.GetType().FullName} 失败: {ex.Message}");
             }
         }
+        return success;
     }
 
     /// <summary>

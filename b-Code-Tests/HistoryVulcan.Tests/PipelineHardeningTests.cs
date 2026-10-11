@@ -416,8 +416,8 @@ public sealed class PipelineHardeningTests
             var result = await ModulePackageHotReload.InstallAsync(
                 context, package, "host:vulcan.release.cycle", CancellationToken.None);
 
-            Assert.True(result.Success, result.Message);
-            Assert.Contains("已热重载到活宿主", result.Message, StringComparison.Ordinal);
+            Assert.False(result.Success);
+            Assert.Contains("附着状态未核对", result.Message, StringComparison.Ordinal);
             Assert.True(liveFired);
             Assert.False(busFired);
         }

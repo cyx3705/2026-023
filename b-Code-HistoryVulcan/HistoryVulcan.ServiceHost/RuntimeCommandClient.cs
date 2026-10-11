@@ -59,9 +59,7 @@ internal static class RuntimeCommandClient
         {
             var result = await ExecuteAsync(commandText, identityAssembly, approve: true, cancellation)
                 .ConfigureAwait(false);
-            return result.Success
-                ? CommandResult.Ok(result.Message, result.Data)
-                : CommandResult.Fail(result.Message);
+            return new CommandResult { Success = result.Success, Message = result.Message, Data = result.Data };
         }
         catch (OperationCanceledException)
         {
@@ -159,7 +157,11 @@ internal static class RuntimePipeProtocol
 {
     public const string RequestType = "request";
     public static string PipeName(string appName)
-        => $"HistoryVulcan.{Sanitize(appName)}.runtime";
+        => $"HistoryVulcan.{Sanitize(appName)}.{IsolationKey}.runtime";
+
+    internal static string IsolationKey => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+        System.Text.Encoding.UTF8.GetBytes(System.Security.Principal.WindowsIdentity.GetCurrent().User!.Value + "|"
+            + (Environment.GetEnvironmentVariable("HISTORYVULCAN_LAB_ROOT") is { } root ? Path.GetFullPath(root).TrimEnd('\\').ToUpperInvariant() : ""))))[..16];
 
     private static string Sanitize(string value)
         => string.Concat(value.Select(character => char.IsLetterOrDigit(character) ? character : '_'));

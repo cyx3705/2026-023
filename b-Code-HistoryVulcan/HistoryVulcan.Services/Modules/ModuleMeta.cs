@@ -7,6 +7,7 @@ internal sealed record ModuleMeta(
 {
     /// <summary>当前加载快照中的唯一模块实例标识；重载后变化。</summary>
     public string InstanceId { get; init; } = "";
+    public string PackageHash { get; init; } = "";
     /// <summary>Absolute runtime package path.</summary>
     public string? SourcePath { get; init; }
 

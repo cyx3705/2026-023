@@ -40,6 +40,16 @@ internal static class CliExposurePolicy
 
         // 宿主自报版本、运行方式与各个根目录（5.9.0，DEC-070）：脚本与模块测试不再按固定路径猜
         "vulcan.host.info",
+        "vulcan.node.identity",
+        "vulcan.node.status",
+        "vulcan.node.configure",
+        "vulcan.node.own",
+        "vulcan.node.frontend",
+        "vulcan.node.invoke",
+        "vulcan.node.deliver",
+        "vulcan.node.receipt",
+        "vulcan.node.verify",
+        "vulcan.node.finalize",
 
         // 查目录：动手之前先看得见现状
         "vulcan.command.domains",

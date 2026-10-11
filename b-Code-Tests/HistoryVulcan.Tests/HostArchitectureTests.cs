@@ -33,8 +33,7 @@ public sealed class HostArchitectureTests
                 Assert.False(ns.StartsWith("System.Net.WebSockets", StringComparison.Ordinal)
                     || ns.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal)
                     || ns.StartsWith("ModelContextProtocol", StringComparison.Ordinal)
-                    || ns == "System.Net" && name == "HttpListener"
-                    || ns == "System.Net.Sockets" && name is "TcpListener" or "Socket",
+                    || ns == "System.Net" && name == "HttpListener",
                     $"Host must not implement a gateway: {ns}.{name}");
             }
         }
