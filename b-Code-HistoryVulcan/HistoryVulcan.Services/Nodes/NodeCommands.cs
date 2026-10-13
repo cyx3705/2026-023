@@ -41,10 +41,10 @@ internal static class NodeCommands
                         context.RequireString("host"), context.GetInt("port")), context.GetString("preload")));
                 return Task.FromResult(CommandResult.Ok("配对配置已保存；活宿主立即连接，离线 CLI 在下次服务启动时连接。"));
             });
-        Add("own", "明确分配、迁移、离线接管或解决归属冲突；数据留在原地", [
+        Add("own", "明确分配、迁移或解决归属；对端不在线也可执行，重连再同步。模块数据跟着走，项目库不动", [
             Text("module", "模块身份", true), Text("target", "节点 GUID、local 或 preload", true),
             Text("heads", "status 中该模块的当前头修订，以逗号分隔；初次用 none", true),
-            Text("mode", "assign/migrate/takeover/resolve", true), Text("data", "必须为 keep-local", true)], false,
+            Text("mode", "assign/migrate/takeover/resolve", true), Text("data", "必须为 follow-load", true)], false,
             async context => CommandResult.Ok("归属已记录；按明确制品执行 deliver 才会装载。",
                 await RequireRuntime().ChangeOwnershipAsync(context.RequireString("module"), context.RequireString("target"),
                     context.RequireString("heads") == "none" ? [] : context.RequireString("heads").Split(','),
@@ -125,14 +125,14 @@ internal static class NodeCommands
             context => Task.FromResult(CommandResult.Ok("交付记录", Read(context.RequireString("id")))));
         Add("verify", "核对已审核的制品、目标、归属及运行实例，变化时要求重新 submit", [Text("id", "交付回执 GUID", true)], true,
             context => Verify(Read(context.RequireString("id")), context.Cancellation));
-        Add("devices", "列出本机和对端，以及每个模块当前装在哪一台", [], true,
+        Add("devices", "列出本机和对端、每个模块装在哪一台，以及已装载模块的场景", [], true,
             _ => Task.FromResult(CommandResult.Ok("设备", DeviceCatalog())));
         Add("refresh", "按本机最新的宿主版本和模块包对齐已连接设备；命令在执行它的那台机器上生效", [], false,
             async context => CommandResult.Ok(service.Runtime == null
                 ? RefreshLocalPackages()
                 : await service.Runtime.RefreshDevicesAsync(context.Cancellation).ConfigureAwait(false)),
             confirm: false);
-        Add("place", "把模块装到选定设备，或改为不装载", [
+        Add("place", "把模块装到选定设备，或改为不装载；对端关闭或连不上也可以，起来后再同步", [
             Text("module", "模块名", true),
             Text("target", "local、对端节点 GUID，或 none 表示不装载", true)], false,
             async context =>
@@ -174,7 +174,8 @@ internal static class NodeCommands
                         return new ModulePlacementView(state.Module, state.OwnerNodeId, state.Conflict);
                     })
                     .ToArray();
-            return BusJson.ToElement(new { devices, placements });
+            var scenes = runtime?.Scenes() ?? [];
+            return BusJson.ToElement(new { devices, placements, scenes });
         }
         string RefreshLocalPackages()
         {
@@ -285,7 +286,7 @@ internal static class NodeCommands
     {
         "heads" => "none",
         "mode" => "assign",
-        "data" => "keep-local",
+        "data" => "follow-load",
         "port" => "47880",
         "host" => "192.0.2.1",
         "path" => "Example.nupkg",

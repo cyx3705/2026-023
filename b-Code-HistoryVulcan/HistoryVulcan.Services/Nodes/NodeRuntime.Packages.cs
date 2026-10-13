@@ -115,6 +115,8 @@ internal sealed partial class NodeRuntime
         if (!entry.FrontendRole && (state.Conflict || state.OwnerNodeId != _identity.NodeId || !state.Heads.Contains(ownershipHead)))
             return new NodeInstallation(artifact.Module, artifact.Version, artifact.Hash, _identity.NodeId,
                 "", false, false, 0, "目标归属已改变，拒绝安装。");
+        // 迁入前对端会先撤下实例，撤下期间禁止装载。归属已经核对为本节点后，这次安装就是落点。
+        _suspended.TryRemove(artifact.Module, out _);
         var current = _modules.Modules.FirstOrDefault(item => item.ModuleName == artifact.Module);
         if (current is { Attached: true } && current.PackageHash == artifact.Hash)
             return new NodeInstallation(artifact.Module, artifact.Version, artifact.Hash, _identity.NodeId,
@@ -342,12 +344,14 @@ internal sealed partial class NodeRuntime
         if (state.Conflict || state.OwnerNodeId != desired)
         {
             var mode = state.Conflict ? "resolve" : state.Heads.Length == 0 ? "assign" : "migrate";
-            await ChangeOwnershipAsync(module, target, state.Heads, mode, "keep-local", _ => true, cancellation)
+            await ChangeOwnershipAsync(module, target, state.Heads, mode, "follow-load", _ => true, cancellation)
                 .ConfigureAwait(false);
         }
 
         if (target == "preload")
             return module + " 已改为不装载。包还在，运行实例已撤下。";
+        if (target == _peerId && !Connected)
+            return module + " 的装载已由本次执行改到对端。对端起来后同步；若对端还装着，会卸下。";
         var file = Path.Combine(_modules.ModulesDirectory, module + ModuleNupkg.Extension);
         if (!File.Exists(file))
             return module + " 的归属已改到该设备，本机没有可交付的包。";

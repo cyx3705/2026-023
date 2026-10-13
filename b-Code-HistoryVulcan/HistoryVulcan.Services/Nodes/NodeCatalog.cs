@@ -21,6 +21,9 @@ internal sealed record NodeDevice(string Id, string Label, string HostVersion, b
 /// <summary>模块当前装在哪一台。OwnerNodeId 为空表示不装载。</summary>
 internal sealed record ModulePlacementView(string Module, string? OwnerNodeId, bool Conflict);
 
+/// <summary>已装载模块的场景。每台前端都列出同一份；工具仍在 ExecutionNodeId 执行。</summary>
+internal sealed record ModuleSceneView(string Module, string ExecutionNodeId);
+
 internal sealed record NodeCommandCall(
     string CallId, string Text, string Module, string InstanceId, string PackageHash,
     string? OwnershipHead, bool Quiet, bool Frontend = false);

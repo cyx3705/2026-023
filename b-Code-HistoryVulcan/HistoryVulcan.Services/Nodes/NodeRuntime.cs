@@ -21,6 +21,7 @@ internal sealed partial class NodeRuntime : IAsyncDisposable
     private readonly object _catalogGate = new();
     private readonly string _stateRoot;
     private volatile bool _ready;
+    private bool _catchingUp;
     private NodeCommandInfo[] _frontends = [];
     private PackageArtifact[] _peerArtifacts = [];
     private Dictionary<string, string> _peerRunning = new(StringComparer.OrdinalIgnoreCase);
@@ -97,10 +98,37 @@ internal sealed partial class NodeRuntime : IAsyncDisposable
 
     internal async Task SynchronizeAsync(CancellationToken cancellation = default)
     {
+        await ExchangeSnapshotAsync(cancellation).ConfigureAwait(false);
+        if (_catchingUp)
+            return;
+        _catchingUp = true;
+        try
+        {
+            await CatchUpPlacementAsync(cancellation).ConfigureAwait(false);
+            await ExchangeSnapshotAsync(cancellation).ConfigureAwait(false);
+        }
+        finally
+        {
+            _catchingUp = false;
+        }
+    }
+
+    private async Task ExchangeSnapshotAsync(CancellationToken cancellation)
+    {
         var snapshot = Decode<NodeSnapshot>(await RequestAsync("snapshot", Snapshot(), cancellation).ConfigureAwait(false));
         ApplySnapshot(snapshot);
         _ready = true;
     }
+
+    internal IReadOnlyList<ModuleSceneView> Scenes()
+        => _ownership.Read()
+            .Select(item => item.Module)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(module => _ownership.State(module))
+            .Where(state => !state.Conflict && state.OwnerNodeId != null)
+            .Select(state => new ModuleSceneView(state.Module, state.OwnerNodeId!))
+            .OrderBy(item => item.Module, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
     private bool CanLoad(ModuleDiscoveryEntry entry)
     {
@@ -152,6 +180,14 @@ internal sealed partial class NodeRuntime : IAsyncDisposable
             || (item.OwnerNodeId != null && item.OwnerNodeId != _peerId && item.OwnerNodeId != _identity.NodeId)))
             throw new InvalidDataException("归属记录包含未登记的节点。");
         _ownership.Merge(snapshot.Ownership);
+        foreach (var module in _ownership.Read().Select(item => item.Module).Distinct(StringComparer.OrdinalIgnoreCase))
+            _ownership.TryReconcileExecution(module);
+        foreach (var name in _suspended.Keys.ToArray())
+        {
+            var owned = _ownership.State(name);
+            if (!owned.Conflict && owned.OwnerNodeId == _identity.NodeId)
+                _suspended.TryRemove(name, out _);
+        }
         _frontends = snapshot.Commands.Where(item => item.Frontend).ToArray();
         _peerArtifacts = snapshot.Artifacts;
         _peerHostVersion = snapshot.HostVersion ?? "";
@@ -269,6 +305,8 @@ internal sealed partial class NodeRuntime : IAsyncDisposable
                     _bus.Log.Info("cmd:progress:node", progress.Message);
                 return Encode(new { });
             default:
+                if (operation.StartsWith("module.data.", StringComparison.Ordinal))
+                    return await HandleModuleDataAsync(operation, payload, cancellation).ConfigureAwait(false);
                 if (operation.StartsWith("ownership.", StringComparison.Ordinal))
                     return await HandleOwnershipAsync(operation, payload, cancellation).ConfigureAwait(false);
                 return await HandlePackageAsync(operation, payload, cancellation).ConfigureAwait(false);

@@ -19,8 +19,8 @@ internal sealed partial class NodeRuntime
         if (target == "preload") target = null;
         if (target != null && target != _identity.NodeId && target != _peerId)
             throw new InvalidOperationException("目标节点未登记。");
-        if (mode is not ("assign" or "migrate" or "takeover" or "resolve") || dataPolicy != "keep-local")
-            throw new InvalidOperationException("必须指定有效模式及 data=keep-local，表示保留两边数据并自行完成模块数据迁移。");
+        if (mode is not ("assign" or "migrate" or "takeover" or "resolve") || dataPolicy != "follow-load")
+            throw new InvalidOperationException("必须指定有效模式及 data=follow-load。模块数据随装载转到执行节点，项目库不动。");
         if (Connected) await SynchronizeAsync(cancellation).ConfigureAwait(false);
         var before = _ownership.State(module);
         if (!before.Heads.SequenceEqual(heads.Order(StringComparer.Ordinal)))
@@ -29,10 +29,8 @@ internal sealed partial class NodeRuntime
         if (mode == "assign" && before.Heads.Length > 0) throw new InvalidOperationException("已有归属，不能首次分配。");
         if (mode == "takeover" && (Connected || target != _identity.NodeId))
             throw new InvalidOperationException("takeover 只用于对端离线时显式接管到本机。");
-        if (mode is "migrate" or "resolve" && HasPeer && !Connected)
-            throw new IOException("正常迁移与冲突收口要求对端在线。");
-        var warning = mode == "takeover" ? "失联旧节点可能仍在运行，暂时可能双实例。" : "";
-        if (!approve($"{warning}确认 {module} 归属改为 {target ?? "preload"}；ModuleData 留在原地，不自动搬迁？"))
+        var warning = HasPeer && !Connected ? "对端当前不在线，这次执行在对端起来后同步。" : "";
+        if (!approve($"{warning}确认 {module} 改由 {target ?? "不装载"} 执行？模块数据跟着走，项目库不动。"))
             throw new InvalidOperationException("归属变更未获批准。");
         var change = new OwnershipChange(Guid.NewGuid().ToString("N"), module, target, before.Heads, mode, dataPolicy);
         _ownershipApprovals[change.Id] = change;

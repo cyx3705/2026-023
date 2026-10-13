@@ -140,6 +140,134 @@ public sealed class NodeRuntimeTests
     }
 
     [Fact]
+    public async Task PlaceOnThePeerInstallsAfterThePeerStopsThePreviousInstance()
+    {
+        using var temp = new TemporaryDirectory();
+        await using var pair = await Pair.Create(temp.Path);
+        await using var a = new TestNode(Path.Combine(temp.Path, "a"), pair.A, pair.B);
+        await using var b = new TestNode(Path.Combine(temp.Path, "b"), pair.B, pair.A);
+        a.Runtime.Attach(pair.LeftStream);
+        b.Runtime.Attach(pair.RightStream);
+        await a.Runtime.SynchronizeAsync();
+        var package = RuntimeModulePackageTests.CreatePackage(temp.Path, "candidate", "contextfixture", "v1.0.0");
+        var installed = await a.Runtime.DeliverAsync(package, pair.A.NodeId, _ => true);
+        Assert.True(installed.Success, installed.Error);
+        Assert.True(Assert.Single(a.Modules.Modules).Attached);
+
+        var moved = await a.Runtime.PlaceAsync("contextfixture", pair.B.NodeId, CancellationToken.None);
+
+        Assert.Contains("已装到所选设备", moved, StringComparison.Ordinal);
+        Assert.Empty(a.Modules.Modules);
+        Assert.True(Assert.Single(b.Modules.Modules).Attached);
+        Assert.Equal(pair.B.NodeId, a.Runtime.Ownership.State("contextfixture").OwnerNodeId);
+    }
+
+    [Fact]
+    public void ExecutionReconcileFollowsTheExecutingPartyAndDoesNotPreferAComputer()
+    {
+        using var temp = new TemporaryDirectory();
+        var left = Guid.NewGuid().ToString("N");
+        var right = Guid.NewGuid().ToString("N");
+        var parked = new ModuleOwnershipLedger(Path.Combine(temp.Path, "parked"));
+        var loaded = new ModuleOwnershipLedger(Path.Combine(temp.Path, "loaded"));
+        parked.Decide("sample", left, left, [], "initial");
+        loaded.Merge(parked.Read());
+        parked.Decide("sample", null, left, parked.State("sample").Heads, "park");
+        loaded.Decide("sample", right, right, loaded.State("sample").Heads, "takeover");
+        parked.Merge(loaded.Read());
+        Assert.True(parked.TryReconcileExecution("sample"));
+        Assert.Equal(right, parked.State("sample").OwnerNodeId);
+        loaded.Merge(parked.Read());
+        Assert.False(loaded.State("sample").Conflict);
+        Assert.Equal(right, loaded.State("sample").OwnerNodeId);
+
+        var again = new ModuleOwnershipLedger(Path.Combine(temp.Path, "again"));
+        var other = new ModuleOwnershipLedger(Path.Combine(temp.Path, "other"));
+        again.Decide("sample", left, left, [], "initial");
+        other.Merge(again.Read());
+        again.Decide("sample", left, left, again.State("sample").Heads, "stay");
+        other.Decide("sample", right, right, other.State("sample").Heads, "take");
+        again.Merge(other.Read());
+        Assert.False(again.TryReconcileExecution("sample"));
+        Assert.True(again.State("sample").Conflict);
+        Assert.Null(again.State("sample").OwnerNodeId);
+    }
+
+    [Fact]
+    public async Task OfflinePlaceFollowsTheExecutorAndMovesModuleDataWithoutTouchingTheProjectLibrary()
+    {
+        using var temp = new TemporaryDirectory();
+        await using var pair = await Pair.Create(temp.Path);
+        await using var a = new TestNode(Path.Combine(temp.Path, "a"), pair.A, pair.B);
+        await using var b = new TestNode(Path.Combine(temp.Path, "b"), pair.B, pair.A);
+        var package = RuntimeModulePackageTests.CreatePackage(temp.Path, "candidate", "contextfixture", "v1.0.0");
+        var installed = await a.Runtime.DeliverAsync(package, "local", _ => true);
+        Assert.True(installed.Success, installed.Error);
+        var library = Path.Combine(temp.Path, "library", "sample", "keep.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(library)!);
+        File.WriteAllText(library, "project-library");
+        var data = Path.Combine(temp.Path, "a", "ModuleData", "contextfixture", "state.txt");
+        Directory.CreateDirectory(Path.GetDirectoryName(data)!);
+        File.WriteAllText(data, "module-state");
+
+        var moved = await a.Runtime.PlaceAsync("contextfixture", pair.B.NodeId, CancellationToken.None);
+
+        Assert.Contains("对端起来后同步", moved, StringComparison.Ordinal);
+        Assert.Empty(a.Modules.Modules);
+        Assert.Equal(pair.B.NodeId, a.Runtime.Ownership.State("contextfixture").OwnerNodeId);
+        Assert.Equal("module-state", File.ReadAllText(data));
+        Assert.Equal("project-library", File.ReadAllText(library));
+        Assert.Equal(pair.B.NodeId, Assert.Single(a.Runtime.Scenes()).ExecutionNodeId);
+
+        a.Runtime.Attach(pair.LeftStream);
+        b.Runtime.Attach(pair.RightStream);
+        await a.Runtime.SynchronizeAsync();
+
+        Assert.Empty(a.Modules.Modules);
+        Assert.True(Assert.Single(b.Modules.Modules).Attached);
+        Assert.Equal("module-state", File.ReadAllText(Path.Combine(temp.Path, "b", "ModuleData", "contextfixture", "state.txt")));
+        Assert.False(File.Exists(data));
+        Assert.Equal("project-library", File.ReadAllText(library));
+        Assert.False(File.Exists(Path.Combine(temp.Path, "b", "library", "sample", "keep.txt")));
+        Assert.Equal(pair.B.NodeId, Assert.Single(a.Runtime.Scenes()).ExecutionNodeId);
+        Assert.Equal(a.Runtime.Scenes(), b.Runtime.Scenes());
+        Assert.True((await a.Bus.InvokeAsync("contextfixture.context-probe", "test")).Success);
+    }
+
+    [Fact]
+    public async Task ContradictoryOfflineLoadsDoNotPreferAComputer()
+    {
+        using var temp = new TemporaryDirectory();
+        await using var pair = await Pair.Create(temp.Path);
+        await using var a = new TestNode(Path.Combine(temp.Path, "a"), pair.A, pair.B);
+        await using var b = new TestNode(Path.Combine(temp.Path, "b"), pair.B, pair.A);
+        var package = RuntimeModulePackageTests.CreatePackage(temp.Path, "candidate", "contextfixture", "v1.0.0");
+        var installed = await a.Runtime.DeliverAsync(package, "local", _ => true);
+        Assert.True(installed.Success, installed.Error);
+        b.Runtime.Ownership.Merge(a.Runtime.Ownership.Read());
+        var installedPackage = Assert.Single(Directory.GetFiles(a.Modules.ModulesDirectory, "*.nupkg"));
+        Directory.CreateDirectory(b.Modules.ModulesDirectory);
+        File.Copy(installedPackage, Path.Combine(b.Modules.ModulesDirectory, Path.GetFileName(installedPackage)));
+
+        Assert.Contains("不装载", await a.Runtime.PlaceAsync("contextfixture", "none", CancellationToken.None), StringComparison.Ordinal);
+        Assert.Contains("已装到所选设备", await a.Runtime.PlaceAsync("contextfixture", "local", CancellationToken.None), StringComparison.Ordinal);
+        Assert.Contains("已装到所选设备", await b.Runtime.PlaceAsync("contextfixture", "local", CancellationToken.None), StringComparison.Ordinal);
+        Assert.Single(a.Modules.Modules);
+        Assert.Single(b.Modules.Modules);
+
+        a.Runtime.Attach(pair.LeftStream);
+        b.Runtime.Attach(pair.RightStream);
+        await a.Runtime.SynchronizeAsync();
+
+        Assert.Empty(a.Modules.Modules);
+        Assert.Empty(b.Modules.Modules);
+        Assert.True(a.Runtime.Ownership.State("contextfixture").Conflict);
+        Assert.True(b.Runtime.Ownership.State("contextfixture").Conflict);
+        Assert.Empty(a.Runtime.Scenes());
+        Assert.Empty(b.Runtime.Scenes());
+    }
+
+    [Fact]
     public async Task PreloadSuccessCannotMaskFailedRuntimeDeliveryAndOfflineDoesNotMoveOwnership()
     {
         using var temp = new TemporaryDirectory();
@@ -172,7 +300,7 @@ public sealed class NodeRuntimeTests
         Assert.True(original.Success, original.Error);
         b.Runtime.Ownership.Merge(a.Runtime.Ownership.Read());
         await b.Runtime.ChangeOwnershipAsync("contextfixture", "local", b.Runtime.Ownership.State("contextfixture").Heads,
-            "takeover", "keep-local", _ => true, default);
+            "takeover", "follow-load", _ => true, default);
         var takeover = await b.Runtime.DeliverAsync(package, "local", _ => true);
         Assert.True(takeover.Success, takeover.Error);
         Assert.Single(a.Modules.Modules);

@@ -1160,10 +1160,16 @@
              </remarks>
         </member>
         <member name="T:HistoryVulcan.Services.Nodes.ModuleOwnershipLedger">
-            <summary>Causal ownership history. Concurrent decisions remain a visible conflict until explicitly resolved.</summary>
+            <summary>Causal ownership history. A single executing party wins on reconnect; two different loaders stay unresolved.</summary>
         </member>
         <member name="M:HistoryVulcan.Services.Nodes.ModuleOwnershipLedger.#ctor(System.String)">
-            <summary>Causal ownership history. Concurrent decisions remain a visible conflict until explicitly resolved.</summary>
+            <summary>Causal ownership history. A single executing party wins on reconnect; two different loaders stay unresolved.</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Nodes.ModuleOwnershipLedger.TryReconcileExecution(System.String)">
+            <summary>
+            Collapses a conflict when exactly one execution node was named.
+            Two different loaders are left untouched: neither computer is preferred.
+            </summary>
         </member>
         <member name="T:HistoryVulcan.Services.Nodes.NodeDevice">
             <summary>模块页上的一台设备。Id 是节点 GUID；未配对时本机用 local。不装载不是设备。</summary>
@@ -1176,6 +1182,12 @@
         </member>
         <member name="M:HistoryVulcan.Services.Nodes.ModulePlacementView.#ctor(System.String,System.String,System.Boolean)">
             <summary>模块当前装在哪一台。OwnerNodeId 为空表示不装载。</summary>
+        </member>
+        <member name="T:HistoryVulcan.Services.Nodes.ModuleSceneView">
+            <summary>已装载模块的场景。每台前端都列出同一份；工具仍在 ExecutionNodeId 执行。</summary>
+        </member>
+        <member name="M:HistoryVulcan.Services.Nodes.ModuleSceneView.#ctor(System.String,System.String)">
+            <summary>已装载模块的场景。每台前端都列出同一份；工具仍在 ExecutionNodeId 执行。</summary>
         </member>
         <member name="T:HistoryVulcan.Services.Nodes.NodeCertificateStore">
             <summary>Private material belongs to the node account, including background accounts without a loaded HKCU hive.</summary>

@@ -9,7 +9,7 @@ internal sealed record OwnershipDecision(
 
 internal sealed record OwnershipState(string Module, string? OwnerNodeId, string[] Heads, bool Conflict);
 
-/// <summary>Causal ownership history. Concurrent decisions remain a visible conflict until explicitly resolved.</summary>
+/// <summary>Causal ownership history. A single executing party wins on reconnect; two different loaders stay unresolved.</summary>
 internal sealed class ModuleOwnershipLedger(string stateRoot)
 {
     private string PathForState => Path.Combine(stateRoot, "ownership.json");
@@ -53,7 +53,41 @@ internal sealed class ModuleOwnershipLedger(string stateRoot)
         });
     }
 
-    internal static OwnershipState State(IEnumerable<OwnershipDecision> history, string module)
+    /// <summary>
+/// Collapses a conflict when exactly one execution node was named.
+/// Two different loaders are left untouched: neither computer is preferred.
+/// </summary>
+internal bool TryReconcileExecution(string module)
+{
+    var history = Read();
+    var state = State(history, module);
+    if (!state.Conflict || !TryChooseExecution(Heads(history, state), out var owner, out var actor))
+        return false;
+    Decide(module, owner, actor, state.Heads, "executed");
+    return true;
+}
+
+internal static bool TryChooseExecution(IReadOnlyList<OwnershipDecision> heads, out string? owner, out string actor)
+{
+    owner = null;
+    actor = "";
+    var executing = heads.Select(item => item.OwnerNodeId).Where(item => item != null)
+        .Distinct(StringComparer.Ordinal).ToArray();
+    if (executing.Length > 1)
+        return false;
+    owner = executing.Length == 1 ? executing[0] : null;
+    actor = owner ?? heads.Select(item => item.ActorNodeId).Order(StringComparer.Ordinal).First();
+    return heads.Count > 1;
+}
+
+private static OwnershipDecision[] Heads(IEnumerable<OwnershipDecision> history, OwnershipState state)
+{
+    var indexed = history.Where(item => item.Module.Equals(state.Module, StringComparison.OrdinalIgnoreCase))
+        .ToDictionary(item => item.Id, StringComparer.Ordinal);
+    return state.Heads.Select(id => indexed[id]).ToArray();
+}
+
+internal static OwnershipState State(IEnumerable<OwnershipDecision> history, string module)
     {
         var decisions = history.Where(item => item.Module.Equals(module, StringComparison.OrdinalIgnoreCase)).ToArray();
         var parents = decisions.SelectMany(item => item.Parents).ToHashSet(StringComparer.Ordinal);
