@@ -24,6 +24,23 @@ public sealed class PipelineHardeningTests
     }
 
     [Fact]
+    public void CandidateLookupAcceptsModuleNamesWithoutHistoryPrefix()
+    {
+        using var temp = new TemporaryDirectory();
+        var publish = Path.Combine(temp.Path, PublishPackages.PublishDirectoryName);
+        var candidate = Path.Combine(publish, PublishPackages.PackageDirectoryName("Norma", "0.2.0"));
+        Directory.CreateDirectory(candidate);
+        RuntimeModulePackageTests.CreatePackage(candidate, "Norma", "Norma", "0.2.0");
+        Directory.CreateDirectory(Path.Combine(publish, PublishPackages.HistoryDirectoryName));
+
+        Assert.Equal(Path.GetFullPath(candidate), PublishPackages.ResolveCurrent(temp.Path, "Norma"));
+        Assert.True(PublishPackages.IsPackageDirectoryName("HistoryFama-v1.6.0"));
+        Assert.True(PublishPackages.IsPackageDirectoryName("Norma-v0.2.0"));
+        Assert.False(PublishPackages.IsPackageDirectoryName("history"));
+        Assert.False(PublishPackages.IsPackageDirectoryName(".incoming-0123"));
+    }
+
+    [Fact]
     public void ToolOutputPreservesBothFinalUnterminatedLinesAndExitCode()
     {
         var result = ToolProcess.Execute("cmd.exe",

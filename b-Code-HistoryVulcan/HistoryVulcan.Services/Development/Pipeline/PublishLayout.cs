@@ -47,7 +47,8 @@ internal static class PublishLayout
         if (!replaceCurrent)
             AssertImmutable(stagingRoot, destination);
 
-        foreach (var current in Directory.GetDirectories(publishRoot, "History*-v*"))
+        foreach (var current in Directory.GetDirectories(publishRoot)
+                     .Where(path => PublishPackages.IsPackageDirectoryName(Path.GetFileName(path))))
             Archive(current, historyRoot);
 
         var snapshotManifest = Path.Combine(publishRoot, target.SnapshotManifest);
@@ -59,7 +60,7 @@ internal static class PublishLayout
             {
                 var name = Path.GetFileName(item);
                 if (name.Equals("history", StringComparison.OrdinalIgnoreCase)
-                    || name.StartsWith("History", StringComparison.OrdinalIgnoreCase) && name.Contains("-v")
+                    || PublishPackages.IsPackageDirectoryName(name)
                     || name.StartsWith(".incoming-"))
                 {
                     continue;

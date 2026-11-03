@@ -500,6 +500,12 @@
         <member name="M:HistoryVulcan.Services.Development.PublishPackages.PackageDirectoryName(System.String,System.String)">
             <summary>按模块名与版本拼出候选包目录名。</summary>
         </member>
+        <member name="M:HistoryVulcan.Services.Development.PublishPackages.IsPackageDirectoryName(System.String)">
+            <summary>
+            是否形如 <c>{模块名}-v{版本}</c> 的候选包目录名。模块名不限 History 前缀（8.0.1 起，DEC-078）；
+            <c>history</c> 归档与 <c>.incoming-*</c> 暂存目录都不匹配。
+            </summary>
+        </member>
         <member name="M:HistoryVulcan.Services.Development.PublishPackages.ResolveCurrent(System.String,System.String)">
             <summary>解析项目当前的候选包目录；找不到或有歧义时抛出。</summary>
         </member>

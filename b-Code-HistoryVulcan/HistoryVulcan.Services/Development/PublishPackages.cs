@@ -23,6 +23,13 @@ internal static class PublishPackages
     public static string PackageDirectoryName(string name, string version)
         => $"{name}-v{version}";
 
+    /// <summary>
+    /// 是否形如 <c>{模块名}-v{版本}</c> 的候选包目录名。模块名不限 History 前缀（8.0.1 起，DEC-078）；
+    /// <c>history</c> 归档与 <c>.incoming-*</c> 暂存目录都不匹配。
+    /// </summary>
+    public static bool IsPackageDirectoryName(string directoryName)
+        => System.Text.RegularExpressions.Regex.IsMatch(directoryName, "^[A-Za-z][A-Za-z0-9._]*-v.+$");
+
     /// <summary>解析项目当前的候选包目录；找不到或有歧义时抛出。</summary>
     public static string ResolveCurrent(string projectRoot, string expectedName)
     {
@@ -103,7 +110,8 @@ internal static class PublishPackages
             return [];
 
         var result = new List<PublishedPackage>();
-        foreach (var directory in Directory.GetDirectories(publishRoot, "History*-v*", SearchOption.TopDirectoryOnly))
+        foreach (var directory in Directory.GetDirectories(publishRoot, "*-v*", SearchOption.TopDirectoryOnly)
+                     .Where(path => IsPackageDirectoryName(Path.GetFileName(path))))
         {
             if (TryRead(directory, out var package))
                 result.Add(package);
