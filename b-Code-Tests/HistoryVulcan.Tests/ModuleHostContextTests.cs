@@ -69,6 +69,28 @@ namespace HistoryVulcan.Tests
         }
 
         [Fact]
+        public void InstalledModuleNamesFollowPackagesNotLoadingOrOwnership()
+        {
+            using var temp = new TemporaryDirectory();
+            RuntimeModulePackageTests.CreatePackage(temp.Path, "contextfixture", "contextfixture", "v1.0.0");
+            using var host = new ModuleHost(new RuntimeModuleDiscoverySource(temp.Path), new NullLog())
+            {
+                EnableFileWatching = false,
+                // 归属不在本机：包在、但不装载。模块页仍要列出它，才能改回本机。
+                CanLoad = _ => false,
+            };
+            var registry = new CommandRegistry();
+            host.Attach(registry, new CommandBus(registry, new NullLog()));
+            host.Start();
+            Assert.Empty(host.Modules);
+            Assert.Equal(["contextfixture"], host.InstalledModuleNames());
+
+            // 包卸掉以后，哪怕归属账本还有它的记录，也不再算已安装。
+            File.Delete(Path.Combine(temp.Path, "contextfixture.nupkg"));
+            Assert.Empty(host.InstalledModuleNames());
+        }
+
+        [Fact]
         public void EmptyRuntimeDirectoryStartsWithoutModules()
         {
             var root = Path.Combine(Path.GetTempPath(), "HistoryVulcan.Tests", Guid.NewGuid().ToString("N"));

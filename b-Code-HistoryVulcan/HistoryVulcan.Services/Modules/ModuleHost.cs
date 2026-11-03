@@ -83,6 +83,17 @@ internal sealed partial class ModuleHost : IDisposable
     /// <summary>Diagnostics from the most recent discovery scan.</summary>
     public IReadOnlyList<ModuleDiscoveryDiagnostic> DiscoveryDiagnostics => _discoveryDiagnostics;
 
+    /// <summary>
+    /// 模块区里现在有包的模块名（8.0.2）：每次重新扫描，包括因归属未装载的。
+    /// 模块管理页按它出行；归属账本只回答「装在哪台」，账本里有、包已卸掉的模块不再出现。
+    /// </summary>
+    public IReadOnlyList<string> InstalledModuleNames()
+        => _discoverySource.Discover().Modules
+            .Select(module => module.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
     /// <summary>当前快照里的模块元信息；未接上宿主的模块也在其中，并带失败原因。</summary>
     public IReadOnlyList<ModuleMeta> Modules => _current.Modules
         .Select(module => module with { DataDirectory = ModuleDataDirectory(module.ModuleName) })

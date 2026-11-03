@@ -125,7 +125,7 @@ internal static class NodeCommands
             context => Task.FromResult(CommandResult.Ok("交付记录", Read(context.RequireString("id")))));
         Add("verify", "核对已审核的制品、目标、归属及运行实例，变化时要求重新 submit", [Text("id", "交付回执 GUID", true)], true,
             context => Verify(Read(context.RequireString("id")), context.Cancellation));
-        Add("devices", "列出本机和对端、每个模块装在哪一台，以及已装载模块的场景", [], true,
+        Add("devices", "列出本机和对端、模块区现有的模块包（installed）、每个模块装在哪一台，以及已装载模块的场景", [], true,
             _ => Task.FromResult(CommandResult.Ok("设备", DeviceCatalog())));
         Add("refresh", "按本机最新的宿主版本和模块包对齐已连接设备；命令在执行它的那台机器上生效", [], false,
             async context => CommandResult.Ok(service.Runtime == null
@@ -175,7 +175,10 @@ internal static class NodeCommands
                     })
                     .ToArray();
             var scenes = runtime?.Scenes() ?? [];
-            return BusJson.ToElement(new { devices, placements, scenes });
+            // 8.0.2：模块区实际有包的模块。归属账本是只增不减的因果历史，卸载后仍留着记录；
+            // 列模块要以它为准，账本只给装载列。包会在两台设备间同步，本机模块区即全集。
+            var installed = modules.InstalledModuleNames();
+            return BusJson.ToElement(new { devices, placements, scenes, installed });
         }
         string RefreshLocalPackages()
         {
