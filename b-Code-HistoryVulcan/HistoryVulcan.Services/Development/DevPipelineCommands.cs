@@ -109,7 +109,7 @@ internal static class DevPipelineCommands
             [
                 Text("name", "模块名（即模块仓 project.name）；省略时由工作区所在项目反查，写了就必须与之一致", position: 0),
                 Text("msg", "（5.7.0 起忽略）finish 是快进合并，不产生提交", position: 1),
-                Text("worktree", "工作区目录名或绝对路径", required: true, position: 2),
+                Text("worktree", "已在目标项目登记的附加工作区目录名或绝对路径；拒绝主树，回收失败即停止", required: true, position: 2),
             ],
             Handler = async context => await FinishAsync(
                 host,
@@ -428,6 +428,10 @@ internal static class DevPipelineCommands
         if (!TryResolveTarget(host.Settings, name, worktree, out var module, out var worktreePath, out var error))
             return CommandResult.Fail(error);
 
+        var projectPath = Path.Combine(ProjectLibraryRoot.Resolve(host.Settings), module.ProjectDirectory);
+        if (!WorktreeCommands.TryResolveLinkedWorktree(projectPath, worktree, out worktreePath, out error))
+            return CommandResult.Fail(error);
+
         var worktreeName = Path.GetFileName(worktreePath.TrimEnd('/', '\\'));
         TryParseWorktreeName(worktreeName, out var agent, out _);
         if (MovesConversationRoot(agent))
@@ -452,7 +456,7 @@ internal static class DevPipelineCommands
         }
 
         var merged = await WorktreeCommands.MergeAsync(
-            host, module.ProjectDirectory, worktreeName, cancellation,
+            host, module.ProjectDirectory, worktreePath, cancellation,
             () => PipelineDelivery.ExecuteAsync(host, "vulcan.node.finalize id=" + reviewed.Delivery.Id, CancellationToken.None)).ConfigureAwait(false);
         var closed = reviewed with { Stage = merged.Success ? "finished" : "finish-incomplete", Merge = merged.Data };
         Nodes.NodeStateFile.Update(PipelineDelivery.RecordPath(host, worktreePath), () => closed, _ => closed);

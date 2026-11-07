@@ -92,7 +92,7 @@ internal static class WorktreeCommands
             HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。本条不对 MCP 暴露。",
             Domain = "vulcan",
             CommandClass = "worktree",
-            Summary = "把 AI 工作区分支并回 main；先卸试用（含前端残留）再回收工作区，分支保留",
+            Summary = "把已登记的附加工作区并回 main 并回收；拒绝主树，Git 拒绝回收时立即停止，分支保留",
             Example = "vulcan.worktree.merge project=2026-020-HistoryJanus name=71c79b7-1-codex-fix",
             Parameters =
             [
@@ -312,9 +312,8 @@ internal static class WorktreeCommands
         if (!Directory.Exists(projectPath))
             return CommandResult.Fail($"项目不存在：{projectPath}");
 
-        var worktreePath = ResolveWorktreePath(host.Settings, projectName, worktreeName);
-        if (!Directory.Exists(worktreePath))
-            return CommandResult.Fail($"工作区不存在：{worktreePath}");
+        if (!TryResolveLinkedWorktree(projectPath, worktreeName, out var worktreePath, out var validationError))
+            return CommandResult.Fail(validationError);
 
         var (status, statusError) = Git(worktreePath, "status", "--porcelain");
         if (statusError != null)
@@ -349,7 +348,14 @@ internal static class WorktreeCommands
             return CommandResult.Fail($"无法快进合并 {branch}，未尝试普通合并；请更新工作区并重新 submit 审核。\n{ffError}\n{ffOutput}");
         }
 
-        var removed = RemoveMergedWorktree(host.Settings, projectName, worktreeName);
+        var removed = RemoveMergedWorktree(projectPath, worktreePath);
+        if (!removed.Success)
+            return new CommandResult
+            {
+                Success = false,
+                Message = $"{mergeNote}。\n{removed.Message}\n回收失败，未执行交付完成或热装；请保留现场后重试。",
+                Data = new { Merged = true, WorktreeRemoved = false, DeliveryVerified = false },
+            };
 
         string reloadNote;
         var reloadFailed = false;
@@ -440,63 +446,123 @@ internal static class WorktreeCommands
             rows);
     }
 
-    // 仅在 MergeAsync 已确认干净并完成合并后调用；不提供独立的强制删除命令。
-    private static CommandResult RemoveMergedWorktree(ISettingsService settings, string project, string name)
+    // REQ-REL-003：只让 Git 回收精确登记的附加工作树；绝不自行递归删目录。
+    private static CommandResult RemoveMergedWorktree(string projectPath, string worktreePath)
     {
-        var projectName = project.Trim();
-        var worktreeName = name.Trim();
-        var projectPath = Path.Combine(ProjectLibraryRoot.Resolve(settings), projectName);
-        if (!Directory.Exists(projectPath))
-            return CommandResult.Fail($"项目不存在：{projectPath}");
+        if (!TryValidateLinkedWorktree(projectPath, worktreePath, out var error))
+            return CommandResult.Fail(error);
 
-        var worktreePath = ResolveWorktreePath(settings, projectName, worktreeName);
-        if (!Directory.Exists(worktreePath)
-            && FindListedWorktree(projectPath, worktreeName) is null)
+        var (_, removeError) = Git(projectPath, "worktree", "remove", "--", worktreePath);
+        if (removeError != null)
+            return CommandResult.Fail($"Git 拒绝回收工作区，已停止；不删除残留目录、不 prune：{removeError}");
+
+        var (listed, listError) = Git(projectPath, "worktree", "list", "--porcelain", "-z");
+        if (Directory.Exists(worktreePath) || listError != null
+            || ListedWorktreePaths(listed).Any(path => SamePath(path, worktreePath)))
+            return CommandResult.Fail($"Git 回收后仍有目录或登记残留，已保留现场：{worktreePath} {listError}");
+
+        return CommandResult.Ok($"已回收工作区 {Path.GetFileName(worktreePath)}，分支保留未删。", new { Path = worktreePath });
+    }
+
+    internal static bool TryResolveLinkedWorktree(string projectPath, string nameOrPath, out string path, out string error)
+    {
+        var value = nameOrPath.Trim();
+        path = Path.IsPathFullyQualified(value) ? value : FindListedWorktree(projectPath, value) ?? "";
+        if (path.Length == 0)
         {
-            return CommandResult.Fail($"工作区不存在：{Path.Combine(ResolveRoot(settings, null), projectName, worktreeName)}");
+            error = "工作区目录名未唯一匹配目标项目的 Git 登记，请传精确的绝对路径。";
+            return false;
         }
+        if (!TryValidateLinkedWorktree(projectPath, path, out error))
+            return false;
+        path = NormalizePath(path);
+        return true;
+    }
 
-        var listed = FindListedWorktree(projectPath, worktreeName) ?? worktreePath;
-        var gitPath = listed;
-        var arguments = new[] { "worktree", "remove", "--force", gitPath };
-        var (_, error) = Git(projectPath, arguments);
-        if (error != null
-            && !string.Equals(gitPath, worktreePath, StringComparison.OrdinalIgnoreCase)
-            && Directory.Exists(worktreePath))
+    internal static bool TryValidateLinkedWorktree(string projectPath, string worktreePath, out string error)
+    {
+        error = "";
+        try
         {
-            var retryArgs = new[] { "worktree", "remove", "--force", worktreePath };
-            var (_, retryError) = Git(projectPath, retryArgs);
-            if (retryError == null)
-                error = null;
-            else
-                error = $"{error}\n{retryError}";
-        }
+            var main = NormalizePath(projectPath);
+            var target = NormalizePath(worktreePath);
+            if (!Directory.Exists(main) || !Directory.Exists(target))
+                error = "项目或工作区目录不存在。";
+            else if (Overlaps(main, target))
+                error = "拒绝回收主工作树及其上级或内部目录；finish 只接受已登记的附加工作树。";
+            else if (HasReparsePoint(main) || HasReparsePoint(target))
+                error = "拒绝通过符号链接或目录联接回收工作树。";
+            if (error.Length > 0)
+                return false;
 
-        if (error != null)
-        {
-            Git(projectPath, "worktree", "prune");
-            var leftoverAfterFail = TryDeleteDirectory(worktreePath);
-            if (leftoverAfterFail == null && !IsGitWorktree(projectPath, worktreeName))
+            var (mainTop, mainError) = Git(main, "rev-parse", "--show-toplevel");
+            var (common, commonError) = Git(main, "rev-parse", "--path-format=absolute", "--git-common-dir");
+            if (mainError != null || commonError != null || !SamePath(mainTop, main)
+                || !SamePath(common, Path.Combine(main, ".git")))
             {
-                return CommandResult.Ok(
-                    $"git worktree remove 失败但目录已删除（{error}）。分支保留未删。",
-                    new { Path = worktreePath });
+                error = "项目目录不是主工作树，拒绝合并或回收。";
+                return false;
+            }
+            if (Overlaps(common, target) || !File.Exists(Path.Combine(target, ".git"))
+                || HasReparsePoint(Path.Combine(target, ".git")))
+            {
+                error = "工作区必须使用附加工作树的 .git 文件，不能是主仓、Git 管理目录或链接。";
+                return false;
             }
 
-            return CommandResult.Fail($"移除失败：{error}" + (leftoverAfterFail == null ? "" : "\n" + leftoverAfterFail));
-        }
+            var (listed, listError) = Git(main, "worktree", "list", "--porcelain", "-z");
+            var records = listed.Split("\0\0", StringSplitOptions.RemoveEmptyEntries);
+            var matches = records.Where(record => record.Split('\0').Any(field =>
+                field.StartsWith("worktree ", StringComparison.Ordinal) && SamePath(field[9..], target))).ToArray();
+            if (listError != null || matches.Length != 1)
+            {
+                error = "工作区未在目标项目中精确登记，拒绝合并或回收。";
+                return false;
+            }
+            if (matches[0].Split('\0').Any(field => field == "locked" || field.StartsWith("locked ", StringComparison.Ordinal)
+                || field == "prunable" || field.StartsWith("prunable ", StringComparison.Ordinal)))
+            {
+                error = "工作区已锁定或登记失效，拒绝合并或回收。";
+                return false;
+            }
 
-        Git(projectPath, "worktree", "prune");
-        var leftover = TryDeleteDirectory(worktreePath);
-        if (!string.Equals(listed, worktreePath, StringComparison.OrdinalIgnoreCase))
-        {
-            var extra = TryDeleteDirectory(listed);
-            leftover = leftover == null ? extra : extra == null ? leftover : leftover + "\n" + extra;
+            var (top, topError) = Git(target, "rev-parse", "--show-toplevel");
+            var (targetCommon, targetError) = Git(target, "rev-parse", "--path-format=absolute", "--git-common-dir");
+            var (gitDir, gitError) = Git(target, "rev-parse", "--absolute-git-dir");
+            var worktreeAdmin = Path.Combine(common, "worktrees");
+            if (topError != null || targetError != null || gitError != null || !SamePath(top, target)
+                || !SamePath(targetCommon, common) || !SamePath(Path.GetDirectoryName(NormalizePath(gitDir))!, worktreeAdmin)
+                || HasReparsePoint(gitDir))
+            {
+                error = "工作区根或 Git 归属不匹配，拒绝合并或回收。";
+                return false;
+            }
+            return true;
         }
-        var text = $"已回收工作区 {worktreeName}，分支保留未删。";
-        if (leftover != null)
-            return CommandResult.Fail($"已合并，工作区未完全回收：{worktreeName}\n{leftover}");
-        return CommandResult.Ok(text, new { Path = worktreePath });
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            error = "无法安全确认工作区身份，已停止：" + ex.Message;
+            return false;
+        }
+    }
+
+    private static IEnumerable<string> ListedWorktreePaths(string output)
+        => output.Split('\0').Where(field => field.StartsWith("worktree ", StringComparison.Ordinal)).Select(field => field[9..]);
+
+    private static string NormalizePath(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+    private static bool SamePath(string left, string right)
+        => string.Equals(NormalizePath(left), NormalizePath(right), StringComparison.OrdinalIgnoreCase);
+    private static bool Overlaps(string left, string right)
+        => SamePath(left, right) || NormalizePath(left).StartsWith(NormalizePath(right) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+            || NormalizePath(right).StartsWith(NormalizePath(left) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+    private static bool HasReparsePoint(string path)
+    {
+        for (var directory = new DirectoryInfo(path); directory != null; directory = directory.Parent)
+        {
+            if ((File.GetAttributes(directory.FullName) & FileAttributes.ReparsePoint) != 0)
+                return true;
+        }
+        return false;
     }
 
     internal static string ResolveWorktreePath(ISettingsService settings, string project, string nameOrPath)
@@ -518,57 +584,13 @@ internal static class WorktreeCommands
         if (!Directory.Exists(projectPath))
             return null;
 
-        var (output, error) = Git(projectPath, "worktree", "list", "--porcelain");
+        var (output, error) = Git(projectPath, "worktree", "list", "--porcelain", "-z");
         if (error != null)
             return null;
 
-        foreach (var raw in output.Split('\n'))
-        {
-            var line = raw.TrimEnd('\r');
-            if (!line.StartsWith("worktree ", StringComparison.Ordinal))
-                continue;
-            var path = line["worktree ".Length..];
-            if (string.Equals(Path.GetFileName(path.TrimEnd('/', '\\')), name, StringComparison.OrdinalIgnoreCase))
-                return path;
-        }
-
-        return null;
-    }
-
-    private static bool IsGitWorktree(string projectPath, string name)
-        => FindListedWorktree(projectPath, name) != null;
-
-    private static string? TryDeleteDirectory(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
-            return null;
-
-        string? lastError = null;
-        for (var attempt = 0; attempt < 8; attempt++)
-        {
-            if (attempt > 0)
-                Thread.Sleep(250);
-
-            try
-            {
-                foreach (var file in Directory.GetFiles(path, "*", SearchOption.AllDirectories))
-                {
-                    File.SetAttributes(file, FileAttributes.Normal);
-                    File.Delete(file);
-                }
-
-                Directory.Delete(path, recursive: true);
-                if (!Directory.Exists(path))
-                    return null;
-                lastError = "目录删除后仍存在";
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException)
-            {
-                lastError = ex.Message;
-            }
-        }
-
-        return $"残留目录未能删除：{path}（{lastError}）";
+        var matches = ListedWorktreePaths(output).Where(path =>
+            string.Equals(Path.GetFileName(path.TrimEnd('/', '\\')), name, StringComparison.OrdinalIgnoreCase)).ToArray();
+        return matches.Length == 1 ? matches[0] : null;
     }
 
     private static bool IsFormalHostRunning(ISettingsService settings, out string executable)
