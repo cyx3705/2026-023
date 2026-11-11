@@ -25,7 +25,7 @@ internal static class ReleaseCommands
             HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。本条不对 MCP 暴露。",
             Domain = "vulcan",
             CommandClass = "release",
-            Summary = "列出项目库里自带 publish 描述的模块（现场扫描，宿主不保存）",
+            Summary = "扫描项目库中声明发布流程的模块",
             Example = "vulcan.release.modules",
             Readonly = true,
             Handler = CommandDescriptor.Sync(_ => Modules(host.Settings)),
@@ -77,7 +77,7 @@ internal static class ReleaseCommands
             HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。宿主打包仍可用 --cli vulcan.release.cycle。",
             Domain = "vulcan",
             CommandClass = "release",
-            Summary = "跑通门禁、写入版本化候选并提交；模块候选严格替换到 Vulcan 运行区",
+            Summary = "构建并验证发布候选，提交和交付制品",
             Example = "vulcan.release.cycle name=HistoryVulcan msg=candidate worktree=abc-1-grok-fix",
             Parameters =
             [

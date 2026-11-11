@@ -103,7 +103,7 @@ internal static class DevPipelineCommands
             HiddenReason = "开发管线不配 MCP，请用 HistoryVulcan.Cli.exe --cli vulcan.dev.finish。",
             Domain = "vulcan",
             CommandClass = "dev",
-            Summary = "模块开发第 3 步（审核通过后）：复核已提交候选、并回 main、回收工作区并热装",
+            Summary = "审核后并回模块候选、回收工作区并热装",
             Example = "vulcan.dev.finish worktree=abc-1-grok-cachekey",
             Parameters =
             [

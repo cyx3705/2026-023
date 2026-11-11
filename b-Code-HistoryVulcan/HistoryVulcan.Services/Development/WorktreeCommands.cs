@@ -48,7 +48,7 @@ internal static class WorktreeCommands
             HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。本条不对 MCP 暴露。",
             Domain = "vulcan",
             CommandClass = "worktree",
-            Summary = "为项目开一个 AI 工作区（git worktree + 新分支）",
+            Summary = "为项目创建分支及 AI 工作区",
             Example = "vulcan.worktree.create project=2026-020-HistoryJanus slug=cachekey agent=claude",
             Parameters =
             [
@@ -92,7 +92,7 @@ internal static class WorktreeCommands
             HiddenReason = "模块开发请用 vulcan.dev.start / submit / finish。本条不对 MCP 暴露。",
             Domain = "vulcan",
             CommandClass = "worktree",
-            Summary = "把已登记的附加工作区并回 main 并回收；拒绝主树，Git 拒绝回收时立即停止，分支保留",
+            Summary = "将附加工作区并回主分支并回收",
             Example = "vulcan.worktree.merge project=2026-020-HistoryJanus name=71c79b7-1-codex-fix",
             Parameters =
             [

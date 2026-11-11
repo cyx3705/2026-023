@@ -29,7 +29,7 @@ internal static class NodeCommands
                 artifacts = service.Runtime?.KnownArtifacts ?? [],
                 pendingPackages = service.Runtime?.PendingPackages ?? [],
             })));
-        Add("configure", "登记双向证书配对；监听端填写 listenPort，连接端填 0；只在本机配置", [
+        Add("configure", "配置本机与对端的双向证书配对", [
             Text("group", "逻辑宿主 GUID", true), Text("peer", "对端节点 GUID", true),
             Text("fingerprint", "对端证书 SHA-256", true), Text("host", "对端地址", true),
             Text("port", "对端端口", true), Text("listen", "本机监听地址，默认 127.0.0.1"),
@@ -41,7 +41,7 @@ internal static class NodeCommands
                         context.RequireString("host"), context.GetInt("port")), context.GetString("preload")));
                 return Task.FromResult(CommandResult.Ok("配对配置已保存；活宿主立即连接，离线 CLI 在下次服务启动时连接。"));
             });
-        Add("own", "明确分配、迁移或解决归属；对端不在线也可执行，重连再同步。模块数据跟着走，项目库不动", [
+        Add("own", "分配或迁移模块归属及数据", [
             Text("module", "模块身份", true), Text("target", "节点 GUID、local 或 preload", true),
             Text("heads", "status 中该模块的当前头修订，以逗号分隔；初次用 none", true),
             Text("mode", "assign/migrate/takeover/resolve", true), Text("data", "必须为 follow-load", true)], false,
@@ -49,7 +49,7 @@ internal static class NodeCommands
                 await RequireRuntime().ChangeOwnershipAsync(context.RequireString("module"), context.RequireString("target"),
                     context.RequireString("heads") == "none" ? [] : context.RequireString("heads").Split(','),
                     context.RequireString("mode"), context.RequireString("data"), _ => true, context.Cancellation).ConfigureAwait(false)));
-        Add("frontend", "执行指定节点前端的命令，确认回发起端，UI 在线程所属节点执行", [
+        Add("frontend", "在指定节点执行前端指令", [
             Text("node", "节点 GUID 或 local", true), Text("command", "完整前端指令", true)], false,
             context => RequireRuntime().ExecuteFrontendAsync(context.RequireString("node"), context.RequireString("command"),
                 false, context.Cancellation));
@@ -123,17 +123,17 @@ internal static class NodeCommands
             });
         Add("receipt", "读取持久交付回执", [Text("id", "交付回执 GUID", true)], true,
             context => Task.FromResult(CommandResult.Ok("交付记录", Read(context.RequireString("id")))));
-        Add("verify", "核对已审核的制品、目标、归属及运行实例，变化时要求重新 submit", [Text("id", "交付回执 GUID", true)], true,
+        Add("verify", "核对送审制品、目标归属和运行实例", [Text("id", "交付回执 GUID", true)], true,
             context => Verify(Read(context.RequireString("id")), context.Cancellation));
-        Add("devices", "列出本机和对端、模块区现有的模块包（installed）、每个模块装在哪一台，以及已装载模块的场景", [], true,
+        Add("devices", "列出节点、已装模块包和模块归属", [], true,
             _ => Task.FromResult(CommandResult.Ok("设备", DeviceCatalog())));
-        Add("refresh", "按本机最新的宿主版本和模块包对齐已连接设备；命令在执行它的那台机器上生效", [], false,
+        Add("refresh", "用本机宿主和模块包同步已连接节点", [], false,
             async context => CommandResult.Ok(service.Runtime == null
                 ? RefreshLocalPackages()
                 : await service.Runtime.RefreshDevicesAsync(context.Cancellation).ConfigureAwait(false)),
             confirm: false);
-        Add("place", "把模块装到选定设备，或改为不装载；对端关闭或连不上也可以，起来后再同步", [
-            Text("module", "模块名", true),
+        Add("place", "设置模块在哪台设备装载", [
+            Text("module", "在模块列表中显示的完整名称", true),
             Text("target", "local、对端节点 GUID，或 none 表示不装载", true)], false,
             async context =>
             {

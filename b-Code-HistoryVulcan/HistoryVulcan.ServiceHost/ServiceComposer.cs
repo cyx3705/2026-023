@@ -232,7 +232,7 @@ internal static partial class ServiceComposer
             Name = "vulcan.host.info",
             Domain = "vulcan",
             CommandClass = "host",
-            Summary = "宿主版本、运行方式，以及项目库、工作区、模块运行区、模块数据目录与宿主可执行文件的位置",
+            Summary = "查看宿主版本、运行方式及目录位置",
             Example = "vulcan.host.info",
             Readonly = true,
             Handler = CommandDescriptor.Sync(_ =>
@@ -273,7 +273,7 @@ internal static partial class ServiceComposer
             HiddenReason = "前端补控制台历史用，经总线调用；AI 读日志请用 diana.log.read。",
             Domain = "vulcan",
             CommandClass = "log",
-            Summary = "宿主日志缓冲里最近的若干条（与 vulcan.log.entry 事件同形），供控制台补历史",
+            Summary = "读取最近的宿主日志供控制台补历史",
             Example = "vulcan.log.recent count=500",
             Readonly = true,
             Parameters =
@@ -373,7 +373,7 @@ internal static partial class ServiceComposer
             Name = "vulcan.module.unload",
             Domain = "vulcan",
             CommandClass = "module",
-            Summary = "卸载一个已装载模块（命令与界面）；不改磁盘，reload 会装回",
+            Summary = "卸载模块的指令和界面，保留磁盘包",
             Example = "vulcan.module.unload name=HistoryJanus",
             Parameters =
             [
@@ -448,7 +448,7 @@ internal static partial class ServiceComposer
             HiddenReason = "运行包变更只允许认证的本机宿主通道",
             Domain = "vulcan",
             CommandClass = "module",
-            Summary = "卸载模块并从 AppData 运行区删除完整模块包；数据目录默认保留，purge=true 一并删除",
+            Summary = "卸载并删除模块包，可选择清除数据",
             Example = "vulcan.module.uninstall name=HistoryJanus",
             Level = CommandLevel.Ask,
             Annotations = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)

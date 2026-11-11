@@ -163,7 +163,7 @@ internal static class CommandCatalogCommands
         HiddenReason = "前端与网关用的目录查询，经总线调用；不对 MCP 暴露。",
         Domain = "vulcan",
         CommandClass = "command",
-        Summary = "当前指令目录的版本号；每次登记或注销加一，用来判断要不要重拉目录",
+        Summary = "查看注册指令目录的当前版本号",
         Readonly = true,
         Example = "vulcan.command.revision",
         Handler = CommandDescriptor.Sync(_ =>
